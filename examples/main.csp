@@ -1,0 +1,8 @@
+let test: int = 0;
+
+fn main(argc: int, argv: vec<str>): int = {
+    let msg: str = "Hello World!";
+    print("%s\n", msg);
+
+    <- test;
+}
