@@ -144,15 +144,15 @@ AST_T* parserParseCompound(parser_T* parser)
     while(parser->token->type != TOKEN_RIGHT_BRACE && parser->token->type != TOKEN_EOF)
     {
         if(parser->token->type == TOKEN_STMT) {
-            parserParseStmt(parser);
+            listPush(cmp->children, parserParseStmt(parser));
             parserEat(parser, TOKEN_SEMICOLON);
         }
         else if(parser->token->type == TOKEN_ID) {
-            parserParseExpr(parser);
+            listPush(cmp->children, parserParseExpr(parser));
             parserEat(parser, TOKEN_SEMICOLON);
         }
         else if(parser->token->type == TOKEN_LET) {
-            parserParseVarDeclaration(parser);
+            listPush(cmp->children, parserParseVarDeclaration(parser));
             parserEat(parser, TOKEN_SEMICOLON);
         }
     }
@@ -178,16 +178,17 @@ AST_T* parserParseVarDeclaration(parser_T* parser)
 
     if(parser->token->type == TOKEN_VEC)
     {
-        var->dataType = typenameToInt(parser->token->value);
+        var->dataType = parser->token->value;
 
         parserAdvance(parser);
         parserEat(parser, TOKEN_LESS);
-        var->dataType += typenameToInt(parser->token->value);
+        var->dataType = (char*) realloc(var->dataType, (strlen(var->dataType) + strlen(parser->token->value) + 1) * sizeof(char));
+        strcat(var->dataType, parser->token->value);
         parserAdvance(parser);
         parserEat(parser, TOKEN_GREATER);
     }
     else {
-        var->dataType = typenameToInt(parser->token->value);
+        var->dataType = parser->token->value;
         parserAdvance(parser);
 
         if(parser->token->type == TOKEN_EQUAL)
@@ -223,12 +224,13 @@ AST_T* parserParseFnDeclaration(parser_T* parser)
     parserEat(parser, TOKEN_RIGHT_PAREN);
     parserEat(parser, TOKEN_COLON);
 
-    fn->dataType = typenameToInt(parser->token->value);
+    fn->dataType = parser->token->value;
     if(parser->token->type == TOKEN_VEC)
     {
         parserAdvance(parser);
         parserEat(parser, TOKEN_LESS);
-        fn->dataType += typenameToInt(parser->token->value);
+        fn->dataType = (char*) realloc(fn->dataType, (strlen(fn->dataType) + strlen(parser->token->value) + 1) * sizeof(char));
+        strcat(fn->dataType, parser->token->value);
         parserAdvance(parser);
         parserEat(parser, TOKEN_GREATER);
     } else

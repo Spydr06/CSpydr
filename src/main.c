@@ -1,6 +1,7 @@
 #include <stdio.h>
+#include <string.h>
 #include "input.h"
-#include "parser.h"
+#include "c_compiler.h"
 
 void compileFile(char* path);
 
@@ -29,7 +30,15 @@ void compileFile(char* path)
     lexer_T* lexer = initLexer(src);
     parser_T* parser = initParser(lexer);
 
-    parserParse(parser);
+    AST_T* root = parserParse(parser);
+    CCompiler_T* compiler = initCompiler();
+    
+    char* code = compileRoot(compiler, root);
+    printf("%s", code);
+
+    writeFile("a.c", code);
+    sh("cc a.c");
+    sh("rm -rf a.c");
 
     /*while((token = lexerNextToken(lexer))->type != TOKEN_EOF)
     {

@@ -26,11 +26,10 @@ typedef struct AST_STRUCT
     list_T* children;
     struct AST_STRUCT* value;
     int intValue;
-    int dataType;
+    char* dataType;
     char* strValue;
 } AST_T;
 
 AST_T* initAST(int type);
-int typenameToInt(const char* name);
 
 #endif

@@ -1,0 +1,148 @@
+#include "compiler.h"
+#include "AST.h"
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+char* compileRoot(AST_T* root)
+{
+     
+    const char* sectionText = ".section .text\n"
+                              ".globl _start\n"
+                              "_start:\n"
+                              "call main\n"
+                              "movl \%eax, \%ebx\n"
+                              "movl $1, \%eax\n"
+                              "int $0x80\n\n";
+                             
+    char* value = (char*) calloc(strlen(sectionText) + 1, sizeof(char));
+    strcpy(value, sectionText);
+
+    for(int i = 0; i < root->children->size; i++)
+    {
+        char* next = compile((AST_T*) root->children->items[i]);
+        value = (char*) realloc(value, (strlen(value) + strlen(next) + 1) * sizeof(char));
+        strcat(value, next);
+    }
+
+    return value;
+}
+
+char* compile(AST_T* ast)
+{
+    printf("compiling %s\n", ast->name);
+    char* next = calloc(1, sizeof(char));
+    char* value = calloc(1, sizeof(char));
+
+    switch(ast->type)
+    {
+        case AST_COMPOUND:
+            next = compileCompound(ast);
+            break;
+        case AST_ASSIGNMENT:
+            break;
+        case AST_VARIABLE:
+            break;
+        case AST_CALL:
+            next = compileCall(ast);
+            break;
+        case AST_INT:
+            break;
+        case AST_STRING:
+            break;
+        case AST_FUNCTION:
+            next = compileFunction(ast);
+            break;
+        case AST_STATEMENT:
+            next = compileStmt(ast);
+            break;
+        case AST_EXPRESSION:
+            break;
+        case AST_NOOP:
+            break;
+
+        default:
+            fprintf(stderr, "[ERROR] Compiler: No frontend for AST_TYPE '%d' found.", ast->type);
+            exit(1);
+            break;
+    } 
+
+    value = realloc(value, (strlen(next) + 1) * sizeof(char));
+    strcat(value, next);
+
+    printf("dbg: %s\n", value);
+    return value;
+}
+
+char* compileCall(AST_T* ast)
+{
+    char* s = calloc(1, sizeof(char));
+
+    if(strcmp(ast->name, "print") == 0)
+    {
+        AST_T* arg = (AST_T*) ast->value->children->items[0];
+        if(arg == NULL) {
+            printf("[Syntax Error]: missing print arg.");
+        }
+
+        const char* template = "section .data";
+        s = (char*) calloc(strlen(template) + 128, sizeof(char));
+        sprintf(s, template, arg->strValue);
+    }
+
+    return s;
+}
+
+char* compileStmt(AST_T* ast)
+{
+    char* s = calloc(1, sizeof(char));
+
+    if(strcmp(ast->name, "return") == 0)
+    {
+        AST_T* arg = (AST_T*) ast->value;
+
+        const char* template = "movl $%d, %%eax\n"
+                               "ret\n";
+        char* returnS = calloc(strlen(template) + 128, sizeof(char));
+        sprintf(returnS, template, arg ? arg->intValue : 0);
+        s = realloc(s, (strlen(returnS) + 1) * sizeof(char));
+        strcat(s, returnS);
+    }
+
+    return s;
+}
+
+char* compileCompound(AST_T* ast)
+{
+    char* value = calloc(1, sizeof(char));
+
+    for(int i = 0; i < ast->children->size; i++)
+    {
+        AST_T* childAST = (AST_T*) ast->children->items[i];
+        char* next = compile(childAST);
+        value = realloc(value, (strlen(value) + strlen(next) + 1) * sizeof(char));
+        strcat(value, next);
+    }
+
+    return value;
+}
+
+char* compileFunction(AST_T* ast)
+{
+    
+    char* s = calloc(1, sizeof(char));
+
+    const char* template = ".globl %s\n"
+                           "%s:\n";
+    
+    s = realloc(s, (strlen(template) + (strlen(ast->name) * 2) + 1) * sizeof(char));
+    sprintf(s, template, ast->name, ast->name);
+    
+    AST_T* body = ast->value;
+    char* bodyVal = compile(body);
+
+    s = realloc(s, (strlen(s) + strlen(bodyVal) + 1) * sizeof(char));
+    strcat(s, bodyVal);
+    
+    return s;
+}

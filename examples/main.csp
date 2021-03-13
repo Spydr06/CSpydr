@@ -1,8 +1,12 @@
 let test: int = 0;
 
+fn testFn(string: str): int = {
+    <- string;
+}
+
 fn main(argc: int, argv: vec<str>): int = {
     let msg: str = "Hello World!";
-    print("%s\n", msg);
+    printf("Hi %s\n", testFn("du"));
 
-    <- test;
+    <- 0;
 }
