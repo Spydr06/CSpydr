@@ -1,8 +1,9 @@
 #ifndef CSPYDR_PARSER_H
 #define CSPYDR_PARSER_H
 
-#include "lexer.h"
 #include "AST.h"
+#include "lexer.h"
+#include "token.h"
 
 typedef struct PARSER_STRUCT
 {
@@ -12,16 +13,9 @@ typedef struct PARSER_STRUCT
 
 parser_T* initParser(lexer_T* lexer);
 
-token_T* parserEat(parser_T* parser, int type);
+token_T* parserAdvance(parser_T* parser);
+token_T* parserConsume(parser_T* parser, tokenType_T type, const char* msg);
 
 AST_T* parserParse(parser_T* parser);
-AST_T* parserParseCompound(parser_T* parser);
-AST_T* parserParseNumber(parser_T* parser);
-AST_T* parserParseExpr(parser_T* parser);
-AST_T* parserParseId(parser_T* parser);
-AST_T* parserParseList(parser_T* parser);
-AST_T* parserParseBlock(parser_T* parser);
-AST_T* parserParseStmt(parser_T* parser);
-AST_T* parserParseVarDeclaration(parser_T* parser);
 
 #endif

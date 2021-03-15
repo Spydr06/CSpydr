@@ -1,17 +1,20 @@
 #include <stdio.h>
 #include <string.h>
 #include "input.h"
-#include "c_compiler.h"
+#include "log.h"
+#include "parser.h"
+
+#define VERSION "v0.0.1"
 
 void compileFile(char* path);
 
 int main(int argc, char* argv[])
 {
-    printf("** THE CSPYDR LANGUAGE COMPILER **\n");
+    LOG_WARN("** THE CSPYDR LANGUAGE COMPILER %s **\n", VERSION);
 
     if(argc < 2) 
     {
-        fprintf(stderr, "[ERROR] please specify input file!\n");
+        LOG_ERROR("Please specify input file.%s", "\n");
         return -1;
     }
 
@@ -22,26 +25,20 @@ int main(int argc, char* argv[])
 
 void compileFile(char* path)
 {
-    printf("Compiling file '%s'\n", path);
+    LOG_OK("Compiling" RESET " \"%s\"\n", path);
     char* src = readFile(path);
-
-    printf("%s\n", src);
 
     lexer_T* lexer = initLexer(src);
     parser_T* parser = initParser(lexer);
 
-    AST_T* root = parserParse(parser);
-    CCompiler_T* compiler = initCompiler();
-    
-    char* code = compileRoot(compiler, root);
-    printf("%s", code);
+    parserParse(parser);
 
-    writeFile("a.c", code);
-    sh("cc a.c");
-    sh("rm -rf a.c");
-
+    //token_T* token;
     /*while((token = lexerNextToken(lexer))->type != TOKEN_EOF)
     {
-        printf("%s\n", tokenToString(token));
+        LOG_INFO("%s\n", tokenToString(token));
     }*/
+
+    //sh("cc a.c");
+    //sh("rm -rf a.c");
 }

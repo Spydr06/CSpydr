@@ -1,11 +1,7 @@
 #include "parser.h"
-#include "AST.h"
-#include "lexer.h"
 #include "list.h"
 #include "token.h"
-#include <stdio.h>
-#include <stdbool.h>
-#include <string.h>
+#include "log.h"
 
 parser_T* initParser(lexer_T* lexer)
 {
@@ -16,254 +12,128 @@ parser_T* initParser(lexer_T* lexer)
     return parser;
 }
 
-token_T* parserEat(parser_T* parser, int type)
+token_T* parserAdvance(parser_T* parser)
 {
-    if(parser->token->type != type)
-    {
-        printf("[Parser]: Unexpected token: '%s', was expecting '%s'\n", tokenToString(parser->token), tokenTypeToString(type));
-        exit(1);
-    }
-
     parser->token = lexerNextToken(parser->lexer);
     return parser->token;
 }
 
-void parserAdvance(parser_T* parser)
+token_T* parserConsume(parser_T* parser, tokenType_T type, const char* msg)
 {
-    parser->token = lexerNextToken(parser->lexer);
-}
-
-AST_T* parserParseNumber(parser_T* parser)
-{
-    int intValue = atoi(parser->token->value);
-    parserEat(parser, TOKEN_NUMBER);
-
-    AST_T* ast = initAST(AST_INT);
-    ast->intValue = intValue;
-
-    return ast;
-}
-
-AST_T* parserParseString(parser_T* parser)
-{
-    char* strValue = parser->token->value;
-    parserEat(parser, TOKEN_STRING);
-
-    AST_T* ast = initAST(AST_STRING);
-    ast->strValue = strValue;
-
-    return ast;
-}
-
-AST_T* parserParseList(parser_T* parser)
-{
-    AST_T* list = initAST(AST_COMPOUND);
-    parserEat(parser, TOKEN_LEFT_PAREN);
-
-    while(parser->token->type != TOKEN_EOF && parser->token->type != TOKEN_RIGHT_PAREN)
+    if(parser->token->type != type)
     {
-        listPush(list->children, parserParseExpr(parser));
-        if(parser->token->type != TOKEN_COMMA) {
-            break;
+        LOG_ERROR("Unexpected token '%s' in line %d.\n%s\n", parser->token->value, parser->token->line, msg);
+    }
+
+    return parserAdvance(parser);
+}
+
+static AST_T* parserParseFnDef(parser_T* parser);
+static AST_T* parserParseCompound(parser_T* parser);
+static AST_T* parserParseVarDef(parser_T* parser);
+
+AST_T* parserParse(parser_T* parser)
+{
+    AST_T* root = initAST(ROOT, 0);
+    root->root->contents = initList(sizeof(struct AST_STRUCT*));
+
+    while(parser->token->type != TOKEN_EOF)
+    {
+        switch(parser->token->type)
+        {
+            case TOKEN_FN:
+                parserAdvance(parser);
+                listPush(root->root->contents, parserParseFnDef(parser));
+                break;
+            case TOKEN_LET:
+                parserAdvance(parser);
+                parserParseVarDef(parser);
+                parserConsume(parser, TOKEN_SEMICOLON, "Expect ';' after variable definition.");
+                break;
+            default:
+                LOG_ERROR("Unexpected token '%s' in line %d.\n", parser->token->value, parser->token->line);
+                exit(1);
         }
-        parserEat(parser, TOKEN_COMMA);
     }
 
-    parserEat(parser, TOKEN_RIGHT_PAREN);
-
-    return list;
+    LOG_OK("Parsing complete!%s", "\n");
+    return root;
 }
 
-AST_T* parserParseId(parser_T* parser)
+static AST_T* parserParseCompound(parser_T* parser)
 {
-    char* value = calloc(strlen(parser->token->value) + 1, sizeof(char));
-    strcpy(value, parser->token->value);
+    AST_T* cmp = initAST(COMPOUND, 0);
+    cmp->compound->contents = initList(sizeof(struct AST_STRUCT*));
 
-    parserEat(parser, TOKEN_ID);
+    parserConsume(parser, TOKEN_LEFT_BRACE, "Expect '{'.");
 
-    if(parser->token->type == TOKEN_EQUAL)
+    while(parser->token->type != TOKEN_RIGHT_BRACE)
     {
-        parserEat(parser, TOKEN_EQUAL);
-        AST_T* ast = initAST(AST_ASSIGNMENT);
-        ast->name = value;
-        printf("Parsing assignment for '%s'...\n", ast->name);
-        ast->value = parserParseExpr(parser);
-        return ast;
-    }
-
-    if(parser->token->type == TOKEN_LEFT_PAREN)
-    {
-        AST_T* ast = initAST(AST_CALL);
-        ast->name = value;
-        printf("Parsing function call '%s'...\n", ast->name);
-        ast->value = parserParseList(parser);
-        return ast;
-    }
-
-    AST_T* ast = initAST(AST_NOOP);
-    return ast;
-}
-
-AST_T* parserParseExpr(parser_T* parser)
-{
-    switch(parser->token->type)
-    {
-        case TOKEN_ID:
-            return parserParseId(parser);
-        case TOKEN_STRING:
-            return parserParseString(parser);
-        case TOKEN_NUMBER:
-            return parserParseNumber(parser);
-        case TOKEN_EQUAL:
-
-        default:
-            fprintf(stderr, "[ERROR] Parser: Unexpected token '%s'\n", tokenToString(parser->token));
+        //TODO: parse code
+        if(parser->token->type == TOKEN_EOF)
+        {
+            parserConsume(parser, TOKEN_RIGHT_BRACE, "Unterminated compound, expect '}'.");
             exit(1);
-    }
-}
-
-AST_T* parserParseStmt(parser_T* parser)
-{
-    AST_T* stmt = initAST(AST_STATEMENT);
-    stmt->name = parser->token->value;
-    printf("Parsing statement '%s'...\n", stmt->name);
-    parserAdvance(parser);
-
-    stmt->value = parserParseExpr(parser);
-
-    return stmt;
-}
-
-
-AST_T* parserParseCompound(parser_T* parser)
-{
-    AST_T* cmp = initAST(AST_COMPOUND);
-
-    parserEat(parser, TOKEN_LEFT_BRACE);
-
-    while(parser->token->type != TOKEN_RIGHT_BRACE && parser->token->type != TOKEN_EOF)
-    {
-        if(parser->token->type == TOKEN_STMT) {
-            listPush(cmp->children, parserParseStmt(parser));
-            parserEat(parser, TOKEN_SEMICOLON);
         }
-        else if(parser->token->type == TOKEN_ID) {
-            listPush(cmp->children, parserParseExpr(parser));
-            parserEat(parser, TOKEN_SEMICOLON);
-        }
-        else if(parser->token->type == TOKEN_LET) {
-            listPush(cmp->children, parserParseVarDeclaration(parser));
-            parserEat(parser, TOKEN_SEMICOLON);
-        }
+
+        parserAdvance(parser);
     }
 
-    parserEat(parser, TOKEN_RIGHT_BRACE);
+    parserConsume(parser, TOKEN_RIGHT_BRACE, "Expect '}'.");
 
     return cmp;
 }
 
-AST_T* parserParseVarDeclaration(parser_T* parser)
+static AST_T* parserParseVarDef(parser_T* parser)
 {
-    if(parser->token->type == TOKEN_LET)
+    AST_T* var = initAST(DEF, VAR);
+    var->def->name = parser->token->value;
+    parserConsume(parser, TOKEN_ID, "Expect variable name.");
+
+    var->def->isFunction = false;
+    parserConsume(parser, TOKEN_COLON, "Expect ':' after variable name.");
+    var->def->dataType = parser->token->value;
+    parserConsume(parser, TOKEN_ID, "Expect data type after ':'.");
+
+    if(parser->token->type == TOKEN_EQUALS)
     {
+        // TODO: parse assignment
         parserAdvance(parser);
-    }
-
-    AST_T* var = initAST(AST_VARIABLE);
-    var->name = parser->token->value;
-    parserAdvance(parser);
-    printf("Parsing variable '%s'...\n", var->name);
-
-    parserEat(parser, TOKEN_COLON);
-
-    if(parser->token->type == TOKEN_VEC)
-    {
-        var->dataType = parser->token->value;
-
         parserAdvance(parser);
-        parserEat(parser, TOKEN_LESS);
-        var->dataType = (char*) realloc(var->dataType, (strlen(var->dataType) + strlen(parser->token->value) + 1) * sizeof(char));
-        strcat(var->dataType, parser->token->value);
-        parserAdvance(parser);
-        parserEat(parser, TOKEN_GREATER);
-    }
-    else {
-        var->dataType = parser->token->value;
-        parserAdvance(parser);
-
-        if(parser->token->type == TOKEN_EQUAL)
-        {
-            parserAdvance(parser);
-            var->value = parserParseExpr(parser);
-        }
     }
 
     return var;
 }
 
-AST_T* parserParseFnDeclaration(parser_T* parser)
+static AST_T* parserParseFnDef(parser_T* parser)
 {
-    AST_T* fn = initAST(AST_FUNCTION);
-    fn->name = parser->token->value;
-    parserAdvance(parser);
-    printf("Parsing function '%s'...\n", fn->name);
+    AST_T* fn = initAST(DEF, FN);
+    fn->def->name = parser->token->value;
+    parserConsume(parser, TOKEN_ID, "Expect function name.");
 
-    parserEat(parser, TOKEN_LEFT_PAREN);
+    fn->def->isFunction = true;
+    fn->def->args = initList(sizeof(struct AST_STRUCT));
 
+    parserConsume(parser, TOKEN_LEFT_PAREN, "Expect '(' after function name.");
+    
     while(parser->token->type != TOKEN_RIGHT_PAREN)
     {
-        listPush(fn->children, parserParseVarDeclaration(parser));
-        if(parser->token->type == TOKEN_COMMA) 
-        {
-            parserAdvance(parser);
-        } else
-        {
-            break;
-        }
+        // TODO: parse arg list
+        parserAdvance(parser);
     }
-    parserEat(parser, TOKEN_RIGHT_PAREN);
-    parserEat(parser, TOKEN_COLON);
 
-    fn->dataType = parser->token->value;
-    if(parser->token->type == TOKEN_VEC)
+    parserConsume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after function arguments.");
+
+    if(parser->token->type == TOKEN_COLON)
     {
         parserAdvance(parser);
-        parserEat(parser, TOKEN_LESS);
-        fn->dataType = (char*) realloc(fn->dataType, (strlen(fn->dataType) + strlen(parser->token->value) + 1) * sizeof(char));
-        strcat(fn->dataType, parser->token->value);
-        parserAdvance(parser);
-        parserEat(parser, TOKEN_GREATER);
-    } else
-    {
-        parserAdvance(parser);
-    }
-    parserEat(parser, TOKEN_EQUAL);
-    fn->value = parserParseCompound(parser);
-
-    return fn;
-}
-
-AST_T* parserParse(parser_T* parser)
-{
-    AST_T* root = initAST(AST_ROOT);
-
-    while(parser->token->type != TOKEN_EOF) {
-        switch(parser->token->type) {
-            case TOKEN_FN:
-                parserAdvance(parser);
-                listPush(root->children, parserParseFnDeclaration(parser));
-                break;
-            case TOKEN_LET:
-                parserAdvance(parser);
-                listPush(root->children, parserParseVarDeclaration(parser));
-                parserEat(parser, TOKEN_SEMICOLON);
-                break;
-            default:
-                fprintf(stderr, "[ERROR] Parser: Unexpected token '%s'\n", tokenToString(parser->token));
-                exit(1);
-        }
+        fn->def->dataType = parser->token->value;
+        parserConsume(parser, TOKEN_ID, "Expect return type after ':'.");
     }
 
-    printf("Parsing complete!\n");
-    return root;
+    parserConsume(parser, TOKEN_EQUALS, "Expect '=' after function definition.");
+
+    fn->def->value = parserParseCompound(parser);
+
+    return fn;    
 }

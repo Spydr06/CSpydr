@@ -12,18 +12,16 @@ typedef enum TOKENTYPE
     TOKEN_LEFT_BRACKET,     // [
     TOKEN_RIGHT_BRACKET,    // ]
 
-    TOKEN_EQUAL,            // =
-    TOKEN_EQUAL_EQUAL,      // ==
+    TOKEN_EQUALS,           // =
+    TOKEN_EQUALS_EQUALS,    // ==
     TOKEN_COLON,            // :
     TOKEN_COMMA,            // ,
     TOKEN_SEMICOLON,        // ;
     TOKEN_DOT,              // .
     TOKEN_GREATER,          // >
     TOKEN_GREATER_EQUALS,   // >=
-    TOKEN_GREATER_GREATER,  // >>
     TOKEN_LESS,             // <
     TOKEN_LESS_EQUALS,      // <=
-    TOKEN_LESS_LESS,        // <<
     TOKEN_PLUS,             // +
     TOKEN_PLUS_EQUALS,      // +=
     TOKEN_MINUS,            // -
@@ -36,37 +34,27 @@ typedef enum TOKENTYPE
     TOKEN_SLASH_EQUALS,     // /=
     TOKEN_BANG,             // !
     TOKEN_BANG_EQUALS,      // !=
-    TOKEN_AND,              // &
     TOKEN_AND_AND,          // &&
-    TOKEN_AND_EQUALS,       // &=
-    TOKEN_OR,               // |
     TOKEN_OR_OR,            // ||
-    TOKEN_OR_EQUALS,        // |=
 
-    TOKEN_STRING,           // "..."
-    TOKEN_NUMBER,           // 1, 2, 3, ...
-    TOKEN_TRUE,             // true
-    TOKEN_FALSE,            // false
+    TOKEN_VALUE,            // "...", ' ', true, false, nil, 3, 3.14, 7.8, 0, ...
 
     TOKEN_LET,              // let
-    TOKEN_INT,              // int
     TOKEN_FN,               // fn
-    TOKEN_VEC,              // vec
-    TOKEN_STR,              // str
-    TOKEN_FLOAT,            // float
-    TOKEN_BOOL,             // bool
 
-    TOKEN_STMT,             //statement
+    TOKEN_IDENTIFIER,       // i8, i16, i32, i64, u8, u16, u32, u64, bool, str, char, vec
+    TOKEN_STMT,             // statement
 
-    TOKEN_EOF       //end of file
+    TOKEN_EOF               //end of file
 } tokenType_T;
 
 typedef struct TOKEN_STRUCT {
     char* value;
+    unsigned int line;
     tokenType_T type;
 } token_T;
 
-token_T* initToken(char* value, tokenType_T type);
+token_T* initToken(char* value, unsigned int line, tokenType_T type);
 char* tokenToString(token_T* token);
 const char* tokenTypeToString(tokenType_T type);
 

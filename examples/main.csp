@@ -1,12 +1,6 @@
-let test: int = 0;
-
-fn testFn(string: str): int = {
-    <- string;
-}
-
-fn main(argc: int, argv: vec<str>): int = {
+fn main(argc: i32, argv: vec<str>): int = {
     let msg: str = "Hello World!";
-    printf("Hi %s\n", testFn("du"));
+    print(str);
 
     <- 0;
 }
