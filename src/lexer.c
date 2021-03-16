@@ -74,7 +74,7 @@ static token_T* lexerParseNumber(lexer_T* lexer)
         lexerAdvance(lexer);
     }
 
-    return initToken(value, lexer->line, TOKEN_VALUE);
+    return initToken(value, lexer->line, TOKEN_NUMBER);
 }
 
 static token_T* lexerParseString(lexer_T* lexer)
@@ -95,7 +95,7 @@ static token_T* lexerParseString(lexer_T* lexer)
     }
     lexerAdvance(lexer);
 
-    return initToken(value, lexer->line, TOKEN_VALUE);
+    return initToken(value, lexer->line, TOKEN_STR);
 }
 
 static token_T* lexerParseId(lexer_T* lexer)
@@ -112,7 +112,7 @@ static token_T* lexerParseId(lexer_T* lexer)
 
     if(strcmp(value, "true") == 0 || strcmp(value, "false") == 0)
     {
-        type = TOKEN_VALUE;
+        type = TOKEN_BOOL;
     }
     else if(strcmp(value, "i8") == 0 || strcmp(value, "i16") == 0 || strcmp(value, "i32") == 0 || strcmp(value, "i64") == 0 || 
             strcmp(value, "u8") == 0 || strcmp(value, "u16") == 0 || strcmp(value, "u32") == 0 || strcmp(value, "u64") == 0 ||
@@ -132,6 +132,10 @@ static token_T* lexerParseId(lexer_T* lexer)
     else if(strcmp(value, "if") == 0 || strcmp(value, "else") == 0 || strcmp(value, "for") == 0 || strcmp(value, "while") == 0 || strcmp(value, "exit") == 0)
     {
         type = TOKEN_STMT;
+    }
+    else if(strcmp(value, "nil") == 0)
+    {
+        type = TOKEN_NIL;
     }
 
     return initToken(value, lexer->line, type);
@@ -218,6 +222,8 @@ static token_T* lexerParseSymbol(lexer_T* lexer)
             return lexerConsume(lexer, lexerConsume(lexer, initToken("&&", lexer->line, TOKEN_AND_AND)));
         case '|':
             return lexerConsume(lexer, lexerConsume(lexer, initToken("||", lexer->line, TOKEN_OR_OR)));
+        case '_':
+            return lexerConsumeType(lexer, TOKEN_UNDERSCORE);
         case '\"':
             return lexerParseString(lexer);
         case '\0': break; 

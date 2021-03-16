@@ -37,14 +37,19 @@ typedef struct AST_EXPR_STRUCT
 {
     enum 
     { 
-        CONSTANT, STRING, 
-        ADD, SUB, MULT, DIV, ASSIGN, 
+        CONSTANT, STRING, NIL, BOOL, CHAR, CALL, ASSIGN,
+        ADD, SUB, MULT, DIV, NEGATE,
         EQUALS, GREATER, LESS, GREATER_EQUALS, LESS_EQUALS, NOT, NOT_EQUALS
     } type;
 
     union 
     {
+        list_T* args;
+        char* name;
+        bool isFunctionCall;
         int intValue;
+        bool boolValue;
+        char charValue;
         float floatValue;
         char* strValue;
         struct 
@@ -66,6 +71,7 @@ typedef struct AST_STMT_STRUCT
     {
         AST_T* value;
         AST_T* condition;
+        AST_T* inc;
         AST_T* body;
         AST_T* ifBody;
         AST_T* elseBody;

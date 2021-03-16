@@ -1,6 +1,8 @@
-fn main(argc: i32, argv: vec<str>): int = {
-    let msg: str = "Hello World!";
-    print(str);
+let test: bool = true;
 
-    <- 0;
+fn main(argc: i32, argv: vec<str>): i32 = {
+    let msg: str = "Hello World!";
+    print(msg);
+
+    <- 0
 }

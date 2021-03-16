@@ -36,8 +36,13 @@ typedef enum TOKENTYPE
     TOKEN_BANG_EQUALS,      // !=
     TOKEN_AND_AND,          // &&
     TOKEN_OR_OR,            // ||
+    TOKEN_UNDERSCORE,       // _
 
-    TOKEN_VALUE,            // "...", ' ', true, false, nil, 3, 3.14, 7.8, 0, ...
+    TOKEN_NUMBER,           // 3, 3.14, 7.8, 0, ...
+    TOKEN_STR,              // "abc..."
+    TOKEN_CHAR,             // 'f'
+    TOKEN_BOOL,             // true, false
+    TOKEN_NIL,              // nil
 
     TOKEN_LET,              // let
     TOKEN_FN,               // fn

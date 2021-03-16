@@ -51,8 +51,13 @@ const char* tokenTypeToString(tokenType_T type)
         case TOKEN_LET: return "TOKEN_LET";                  
         case TOKEN_FN: return "TOKEN_FN";                   
         case TOKEN_STMT: return "TOKEN_STMT";
-        case TOKEN_VALUE: return "TOKEN_VALUE";
+        case TOKEN_NUMBER: return "TOKEN_NUMBER";
+        case TOKEN_STR: return "TOKEN_STR";
+        case TOKEN_CHAR: return "TOKEN_CHAR";
+        case TOKEN_BOOL: return "TOKEN_BOOL";
+        case TOKEN_NIL: return "TOKEN_NIL";
         case TOKEN_IDENTIFIER: return "TOKEN_IDENTIFIER";
+        case TOKEN_UNDERSCORE: return "TOKEN_UNDERSCORE";
         case TOKEN_EOF: return "TOKEN_EOF";      
    }
 
