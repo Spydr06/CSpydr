@@ -7,13 +7,16 @@
 typedef struct LEXER_STRUCT
 {
     char* src;
+    char* srcPath;
+    char* currentLine;
     size_t srcSize;
     char c;
     unsigned int i;
+    unsigned int iInLine;
     unsigned int line;
 } lexer_T;
 
-lexer_T* initLexer(char* src);
+lexer_T* initLexer(char* src, char* path);
 
 void lexerAdvance(lexer_T* lexer);
 char lexerPeek(lexer_T* lexer, int offset);

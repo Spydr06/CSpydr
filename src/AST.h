@@ -87,6 +87,8 @@ struct AST_STRUCT
 
     union
     {
+        bool validated;
+
         ASTexpr_T* expr;
         ASTstmt_T* stmt;
         ASTcompound_T* compound;

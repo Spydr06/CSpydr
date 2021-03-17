@@ -3,6 +3,7 @@
 #include "input.h"
 #include "log.h"
 #include "parser.h"
+#include "ASTvalidator.h"
 
 #define VERSION "v0.0.1"
 
@@ -25,13 +26,14 @@ int main(int argc, char* argv[])
 
 void compileFile(char* path)
 {
-    LOG_OK("Compiling" RESET " \"%s\"\n", path);
+    LOG_OK(COLOR_BOLD_GREEN "Compiling" RESET " \"%s\"\n", path);
     char* src = readFile(path);
 
-    lexer_T* lexer = initLexer(src);
+    lexer_T* lexer = initLexer(src, path);
     parser_T* parser = initParser(lexer);
-
-    parserParse(parser);
+    validator_T* validator = initASTValidator();
+    AST_T* root = parserParse(parser);
+    validateAST(validator, root);
 
     //token_T* token;
     /*while((token = lexerNextToken(lexer))->type != TOKEN_EOF)

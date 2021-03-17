@@ -5,20 +5,22 @@
 
 #include <string.h>
 
+#define LINE_NUMBER_SPACES 4
+#define SYNTAX_ERROR(msg) LOG_ERROR(COLOR_BOLD_WHITE "%s:%d:%d =>" COLOR_BOLD_RED " [Error]" RESET " %s\n %*d | %s\n %*s | " COLOR_BOLD_RED "%*s%s\n",  \
+                                parser->lexer->srcPath, parser->lexer->line, parser->lexer->iInLine, msg, LINE_NUMBER_SPACES, parser->lexer->line,      \
+                                parser->lexer->currentLine, LINE_NUMBER_SPACES, "", parser->lexer->iInLine, "^~", "here");
+
 parser_T* initParser(lexer_T* lexer)
 {
     parser_T* parser = calloc(1, sizeof(struct PARSER_STRUCT));
     parser->lexer = lexer;
     parser->token = lexerNextToken(lexer);
-    parser->previous = NULL;
-    parser->previousAST = NULL;
 
     return parser;
 }
 
 token_T* parserAdvance(parser_T* parser)
 {
-    parser->previous = parser->token;
     parser->token = lexerNextToken(parser->lexer);
     return parser->token;
 }
@@ -27,7 +29,7 @@ token_T* parserConsume(parser_T* parser, tokenType_T type, const char* msg)
 {
     if(parser->token->type != type)
     {
-        LOG_ERROR("Unexpected token '%s' in line %d.\n%s\n", parser->token->value, parser->token->line, msg);
+        SYNTAX_ERROR(msg);
         exit(1);
     }
 
@@ -37,11 +39,11 @@ token_T* parserConsume(parser_T* parser, tokenType_T type, const char* msg)
 static AST_T* parserParseFnDef(parser_T* parser);
 static AST_T* parserParseCompound(parser_T* parser);
 static AST_T* parserParseVarDef(parser_T* parser);
-static AST_T* parserParseCall(parser_T* parser);
+static AST_T* parserParseId(parser_T* parser);
 
 static AST_T* parserParseExpr(parser_T* parser);
-static AST_T* parserParseAssignment(parser_T* parser);
-static AST_T* parserParseOp(parser_T* parser);
+static AST_T* parserParseAssignment(parser_T* parser, AST_T* left);
+static AST_T* parserParseOp(parser_T* parser, AST_T* left);
 static AST_T* parserParseNegate(parser_T* parser);
 static AST_T* parserParseClosure(parser_T* parser);
 
@@ -74,11 +76,15 @@ AST_T* parserParse(parser_T* parser)
             case TOKEN_LET:
                 parserAdvance(parser);
                 parserParseVarDef(parser);
-                parserConsume(parser, TOKEN_SEMICOLON, "Expect ';' after variable definition.");
+                parserConsume(parser, TOKEN_SEMICOLON, "expect ';' after variable definition.");
                 break;
-            default:
-                LOG_ERROR("Unexpected token '%s' in line %d.\n", parser->token->value, parser->token->line);
+            default: {
+                const char* template = "unexpected token '%s'";
+                char* msg = calloc(strlen(template) + strlen(parser->token->value) + 1, sizeof(char));
+                sprintf(msg, template, parser->token->value);
+                SYNTAX_ERROR(msg);
                 exit(1);
+            }
         }
     }
 
@@ -112,7 +118,10 @@ static AST_T* parserParseStmt(parser_T* parser)
     }
     else
     {
-        LOG_ERROR("Unexpected token '%s' in line %d.\n", type, parser->token->line);
+        const char* template = "unexpected token '%s'";
+        char* msg = calloc(strlen(template) + strlen(parser->token->value) + 1, sizeof(char));
+        sprintf(msg, template, parser->token->value);
+        SYNTAX_ERROR(msg);
         exit(1);
     }
 }
@@ -200,23 +209,7 @@ static AST_T* parserParseExpr(parser_T* parser)
     switch(parser->token->type)
     {
         case TOKEN_ID:
-            return parserParseCall(parser);
-            
-        case TOKEN_EQUALS:
-            return parserParseAssignment(parser);
-
-        case TOKEN_MINUS:
-            if(parser->previousAST->type == EXPR)
-            {
-                return parserParseOp(parser);
-            } else {
-                return parserParseNegate(parser);
-            }
-        case TOKEN_PLUS:
-        case TOKEN_STAR:
-        case TOKEN_SLASH:
-            return parserParseOp(parser);
-
+            return parserParseId(parser);
         case TOKEN_LEFT_PAREN:
             return parserParseClosure(parser);
         case TOKEN_NUMBER:
@@ -227,9 +220,13 @@ static AST_T* parserParseExpr(parser_T* parser)
             return parserParseBool(parser);
         case TOKEN_NIL:
             return parserParseNil(parser);
-        default:
-            LOG_ERROR("Unexpected token '%s' in line %d.\n", parser->token->value, parser->token->line);
+        default: {
+            const char* template = "unexpected token '%s'";
+            char* msg = calloc(strlen(template) + strlen(parser->token->value) + 1, sizeof(char));
+            sprintf(msg, template, parser->token->value);
+            SYNTAX_ERROR(msg);
             exit(1);
+        }
     }
 }
 
@@ -239,7 +236,7 @@ static AST_T* parserParseNumber(parser_T* parser)
     ast->expr->intValue = atoi(parser->token->value);
     parserConsume(parser, TOKEN_NUMBER, "Expect number constant.");
 
-    return ast;
+    return parserParseOp(parser, ast);
 }
 
 static AST_T* parserParseString(parser_T* parser)
@@ -248,7 +245,7 @@ static AST_T* parserParseString(parser_T* parser)
     ast->expr->strValue = parser->token->value;
     parserConsume(parser, TOKEN_STR, "Expect string constant.");
 
-    return ast;
+    return parserParseOp(parser, ast);
 }
 
 static AST_T* parserParseBool(parser_T* parser)
@@ -266,7 +263,7 @@ static AST_T* parserParseBool(parser_T* parser)
     
     parserConsume(parser, TOKEN_BOOL, "Expect boolean constant.");
 
-    return ast;
+    return parserParseOp(parser, ast);
 }
 
 static AST_T* parserParseNil(parser_T* parser)
@@ -274,7 +271,7 @@ static AST_T* parserParseNil(parser_T* parser)
     AST_T* ast = initAST(EXPR, NIL);
     parserConsume(parser, TOKEN_NIL, "Expect nil.");
     
-    return ast;
+    return parserParseOp(parser, ast);
 }
 
 static AST_T* parserParseClosure(parser_T* parser)
@@ -283,7 +280,7 @@ static AST_T* parserParseClosure(parser_T* parser)
     AST_T* ast = parserParseExpr(parser);
     parserConsume(parser, TOKEN_RIGHT_BRACE, "Expect ')'.");
 
-    return ast;
+    return parserParseOp(parser, ast);
 }
 
 static AST_T* parserParseNegate(parser_T* parser)
@@ -295,7 +292,7 @@ static AST_T* parserParseNegate(parser_T* parser)
     return ast;
 }
 
-static AST_T* parserParseOp(parser_T* parser)
+static AST_T* parserParseOp(parser_T* parser, AST_T* left)
 {
     AST_T* ast = initAST(EXPR, 0);
     int opType = 0;
@@ -314,42 +311,88 @@ static AST_T* parserParseOp(parser_T* parser)
         case TOKEN_SLASH:
             opType = DIV;
             break;
+        case TOKEN_EQUALS:
+        case TOKEN_PLUS_EQUALS:
+        case TOKEN_MINUS_EQUALS:
+        case TOKEN_STAR_EQUALS:
+        case TOKEN_SLASH_EQUALS:
+            return parserParseAssignment(parser, left);
+            break;
         default:
-            LOG_ERROR("Unexpected token '%s' in line %d.\n", parser->token->value, parser->token->line);
-            exit(1);
+            return left;
     }
 
     parserAdvance(parser);
     
     ast->expr->type = opType;
-    ast->expr->op.left = parser->previousAST;
+    ast->expr->op.left = left;
     ast->expr->op.right = parserParseExpr(parser);
 
     return ast;
 }
 
-static AST_T* parserParseAssignment(parser_T* parser)
+static AST_T* parserParseAssignment(parser_T* parser, AST_T* left)
 {
     AST_T* ast = initAST(EXPR, ASSIGN);
 
-    ast->expr->op.left = initAST(EXPR, CALL);
-    ast->expr->op.left->expr->name = parser->previous->value;
-
-    if(parser->previous->type != TOKEN_ID)
+    if(left->expr->type != CALL || left->expr->isFunctionCall != false)
     {
-        LOG_ERROR("Unexpected token '%s' in line %d.\nCan only assign a value to a variable.\n", parser->previous->value, parser->previous->line);
+        const char* msg = "can only assign a value to a variable.";
+        SYNTAX_ERROR(msg);
         exit(1);
     }
-
-    ast->expr->op.right = parserParseExpr(parser);
+        ast->expr->op.left = left;
+    switch(parser->token->type)
+    {
+        case TOKEN_EQUALS:
+            parserAdvance(parser);
+            ast->expr->op.right = parserParseExpr(parser);
+            break;
+        case TOKEN_PLUS_EQUALS: {
+            AST_T* op = initAST(EXPR, ADD);
+            op->expr->op.left = left;
+            parserAdvance(parser);
+            op->expr->op.right = parserParseExpr(parser);
+            break;
+        }
+        case TOKEN_MINUS_EQUALS: {
+            AST_T* op = initAST(EXPR, SUB);
+            op->expr->op.left = left;
+            parserAdvance(parser);
+            op->expr->op.right = parserParseExpr(parser);
+            break;
+        }
+        case TOKEN_STAR_EQUALS: {
+            AST_T* op = initAST(EXPR, MULT);
+            op->expr->op.left = left;
+            parserAdvance(parser);
+            op->expr->op.right = parserParseExpr(parser);
+            break;
+        }
+        case TOKEN_SLASH_EQUALS: {
+            AST_T* op = initAST(EXPR, DIV);
+            op->expr->op.left = left;
+            parserAdvance(parser);
+            op->expr->op.right = parserParseExpr(parser);
+            break;
+        }
+        default: {
+            const char* template = "unexpected token '%s'";
+            char* msg = calloc(strlen(template) + strlen(parser->token->value) + 1, sizeof(char));
+            sprintf(msg, template, parser->token->value);
+            SYNTAX_ERROR(msg);
+            exit(1);
+        }
+    }
 
     return ast;
 }
 
-static AST_T* parserParseCall(parser_T* parser)
+static AST_T* parserParseId(parser_T* parser)
 {
     AST_T* ast = initAST(EXPR, CALL);
     ast->expr->name = parser->token->value;
+    ast->expr->isFunctionCall = false;
 
     parserConsume(parser, TOKEN_ID, "Expect name before call expression.");
     if(parser->token->type == TOKEN_LEFT_PAREN)
@@ -369,7 +412,7 @@ static AST_T* parserParseCall(parser_T* parser)
         parserConsume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after function call arguments");
     }
 
-    return ast;
+    return parserParseOp(parser, ast);
 }
 
 static AST_T* parserParseCompound(parser_T* parser)

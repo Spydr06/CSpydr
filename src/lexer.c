@@ -7,7 +7,7 @@
 #define MAX(a, b) a > b ? a : b
 #define MIN(a, b) a < b ? a : b
 
-lexer_T* initLexer(char* src)
+lexer_T* initLexer(char* src, char* path)
 {
     lexer_T* lexer = calloc(1, sizeof(struct LEXER_STRUCT));
     lexer->src = src;
@@ -15,6 +15,9 @@ lexer_T* initLexer(char* src)
     lexer->i = 0;
     lexer->line = 1;
     lexer->c = src[lexer->i];
+    lexer->srcPath = path;
+    lexer->iInLine = 0;
+    lexer->currentLine = "";
 
     return lexer;
 }
@@ -24,6 +27,7 @@ void lexerAdvance(lexer_T *lexer)
     if(lexer->i < lexer->srcSize && lexer->c != '\0')
     {
         lexer->i++;
+        lexer->iInLine++;
         lexer->c = lexer->src[lexer->i];
     }
 }
@@ -58,6 +62,23 @@ static void lexerSkipWhitespace(lexer_T* lexer)
         if(lexer->c == '\n')
         {
             lexer->line++;
+            lexer->iInLine = 0;
+
+            char* line = calloc(1, sizeof(char));
+            for(int i = 1; ; i++)
+            {
+                char currentChar = lexer->src[lexer->i + i];
+                if(currentChar == '\n' || currentChar == '\0') {
+                    break;
+                }
+
+                int len = strlen(line);
+                line = realloc(line, (len + 2) * sizeof(char));
+
+                line[len] = currentChar;
+                line[len + 1] = '\0';
+            }
+            lexer->currentLine = line;
         }
         lexerAdvance(lexer);
     }

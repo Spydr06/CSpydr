@@ -44,6 +44,7 @@ AST_T* initAST(int type, int subtype)
 {
     AST_T* ast = calloc(1, sizeof(struct AST_STRUCT));
     ast->type = type;
+    ast->validated = false;
 
     switch(ast->type)
     {
