@@ -6,7 +6,7 @@
 #include <string.h>
 
 #define LINE_NUMBER_SPACES 4
-#define SYNTAX_ERROR(msg) LOG_ERROR(COLOR_BOLD_WHITE "%s:%d:%d =>" COLOR_BOLD_RED " [Error]" RESET " %s\n %*d | %s\n %*s | " COLOR_BOLD_RED "%*s%s\n",  \
+#define SYNTAX_ERROR(msg) LOG_ERROR(COLOR_BOLD_WHITE "%s:%d:%d " RESET "=>" COLOR_BOLD_RED " [Error]" RESET " %s\n %*d | %s\n %*s | " COLOR_BOLD_RED "%*s%s\n",  \
                                 parser->lexer->srcPath, parser->lexer->line, parser->lexer->iInLine, msg, LINE_NUMBER_SPACES, parser->lexer->line,      \
                                 parser->lexer->currentLine, LINE_NUMBER_SPACES, "", parser->lexer->iInLine, "^~", "here");
 
@@ -44,7 +44,9 @@ static AST_T* parserParseId(parser_T* parser);
 static AST_T* parserParseExpr(parser_T* parser);
 static AST_T* parserParseAssignment(parser_T* parser, AST_T* left);
 static AST_T* parserParseOp(parser_T* parser, AST_T* left);
+static AST_T* parserParseCondition(parser_T* parser, AST_T* left);
 static AST_T* parserParseNegate(parser_T* parser);
+static AST_T* parserParseNot(parser_T* parser);
 static AST_T* parserParseClosure(parser_T* parser);
 
 static AST_T* parserParseNil(parser_T* parser);
@@ -220,6 +222,10 @@ static AST_T* parserParseExpr(parser_T* parser)
             return parserParseBool(parser);
         case TOKEN_NIL:
             return parserParseNil(parser);
+        case TOKEN_MINUS:
+            return parserParseNegate(parser);
+        case TOKEN_BANG:
+            return parserParseNot(parser);
         default: {
             const char* template = "unexpected token '%s'";
             char* msg = calloc(strlen(template) + strlen(parser->token->value) + 1, sizeof(char));
@@ -278,7 +284,7 @@ static AST_T* parserParseClosure(parser_T* parser)
 {
     parserAdvance(parser);
     AST_T* ast = parserParseExpr(parser);
-    parserConsume(parser, TOKEN_RIGHT_BRACE, "Expect ')'.");
+    parserConsume(parser, TOKEN_RIGHT_PAREN, "Expect ')'.");
 
     return parserParseOp(parser, ast);
 }
@@ -286,6 +292,15 @@ static AST_T* parserParseClosure(parser_T* parser)
 static AST_T* parserParseNegate(parser_T* parser)
 {
     AST_T* ast = initAST(EXPR, NEGATE);
+    parserAdvance(parser);
+    ast->expr->op.right = parserParseExpr(parser);
+
+    return ast;
+}
+
+static AST_T* parserParseNot(parser_T* parser)
+{
+    AST_T* ast = initAST(EXPR, NOT);
     parserAdvance(parser);
     ast->expr->op.right = parserParseExpr(parser);
 
@@ -302,22 +317,34 @@ static AST_T* parserParseOp(parser_T* parser, AST_T* left)
         case TOKEN_PLUS:
             opType = ADD;
             break;
+
         case TOKEN_MINUS:
             opType = SUB;
             break;
+
         case TOKEN_STAR:
             opType = MULT;
             break;
+
         case TOKEN_SLASH:
             opType = DIV;
             break;
+
         case TOKEN_EQUALS:
         case TOKEN_PLUS_EQUALS:
         case TOKEN_MINUS_EQUALS:
         case TOKEN_STAR_EQUALS:
         case TOKEN_SLASH_EQUALS:
             return parserParseAssignment(parser, left);
-            break;
+
+        case TOKEN_EQUALS_EQUALS:
+        case TOKEN_GREATER:
+        case TOKEN_GREATER_EQUALS:
+        case TOKEN_LESS:
+        case TOKEN_LESS_EQUALS:
+        case TOKEN_BANG_EQUALS:
+            return parserParseCondition(parser, left);
+
         default:
             return left;
     }
@@ -325,6 +352,46 @@ static AST_T* parserParseOp(parser_T* parser, AST_T* left)
     parserAdvance(parser);
     
     ast->expr->type = opType;
+    ast->expr->op.left = left;
+    ast->expr->op.right = parserParseExpr(parser);
+
+    return ast;
+}
+
+static AST_T* parserParseCondition(parser_T* parser, AST_T* left)
+{
+    AST_T* ast = initAST(EXPR, 0);
+    int type = 0;
+
+    switch(parser->token->type)
+    {
+        case TOKEN_EQUALS_EQUALS:
+            type = EQUALS;
+            break;
+        case TOKEN_GREATER:
+            type = GREATER;
+            break;
+        case TOKEN_GREATER_EQUALS:
+            type = GREATER_EQUALS;
+            break;
+        case TOKEN_LESS:
+            type = LESS;
+            break;
+        case TOKEN_LESS_EQUALS:
+            type = LESS;
+
+        default: {
+            const char* template = "unexpected token '%s'";
+            char* msg = calloc(strlen(template) + strlen(parser->token->value) + 1, sizeof(char));
+            sprintf(msg, template, parser->token->value);
+            SYNTAX_ERROR(msg);
+            exit(1);
+        }
+    }
+
+    parserAdvance(parser);
+
+    ast->expr->type = type;
     ast->expr->op.left = left;
     ast->expr->op.right = parserParseExpr(parser);
 
