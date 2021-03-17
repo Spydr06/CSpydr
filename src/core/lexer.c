@@ -1,6 +1,6 @@
 #include "lexer.h"
 #include "token.h"
-#include "log.h"
+#include "../log.h"
 #include <string.h>
 #include <ctype.h>
 

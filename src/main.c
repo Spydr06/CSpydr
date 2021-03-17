@@ -2,8 +2,9 @@
 #include <string.h>
 #include "input.h"
 #include "log.h"
-#include "parser.h"
-#include "ASTvalidator.h"
+#include "core/parser.h"
+#include "core/ASTvalidator.h"
+#include "bytecode/compiler.h"
 
 #define VERSION "v0.0.1"
 
@@ -31,9 +32,17 @@ void compileFile(char* path)
 
     lexer_T* lexer = initLexer(src, path);
     parser_T* parser = initParser(lexer);
-    validator_T* validator = initASTValidator();
+    //validator_T* validator = initASTValidator();
     AST_T* root = parserParse(parser);
-    validateAST(validator, root);
+    //validateAST(validator, root);
+
+    BCCompiler_T* compiler = initBCCompiler();
+    compileBC(compiler, root);
+
+    for(int i = 0; i < compiler->instructions->size; i++)
+    {
+        printf("%s\n", BCInstructionToString(compiler->instructions->items[i]));
+    }
 
     //token_T* token;
     /*while((token = lexerNextToken(lexer))->type != TOKEN_EOF)

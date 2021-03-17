@@ -6,5 +6,6 @@ build: $(source_files)
 	gcc -g -Wall -lm -ldl -fPIC -rdynamic $(source_files) -o bin/CSpydr.o
 
 .PHONY: clean
-clear:
-	rm -rf bin/
+clean:
+	rm -rf bin/ && \
+	rm -rf *.out

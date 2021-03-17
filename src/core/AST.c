@@ -1,6 +1,6 @@
 #include "AST.h"
 #include <stdarg.h>
-#include "log.h"
+#include "../log.h"
 
 static ASTexpr_T* initExprAST(int type)
 {

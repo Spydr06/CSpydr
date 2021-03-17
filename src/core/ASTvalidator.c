@@ -1,6 +1,6 @@
 #include "ASTvalidator.h"
 #include "list.h"
-#include "log.h"
+#include "../log.h"
 #include <string.h>
 
 #define ASSERT(val, msg, ...) if(!val) {LOG_ERROR(msg, __VA_ARGS__); exit(1);}
