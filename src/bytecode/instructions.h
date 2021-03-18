@@ -5,13 +5,15 @@
 
 typedef enum BYTECODE_INSTRUCTION_TYPE_ENUM
 {
-    OP_DEF_FN,
+    OP_FN,
+    OP_ARG,
 
     OP_LOCAL,
     OP_GLOBAL,
 
     OP_CALL,
     OP_RET,
+    OP_EXIT,
 
     OP_JMP_IF,
     OP_JMP,
@@ -34,7 +36,8 @@ typedef struct BYTECODE_INSTRUCTION_STRUCT
     list_T* args;
 } BCInstruction_T;
 
-BCInstruction_T* initInstruction(BCInstructionType_T type, unsigned int argc, ...);
+BCInstruction_T* initInstruction1(BCInstructionType_T type, char* a);
+BCInstruction_T* initInstruction2(BCInstructionType_T type, char* a, char* b);
 char* BCInstructionToString(BCInstruction_T* instruction);
 
 #endif

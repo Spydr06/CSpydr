@@ -5,7 +5,7 @@
 
 #define OUTPUT_STREAM stdout
 
-#define RESET   "\033[0m"
+#define COLOR_RESET   "\033[0m"
 #define COLOR_BLACK   "\033[30m"     
 #define COLOR_RED     "\033[31m"     
 #define COLOR_GREEN   "\033[32m"     
@@ -24,9 +24,9 @@
 #define COLOR_BOLD_WHITE   "\033[1m\033[37m"     
 
 
-#define LOG_INFO(format, ...)  fprintf(OUTPUT_STREAM, COLOR_WHITE format RESET, __VA_ARGS__)
-#define LOG_WARN(format, ...)  fprintf(OUTPUT_STREAM, COLOR_YELLOW format RESET, __VA_ARGS__)
-#define LOG_ERROR(format, ...) fprintf(OUTPUT_STREAM, COLOR_RED format RESET, __VA_ARGS__)
-#define LOG_OK(format, ...)    fprintf(OUTPUT_STREAM, COLOR_GREEN format RESET, __VA_ARGS__)
+#define LOG_INFO(format, ...)  fprintf(OUTPUT_STREAM, COLOR_WHITE format COLOR_RESET, __VA_ARGS__)
+#define LOG_WARN(format, ...)  fprintf(OUTPUT_STREAM, COLOR_YELLOW format COLOR_RESET, __VA_ARGS__)
+#define LOG_ERROR(format, ...) fprintf(OUTPUT_STREAM, COLOR_RED format COLOR_RESET, __VA_ARGS__)
+#define LOG_OK(format, ...)    fprintf(OUTPUT_STREAM, COLOR_GREEN format COLOR_RESET, __VA_ARGS__)
 
 #endif

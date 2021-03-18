@@ -23,41 +23,35 @@ typedef struct AST_DEF_STRUCT
         VAR, FN
     } type;
 
-    union
-    {
-        char* dataType;
-        char* name;
-        bool isFunction;
-        list_T* args;
-        AST_T* value;
-    };
+    int isFunction;
+    char* name;
+    char* dataType;
+    list_T* args;
+    AST_T* value;
 } ASTdef_T;
 
 typedef struct AST_EXPR_STRUCT
 {
     enum 
     { 
-        CONSTANT, STRING, NIL, BOOL, CHAR, CALL, ASSIGN,
+        INT, FLOAT, STRING, NIL, BOOL, CHAR, CALL, ASSIGN,
         ADD, SUB, MULT, DIV, NEGATE,
         EQUALS, GREATER, LESS, GREATER_EQUALS, LESS_EQUALS, NOT, NOT_EQUALS
     } type;
 
-    union 
+    list_T* args;
+    char* name;
+    bool isFunctionCall;
+    int intValue;
+    bool boolValue;
+    char charValue;
+    float floatValue;
+    char* strValue;
+    struct 
     {
-        list_T* args;
-        char* name;
-        bool isFunctionCall;
-        int intValue;
-        bool boolValue;
-        char charValue;
-        float floatValue;
-        char* strValue;
-        struct 
-        {
-            AST_T* left;
-            AST_T* right;
-        } op;
-    };
+        AST_T* left;
+        AST_T* right;
+    } op;
 } ASTexpr_T;
 
 typedef struct AST_STMT_STRUCT
@@ -87,8 +81,6 @@ struct AST_STRUCT
 
     union
     {
-        bool validated;
-
         ASTexpr_T* expr;
         ASTstmt_T* stmt;
         ASTcompound_T* compound;

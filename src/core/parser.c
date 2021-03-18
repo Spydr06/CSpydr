@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "AST.h"
 #include "list.h"
 #include "token.h"
 #include "../log.h"
@@ -6,7 +7,7 @@
 #include <string.h>
 
 #define LINE_NUMBER_SPACES 4
-#define SYNTAX_ERROR(msg) LOG_ERROR(COLOR_BOLD_WHITE "%s:%d:%d " RESET "=>" COLOR_BOLD_RED " [Error]" RESET " %s\n %*d | %s\n %*s | " COLOR_BOLD_RED "%*s%s\n",  \
+#define SYNTAX_ERROR(msg) LOG_ERROR(COLOR_BOLD_WHITE "%s:%d:%d " COLOR_RESET "=>" COLOR_BOLD_RED " [Error]" COLOR_RESET " %s\n %*d | %s\n %*s | " COLOR_BOLD_RED "%*s%s\n",  \
                                 parser->lexer->srcPath, parser->lexer->line, parser->lexer->iInLine, msg, LINE_NUMBER_SPACES, parser->lexer->line,      \
                                 parser->lexer->currentLine, LINE_NUMBER_SPACES, "", parser->lexer->iInLine, "^~", "here");
 
@@ -65,7 +66,7 @@ static AST_T* parserParseIf(parser_T* parser);
 AST_T* parserParse(parser_T* parser)
 {
     AST_T* root = initAST(ROOT, 0);
-    root->root->contents = initList(sizeof(struct AST_STRUCT*));
+    root->root->contents = initList(sizeof(struct AST_STRUCT) + sizeof(struct AST_DEF_STRUCT));
 
     while(parser->token->type != TOKEN_EOF)
     {
@@ -77,7 +78,7 @@ AST_T* parserParse(parser_T* parser)
                 break;
             case TOKEN_LET:
                 parserAdvance(parser);
-                parserParseVarDef(parser);
+                listPush(root->root->contents, parserParseVarDef(parser));
                 parserConsume(parser, TOKEN_SEMICOLON, "expect ';' after variable definition.");
                 break;
             default: {
@@ -238,7 +239,7 @@ static AST_T* parserParseExpr(parser_T* parser)
 
 static AST_T* parserParseNumber(parser_T* parser)
 {
-    AST_T* ast = initAST(EXPR, CONSTANT);
+    AST_T* ast = initAST(EXPR, INT);
     ast->expr->intValue = atoi(parser->token->value);
     parserConsume(parser, TOKEN_NUMBER, "Expect number constant.");
 
@@ -256,7 +257,7 @@ static AST_T* parserParseString(parser_T* parser)
 
 static AST_T* parserParseBool(parser_T* parser)
 {
-    AST_T* ast = initAST(EXPR, CONSTANT);
+    AST_T* ast = initAST(EXPR, BOOL);
 
     if(strcmp(parser->token->value, "true") == 0)
     {
@@ -485,7 +486,7 @@ static AST_T* parserParseId(parser_T* parser)
 static AST_T* parserParseCompound(parser_T* parser)
 {
     AST_T* ast = initAST(COMPOUND, 0);
-    ast->compound->contents = initList(sizeof(struct AST_STRUCT*));
+    ast->compound->contents = initList(sizeof(struct AST_STRUCT));
 
     parserConsume(parser, TOKEN_LEFT_BRACE, "Expect '{'.");
 
@@ -528,10 +529,18 @@ static AST_T* parserParseVarDef(parser_T* parser)
     var->def->name = parser->token->value;
     parserConsume(parser, TOKEN_ID, "Expect variable name.");
 
-    var->def->isFunction = false;
+    int i = 0;
+    var->def->isFunction = i;
     parserConsume(parser, TOKEN_COLON, "Expect ':' after variable name.");
     var->def->dataType = parser->token->value;
     parserConsume(parser, TOKEN_IDENTIFIER, "Expect data type after ':'.");
+
+    if(parser->token->type == TOKEN_LESS)
+    {
+        parserAdvance(parser);
+        parserConsume(parser, TOKEN_IDENTIFIER, "Expect identifier as subtype.");
+        parserConsume(parser, TOKEN_GREATER, "Expect '>' after subtype.");
+    }
 
     if(parser->token->type == TOKEN_EQUALS)
     {
@@ -545,18 +554,23 @@ static AST_T* parserParseVarDef(parser_T* parser)
 static AST_T* parserParseFnDef(parser_T* parser)
 {
     AST_T* fn = initAST(DEF, FN);
-    fn->def->name = parser->token->value;
+    fn->def->name = calloc(strlen(parser->token->value) + 1, sizeof(char));
+    strcpy(fn->def->name, parser->token->value);
     parserConsume(parser, TOKEN_ID, "Expect function name.");
 
-    fn->def->isFunction = true;
-    fn->def->args = initList(sizeof(struct AST_STRUCT));
+    int i = 1;
+    fn->def->isFunction = i;
+    fn->def->args = initList(sizeof(struct AST_STRUCT*));
 
     parserConsume(parser, TOKEN_LEFT_PAREN, "Expect '(' after function name.");
     
     while(parser->token->type != TOKEN_RIGHT_PAREN)
     {
-        // TODO: parse arg list
-        parserAdvance(parser);
+        listPush(fn->def->args, parserParseVarDef(parser));
+        if(parser->token->type != TOKEN_RIGHT_PAREN)
+        {
+            parserConsume(parser, TOKEN_COMMA, "Expect ',' between function arguments.");
+        }
     }
 
     parserConsume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after function arguments.");

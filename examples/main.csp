@@ -1,9 +1,12 @@
-let test: bool = true;
+let test: i32 = 0;
 
 fn main(argc: i32, argv: vec<str>): i32 = {
-    let msg: str = "Hello World!";
-    
-    print(msg);
+    let local: str = "Hi!";
+    let f: bool = true;
+
+    f = 5;
+
+    print("Hello World!");
 
     <- 0
 }

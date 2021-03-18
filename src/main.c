@@ -1,10 +1,13 @@
+#include <llvm-c/Types.h>
 #include <stdio.h>
 #include <string.h>
+//#include "bytecode/instructions.h"
 #include "input.h"
 #include "log.h"
 #include "core/parser.h"
-#include "core/ASTvalidator.h"
 #include "bytecode/compiler.h"
+
+#include "llvm-c/Core.h"
 
 #define VERSION "v0.0.1"
 
@@ -27,7 +30,7 @@ int main(int argc, char* argv[])
 
 void compileFile(char* path)
 {
-    LOG_OK(COLOR_BOLD_GREEN "Compiling" RESET " \"%s\"\n", path);
+    LOG_OK(COLOR_BOLD_GREEN "Compiling" COLOR_RESET " \"%s\"\n", path);
     char* src = readFile(path);
 
     lexer_T* lexer = initLexer(src, path);
@@ -41,8 +44,10 @@ void compileFile(char* path)
 
     for(int i = 0; i < compiler->instructions->size; i++)
     {
-        printf("%s\n", BCInstructionToString(compiler->instructions->items[i]));
+        printf("%s\n", BCInstructionToString((BCInstruction_T*) compiler->instructions->items[i]));
     }
+
+    LLVMModuleRef mod = LLVMModuleCreateWithName("my_module");
 
     //token_T* token;
     /*while((token = lexerNextToken(lexer))->type != TOKEN_EOF)

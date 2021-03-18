@@ -283,4 +283,3 @@ token_T* lexerNextToken(lexer_T* lexer)
     }
     return initToken(0, lexer->line, TOKEN_EOF);
 }
-

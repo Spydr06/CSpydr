@@ -4,20 +4,27 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-BCInstruction_T* initInstruction(BCInstructionType_T type, unsigned int argc, ...)
+#include "../core/list.h"
+
+BCInstruction_T* initInstruction1(BCInstructionType_T type, char* a)
 {
     BCInstruction_T* instruction = calloc(1, sizeof(struct BYTECODE_INSTRUCTION_STRUCT));
     instruction->type = type;
-    instruction->args = initList(sizeof(char*)); //FIXME
+    instruction->args = initList(sizeof(char*));
 
-    va_list argv;
-    va_start(argv, argc);
+    listPush(instruction->args, a);
 
-    for(int i = 0; i < argc; i++)
-    {
-        listPush(instruction->args, va_arg(argv, char*));
-    }
-    va_end(argv);
+    return instruction;
+}
+
+BCInstruction_T* initInstruction2(BCInstructionType_T type, char* a, char* b)
+{
+    BCInstruction_T* instruction = calloc(1, sizeof(struct BYTECODE_INSTRUCTION_STRUCT));
+    instruction->type = type;
+    instruction->args = initList(sizeof(char));
+
+    listPush(instruction->args, a);
+    listPush(instruction->args, b);
 
     return instruction;
 }
@@ -26,11 +33,13 @@ static const char* BCInstructionTypeToString(BCInstructionType_T instruction)
 {
     switch(instruction)
     {
-        case OP_DEF_FN: return "OP_DEF_FN";
+        case OP_FN: return "OP_FN";
+        case OP_ARG: return "OP_ARG";
         case OP_LOCAL: return "OP_LOCAL";
         case OP_GLOBAL: return "OP_GLOBAL";
         case OP_CALL: return "OP_CALL";
         case OP_RET: return "OP_RET";
+        case OP_EXIT: return "OP_EXIT";
         case OP_JMP_IF: return "OP_JMP_IF";
         case OP_JMP: return "OP_JMP";
         case OP_CONST: return "OP_CONST";
@@ -49,17 +58,17 @@ static const char* BCInstructionTypeToString(BCInstructionType_T instruction)
 
 char* BCInstructionToString(BCInstruction_T* instruction)
 {
-    const char* template = " BC | %s: %s";
+    const char* template = " BC | %s\t %s";
     const char* typeStr = BCInstructionTypeToString(instruction->type);
 
     char* argStr = calloc(1, sizeof(char));
     for(int i = 0; i < instruction->args->size; i++)
     {
         char* next = instruction->args->items[i];
-        printf("%s\n", next);
         char* old = argStr;
-        argStr = realloc(argStr, (strlen(argStr) + strlen(next) + 128) * sizeof(char));
-        sprintf(argStr, "%s, %s", old, next);
+        const char* template = "%s,\t%s";
+        argStr = realloc(argStr, (strlen(argStr) + strlen(next) + strlen(template) + 1) * sizeof(char));
+        sprintf(argStr, template, old, next);
     }
     if(strlen(argStr) > 2) 
     {

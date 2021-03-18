@@ -22,6 +22,7 @@ static ASTdef_T* initDefAST(int type)
 {
     ASTdef_T* ast = calloc(1, sizeof(struct AST_DEF_STRUCT));
     ast->type = type;
+    ast->isFunction = 0;
 
     return ast;
 }
@@ -29,14 +30,14 @@ static ASTdef_T* initDefAST(int type)
 static ASTcompound_T* initCompoundASt(int type)
 {
     ASTcompound_T* ast = calloc(1, sizeof(struct AST_COMPOUND_STRUCT));
-    ast->contents = initList(sizeof(struct AST_STRUCT*));
+    ast->contents = initList(sizeof(struct AST_STRUCT));
     return ast;
 }
 
 static ASTroot_T* initRootAST(int type)
 {
     ASTroot_T* ast = calloc(1, sizeof(struct AST_COMPOUND_STRUCT));
-    ast->contents = initList(sizeof(struct AST_STRUCT*));
+    ast->contents = initList(sizeof(struct AST_STRUCT));
     return ast;
 }
 
@@ -44,7 +45,12 @@ AST_T* initAST(int type, int subtype)
 {
     AST_T* ast = calloc(1, sizeof(struct AST_STRUCT));
     ast->type = type;
-    ast->validated = false;
+
+    ast->root = NULL;
+    ast->expr = NULL;
+    ast->stmt = NULL;
+    ast->compound = NULL;
+    ast->def = NULL;
 
     switch(ast->type)
     {
