@@ -10,7 +10,10 @@ CC = gcc
 LD = gcc
 
 .PHONY: build
-build: $(source_files)
+build: compile link clean
+
+.PHONY: compile
+compile: $(source_files)
 	mkdir -p obj/ && \
 	$(CC) $(CFLAGS) -Wall -fPIC $(source_files) -c $<
 
@@ -19,9 +22,14 @@ link: $(output_files)
 	mkdir -p bin/ && \
 	$(LD) $< $(LDFLAGS) $(source_files) -o $(executable)
 
-.PHONY: exec
-exec: build link
-
 .PHONY: clean
 clean:
 	rm -rf *.o
+
+.PHONY: reset
+reset:
+	rm -rf obj/ && \
+	rm -rf *.o && \
+	rm -rf *.out && \
+	rm -rf bin/ && \
+	rm -rf vgcore.*

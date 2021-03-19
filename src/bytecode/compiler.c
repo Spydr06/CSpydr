@@ -122,7 +122,8 @@ static void compileExpression(BCCompiler_T* compiler, AST_T* ast, unsigned int O
         case SUB:
         case MULT:
         case DIV:
-
+            compileOperation(compiler, ast, OPRegister);
+            break;
 
         default:
             LOG_ERROR("Unknown expression type '%d'\n", ast->expr->type);

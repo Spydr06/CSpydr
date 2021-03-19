@@ -1,21 +1,20 @@
 #include <llvm-c/Types.h>
 #include <stdio.h>
 #include <string.h>
-//#include "bytecode/instructions.h"
 #include "input.h"
 #include "log.h"
 #include "core/parser.h"
 #include "bytecode/compiler.h"
 
-#include "llvm-c/Core.h"
+#include "llvm/llvm.h"
 
-#define VERSION "v0.0.1"
+#define CSPYDR_VERSION "v0.0.1"
 
 void compileFile(char* path);
 
 int main(int argc, char* argv[])
 {
-    LOG_WARN("** THE CSPYDR LANGUAGE COMPILER %s **\n", VERSION);
+    LOG_WARN("** THE CSPYDR LANGUAGE COMPILER %s **\n", CSPYDR_VERSION);
 
     if(argc < 2) 
     {
