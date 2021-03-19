@@ -1,3 +1,4 @@
+#include <llvm-c/ExecutionEngine.h>
 #include <llvm-c/Types.h>
 #include <stdio.h>
 #include <string.h>
@@ -5,6 +6,7 @@
 #include "log.h"
 #include "core/parser.h"
 #include "bytecode/compiler.h"
+#include "llvm/compiler.h"
 
 #include "llvm/llvm.h"
 
@@ -38,22 +40,24 @@ void compileFile(char* path)
     AST_T* root = parserParse(parser);
     //validateAST(validator, root);
 
-    BCCompiler_T* compiler = initBCCompiler();
+   /* BCCompiler_T* compiler = initBCCompiler();
     compileBC(compiler, root);
 
     for(int i = 0; i < compiler->instructions->size; i++)
     {
         printf("%s\n", BCInstructionToString((BCInstruction_T*) compiler->instructions->items[i]));
-    }
+    }*/
 
-    LLVMModuleRef mod = LLVMModuleCreateWithName("my_module");
+    compileProgram(root, "test.bc");
+
+    free(root);
+    free(lexer);
+    //free(compiler);
+    free(parser);
 
     //token_T* token;
     /*while((token = lexerNextToken(lexer))->type != TOKEN_EOF)
     {
         LOG_INFO("%s\n", tokenToString(token));
     }*/
-
-    //sh("cc a.c");
-    //sh("rm -rf a.c");
 }

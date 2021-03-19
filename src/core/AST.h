@@ -25,7 +25,7 @@ typedef struct AST_DEF_STRUCT
 
     int isFunction;
     char* name;
-    char* dataType;
+    AST_T* dataType;
     list_T* args;
     AST_T* value;
 } ASTdef_T;
@@ -34,12 +34,13 @@ typedef struct AST_EXPR_STRUCT
 {
     enum 
     { 
-        INT, FLOAT, STRING, NIL, BOOL, CHAR, CALL, ASSIGN,
+        CONSTANT, CALL, ASSIGN, NIL,
         ADD, SUB, MULT, DIV, NEGATE,
         EQUALS, GREATER, LESS, GREATER_EQUALS, LESS_EQUALS, NOT, NOT_EQUALS
     } type;
 
     list_T* args;
+    AST_T* dataType;
     char* name;
     bool isFunctionCall;
     int intValue;
@@ -72,11 +73,24 @@ typedef struct AST_STMT_STRUCT
     };
 } ASTstmt_T;
 
+typedef struct AST_DATATYPE_STRUCT
+{
+    enum
+    {
+        I8, I16, I32, I64,
+        U8, U16, U32, U64,
+        F32, F64,
+        BOOL, CHAR, STR, VOID, VEC
+    } type;
+
+    AST_T* subtype;
+} ASTdataType_T;
+
 struct AST_STRUCT
 {
     enum
     {
-        ROOT, EXPR, STMT, COMPOUND, DEF
+        ROOT, EXPR, STMT, COMPOUND, DEF, DATATYPE
     } type;
 
     union
@@ -86,9 +100,11 @@ struct AST_STRUCT
         ASTcompound_T* compound;
         ASTdef_T* def;
         ASTroot_T* root;
+        ASTdataType_T* dataType;
     };
 };
 
 AST_T* initAST(int type, int subtype);
+char* dataTypeToString(AST_T* ast);
 
 #endif

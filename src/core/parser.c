@@ -239,7 +239,8 @@ static AST_T* parserParseExpr(parser_T* parser)
 
 static AST_T* parserParseNumber(parser_T* parser)
 {
-    AST_T* ast = initAST(EXPR, INT);
+    AST_T* ast = initAST(EXPR, CONSTANT);
+    ast->expr->dataType = initAST(DATATYPE, I32);
     ast->expr->intValue = atoi(parser->token->value);
     parserConsume(parser, TOKEN_NUMBER, "Expect number constant.");
 
@@ -248,7 +249,8 @@ static AST_T* parserParseNumber(parser_T* parser)
 
 static AST_T* parserParseString(parser_T* parser)
 {
-    AST_T* ast = initAST(EXPR, STRING);
+    AST_T* ast = initAST(EXPR, CONSTANT);
+    ast->expr->dataType = initAST(DATATYPE, STR);
     ast->expr->strValue = parser->token->value;
     parserConsume(parser, TOKEN_STR, "Expect string constant.");
 
@@ -257,7 +259,8 @@ static AST_T* parserParseString(parser_T* parser)
 
 static AST_T* parserParseBool(parser_T* parser)
 {
-    AST_T* ast = initAST(EXPR, BOOL);
+    AST_T* ast = initAST(EXPR, CONSTANT);
+    ast->expr->dataType = initAST(DATATYPE, BOOL);
 
     if(strcmp(parser->token->value, "true") == 0)
     {
@@ -523,6 +526,66 @@ static AST_T* parserParseCompound(parser_T* parser)
     return ast;
 }
 
+static AST_T* parserParseDataType(parser_T* parser)
+{
+    AST_T* ast = initAST(DATATYPE, 0);
+    int type = -1;
+
+    char* typeStr = parser->token->value;
+    if(strcmp(typeStr, "i8") == 0) {
+        type = I8;
+    }
+    else if(strcmp(typeStr, "i16") == 0) {
+        type = I16;
+    }
+    else if(strcmp(typeStr, "i32") == 0) {
+        type = I32;
+    }
+    else if(strcmp(typeStr, "i64") == 0) {
+        type = I64;
+    }
+
+    else if(strcmp(typeStr, "u8") == 0) {
+        type = U8;
+    }
+    else if(strcmp(typeStr, "u16") == 0) {
+        type = U16;
+    }
+    else if(strcmp(typeStr, "u32") == 0) {
+        type = U32;
+    }
+    else if(strcmp(typeStr, "u64") == 0) {
+        type = U64;
+    }
+
+    else if(strcmp(typeStr, "bool") == 0) {
+        type = BOOL;
+    }
+    else if(strcmp(typeStr, "str") == 0) {
+        type = STR;
+    }
+    else if(strcmp(typeStr, "char") == 0) {
+        type = CHAR;
+    }
+    else if(strcmp(typeStr, "vec") == 0) {
+        ast->dataType->type = VEC;
+
+        parserAdvance(parser);
+        parserConsume(parser, TOKEN_LESS, "expect '<' after 'vec' data type");
+        ast->dataType->subtype = parserParseDataType(parser);
+        parserConsume(parser, TOKEN_GREATER, "expect '>' after 'vec' subtype");
+        return ast;
+    }
+    else
+    {
+        SYNTAX_ERROR("expect data type");
+        exit(1);
+    }
+    parserAdvance(parser);
+    ast->dataType->type = type;
+    return ast;
+}
+
 static AST_T* parserParseVarDef(parser_T* parser)
 {
     AST_T* var = initAST(DEF, VAR);
@@ -532,15 +595,7 @@ static AST_T* parserParseVarDef(parser_T* parser)
     int i = 0;
     var->def->isFunction = i;
     parserConsume(parser, TOKEN_COLON, "Expect ':' after variable name.");
-    var->def->dataType = parser->token->value;
-    parserConsume(parser, TOKEN_IDENTIFIER, "Expect data type after ':'.");
-
-    if(parser->token->type == TOKEN_LESS)
-    {
-        parserAdvance(parser);
-        parserConsume(parser, TOKEN_IDENTIFIER, "Expect identifier as subtype.");
-        parserConsume(parser, TOKEN_GREATER, "Expect '>' after subtype.");
-    }
+    var->def->dataType = parserParseDataType(parser);
 
     if(parser->token->type == TOKEN_EQUALS)
     {
@@ -578,8 +633,9 @@ static AST_T* parserParseFnDef(parser_T* parser)
     if(parser->token->type == TOKEN_COLON)
     {
         parserAdvance(parser);
-        fn->def->dataType = parser->token->value;
-        parserConsume(parser, TOKEN_IDENTIFIER, "Expect return type after ':'.");
+        fn->def->dataType = parserParseDataType(parser);
+    } else {
+        fn->def->dataType = initAST(DATATYPE, VOID);
     }
 
     parserConsume(parser, TOKEN_EQUALS, "Expect '=' after function definition.");

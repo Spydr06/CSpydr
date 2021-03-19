@@ -103,10 +103,7 @@ static void compileExpression(BCCompiler_T* compiler, AST_T* ast, unsigned int O
 {
     switch(ast->expr->type)
     {
-        case STRING:
-        case INT:
-        case FLOAT:
-        case BOOL:
+        case CONSTANT:
             compileConstants(compiler, ast, OPRegister);
             break;
 
@@ -165,52 +162,56 @@ static char* compileCall(BCCompiler_T* compiler, AST_T* ast, unsigned int OPRegi
 
 static void compileConstants(BCCompiler_T* compiler, AST_T* ast, unsigned int OPRegister)
 {
-    switch(ast->expr->type)
+    char* reg = calloc(12 + 2, sizeof(char));
+    sprintf(reg, "%%%d", OPRegister);
+    
+    
+    switch(ast->expr->dataType->dataType->type)
     {
-        case STRING: {
-            char* reg = calloc(12 + 2, sizeof(char));
-            sprintf(reg, "%%%d", OPRegister);
+        case I8:
+        case I16:
+        case I32:
+        case U8:
+        case U16:
+        case U32:
+        case U64:
+        case I64: {
+            char* value = calloc(17, sizeof(char));
+            sprintf(value, "%di", ast->expr->intValue);
+            submitInstruction(compiler, initInstruction2(OP_SET, reg, value));
+        } break;
+        case F32:
+        case F64: {
+            char* value = calloc(17, sizeof(char));
+            sprintf(value, "%ff", ast->expr->floatValue);
+            submitInstruction(compiler, initInstruction2(OP_SET, reg, value));
+        } break;
+        
+        case STR: {
             char* value = calloc(strlen(ast->expr->strValue) + 3, sizeof(char));
             sprintf(value, "\"%s\"", ast->expr->strValue);
             submitInstruction(compiler, initInstruction2(OP_SET, reg, value));
-            break;
-        }
-        case INT: {
-            char* reg = calloc(12 + 2, sizeof(char));
-            sprintf(reg, "%%%d", OPRegister);
-            char* value = calloc(14, sizeof(char));
-            sprintf(value, "%di", ast->expr->intValue);
-            submitInstruction(compiler, initInstruction2(OP_SET, reg, value));
-            break;
-        }
-        case FLOAT: {
-            char* reg = calloc(12 + 2, sizeof(char));
-            sprintf(reg, "%%%d", OPRegister);
-            char* value = calloc(14, sizeof(char));
-            sprintf(value, "%ff", ast->expr->floatValue);
-            submitInstruction(compiler, initInstruction2(OP_SET, reg, value));
-            break;
-        }
+        } break;
         case BOOL: {
-            char* reg = calloc(12+ 2, sizeof(char));
-            sprintf(reg, "%%%d", OPRegister);
-            if(ast->expr->boolValue)
-            {
-                submitInstruction(compiler, initInstruction2(OP_SET, reg, "true"));
-            } else {
-                submitInstruction(compiler, initInstruction2(OP_SET, reg, "false"));
-            }
-            break;
+            submitInstruction(compiler, initInstruction2(OP_SET, reg, ast->expr->boolValue ? "true" : "false"));
+        } break;
+        case CHAR: {
+            char* value = calloc(4, sizeof(char));
+            sprintf(value, "\'%c\'", ast->expr->charValue);
+            submitInstruction(compiler, initInstruction2(OP_SET, reg, value));
+        } break;
+        case VOID: {
+            submitInstruction(compiler, initInstruction2(OP_SET, reg, "void"));
         }
-        default:
-            LOG_ERROR("Unknown constant expression type '%d'\n", ast->expr->type);
-            exit(1);
+        case VEC: {
+            //TODO: DO THIS
+        } break;
     }
 }
 
 static void compileFunction(BCCompiler_T* compiler, AST_T* ast)
 {
-    submitInstruction(compiler, initInstruction2(OP_FN, ast->def->name, ast->def->dataType));
+    submitInstruction(compiler, initInstruction2(OP_FN, ast->def->name, dataTypeToString(ast->def->dataType)));
              
     for(int i = 0; i < ast->def->args->size; i++)
     {
@@ -232,7 +233,7 @@ static void compileFunction(BCCompiler_T* compiler, AST_T* ast)
 
 static void compileLocalDefinition(BCCompiler_T* compiler, AST_T* ast)
 {
-    submitInstruction(compiler, initInstruction2(OP_LOCAL, ast->def->name, ast->def->dataType));
+    submitInstruction(compiler, initInstruction2(OP_LOCAL, ast->def->name, dataTypeToString(ast->def->dataType)));
     if(ast->def->value != NULL)
     {
         const char* template = "@%s";
@@ -246,7 +247,7 @@ static void compileLocalDefinition(BCCompiler_T* compiler, AST_T* ast)
 
 static void compileGlobalDefinition(BCCompiler_T* compiler, AST_T* ast)
 {
-    submitInstruction(compiler, initInstruction2(OP_GLOBAL, ast->def->name, ast->def->dataType));
+    submitInstruction(compiler, initInstruction2(OP_GLOBAL, ast->def->name, dataTypeToString(ast->def->dataType)));
     if(ast->def->value != NULL)
     {
         const char* template = "@%s";

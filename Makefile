@@ -1,10 +1,10 @@
 source_files := $(shell find src -name *.c)
-output_files := $(shell find . -name *.o)
+output_files := $(shell find -name *.o)
 
 executable = bin/CSpydr.out
 
-LDFLAGS = `llvm-config --cflags --ldflags --libs core executionengine interpreter analysis native bitwriter --system-libs`
-CFLAGS = -g `llvm-config --cflags`
+LLVM_LDFLAGS = `llvm-config --cflags --ldflags --libs core executionengine interpreter analysis native bitwriter --system-libs`
+LLVM_CFLAGS = -g `llvm-config --cflags`
 
 CC = gcc
 LD = gcc
@@ -15,12 +15,12 @@ build: compile link clean
 .PHONY: compile
 compile: $(source_files)
 	mkdir -p obj/ && \
-	$(CC) $(CFLAGS) -Wall -fPIC $(source_files) -c $<
+	$(CC) $(LLVM_CFLAGS) -Wall -fPIC $(source_files) -c $<
 
 .PHONY: link
 link: $(output_files)
 	mkdir -p bin/ && \
-	$(LD) $< $(LDFLAGS) $(source_files) -o $(executable)
+	$(LD) $< $(LLVM_LDFLAGS) $(source_files) -o $(executable)
 
 .PHONY: clean
 clean:
