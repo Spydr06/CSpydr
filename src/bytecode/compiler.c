@@ -130,7 +130,6 @@ static void compileExpression(BCCompiler_T* compiler, AST_T* ast, unsigned int O
 
 static void compileOperation(BCCompiler_T* compiler, AST_T* ast, unsigned int OPRegister)
 {
-
 }
 
 static void compileAssignment(BCCompiler_T* compiler, AST_T* ast, unsigned int OPRegister)
@@ -241,7 +240,7 @@ static void compileLocalDefinition(BCCompiler_T* compiler, AST_T* ast)
         sprintf(value, template, ast->def->name);
 
         compileExpression(compiler, ast->def->value, 0);
-        submitInstruction(compiler, initInstruction2(OP_SET, value, "%a"));
+        submitInstruction(compiler, initInstruction2(OP_SET, value, "%0"));
     }
 }
 
@@ -255,7 +254,7 @@ static void compileGlobalDefinition(BCCompiler_T* compiler, AST_T* ast)
         sprintf(value, template, ast->def->name);
 
         compileExpression(compiler, ast->def->value, 0);
-        submitInstruction(compiler, initInstruction2(OP_SET, value, "%a"));
+        submitInstruction(compiler, initInstruction2(OP_SET, value, "%0"));
     }
 }
 

@@ -133,8 +133,14 @@ static AST_T* parserParseReturn(parser_T* parser)
 {
     AST_T* ast = initAST(STMT, RETURN);
     parserConsume(parser, TOKEN_STMT, "Expect return statement.");
-    ast->stmt->value = parserParseExpr(parser);
 
+    if(parser->token->type == TOKEN_UNDERSCORE)
+    {
+        parserAdvance(parser);
+    } else 
+    {
+        ast->stmt->value = parserParseExpr(parser);
+    }
     return ast;
 }
 
@@ -268,7 +274,11 @@ static AST_T* parserParseBool(parser_T* parser)
     }
     else if(strcmp(parser->token->value, "false") == 0)
     {
-        ast->expr->boolValue = true;
+        ast->expr->boolValue = false;
+    }
+    else {
+        SYNTAX_ERROR("unknown boolean type");
+        exit(1);
     }
     
     parserConsume(parser, TOKEN_BOOL, "Expect boolean constant.");

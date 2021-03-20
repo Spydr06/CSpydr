@@ -15,8 +15,9 @@ typedef enum BYTECODE_INSTRUCTION_TYPE_ENUM
     OP_RET,
     OP_EXIT,
 
-    OP_JMP_IF,
-    OP_JMP,
+    OP_IF,
+    OP_ELSE,
+    OP_IF_END,
 
     OP_CONST,
     OP_CHAR,

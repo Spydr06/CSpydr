@@ -7,6 +7,7 @@
 #include "core/parser.h"
 #include "bytecode/compiler.h"
 #include "llvm/compiler.h"
+#include "core/errors/errorHandler.h"
 
 #include "llvm/llvm.h"
 
@@ -40,19 +41,19 @@ void compileFile(char* path)
     AST_T* root = parserParse(parser);
     //validateAST(validator, root);
 
-   /* BCCompiler_T* compiler = initBCCompiler();
+    BCCompiler_T* compiler = initBCCompiler();
     compileBC(compiler, root);
 
     for(int i = 0; i < compiler->instructions->size; i++)
     {
         printf("%s\n", BCInstructionToString((BCInstruction_T*) compiler->instructions->items[i]));
-    }*/
+    }
 
-    compileProgram(root, "test.bc");
-
+    //compileProgram(root, "test.bc", path);
+exit_routine:   //label called by the error handler to safely exit out of the program
     free(root);
     free(lexer);
-    //free(compiler);
+    free(compiler);
     free(parser);
 
     //token_T* token;

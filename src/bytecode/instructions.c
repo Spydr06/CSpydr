@@ -40,8 +40,9 @@ static const char* BCInstructionTypeToString(BCInstructionType_T instruction)
         case OP_CALL: return "OP_CALL";
         case OP_RET: return "OP_RET";
         case OP_EXIT: return "OP_EXIT";
-        case OP_JMP_IF: return "OP_JMP_IF";
-        case OP_JMP: return "OP_JMP";
+        case OP_IF: return "OP_IF";
+        case OP_ELSE: return "OP_ELSE";
+        case OP_IF_END: return "OP_IF_END";
         case OP_CONST: return "OP_CONST";
         case OP_CHAR: return "OP_CHAR";
         case OP_STR: return "OP_STR";
