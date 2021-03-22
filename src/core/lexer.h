@@ -3,6 +3,7 @@
 
 #include "token.h"
 #include <stdlib.h>
+#include "errors/errorHandler.h"
 
 typedef struct LEXER_STRUCT
 {
@@ -14,6 +15,8 @@ typedef struct LEXER_STRUCT
     unsigned int i;
     unsigned int iInLine;
     unsigned int line;
+
+    errorHandler_T* errorHandler;
 } lexer_T;
 
 lexer_T* initLexer(char* src, char* path);

@@ -2,7 +2,6 @@ let test: bool = false;
 
 fn main(argc: i32, argv: vec<str>): i32 = {
     let msg: str = "Hello World!";
-
     print(msg);
 
     <- 0

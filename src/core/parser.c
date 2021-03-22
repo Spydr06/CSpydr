@@ -1,5 +1,6 @@
 #include "parser.h"
 #include "AST.h"
+#include "errors/errorHandler.h"
 #include "list.h"
 #include "token.h"
 #include "../log.h"
@@ -7,9 +8,7 @@
 #include <string.h>
 
 #define LINE_NUMBER_SPACES 4
-#define SYNTAX_ERROR(msg) LOG_ERROR(COLOR_BOLD_WHITE "%s:%d:%d " COLOR_RESET "=>" COLOR_BOLD_RED " [Error]" COLOR_RESET " %s\n %*d | %s\n %*s | " COLOR_BOLD_RED "%*s%s\n",  \
-                                parser->lexer->srcPath, parser->lexer->line, parser->lexer->iInLine, msg, LINE_NUMBER_SPACES, parser->lexer->line,      \
-                                parser->lexer->currentLine, LINE_NUMBER_SPACES, "", parser->lexer->iInLine, "^~", "here");
+#define SYNTAX_ERROR(msg) throwSyntaxError(parser->lexer->errorHandler, msg, parser->lexer->srcPath, parser->lexer->line, parser->lexer->iInLine)
 
 parser_T* initParser(lexer_T* lexer)
 {

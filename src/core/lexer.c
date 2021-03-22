@@ -1,4 +1,5 @@
 #include "lexer.h"
+#include "errors/errorHandler.h"
 #include "token.h"
 #include "../log.h"
 #include <string.h>
@@ -18,6 +19,8 @@ lexer_T* initLexer(char* src, char* path)
     lexer->srcPath = path;
     lexer->iInLine = 0;
     lexer->currentLine = "";
+
+    lexer->errorHandler = initErrorHandler();
 
     return lexer;
 }
@@ -79,6 +82,8 @@ static void lexerSkipWhitespace(lexer_T* lexer)
                 line[len + 1] = '\0';
             }
             lexer->currentLine = line;
+
+            pushSrcLine(lexer->errorHandler, line);
         }
         lexerAdvance(lexer);
     }

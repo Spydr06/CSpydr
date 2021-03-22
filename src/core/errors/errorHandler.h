@@ -33,7 +33,7 @@ typedef struct ERROR_MESSAGE
 
 typedef struct ERROR_HANDLER
 {
-    list_T* linesInSrcFile;
+    char* currentLine;
     list_T* errorMessages;
 } errorHandler_T;
 
