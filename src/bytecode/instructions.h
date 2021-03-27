@@ -37,6 +37,7 @@ typedef struct BYTECODE_INSTRUCTION_STRUCT
     list_T* args;
 } BCInstruction_T;
 
+BCInstruction_T* initInstruction0(BCInstructionType_T type);
 BCInstruction_T* initInstruction1(BCInstructionType_T type, char* a);
 BCInstruction_T* initInstruction2(BCInstructionType_T type, char* a, char* b);
 char* BCInstructionToString(BCInstruction_T* instruction);

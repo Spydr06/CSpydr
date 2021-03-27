@@ -6,6 +6,15 @@
 
 #include "../core/list.h"
 
+BCInstruction_T* initInstruction0(BCInstructionType_T type)
+{
+    BCInstruction_T* instruction = calloc(1, sizeof(struct BYTECODE_INSTRUCTION_STRUCT));
+    instruction->type = type;
+    instruction->args = initList(sizeof(char*));
+
+    return instruction;
+}
+
 BCInstruction_T* initInstruction1(BCInstructionType_T type, char* a)
 {
     BCInstruction_T* instruction = calloc(1, sizeof(struct BYTECODE_INSTRUCTION_STRUCT));
@@ -63,6 +72,7 @@ char* BCInstructionToString(BCInstruction_T* instruction)
     const char* typeStr = BCInstructionTypeToString(instruction->type);
 
     char* argStr = calloc(1, sizeof(char));
+
     for(int i = 0; i < instruction->args->size; i++)
     {
         char* next = instruction->args->items[i];

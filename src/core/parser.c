@@ -64,6 +64,8 @@ static AST_T* parserParseIf(parser_T* parser);
 
 AST_T* parserParse(parser_T* parser)
 {
+    LOG_OK(COLOR_BOLD_GREEN "Parsing" COLOR_RESET " %s", "AST");
+
     AST_T* root = initAST(ROOT, 0);
     root->root->contents = initList(sizeof(struct AST_STRUCT) + sizeof(struct AST_DEF_STRUCT));
 
@@ -90,7 +92,7 @@ AST_T* parserParse(parser_T* parser)
         }
     }
 
-    LOG_OK("Parsing complete!%s", "\n");
+    LOG_OK("\t\tdone!%s", "\n");
     return root;
 }
 

@@ -93,6 +93,18 @@ static void compileStatement(BCCompiler_T* compiler, AST_T* ast)
             compileExpression(compiler, ast->stmt->value, 0);
             submitInstruction(compiler, initInstruction1(OP_EXIT, "%0"));
             break;
+        case IF:
+            //FIXME: compileExpression(compiler, ast->stmt->condition, 0);
+            submitInstruction(compiler, initInstruction1(OP_IF, "%0"));
+            compileCompound(compiler, ast->stmt->ifBody);
+
+            if(ast->stmt->elseBody != NULL)
+            {
+                submitInstruction(compiler, initInstruction0(OP_ELSE));
+                compileCompound(compiler, ast->stmt->elseBody);
+            }
+            submitInstruction(compiler, initInstruction0(OP_IF_END));
+            break;
         default:
             LOG_ERROR("Unknown statement type '%d'\n", ast->expr->type);
             exit(1);  

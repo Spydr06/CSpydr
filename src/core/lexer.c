@@ -173,6 +173,12 @@ static void lexerParseComment(lexer_T* lexer)
     {
         lexerAdvance(lexer);
     }
+    lexerSkipWhitespace(lexer);
+
+    if(lexer->c == '#')
+    {
+        lexerParseComment(lexer);
+    }
 }
 
 static token_T* lexerParseSymbol(lexer_T* lexer)
@@ -272,7 +278,7 @@ token_T* lexerNextToken(lexer_T* lexer)
         {
             lexerParseComment(lexer);    
         }
-
+        
         if(isalpha(lexer->c)) 
         {
             return lexerParseId(lexer);
