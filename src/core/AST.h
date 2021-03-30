@@ -106,5 +106,6 @@ struct AST_STRUCT
 
 AST_T* initAST(int type, int subtype);
 char* dataTypeToString(AST_T* ast);
+char* dataTypeToCTypeToString(AST_T* ast);
 
 #endif

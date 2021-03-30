@@ -8,15 +8,20 @@
 #include "core/parser.h"
 #include "bytecode/compiler.h"
 #include "core/errors/errorHandler.h"
+#include "transpiler/transpiler.h"
 
 #include "llvm/llvm.h"
 
 #define CSPYDR_VERSION "v0.0.1"
 
+#ifndef __linux__
+#error "CSpydr currently only supports x86 linux!"
+#endif
+
 #ifdef _WIN32
     #define DEFAULT_OUTPUT_FILE "csp.exe"
 #endif
-#ifdef __unix
+#ifdef __linux__
     #define DEFAULT_OUTPUT_FILE "csp.o"
 #endif
 
@@ -61,7 +66,7 @@ int main(int argc, char* argv[])
                 //TODO: create a global debugging flag
                 break;
             default:
-                LOG_ERROR("Undefined flag '%d'. Type -h for help.\n", currentFlag->type);
+                LOG_ERROR("Unknown flag '%d'. Type -h for help.\n", currentFlag->type);
                 break;
         }
     }
@@ -96,11 +101,17 @@ void compileFile(char* path, char* target)
         printf("%s\n", BCInstructionToString((BCInstruction_T*) compiler->instructions->items[i]));
     }
 
+    transpiler_T* transpiler = initTranspiler();
+    char* out = transpileToC(transpiler, root);
+    LOG_INFO("%s", out);
+
     //compileProgram(root, "test.bc", path);
+
     free(root);
     free(lexer);
     free(compiler);
     free(parser);
+    free(transpiler);
 
     //token_T* token;
     /*while((token = lexerNextToken(lexer))->type != TOKEN_EOF)

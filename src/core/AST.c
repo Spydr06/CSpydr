@@ -131,3 +131,46 @@ char* dataTypeToString(AST_T* ast)
             return "not stringable";
     }
 }
+
+char* dataTypeToCTypeToString(AST_T* ast)
+{
+    int type = ast->dataType->type;
+
+    switch(type)
+    {
+        case I8:
+            return "int8_t";
+        case I16:
+            return "int16_t";
+        case I32:
+            return "int32_t";
+        case I64:
+            return "int64_t";
+        case U8:
+            return "uint8_t";
+        case U16:
+            return "uint16_t";
+        case U32:
+            return "uint32_t";
+        case U64:
+            return "uint64_t";
+        case STR:
+            return "char*";
+        case CHAR:
+            return "char";
+        case BOOL:
+            return "bool";
+        case VOID:
+            return "void";
+        case VEC: {
+            const char* template = "%s*";
+            char* subValue = dataTypeToCTypeToString(ast->dataType->subtype);
+            char* value = calloc(strlen(template) + strlen(subValue) + 1, sizeof(char));
+            sprintf(value, template, subValue);
+            return value;
+        }
+
+        default:
+            return "not stringable";
+    }
+}
