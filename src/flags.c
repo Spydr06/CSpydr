@@ -36,7 +36,7 @@ flagDispatcher_T* dispatchFlags(int argc, char* argv[])
         }
         else if(strcmp(arg, "-o") == 0 || strcmp(arg, "-out") == 0 || strcmp(arg, "-output") == 0)
         {
-            listPush(dispatcher->flags, initFlag(FLAG_OUTPUT, argv[i++]));
+            listPush(dispatcher->flags, initFlag(FLAG_OUTPUT, argv[i++ + 1]));
         }
         else if(strcmp(arg, "-v") == 0 || strcmp(arg, "-version") == 0)
         {

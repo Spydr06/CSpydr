@@ -13,6 +13,6 @@
 
 #include "../core/AST.h"
 
-void compile(AST_T* ast);
+void compile(AST_T* ast, const char* targetPath);
 
 #endif

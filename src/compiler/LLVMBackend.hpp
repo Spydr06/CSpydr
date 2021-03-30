@@ -1,3 +1,5 @@
+#pragma once
+
 #include <iostream>
 #include "../log.h"
 
@@ -5,5 +7,5 @@
 
 extern "C"
 {
-    void compile(AST_T*);
+    void compile(AST_T*, const char*);
 };

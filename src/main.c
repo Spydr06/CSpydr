@@ -11,7 +11,7 @@
 #include "core/errors/errorHandler.h"
 #include "transpiler/transpiler.h"
 
-#include "llvm/llvm.h"
+#include "compiler/cppBindings.h"
 
 #define CSPYDR_VERSION "v0.0.1"
 
@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
                 strcpy(outputFile, currentFlag->value);
                 break;
             case FLAG_INPUT:
-                inputFile = calloc(strlen(currentFlag->value) + 1, sizeof(char*));
+                inputFile = calloc(strlen(currentFlag->value) + 1, sizeof(char));
                 strcpy(inputFile, currentFlag->value);
                 break;
             case FLAG_DEBUG:
@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-void compileFile(char* path, char* target)
+void compileBytecode(char* path, char* target)
 {
     LOG_OK(COLOR_BOLD_GREEN "Compiling" COLOR_RESET " \"%s\"\n", path);
     char* src = readFile(path);
@@ -102,22 +102,47 @@ void compileFile(char* path, char* target)
         printf("%s\n", BCInstructionToString((BCInstruction_T*) compiler->instructions->items[i]));
     }
 
-    transpiler_T* transpiler = initTranspiler();
-    char* out = transpileToC(transpiler, root);
-    LOG_INFO("%s", out);
-
-    //compileProgram(root, "test.bc", path);
-
-    compile(root);
-
     free(root);
     free(lexer);
     free(compiler);
     free(parser);
+}
+
+void compileTranspiling(char* path, char* target)
+{
+        LOG_OK(COLOR_BOLD_GREEN "Compiling" COLOR_RESET " \"%s\"\n", path);
+    char* src = readFile(path);
+
+    lexer_T* lexer = initLexer(src, path);
+    parser_T* parser = initParser(lexer);
+    //validator_T* validator = initASTValidator();
+    AST_T* root = parserParse(parser);
+    //validateAST(validator, root);
+
+    transpiler_T* transpiler = initTranspiler();
+    char* out = transpileToC(transpiler, root);
+    LOG_INFO("%s", out);
+
+    free(root);
+    free(lexer);
+    free(parser);
     free(transpiler);
-    //token_T* token;
-    /*while((token = lexerNextToken(lexer))->type != TOKEN_EOF)
-    {
-        LOG_INFO("%s\n", tokenToString(token));
-    }*/
+}
+
+void compileFile(char* path, char* target)
+{
+    LOG_OK(COLOR_BOLD_GREEN "Compiling" COLOR_RESET " \"%s\"\n", path);
+    char* src = readFile(path);
+
+    lexer_T* lexer = initLexer(src, path);
+    parser_T* parser = initParser(lexer);
+    //validator_T* validator = initASTValidator();
+    AST_T* root = parserParse(parser);
+    //validateAST(validator, root);
+
+    compile(root, target);
+
+    free(root);
+    free(lexer);
+    free(parser);
 }
