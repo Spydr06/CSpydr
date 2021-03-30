@@ -1,13 +1,13 @@
-source_files := $(shell find src -name *.c)
+source_files := $(shell find src -name *.cpp)
 output_files := $(shell find -name *.o)
 
 executable = bin/CSpydr.out
 
-LLVM_LDFLAGS = `llvm-config --cflags --ldflags --libs core executionengine interpreter analysis native bitwriter --system-libs`
-LLVM_CFLAGS = -g `llvm-config --cflags`
+LLVM_LDFLAGS = `llvm-config --cppflags --ldflags --libs core executionengine interpreter analysis native bitwriter --system-libs`
+LLVM_CFLAGS = -g `llvm-config --cppflags`
 
-CC = gcc
-LD = gcc
+CC = g++
+LD = g++
 
 .PHONY: build
 build: compile link clean
@@ -20,7 +20,7 @@ compile: $(source_files)
 .PHONY: link
 link: $(output_files)
 	mkdir -p bin/ && \
-	$(LD) $< $(LLVM_LDFLAGS) $(source_files) -o $(executable)
+	$(LD) $< $(LLVM_LDFLAGS) -o $(executable)
 
 .PHONY: clean
 clean:
