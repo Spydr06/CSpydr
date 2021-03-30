@@ -20,7 +20,7 @@ compile: $(source_files)
 .PHONY: link
 link: $(output_files)
 	mkdir -p bin/ && \
-	$(LD) $< $(LLVM_LDFLAGS) -o $(executable)
+	$(LD) $< $(LLVM_LDFLAGS) $(source_files) -o $(executable)
 
 .PHONY: clean
 clean:
