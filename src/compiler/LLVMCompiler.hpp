@@ -13,18 +13,19 @@ namespace CSpydr
     class LLVMCompiler 
     {
     public:
-        LLVMCompiler(std::string targetPath);
+        LLVMCompiler(std::string targetPath, std::string sourcePath);
         ~LLVMCompiler();
 
         void compile();
 
     private:
         std::string targetPath;
+        std::string moduleName;
 
         std::unique_ptr<llvm::LLVMContext> llvmContext;
         std::unique_ptr<llvm::Module> llvmModule;
         std::unique_ptr<llvm::IRBuilder<>> llvmBuilder;
-        std::map<std::string, llvm::Value *> namedValues;
+        std::map<std::string, llvm::Value*> namedValues;
     };
 
 }

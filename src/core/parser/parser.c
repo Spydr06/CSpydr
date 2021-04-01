@@ -1,9 +1,9 @@
 #include "parser.h"
 #include "AST.h"
-#include "errors/errorHandler.h"
-#include "list.h"
-#include "token.h"
-#include "../log.h"
+#include "../errors/errorHandler.h"
+#include "../list.h"
+#include "../token.h"
+#include "../../log.h"
 
 #include <string.h>
 

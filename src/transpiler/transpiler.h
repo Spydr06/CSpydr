@@ -1,7 +1,7 @@
 #ifndef CSPYDR_TRANSPILER_H
 #define CSPYDR_TRANSPILER_H
 
-#include "../core/AST.h"
+#include "../core/parser/AST.h"
 
 typedef struct TRANSPILER_STRUCT
 {

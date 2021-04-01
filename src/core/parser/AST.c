@@ -1,8 +1,9 @@
 #include "AST.h"
 #include <stdarg.h>
-#include "../log.h"
+#include "../../log.h"
 
 #include <string.h>
+#include <stdlib.h>
 
 static ASTexpr_T* initExprAST(int type)
 {

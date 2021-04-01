@@ -18,8 +18,8 @@ build: compile link clean
 .PHONY: compile
 compile: $(c_files)
 	mkdir -p obj/ && \
-	$(CC) $(LLVM_CFLAGS) -Wall -fPIC -c $(c_files) 
-	$(CPP) $(LLVM_CPPFLAGS) -Wall -fPIC -c $(cpp_files)
+	$(CC) $(CC_FLAGS) $(LLVM_CFLAGS) -Wall -fPIC -c $(c_files) && \
+	$(CPP) -Wall -fPIC -c $(cpp_files)
 
 .PHONY: link
 link: $(object_files)

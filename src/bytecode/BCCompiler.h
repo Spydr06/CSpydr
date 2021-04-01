@@ -1,7 +1,7 @@
 #ifndef CSPYDR_BYTECODE_COMPILER_H
 #define CSPYDR_BYTECODE_COMPILER_H
 
-#include "../core/AST.h"
+#include "../core/parser/AST.h"
 #include "../core/list.h"
 #include "instructions.h"
 

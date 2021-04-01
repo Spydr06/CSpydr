@@ -1,3 +1,5 @@
+# a basic test program used for developing this programming language
+
 let test: bool = true;
 
 fn main(argc: i32, argv: vec<str>): i32 = {

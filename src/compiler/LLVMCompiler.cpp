@@ -7,13 +7,12 @@
 
 namespace CSpydr
 {
-    LLVMCompiler::LLVMCompiler(std::string targetPath)
-        : targetPath(targetPath)
+    LLVMCompiler::LLVMCompiler(std::string targetPath, std::string moduleName)
+        : targetPath(targetPath), moduleName(moduleName)
     {
         llvmContext = std::make_unique<llvm::LLVMContext>();
-
-        //TODO: add name detection from filepath
-        llvmModule = std::make_unique<llvm::Module>("test", *llvmContext);
+        
+        llvmModule = std::make_unique<llvm::Module>(moduleName, *llvmContext);
         llvmBuilder = std::make_unique<llvm::IRBuilder<>>(*llvmContext);
     }
 
@@ -23,6 +22,6 @@ namespace CSpydr
 
     void LLVMCompiler::compile()
     {
-        LOG_OK(COLOR_BOLD_GREEN "Compiling " COLOR_RESET "to target \"%s\"...\n", targetPath.c_str());
+        LOG_OK(COLOR_BOLD_GREEN "Compiling" COLOR_RESET " module \"%s\" to file \"%s\"\n", moduleName.c_str(), targetPath.c_str());
     }
 }

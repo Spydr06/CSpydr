@@ -1,7 +1,7 @@
 #ifndef CSPYDR_AST_H
 #define CSPYDR_AST_H
 
-#include "list.h"
+#include "../list.h"
 #include <stdbool.h>
 
 typedef struct AST_STRUCT AST_T;

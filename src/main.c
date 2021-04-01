@@ -4,12 +4,14 @@
 #include <llvm-c/Types.h>
 #include <stdio.h>
 #include <string.h>
+#include "core/parser/ACT.h"
 #include "flags.h"
 #include "input.h"
 #include "log.h"
-#include "core/parser.h"
+#include "core/parser/parser.h"
 #include "core/errors/errorHandler.h"
 #include "transpiler/transpiler.h"
+#include "core/parser/ASTWalker.h"
 
 #include "compiler/cppBindings.h"
 
@@ -33,7 +35,7 @@ const char* helpText = COLOR_BOLD_WHITE "usage:" COLOR_RESET " cspydr [options] 
                        "  -o, -output [file]\tset the target output file (default: " DEFAULT_OUTPUT_FILE ")\n"
                        "  -d, -debug\t\tenable debug output.\n";
 
-void compileFile(char* path, char* target);
+void compileLLVM(char* path, char* target);
 
 int main(int argc, char* argv[])
 {
@@ -78,7 +80,7 @@ int main(int argc, char* argv[])
         return 0;
     }
 
-    compileFile(inputFile, outputFile);
+    compileLLVM(inputFile, outputFile);
 
     return 0;
 }
@@ -90,9 +92,7 @@ void compileBytecode(char* path, char* target)
 
     lexer_T* lexer = initLexer(src, path);
     parser_T* parser = initParser(lexer);
-    //validator_T* validator = initASTValidator();
     AST_T* root = parserParse(parser);
-    //validateAST(validator, root);
 
     BCCompiler_T* compiler = initBCCompiler();
     compileBC(compiler, root);
@@ -115,9 +115,7 @@ void compileTranspiling(char* path, char* target)
 
     lexer_T* lexer = initLexer(src, path);
     parser_T* parser = initParser(lexer);
-    //validator_T* validator = initASTValidator();
     AST_T* root = parserParse(parser);
-    //validateAST(validator, root);
 
     transpiler_T* transpiler = initTranspiler();
     char* out = transpileToC(transpiler, root);
@@ -129,20 +127,20 @@ void compileTranspiling(char* path, char* target)
     free(transpiler);
 }
 
-void compileFile(char* path, char* target)
+void compileLLVM(char* path, char* target)
 {
     LOG_OK(COLOR_BOLD_GREEN "Compiling" COLOR_RESET " \"%s\"\n", path);
     char* src = readFile(path);
 
     lexer_T* lexer = initLexer(src, path);
     parser_T* parser = initParser(lexer);
-    //validator_T* validator = initASTValidator();
     AST_T* root = parserParse(parser);
-    //validateAST(validator, root);
+    ACTRoot_T* actionTree = generateActionTree(root);
 
-    compile(root, target);
+    compile(root, target, path);
 
     free(root);
     free(lexer);
     free(parser);
+    free(actionTree);
 }

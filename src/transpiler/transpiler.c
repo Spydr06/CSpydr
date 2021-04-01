@@ -213,7 +213,7 @@ static void transpileStmt(transpiler_T* transpiler, AST_T* ast)
             }
             break;
         case FOR: {
-                const char* template = "for(%s;%s;%s) {";
+                //const char* template = "for(%s;%s;%s) {";
                 //TODO
             } break;
         case WHILE:
@@ -264,15 +264,11 @@ static char* transpileExpr(AST_T* ast)
             strcat(value, next);
         }
 
-
+        default:
+            break;
     }
 
     return value;
-}
-
-static char* transpileAddition(AST_T* ast)
-{
-
 }
 
 static char* transpileAssignment(AST_T* ast)

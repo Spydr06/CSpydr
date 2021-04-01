@@ -11,8 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../core/AST.h"
+#include "../core/parser/AST.h"
 
-void compile(AST_T* ast, const char* targetPath);
+void compile(AST_T* ast, const char* targetPath, const char* sourcePath);
 
 #endif

@@ -2,8 +2,8 @@
 #define CSPYDR_PARSER_H
 
 #include "AST.h"
-#include "lexer.h"
-#include "token.h"
+#include "../lexer.h"
+#include "../token.h"
 
 typedef struct PARSER_STRUCT
 {
