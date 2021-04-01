@@ -136,7 +136,7 @@ typedef struct ACT_ASSIGNMENT_STRUCT
 {
     ACTDataType_T* dataType;
     ACTExpr_T* value;
-    //TODO: target var
+    ACTExprVarCall_T* target;
 } ACTAssignment_T;
 
 typedef struct ACT_GLOBAL_STRUCT
