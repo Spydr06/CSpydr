@@ -2,6 +2,7 @@
 #include "core/list.h"
 #include <string.h>
 #include <stdio.h>
+#include "log.h"
 
 flag_T* initFlag(flagType_T type, char* value)
 {
@@ -30,21 +31,26 @@ flagDispatcher_T* dispatchFlags(int argc, char* argv[])
     {
         char* arg = argv[i];        
 
-        if(strcmp(arg, "-h") == 0 || strcmp(arg, "-help") == 0)
+        if(strcmp(arg, "-h") == 0 || strcmp(arg, "--help") == 0)
         {
             listPush(dispatcher->flags, initFlag(FLAG_HELP, NULL));
         }
-        else if(strcmp(arg, "-o") == 0 || strcmp(arg, "-out") == 0 || strcmp(arg, "-output") == 0)
+        else if(strcmp(arg, "-o") == 0 || strcmp(arg, "--out") == 0 || strcmp(arg, "--output") == 0)
         {
             listPush(dispatcher->flags, initFlag(FLAG_OUTPUT, argv[i++ + 1]));
         }
-        else if(strcmp(arg, "-v") == 0 || strcmp(arg, "-version") == 0)
+        else if(strcmp(arg, "-v") == 0 || strcmp(arg, "--version") == 0)
         {
             listPush(dispatcher->flags, initFlag(FLAG_VERSION, NULL));
         }
-        else if(strcmp(arg, "-d") == 0 || strcmp(arg, "-debug") == 0)
+        else if(strcmp(arg, "-d") == 0 || strcmp(arg, "--debug") == 0)
         {
             listPush(dispatcher->flags, initFlag(FLAG_DEBUG, NULL));
+        }
+        else if(arg[0] == '-')
+        {
+            LOG_ERROR("Unknown parameter \"%s\". Use --help or -h for help.\n", arg);
+            exit(1);
         }
         else {
             listPush(dispatcher->flags, initFlag(FLAG_INPUT, arg));

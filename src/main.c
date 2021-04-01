@@ -30,10 +30,10 @@
 
 const char* helpText = COLOR_BOLD_WHITE "usage:" COLOR_RESET " cspydr [options] source files [options]\n"
                        COLOR_BOLD_WHITE "options:\n" COLOR_RESET
-                       "  -h, -help\t\tdisplays this help text and quits.\n"
-                       "  -v, -version\t\tdisplays the version of CSpydr and quits.\n"
-                       "  -o, -output [file]\tset the target output file (default: " DEFAULT_OUTPUT_FILE ")\n"
-                       "  -d, -debug\t\tenable debug output.\n";
+                       "  -h, --help\t\tdisplays this help text and quits.\n"
+                       "  -v, --version\t\tdisplays the version of CSpydr and quits.\n"
+                       "  -o, --output [file]\tset the target output file (default: " DEFAULT_OUTPUT_FILE ")\n"
+                       "  -d, --debug\t\tenable debug output.\n";
 
 void compileLLVM(char* path, char* target);
 
