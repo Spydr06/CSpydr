@@ -7,8 +7,6 @@
 #define CSPYDR_VERSION_Y "0"
 #define CSPYDR_VERSION_Z "3"
 
-#define CSPYDR_BUILD_ID ""
-
 #ifdef DEBUG
     #define CSPYDR_VERSION_W "d"
 #else
