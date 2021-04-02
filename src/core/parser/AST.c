@@ -83,7 +83,7 @@ AST_T* initAST(int type, int subtype)
             ast->dataType = initDataTypeAST(subtype);
             break;
         default:
-            LOG_ERROR("Undefined AST type %d.\n", type);
+            LOG_ERROR_F("Undefined AST type %d.\n", type);
             exit(1);
     }
     return ast;

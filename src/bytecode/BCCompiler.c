@@ -27,7 +27,7 @@ static void compileOperation(BCCompiler_T* compiler, AST_T* ast, unsigned int OP
 
 void compileBC(BCCompiler_T* compiler, AST_T* root)
 {
-    LOG_OK(COLOR_BOLD_GREEN "Generating" COLOR_RESET " bytecode%s", "\t");
+    LOG_OK(COLOR_BOLD_GREEN "Generating" COLOR_RESET " bytecode\t");
 
     for(int i = 0; i < root->root->contents->size; i++)
     {
@@ -35,7 +35,7 @@ void compileBC(BCCompiler_T* compiler, AST_T* root)
 
         if(currentAST->type != DEF) 
         {
-            LOG_ERROR(COLOR_BOLD_RED "The root AST can only hold definitions.%s", "\n");
+            LOG_ERROR(COLOR_BOLD_RED "The root AST can only hold definitions.\n");
             exit(1);
         }
 
@@ -48,7 +48,7 @@ void compileBC(BCCompiler_T* compiler, AST_T* root)
         }
     }
 
-    LOG_OK("done!%s", "\n");
+    LOG_OK("done!\n");
 }
 
 static void compileCompound(BCCompiler_T* compiler, AST_T* ast)
@@ -60,7 +60,7 @@ static void compileCompound(BCCompiler_T* compiler, AST_T* ast)
         switch(currentAST->type)
         {
             case ROOT:
-                LOG_ERROR(COLOR_BOLD_RED "Root ast found in compound.%s", "\n");
+                LOG_ERROR(COLOR_BOLD_RED "Root ast found in compound.\n");
                 exit(1);
             case EXPR:
                 compileExpression(compiler, currentAST, 0);
@@ -75,7 +75,7 @@ static void compileCompound(BCCompiler_T* compiler, AST_T* ast)
                 compileCompound(compiler, ast);
                 break;
             default:
-                LOG_ERROR(COLOR_BOLD_RED "Undefine ast type '%d' found in compound.\n", currentAST->type);
+                LOG_ERROR_F(COLOR_BOLD_RED "Undefine ast type '%d' found in compound.\n", currentAST->type);
                 exit(1);
         }
     }
@@ -106,7 +106,7 @@ static void compileStatement(BCCompiler_T* compiler, AST_T* ast)
             submitInstruction(compiler, initInstruction0(OP_IF_END));
             break;
         default:
-            LOG_ERROR("Unknown statement type '%d'\n", ast->expr->type);
+            LOG_ERROR_F("Unknown statement type '%d'\n", ast->expr->type);
             exit(1);  
     }
 }
@@ -135,7 +135,7 @@ static void compileExpression(BCCompiler_T* compiler, AST_T* ast, unsigned int O
             break;
 
         default:
-            LOG_ERROR("Unknown expression type '%d'\n", ast->expr->type);
+            LOG_ERROR_F("Unknown expression type '%d'\n", ast->expr->type);
             exit(1);
     }
 }
@@ -236,7 +236,7 @@ static void compileFunction(BCCompiler_T* compiler, AST_T* ast)
     }
     if(ast->def->value->type != COMPOUND)
     {
-        LOG_ERROR(COLOR_BOLD_RED "Function value has to be a compound.%s", "\n");
+        LOG_ERROR(COLOR_BOLD_RED "Function value has to be a compound.\n");
         exit(1);
     }
     compileCompound(compiler, ast->def->value);

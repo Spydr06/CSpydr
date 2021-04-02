@@ -22,6 +22,6 @@ namespace CSpydr
 
     void LLVMCompiler::compile()
     {
-        LOG_OK(COLOR_BOLD_GREEN "Compiling" COLOR_RESET " module \"%s\" to file \"%s\"\n", moduleName.c_str(), targetPath.c_str());
+        LOG_OK_F(COLOR_BOLD_GREEN "Compiling" COLOR_RESET " module \"%s\" to file \"%s\"\n", moduleName.c_str(), targetPath.c_str());
     }
 }

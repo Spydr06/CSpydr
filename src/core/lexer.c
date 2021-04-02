@@ -115,7 +115,7 @@ static token_T* lexerParseString(lexer_T* lexer)
         lexerAdvance(lexer);
 
         if(lexer->c == '\0') {
-            LOG_ERROR("Unterminated string in line %d.\n", lexer->line);
+            LOG_ERROR_F("Unterminated string in line %d.\n", lexer->line);
             exit(1);
         }
     }
@@ -261,7 +261,7 @@ static token_T* lexerParseSymbol(lexer_T* lexer)
         case '\0': break; 
             return initToken(0, lexer->line, TOKEN_EOF);
         default: 
-            LOG_ERROR("Unexpected character '%c' in line %d.", lexer->c, lexer->line);
+            LOG_ERROR_F("Unexpected character '%c' in line %d.", lexer->c, lexer->line);
             exit(1);
     }
     return initToken(0, lexer->line, TOKEN_EOF);

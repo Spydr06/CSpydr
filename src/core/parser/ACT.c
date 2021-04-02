@@ -114,7 +114,7 @@ void registerFunction(ACTRoot_T* root, AST_T* func)
 
         if(strcmp(funcName, currentFunc->name) == 0)
         {
-            LOG_ERROR("Multiple definitions of function \"%s\"\n", funcName);
+            LOG_ERROR_F("Multiple definitions of function \"%s\"\n", funcName);
             exit(1);
         }
     }
@@ -132,7 +132,7 @@ void registerGlobal(ACTRoot_T* root, AST_T* global)
 
         if(strcmp(globalName, currentGlobal->name) == 0)
         {
-            LOG_ERROR("Multiple definitions of global variable \"%s\"\n", globalName);
+            LOG_ERROR_F("Multiple definitions of global variable \"%s\"\n", globalName);
             exit(1);
         }
     }

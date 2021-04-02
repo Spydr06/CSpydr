@@ -5,7 +5,7 @@ let test: bool = true;
 fn main(argc: i32, argv: vec<str>): i32 = {
     let msg: str = "Hello World!";
     msg = "bye!";
-    print(msg);
+    print(msg;
 
     # if test {
     #     print("Test is true!");

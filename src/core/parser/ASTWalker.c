@@ -6,11 +6,11 @@ static ACTCompound_T* generateCompoundACT(ACTCompound_T* enclosing, AST_T* ast);
 
 ACTRoot_T* generateActionTree(AST_T* ast)
 {
-    LOG_OK(COLOR_BOLD_GREEN "Generating" COLOR_RESET " Action Tree%s", "\n");
+    LOG_OK(COLOR_BOLD_GREEN "Generating" COLOR_RESET " Action Tree\n");
 
     if(ast->type != ROOT)
     {
-        LOG_ERROR(COLOR_BOLD_RED "Error while generating Action Tree:\n" COLOR_RESET COLOR_RED "Expected ast of type 'ROOT', got type '%d'!\n", ast->type);
+        LOG_ERROR_F(COLOR_BOLD_RED "Error while generating Action Tree:\n" COLOR_RESET COLOR_RED "Expected ast of type 'ROOT', got type '%d'!\n", ast->type);
         exit(1);
     }
 

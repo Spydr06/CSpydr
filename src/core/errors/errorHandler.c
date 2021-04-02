@@ -46,20 +46,20 @@ void throwError(errorHandler_T* handler, errorMessage_T* message)
     {
         case ERR_SYNTAX_ERROR:
         case ERR_ILLEGAL_TYPE_CAST:
-            LOG_ERROR("%s\n", message->message);
+            LOG_ERROR_F("%s\n", message->message);
             break;
         case ERR_SYNTAX_WARNING:
         case ERR_TYPE_CAST_WARN:
-            LOG_WARN("%s\n", message->message);
+            LOG_WARN_F("%s\n", message->message);
             break;
         case ERR_UNDEFINED:
-            LOG_INFO("%s\n", message->message);
+            LOG_INFO_F("%s\n", message->message);
             break;
         case ERR_INTERNAL:  // this should never happen
-            LOG_ERROR("%s\n", message->message);
+            LOG_ERROR_F("%s\n", message->message);
             break;
         default:
-            LOG_ERROR("Undefined error: %d =!=> %s\n", message->type, message->message);
+            LOG_ERROR_F("Undefined error: %d =!=> %s\n", message->type, message->message);
             break;
     }
 

@@ -188,7 +188,7 @@ static void transpileCompound(transpiler_T* transpiler, AST_T* ast)
                 writeToCode(transpiler, ";\n");
                 break;
             default:
-                LOG_ERROR("Unexpected AST type '%d'\n", currentAST->type);
+                LOG_ERROR_F("Unexpected AST type '%d'\n", currentAST->type);
                 break;
         }
     }

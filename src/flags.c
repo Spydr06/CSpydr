@@ -47,9 +47,13 @@ flagDispatcher_T* dispatchFlags(int argc, char* argv[])
         {
             listPush(dispatcher->flags, initFlag(FLAG_DEBUG, NULL));
         }
+        else if(strcmp(arg, "-i") == 0 || strcmp(arg, "--info") == 0)
+        {
+            listPush(dispatcher->flags, initFlag(FLAG_INFO, NULL));
+        }
         else if(arg[0] == '-')
         {
-            LOG_ERROR("Unknown parameter \"%s\". Use --help or -h for help.\n", arg);
+            LOG_ERROR_F("Unknown parameter \"%s\". Use --help or -h for help.\n", arg);
             exit(1);
         }
         else {

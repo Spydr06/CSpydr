@@ -11,6 +11,7 @@ typedef enum FLAG_TYPE
     FLAG_OUTPUT,
     FLAG_DEBUG,
     FLAG_INPUT,
+    FLAG_INFO,
     FLAG_UNDEFINED,
 } flagType_T;
 
