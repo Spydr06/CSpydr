@@ -140,8 +140,7 @@ static token_T* lexerParseId(lexer_T* lexer)
     {
         type = TOKEN_BOOL;
     }
-    else if(strcmp(value, "i8") == 0 || strcmp(value, "i16") == 0 || strcmp(value, "i32") == 0 || strcmp(value, "i64") == 0 || 
-            strcmp(value, "u8") == 0 || strcmp(value, "u16") == 0 || strcmp(value, "u32") == 0 || strcmp(value, "u64") == 0 ||
+    else if(strcmp(value, "i32") == 0 || strcmp(value, "i64") == 0 || strcmp(value, "u32") == 0 || strcmp(value, "u64") == 0 ||
             strcmp(value, "f32") == 0 || strcmp(value, "f64") == 0 || 
             strcmp(value, "str") == 0 || strcmp(value, "bool") == 0 || strcmp(value, "char") == 0 || strcmp(value, "vec") == 0)
     {

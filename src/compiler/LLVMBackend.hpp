@@ -7,5 +7,5 @@
 
 extern "C"
 {
-    void compile(AST_T*, const char*, const char*);
+    void compile(ASTRoot_T*, const char*, const char*);
 };

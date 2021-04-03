@@ -6,14 +6,11 @@
 #include "log.h"
 #include "version.h"
 
-#include "transpiler/transpiler.h"
 #include "compiler/cppBindings.h"
-#include "bytecode/BCCompiler.h"
 #include "core/errors/errorHandler.h"
 
 #include "core/parser/parser.h"
-#include "core/parser/ACT.h"
-#include "core/parser/ASTWalker.h"
+#include "core/parser/AST.h"
 
 #ifndef __linux__
 #error "CSpydr currently only supports x86 linux!"
@@ -33,7 +30,13 @@ const char* infoText = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE COM
                        COLOR_BOLD_WHITE "Version:" COLOR_RESET " %s\n"
                        COLOR_BOLD_WHITE "Build:" COLOR_RESET " %s\n"
                        "\n"
+                       "Copyright (C) 2021 Spydr06\n"
                        "CSpydr is distributed under the GNU General Public License (v3)\n"
+                       "This is free software; see the source for copying conditions;\n"
+                       "you may redistribute it under the terms of the GNU GPL version 3\n"
+                       "or (at your option) a later version.\n"
+                       "This program has absolutely no warranty.\n"
+                       "\n"
                        COLOR_BOLD_WHITE "    repository: " COLOR_RESET CSPYDR_GIT_REPOSITORY "\n"
                        COLOR_BOLD_WHITE "    developer:  " COLOR_RESET CSPYDR_GIT_DEVELOPER "\n"
                        "\n"
@@ -111,17 +114,17 @@ int main(int argc, char* argv[])
 
 void compileBytecode(char* path, char* target)
 {
-    LOG_OK_F(COLOR_BOLD_GREEN "Compiling" COLOR_RESET " \"%s\"\n", path);
-    char* src = readFile(path);
+    //LOG_OK_F(COLOR_BOLD_GREEN "Compiling" COLOR_RESET " \"%s\"\n", path);
+    //char* src = readFile(path);
 
-    lexer_T* lexer = initLexer(src, path);
-    parser_T* parser = initParser(lexer);
-    AST_T* root = parserParse(parser);
+    //lexer_T* lexer = initLexer(src, path);
+    //parser_T* parser = initParser(lexer);
+    //AST_T* root = parserParse(parser);
 
-    BCCompiler_T* compiler = initBCCompiler();
-    compileBC(compiler, root);
+    //BCCompiler_T* compiler = initBCCompiler();
+    //compileBC(compiler, root);
 
-    for(int i = 0; i < compiler->instructions->size; i++)
+    /*for(int i = 0; i < compiler->instructions->size; i++)
     {
         printf("%s\n", BCInstructionToString((BCInstruction_T*) compiler->instructions->items[i]));
     }
@@ -129,16 +132,16 @@ void compileBytecode(char* path, char* target)
     free(root);
     free(lexer);
     free(compiler);
-    free(parser);
+    free(parser);*/
 }
 
 void compileTranspiling(char* path, char* target)
 {
-        LOG_OK_F(COLOR_BOLD_GREEN "Compiling" COLOR_RESET " \"%s\"\n", path);
-    char* src = readFile(path);
+    //LOG_OK_F(COLOR_BOLD_GREEN "Compiling" COLOR_RESET " \"%s\"\n", path);
+    //char* src = readFile(path);
 
-    lexer_T* lexer = initLexer(src, path);
-    parser_T* parser = initParser(lexer);
+    //lexer_T* lexer = initLexer(src, path);
+   /* parser_T* parser = initParser(lexer);
     AST_T* root = parserParse(parser);
 
     transpiler_T* transpiler = initTranspiler();
@@ -148,7 +151,7 @@ void compileTranspiling(char* path, char* target)
     free(root);
     free(lexer);
     free(parser);
-    free(transpiler);
+    free(transpiler);*/
 }
 
 void compileLLVM(char* path, char* target)
@@ -158,13 +161,11 @@ void compileLLVM(char* path, char* target)
 
     lexer_T* lexer = initLexer(src, path);
     parser_T* parser = initParser(lexer);
-    AST_T* root = parserParse(parser);
-    ACTRoot_T* actionTree = generateActionTree(root);
+    ASTRoot_T* root = parserParse(parser);
 
-    compile(root, target, path);
+    //compile(root, target, path);
 
     free(root);
     free(lexer);
     free(parser);
-    free(actionTree);
 }

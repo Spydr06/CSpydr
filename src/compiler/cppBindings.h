@@ -13,6 +13,6 @@
 
 #include "../core/parser/AST.h"
 
-void compile(AST_T* ast, const char* targetPath, const char* sourcePath);
+void compile(ASTRoot_T* ast, const char* targetPath, const char* sourcePath);
 
 #endif
