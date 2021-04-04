@@ -112,48 +112,6 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-void compileBytecode(char* path, char* target)
-{
-    //LOG_OK_F(COLOR_BOLD_GREEN "Compiling" COLOR_RESET " \"%s\"\n", path);
-    //char* src = readFile(path);
-
-    //lexer_T* lexer = initLexer(src, path);
-    //parser_T* parser = initParser(lexer);
-    //AST_T* root = parserParse(parser);
-
-    //BCCompiler_T* compiler = initBCCompiler();
-    //compileBC(compiler, root);
-
-    /*for(int i = 0; i < compiler->instructions->size; i++)
-    {
-        printf("%s\n", BCInstructionToString((BCInstruction_T*) compiler->instructions->items[i]));
-    }
-
-    free(root);
-    free(lexer);
-    free(compiler);
-    free(parser);*/
-}
-
-void compileTranspiling(char* path, char* target)
-{
-    //LOG_OK_F(COLOR_BOLD_GREEN "Compiling" COLOR_RESET " \"%s\"\n", path);
-    //char* src = readFile(path);
-
-    //lexer_T* lexer = initLexer(src, path);
-   /* parser_T* parser = initParser(lexer);
-    AST_T* root = parserParse(parser);
-
-    transpiler_T* transpiler = initTranspiler();
-    char* out = transpileToC(transpiler, root);
-    LOG_INFO_F("%s", out);
-
-    free(root);
-    free(lexer);
-    free(parser);
-    free(transpiler);*/
-}
-
 void compileLLVM(char* path, char* target)
 {
     LOG_OK_F(COLOR_BOLD_GREEN "Compiling" COLOR_RESET " \"%s\"\n", path);
