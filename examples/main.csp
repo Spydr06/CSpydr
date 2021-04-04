@@ -7,14 +7,18 @@ fn main(argc: i32, argv: vec<str>): i32 = {
     msg = "bye!";
     print(msg);
 
-    if test {
+    if test != false {
         print("Test is true!");
     }
 
     let integer: i32 = 34;
 
-    integer += 6;
+    integer += 6 + 4;
     integer *= 2;
+
+    let array: vec<i32> = [3 - 5, 5, 2, 4];
 
     <- 0
 }
+
+fn print(msg: str) = printf("%s\n", msg);

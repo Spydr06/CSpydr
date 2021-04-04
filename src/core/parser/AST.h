@@ -34,6 +34,7 @@ typedef enum AST_EXPR_TYPE
     AST_EX_NEGATE,
     AST_EX_VAR_CALL,
     AST_EX_FN_CALL,
+    AST_EX_ARRAY,
 } ASTExprType_T;
 
 typedef enum AST_EXPR_OP_TYPE
@@ -52,6 +53,8 @@ typedef enum AST_EXPR_BOOL_OP_TYPE
     AST_OP_GE,  //greater equal
     AST_OP_LE,  //less equal
     AST_OP_NE,  //not equal
+    AST_OP_OR,  //or
+    AST_OP_AND, //and
 } ASTExprBoolOpType_T;
 
 typedef enum AST_COMPOUND_INSTRUCTION_TYPE
@@ -109,10 +112,17 @@ typedef struct AST_EXPR_OP_STRUCT
 
 typedef struct AST_EXPR_BOOL_OP_STRUCT
 {
+    ASTExprBoolOpType_T type;
     ASTDataType_T* dataType;
     ASTExpr_T* left;
     ASTExpr_T* right;
 } ASTExprBoolOp_T;
+
+typedef struct AST_EXPR_ARRAY_STRUCT
+{
+    ASTDataType_T* dataType;
+    list_T* indices;
+} ASTExprArray_T;
 
 typedef struct AST_EXPR_NOT_STRUCT
 {
@@ -238,8 +248,10 @@ ASTExprConstant_T* initASTConstant(ASTDataType_T* dataType, void* ptr);
 ASTExprNegate_T* initASTNegate(ASTExpr_T* expr);
 ASTExprNot_T* initASTNot(ASTExpr_T* expr);
 ASTExprOp_T* initASTOp(ASTExprOpType_T type, ASTExpr_T* left, ASTExpr_T* right);
+ASTExprBoolOp_T* initASTBoolOp(ASTExprBoolOpType_T type, ASTExpr_T* left, ASTExpr_T* right);
 
 ASTExprClosure_T* initASTClosure(ASTExpr_T* value);
+ASTExprArray_T* initASTArrayExpr();
 
 ASTExitStmt_T* initASTExitStmt(ASTExpr_T* exitCode);
 ASTReturnStmt_T* initASTReturnStmt(ASTExpr_T* returnValue);

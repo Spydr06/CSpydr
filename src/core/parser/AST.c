@@ -221,3 +221,24 @@ ASTExprOp_T* initASTOp(ASTExprOpType_T type, ASTExpr_T* left, ASTExpr_T* right)
 
     return ast;
 }
+
+ASTExprBoolOp_T* initASTBoolOp(ASTExprBoolOpType_T type, ASTExpr_T* left, ASTExpr_T* right)
+{
+    ASTExprBoolOp_T* ast = calloc(1, sizeof(struct AST_EXPR_BOOL_OP_STRUCT));
+    ast->dataType = initASTDataType_T(AST_BOOL);
+    ast->left = left; 
+    ast->right = right;
+    ast->type = type;
+
+    return ast;
+}
+
+ASTExprArray_T* initASTArrayExpr()
+{
+    ASTExprArray_T* ast = calloc(1, sizeof(struct AST_EXPR_ARRAY_STRUCT));
+    ast->dataType = initASTDataType_T(AST_VEC);
+    ast->indices = initList(sizeof(struct AST_EXPR_STRUCT*));
+    //TODO: get the indices data type
+
+    return ast;
+}
