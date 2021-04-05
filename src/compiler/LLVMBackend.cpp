@@ -7,8 +7,6 @@
 
 void compile(ASTRoot_T* ast, const char* targetPath, const char* sourcePath)
 {
-
-    CSpydr::LLVMCompiler compiler(targetPath, getFilenameFromPath(sourcePath));
-    compiler.compile();
-
+    CSpydr::LLVMCompiler compiler(targetPath, getFilenameFromPath(sourcePath), true);
+    compiler.compile(ast);
 }

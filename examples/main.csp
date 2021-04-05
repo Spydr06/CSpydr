@@ -3,20 +3,7 @@
 let test: bool = true;
 
 fn main(argc: i32, argv: vec<str>): i32 = {
-    let msg: str = "Hello World!";
-    msg = "bye!";
-    print(msg);
-
-    if test != false {
-        print("Test is true!");
-    }
-
-    let integer: i32 = 34;
-
-    integer += 6 + 4;
-    integer *= 2;
-
-    let array: vec<i32> = [3 - 5, 5, 2, 4];
+    let foo: u64 = 5;
 
     <- 0
 }

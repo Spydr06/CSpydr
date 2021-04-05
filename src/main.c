@@ -121,7 +121,7 @@ void compileLLVM(char* path, char* target)
     parser_T* parser = initParser(lexer);
     ASTRoot_T* root = parserParse(parser);
 
-    //compile(root, target, path);
+    compile(root, target, path);
 
     free(root);
     free(lexer);
