@@ -12,6 +12,8 @@
 #include "core/parser/parser.h"
 #include "core/parser/AST.h"
 
+#include "transpiler/transpiler.h"
+
 #ifndef __linux__
 #error "CSpydr currently only supports x86 linux!"
 #endif
@@ -48,6 +50,8 @@ const char* helpText = COLOR_BOLD_WHITE "usage:" COLOR_RESET " cspydr [options] 
                        "  -v, --version\t\tdisplays the version of CSpydr and quits.\n"
                        "  -i, --info\t\tdisplays information text and quits.\n"
                        "  -o, --output [file]\tset the target output file (default: " DEFAULT_OUTPUT_FILE ")\n"
+                       "  -t, --transpile\tsets the compile type to transpile to C,\n" 
+                       "                   \tthen compile (default: compile to LLVM IR)\n"
                        "  -d, --debug\t\tenable debug output.\n"
                        "\n"
                        "If you are unsure, what CSpydr is, please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n";
@@ -62,11 +66,19 @@ const char* getCSpydrVersion();
 const char* getCSpydrBuild();
 
 void compileLLVM(char* path, char* target);
+void compileTranspiling(char* path, char* target);
+
+typedef enum COMPILE_TYPE_ENUM 
+{ 
+    COMPILE_LLVM, COMPILE_TRANSPILING 
+} compileType_T;
 
 int main(int argc, char* argv[])
 {
     char* inputFile = NULL;
     char* outputFile = DEFAULT_OUTPUT_FILE;
+
+    compileType_T compileType = COMPILE_LLVM; 
 
     flagDispatcher_T* dispatcher = dispatchFlags(argc, argv);
     for(int i = 0; i < dispatcher->flags->size; i++)
@@ -89,6 +101,9 @@ int main(int argc, char* argv[])
                 inputFile = calloc(strlen(currentFlag->value) + 1, sizeof(char));
                 strcpy(inputFile, currentFlag->value);
                 break;
+            case FLAG_ENABLE_TRANSPILING:
+                compileType = COMPILE_TRANSPILING;
+                break;
             case FLAG_DEBUG:
                 //TODO: create a global debugging flag
                 break;
@@ -107,7 +122,18 @@ int main(int argc, char* argv[])
         return 0;
     }
 
-    compileLLVM(inputFile, outputFile);
+    switch(compileType)
+    {
+        case COMPILE_LLVM:
+            compileLLVM(inputFile, outputFile);
+            break;
+        case COMPILE_TRANSPILING:
+            compileTranspiling(inputFile, outputFile);
+            break;
+        default:
+            LOG_ERROR_F("Unknown compile type \"%d\"\n", compileType);
+            break;
+    }
 
     return 0;
 }
@@ -123,6 +149,28 @@ void compileLLVM(char* path, char* target)
 
     compile(root, target, path);
 
+    free(root);
+    free(lexer);
+    free(parser);
+}
+
+void compileTranspiling(char* path, char* target)
+{
+    LOG_OK_F(COLOR_BOLD_GREEN "Compiling" COLOR_RESET " \"%s\"\n", path);
+    char* src = readFile(path);
+
+    lexer_T* lexer = initLexer(src, path);
+    parser_T* parser = initParser(lexer);
+    ASTRoot_T* root = parserParse(parser);
+
+    transpiler_T* transpiler = initTranspiler();
+    transpileAST(root, transpiler);
+    char* outputCode = emitCode(transpiler);
+
+    printf("%s\n", outputCode);
+    free(outputCode);
+
+    free(transpiler);
     free(root);
     free(lexer);
     free(parser);

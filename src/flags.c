@@ -51,6 +51,10 @@ flagDispatcher_T* dispatchFlags(int argc, char* argv[])
         {
             listPush(dispatcher->flags, initFlag(FLAG_INFO, NULL));
         }
+        else if(strcmp(arg, "-t") == 0 || strcmp(arg, "--transpile") == 0)
+        {
+            listPush(dispatcher->flags, initFlag(FLAG_ENABLE_TRANSPILING, NULL));
+        }
         else if(arg[0] == '-')
         {
             LOG_ERROR_F("Unknown parameter \"%s\". Use --help or -h for help.\n", arg);

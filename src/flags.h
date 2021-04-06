@@ -13,6 +13,7 @@ typedef enum FLAG_TYPE
     FLAG_INPUT,
     FLAG_INFO,
     FLAG_UNDEFINED,
+    FLAG_ENABLE_TRANSPILING
 } flagType_T;
 
 typedef struct FLAG_STRUCT
