@@ -58,7 +58,7 @@ token_T* lexerConsumeType(lexer_T* lexer, tokenType_T type)
     return token;
 }
 
-static void lexerSkipWhitespace(lexer_T* lexer)
+static void lexerSkipWhitespace(lexer_T* lexer) //skips spaces, newlines, tabs, etc.
 {
     while(lexer->c == 13 || lexer->c == 10 || lexer->c == ' ' || lexer->c == '\t') 
     {

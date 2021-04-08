@@ -372,27 +372,4 @@ ASTExprFnCall_T* parserParseFunctionCall(parser_T* parser, char* callee)
     parserConsume(parser, TOKEN_RIGHT_PAREN, "expect \")\" after function call");
 
     return ast;
-}
-
-
-ASTLocal_T* parserParseLocal(parser_T* parser, bool includeLet)
-{
-    if(includeLet) {
-        parserConsume(parser, TOKEN_LET, "expect local variable definition keyword \"let\"");
-    }
-    char* name = parser->token->value;
-    parserConsume(parser, TOKEN_ID, "expect variable name");
-    parserConsume(parser, TOKEN_COLON, "expect \":\" after variable name");
-
-    ASTDataType_T* dataType = parserParseDataType(parser);
-    ASTExpr_T* expr = initASTExprNil();
-
-    if(parser->token->type == TOKEN_EQUALS)
-    {
-        parserAdvance(parser);
-        free(expr);
-        expr = parserParseExpr(parser);
-    }
-
-    return initASTLocal(name, dataType, expr);
-}   
+} 

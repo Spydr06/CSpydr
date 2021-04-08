@@ -11,6 +11,7 @@ errorHandler_T* initErrorHandler()
     errorHandler_T* handler = calloc(1, sizeof(struct ERROR_HANDLER));
     handler->currentLine = calloc(1, sizeof(char));
     handler->errorMessages = initList(sizeof(struct ERROR_MESSAGE*));
+    handler->exitAfterParsing = false;
 
     return handler;
 }
@@ -48,6 +49,10 @@ void throwError(errorHandler_T* handler, errorMessage_T* message)
         case ERR_ILLEGAL_TYPE_CAST:
             LOG_ERROR_F("%s\n", message->message);
             break;
+        case ERR_REDEFINITION:
+            handler->exitAfterParsing = true;
+            LOG_ERROR_F("%s\n", message->message);
+            break;
         case ERR_SYNTAX_WARNING:
         case ERR_TYPE_CAST_WARN:
             LOG_WARN_F("%s\n", message->message);
@@ -65,6 +70,8 @@ void throwError(errorHandler_T* handler, errorMessage_T* message)
 
     if(message->forceExit) {
         //TODO: exit safely
+        free(message->message);
+        free(message);
         exit(1);
     }
 
@@ -80,7 +87,7 @@ void throwSyntaxError(errorHandler_T* handler, const char* message, const char* 
                                 parser->lexer->currentLine, LINE_NUMBER_SPACES, "", parser->lexer->iInLine, "^~", "here");*/
 
     // new error message generator code
-    const char* template = COLOR_BOLD_WHITE "%s:%d:%d " COLOR_RESET "=>" COLOR_BOLD_RED " [Error]" COLOR_RESET 
+    const char* template = COLOR_BOLD_WHITE "%s:%d:%d " COLOR_RESET "=>" COLOR_BOLD_RED " [syntax]" COLOR_RESET 
                            " %s\n %*d | %s\n %*s | " COLOR_BOLD_BLUE "%*shere\n";
     char* lineCode = handler->currentLine;
     const char* pointer = "^~";
@@ -91,4 +98,21 @@ void throwSyntaxError(errorHandler_T* handler, const char* message, const char* 
 
     errorMessage_T* error = initErrorMessage(ERR_SYNTAX_ERROR, lineNumber, true, value); //generate the error struct
     throwError(handler, error); //submit the error
+    free(value);
+}
+
+void throwRedefinitionError(errorHandler_T* handler, const char* message, const char* srcPath, unsigned int lineNumber, unsigned int character)
+{
+    const char* template = COLOR_BOLD_WHITE "%s:%d:%d " COLOR_RESET "=>" COLOR_BOLD_RED " [redef]" COLOR_RESET 
+                           " %s\n %*d | %s\n %*s | " COLOR_BOLD_BLUE "%*shere\n";
+    char* lineCode = handler->currentLine;
+    const char* pointer = "^~";
+
+    //generate the message
+    char* value = calloc(strlen(template) + strlen(srcPath) + strlen(message) + strlen(pointer) + strlen(lineCode) + 128, sizeof(char));
+    sprintf(value, template, srcPath, lineNumber, character, message, LINE_NUMBER_SPACES, lineNumber, lineCode, LINE_NUMBER_SPACES, "", character, "^~");
+
+    errorMessage_T* error = initErrorMessage(ERR_REDEFINITION, lineNumber, false, value); //generate the error struct
+    throwError(handler, error); //submit the error
+    free(value);
 }

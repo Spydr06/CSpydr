@@ -8,6 +8,5 @@
 ASTExpr_T* parserParseExpr(parser_T* parser);
 ASTAssignment_T* parserParseAssinment(parser_T* parser, char* targetCallee);
 ASTExprFnCall_T* parserParseFunctionCall(parser_T* parser, char* callee);
-ASTLocal_T* parserParseLocal(parser_T* parser, bool includeLet);
 ASTExprConstant_T* parserParseNumber(parser_T* parser);
 #endif

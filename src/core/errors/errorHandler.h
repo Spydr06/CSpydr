@@ -8,6 +8,7 @@ typedef enum ERROR_TYPE
 {   
     ERR_SYNTAX_ERROR,
     ERR_SYNTAX_WARNING,
+    ERR_REDEFINITION,
 
     ERR_ILLEGAL_TYPE_CAST,
     ERR_TYPE_CAST_WARN,
@@ -35,6 +36,8 @@ typedef struct ERROR_HANDLER
 {
     char* currentLine;
     list_T* errorMessages;
+
+    bool exitAfterParsing;
 } errorHandler_T;
 
 errorHandler_T* initErrorHandler();
@@ -45,5 +48,6 @@ void pushSrcLine(errorHandler_T* handler, char* line);
 
 void throwError(errorHandler_T* hander, errorMessage_T* message);
 void throwSyntaxError(errorHandler_T* handler, const char* message, const char* srcPath, unsigned int lineNumber, unsigned int character);
+void throwRedefinitionError(errorHandler_T* handler, const char* message, const char* srcPath, unsigned int lineNumber, unsigned int character);
 
 #endif
