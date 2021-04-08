@@ -50,7 +50,7 @@ const char* helpText = COLOR_BOLD_WHITE "usage:" COLOR_RESET " cspydr [options] 
                        "  -v, --version\t\tdisplays the version of CSpydr and quits.\n"
                        "  -i, --info\t\tdisplays information text and quits.\n"
                        "  -o, --output [file]\tset the target output file (default: " DEFAULT_OUTPUT_FILE ")\n"
-                       "  -t, --transpile\tsets the compile type to transpile to C,\n" 
+                       "  -t, --transpile\tsets the compile type to transpile to c++,\n" 
                        "                   \tthen compile (default: compile to LLVM IR)\n"
                        "  -d, --debug\t\tenable debug output.\n"
                        "\n"

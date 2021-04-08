@@ -53,7 +53,7 @@ void transpileAST(ASTRoot_T* ast, transpiler_T* transpiler)
 
 static void transpileFunction(ASTFunction_T* ast, transpiler_T* transpiler)
 {
-    
+    //const char* template = "%s %s(%s)";
 }
 
 static void transpileGlobal(ASTGlobal_T* ast, transpiler_T* transpiler)
@@ -92,7 +92,7 @@ static char* transpileDataType(ASTDataType_T* ast, transpiler_T* transpiler)
         case AST_CHAR:
             return "char ";
         case AST_STR:
-            return "char* ";
+            return "std::string ";
         case AST_ARRAY: {
             char* innerType = transpileDataType(ast->innerType, transpiler);
             char* type = calloc(strlen(innerType) + 2, sizeof(char));
