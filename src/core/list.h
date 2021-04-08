@@ -11,6 +11,7 @@ typedef struct LIST_STRUCT
 } list_T;
 
 list_T* initList(size_t itemsize);
+void freeList(list_T* list);
 
 void listPush(list_T* list, void* item);
 

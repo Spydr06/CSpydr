@@ -39,7 +39,7 @@ ASTDataType_T* parserParseDataType(parser_T* parser)
 {
     ASTBasicDataType_T basicType = AST_UNDEF;
     ASTDataType_T* subType = NULL;
-    ASTExpr_T* numberOfIndices = NULL;
+    ASTExprConstant_T* numberOfIndices = NULL;
 
     char* type = parser->token->value;
     if(strcmp(type, "i32") == 0)
@@ -96,7 +96,7 @@ ASTDataType_T* parserParseDataType(parser_T* parser)
         if(parser->token->type == TOKEN_COLON)
         {
             parserAdvance(parser);
-            numberOfIndices = parserParseExpr(parser);
+            numberOfIndices = parserParseNumber(parser);
         }
         parserConsume(parser, TOKEN_RIGHT_BRACKET, "expect \"]\" after array type declaration");
     }

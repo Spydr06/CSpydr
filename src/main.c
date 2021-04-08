@@ -149,6 +149,8 @@ void compileLLVM(char* path, char* target)
 
     compile(root, target, path);
 
+    freeAST(root);
+
     free(root);
     free(lexer);
     free(parser);
@@ -170,8 +172,9 @@ void compileTranspiling(char* path, char* target)
     printf("%s\n", outputCode);
     free(outputCode);
 
+    freeAST(root);
+
     free(transpiler);
-    free(root);
     free(lexer);
     free(parser);
 }

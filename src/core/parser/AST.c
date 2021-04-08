@@ -243,3 +243,345 @@ ASTExprArray_T* initASTArrayExpr()
 
     return ast;
 }
+
+static void freeASTCompound(ASTCompound_T* ast);
+static void freeASTVarCall(ASTExprVarCall_T* ast);
+static void freeASTFnCall(ASTExprFnCall_T* ast);
+static void freeASTExpr(ASTExpr_T* ast);
+
+static void freeASTConstant(ASTExprConstant_T* ast)
+{   if(ast == NULL) 
+        return;
+
+    free(ast->value);
+    free(ast);
+}
+
+static void freeASTDataType(ASTDataType_T* ast)
+{
+    if(ast == NULL) 
+        return;
+
+    freeASTDataType(ast->innerType);
+    freeASTConstant(ast->numberOfIndices);
+
+    free(ast);
+}
+
+static void freeASTArrayExpr(ASTExprArray_T* ast)
+{
+    if(ast == NULL) 
+        return;
+
+    freeASTDataType(ast->dataType);
+    
+    for(int i = 0; i < ast->indices->size; i++)
+    {
+        freeASTExpr(ast->indices->items[i]);
+    }
+    freeList(ast->indices);
+    free(ast);
+}
+
+static void freeASTClosure(ASTExprClosure_T* ast)
+{
+    if(ast == NULL) 
+        return;
+
+    freeASTDataType(ast->dataType);
+    freeASTExpr(ast->value);
+
+    free(ast);
+}
+
+static void freeASTNot(ASTExprNot_T* ast)
+{
+    if(ast == NULL) 
+        return;
+
+    freeASTDataType(ast->dataType);
+    freeASTExpr(ast->value);
+
+    free(ast);
+}
+
+static void freeASTNegate(ASTExprNegate_T* ast)
+{
+    if(ast == NULL) 
+        return;
+
+    freeASTDataType(ast->dataType);
+    freeASTExpr(ast->value);
+
+    free(ast);
+}
+
+static void freeASTOp(ASTExprOp_T* ast)
+{
+    if(ast == NULL) 
+        return;
+    
+    freeASTDataType(ast->dataType);
+    freeASTExpr(ast->left);
+    freeASTExpr(ast->right),
+
+    free(ast);
+}
+
+static void freeASTBoolOp(ASTExprBoolOp_T* ast)
+{
+    if(ast == NULL)
+        return;
+    
+    freeASTDataType(ast->dataType);
+    freeASTExpr(ast->left);
+    freeASTExpr(ast->right),
+
+    free(ast);
+}
+
+static void freeASTExpr(ASTExpr_T* ast)
+{
+    if(ast == NULL) 
+        return;
+    
+    switch(ast->type)
+    {
+        case AST_EX_CONSTANT:
+            freeASTConstant(ast->expr);
+            break;
+        case AST_EX_ARRAY:
+            freeASTArrayExpr(ast->expr);
+            break;
+        case AST_EX_VAR_CALL:
+            freeASTVarCall(ast->expr);
+            break;
+        case AST_EX_FN_CALL:
+            freeASTFnCall(ast->expr);
+            break;
+        case AST_EX_CLOSURE:
+            freeASTClosure(ast->expr);
+            break;
+        case AST_EX_OP:
+            freeASTOp(ast->expr);
+            break;
+        case AST_EX_NIL:    //nothing to do here since there is no AST type for "nil"
+            break;
+        case AST_EX_BOOL_OP:
+            freeASTBoolOp(ast->expr);
+            break;
+        case AST_EX_NOT:
+            freeASTNot(ast->expr);
+            break;
+        case AST_EX_NEGATE:
+            freeASTNegate(ast->expr);
+            break;
+    }
+    free(ast);
+}
+
+static void freeASTGlobal(ASTGlobal_T* ast)
+{
+    if(ast == NULL) 
+        return;
+
+    freeASTDataType(ast->dataType);
+    freeASTExpr(ast->value);
+
+    free(ast);
+}
+
+static void freeASTArgument(ASTArgument_T* ast)
+{
+    if(ast == NULL) 
+        return;
+    
+    freeASTDataType(ast->dataType);
+
+    free(ast);
+}
+
+static void freeASTLocal(ASTLocal_T* ast)
+{
+    if(ast == NULL) 
+        return;
+
+    freeASTDataType(ast->dataType);
+    freeASTExpr(ast->value);
+
+    free(ast);
+}
+
+static void freeASTFnCall(ASTExprFnCall_T* ast)
+{
+    if(ast == NULL) 
+        return;
+
+    for(int i = 0; i < ast->args->size; i++)
+    {
+        freeASTExpr(ast->args->items[i]);
+    }
+    freeList(ast->args);
+    freeASTDataType(ast->dataType);
+    free(ast);
+}
+
+static void freeASTVarCall(ASTExprVarCall_T* ast)
+{
+    if(ast == NULL) 
+        return;
+
+    freeASTDataType(ast->dataType);
+    free(ast);
+}
+
+static void freeASTAssignment(ASTAssignment_T* ast)
+{
+    if(ast == NULL) 
+        return;
+
+    freeASTVarCall(ast->target);
+    freeASTDataType(ast->dataType);
+    freeASTExpr(ast->value);
+
+    free(ast);
+}
+
+static void freeASTWhile(ASTWhileStmt_T* ast)
+{
+    if(ast == NULL) 
+        return;
+    
+    freeASTCompound(ast->body);
+    freeASTExpr(ast->condition);
+
+    free(ast);
+}
+
+static void freeASTFor(ASTForStmt_T* ast)
+{
+    if(ast == NULL) 
+        return;
+
+    freeASTLocal(ast->counterVar);
+    freeASTExpr(ast->condition);
+    freeASTAssignment(ast->increment);
+    freeASTCompound(ast->body);
+
+    free(ast);
+}
+
+static void freeASTIf(ASTIfStmt_T* ast)
+{
+    if(ast == NULL) 
+        return;
+
+    freeASTExpr(ast->condition);
+    freeASTCompound(ast->ifBody);
+    freeASTCompound(ast->elseBody);
+
+    free(ast);
+}
+
+static void freeASTReturn(ASTReturnStmt_T* ast)
+{
+    if(ast == NULL) 
+        return;
+
+    freeASTExpr(ast->returnValue);
+    free(ast);
+}
+
+static void freeASTExit(ASTExitStmt_T* ast)
+{
+    if(ast == NULL) 
+        return;
+
+    freeASTExpr(ast->exitCode);
+    free(ast);
+}
+
+static void freeASTCompoundInstruction(ASTCompoundInstruction_T* ast)
+{
+    if(ast == NULL) 
+        return;
+
+    switch(ast->type)
+    {
+        case AST_CI_LOCALDEF:
+            freeASTLocal(ast->ptr);
+            break;
+        case AST_CI_ASSIGN:
+            freeASTAssignment(ast->ptr);
+            break;
+        case AST_CI_WHILE_STMT:
+            freeASTWhile(ast->ptr);
+            break;
+        case AST_CI_FOR_STMT:
+            freeASTFor(ast->ptr);
+            break;
+        case AST_CI_IF_STMT:
+            freeASTIf(ast->ptr);
+            break;
+        case AST_CI_RETURN_STMT:
+            freeASTReturn(ast->ptr);
+            break;
+        case AST_CI_EXIT_STMT:
+            freeASTExit(ast->ptr);
+            break;
+        case AST_CI_FN_CALL:
+            freeASTFnCall(ast->ptr);
+            break;
+    }
+
+    free(ast);
+}
+
+static void freeASTCompound(ASTCompound_T* ast)
+{
+    if(ast == NULL) 
+        return;
+
+    for(int i = 0; i < ast->body->size; i++)
+    {
+        freeASTCompoundInstruction(ast->body->items[i]);    
+    }
+    freeList(ast->body);
+    free(ast);
+}
+
+static void freeASTFunction(ASTFunction_T* ast)
+{
+    if(ast == NULL) 
+        return;
+
+    for(int i = 0; i < ast->args->size; i++)
+    {
+        freeASTArgument(ast->args->items[i]);
+    }
+    freeList(ast->args);
+
+    freeASTDataType(ast->returnType);
+    freeASTCompound(ast->body);
+
+    free(ast);
+}
+
+void freeAST(ASTRoot_T* ast)
+{
+    if(ast == NULL) 
+        return;
+
+    for(int i = 0; i < ast->globals->size; i++)
+    {
+        freeASTGlobal(ast->globals->items[i]);
+    }
+    freeList(ast->globals);
+
+    for(int i = 0; i < ast->functions->size; i++)
+    {
+        freeASTFunction(ast->functions->items[i]);
+    }
+    freeList(ast->functions);
+    //free(ast);
+}

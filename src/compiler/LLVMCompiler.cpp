@@ -180,7 +180,7 @@ namespace CSpydr
                 return llvm::ArrayType::get(llvm::Type::getInt8Ty(*this->llvmContext), 0);
 
             case AST_ARRAY:
-                return llvm::ArrayType::get(generateLLVMType(ast->innerType), 0);
+                return llvm::ArrayType::get(generateLLVMType(ast->innerType), ast->numberOfIndices == NULL ? 0 : *((int*)ast->numberOfIndices->value));
 
             default:
                 LOG_ERROR_F("variable of type \"%d\" is currently not supported\n",  ast->basicType);

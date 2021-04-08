@@ -83,18 +83,19 @@ typedef struct AST_EXPR_STRUCT
 } ASTExpr_T;
 
 typedef struct AST_DATA_TYPE ASTDataType_T;
-struct AST_DATA_TYPE
-{
-    ASTBasicDataType_T basicType;
-    ASTDataType_T* innerType;
-    ASTExpr_T* numberOfIndices;
-};
 
 typedef struct AST_EXPR_CONSTANT_STRUCT
 {
     ASTDataType_T* dataType;
     void* value;
 } ASTExprConstant_T;
+
+struct AST_DATA_TYPE
+{
+    ASTBasicDataType_T basicType;
+    ASTDataType_T* innerType;
+    ASTExprConstant_T* numberOfIndices;
+};
 
 typedef struct AST_EXPR_CLOSURE_STRUCT
 {
@@ -229,6 +230,7 @@ typedef struct AST_EXIT_STMT_STRUCT
 } ASTExitStmt_T;
 
 ASTRoot_T* initASTRoot();
+void freeAST(ASTRoot_T* ast);
 
 ASTGlobal_T* initASTGlobal(char* name, ASTDataType_T* dataType, ASTExpr_T* value);
 ASTArgument_T* initASTArgument(char* name, ASTDataType_T* dataType);

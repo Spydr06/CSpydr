@@ -23,3 +23,9 @@ void listPush(list_T* list, void* item)
 
     list->items[list->size - 1] = item;
 }
+
+void freeList(list_T* list)
+{
+    free(list->items);
+    free(list);
+}

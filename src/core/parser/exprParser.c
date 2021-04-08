@@ -17,23 +17,6 @@ static ASTExpr_T* parserParseIdExpr(parser_T* parser)
         case TOKEN_LEFT_PAREN: {
             return initASTExpr(AST_EX_FN_CALL, parserParseFunctionCall(parser, id));
         }
-
-        case TOKEN_PLUS: {
-            
-        } break;
-
-        case TOKEN_MINUS: {
-
-        } break;
-
-        case TOKEN_STAR: {
-
-        } break;
-
-        case TOKEN_SLASH: {
-
-        } break;
-
         default:
             return initASTExpr(AST_EX_VAR_CALL, initASTVarCall(id));
     }
@@ -50,20 +33,27 @@ static ASTExprClosure_T* parserParseClosure(parser_T* parser)
     return ast;
 }
 
-static ASTExprConstant_T* parserParseNumber(parser_T* parser)
+ASTExprConstant_T* parserParseNumber(parser_T* parser)
 {
-    int32_t integer = atoi(parser->token->value);
+    int integer = atoi(parser->token->value);
     parserConsume(parser, TOKEN_NUMBER, "expect a number");
+    ASTExprConstant_T* _const = initASTConstant(initASTDataType_T(AST_I32), NULL);
+    _const->value = malloc(sizeof(int));
+    memcpy(_const->value, &integer, sizeof(int));
 
-    return initASTConstant(initASTDataType_T(AST_I32), &integer);
+    return _const;
 }
 
 static ASTExprConstant_T* parserParseString(parser_T* parser)
 {
-    char* string = parser->token->value;
+    char* _string = parser->token->value;
     parserConsume(parser, TOKEN_STR, "expect a string");
 
-    return initASTConstant(initASTDataType_T(AST_STR), string);
+    ASTExprConstant_T* _const =  initASTConstant(initASTDataType_T(AST_STR), _string);
+    _const->value = calloc(strlen(_string) + 1, sizeof(char));
+    strcpy(_const->value, _string);
+    
+    return _const;
 }
 
 static ASTExprConstant_T* parserParseChar(parser_T* parser)
@@ -71,7 +61,10 @@ static ASTExprConstant_T* parserParseChar(parser_T* parser)
     char character = parser->token->value[0];
     parserConsume(parser, TOKEN_CHAR, "expect a char");
 
-    return initASTConstant(initASTDataType_T(AST_CHAR), &character);
+    ASTExprConstant_T* _const = initASTConstant(initASTDataType_T(AST_CHAR), &character);
+    _const->value = malloc(sizeof(char));
+
+    return _const;
 }
 
 static ASTExprConstant_T* parserParseBool(parser_T* parser)
@@ -79,7 +72,10 @@ static ASTExprConstant_T* parserParseBool(parser_T* parser)
     int8_t boolean = strcmp(parser->token->value, "true") == 0 ? 1 : 0;
     parserConsume(parser, TOKEN_BOOL, "expect a bool");
 
-    return initASTConstant(initASTDataType_T(AST_BOOL), &boolean);
+    ASTExprConstant_T* _const = initASTConstant(initASTDataType_T(AST_BOOL), &boolean);
+    _const->value = malloc(sizeof(int8_t));
+
+    return _const;
 }
 
 static void parserParseNil(parser_T* parser)
