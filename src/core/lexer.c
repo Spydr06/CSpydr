@@ -192,6 +192,8 @@ static token_T* lexerParseSymbol(lexer_T* lexer)
         case '=': {
             if(lexerPeek(lexer, 1) == '=') 
                 return lexerConsume(lexer, lexerConsume(lexer, initToken("==", lexer->line, TOKEN_EQUALS_EQUALS)));
+            else if(lexerPeek(lexer, 1) == '>')
+                return lexerConsume(lexer, lexerConsume(lexer, initToken("=>", lexer->line, TOKEN_EQUALS_GREATER)));
             else 
                 return lexerConsume(lexer, initToken("=", lexer->line, TOKEN_EQUALS));
         }

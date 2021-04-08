@@ -75,7 +75,8 @@ ASTDataType_T* initASTDataType_T(ASTBasicDataType_T dataType)
 {
     ASTDataType_T* ast = calloc(1, sizeof(struct AST_DATA_TYPE));
     ast->basicType = dataType;
-    ast->innerType = NULL;
+    ast->innerType = NULL;          //only used in arrays
+    ast->numberOfIndices = NULL;    //only sometimes used in arrays
 
     return ast;
 }
@@ -236,7 +237,7 @@ ASTExprBoolOp_T* initASTBoolOp(ASTExprBoolOpType_T type, ASTExpr_T* left, ASTExp
 ASTExprArray_T* initASTArrayExpr()
 {
     ASTExprArray_T* ast = calloc(1, sizeof(struct AST_EXPR_ARRAY_STRUCT));
-    ast->dataType = initASTDataType_T(AST_VEC);
+    ast->dataType = initASTDataType_T(AST_ARRAY);
     ast->indices = initList(sizeof(struct AST_EXPR_STRUCT*));
     //TODO: get the indices data type
 

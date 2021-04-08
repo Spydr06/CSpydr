@@ -25,7 +25,8 @@ const char* tokenTypeToString(tokenType_T type)
         case TOKEN_LEFT_BRACKET: return "TOKEN_LEFT_BRACKET";  
         case TOKEN_RIGHT_BRACKET: return "TOKEN_RIGHT_BRACKET"; 
         case TOKEN_EQUALS: return "TOKEN_EQUALS";         
-        case TOKEN_EQUALS_EQUALS: return "TOKEN_EQUALS_EQUALS";   
+        case TOKEN_EQUALS_EQUALS: return "TOKEN_EQUALS_EQUALS";  
+        case TOKEN_EQUALS_GREATER: return "TOKEN_EQUALS_GREATER"; 
         case TOKEN_COLON: return "TOKEN_COLON";         
         case TOKEN_SEMICOLON: return "TOKEN_SEMICOLON";     
         case TOKEN_DOT: return "TOKEN_DOT";          

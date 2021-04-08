@@ -14,6 +14,7 @@ typedef enum TOKENTYPE
 
     TOKEN_EQUALS,           // =
     TOKEN_EQUALS_EQUALS,    // ==
+    TOKEN_EQUALS_GREATER,   // =>
     TOKEN_COLON,            // :
     TOKEN_COMMA,            // ,
     TOKEN_SEMICOLON,        // ;
@@ -47,7 +48,7 @@ typedef enum TOKENTYPE
     TOKEN_LET,              // let
     TOKEN_FN,               // fn
 
-    TOKEN_IDENTIFIER,       // i8, i16, i32, i64, u8, u16, u32, u64, bool, str, char, vec
+    TOKEN_IDENTIFIER,       // i32, i64, u32, u64, bool, str, char, vec
     TOKEN_STMT,             // statement
 
     TOKEN_EOF               //end of file

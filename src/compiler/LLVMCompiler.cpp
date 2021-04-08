@@ -179,7 +179,7 @@ namespace CSpydr
             case AST_STR:
                 return llvm::ArrayType::get(llvm::Type::getInt8Ty(*this->llvmContext), 0);
 
-            case AST_VEC:
+            case AST_ARRAY:
                 return llvm::ArrayType::get(generateLLVMType(ast->innerType), 0);
 
             default:

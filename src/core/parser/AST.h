@@ -19,7 +19,7 @@ typedef enum AST_BASIC_DATA_TYPE
     AST_CHAR,
     AST_STR,
 
-    AST_VEC,
+    AST_ARRAY,
     AST_UNDEF,
 } ASTBasicDataType_T;
 
@@ -76,19 +76,19 @@ typedef struct AST_ROOT_STRUCT
     list_T* functions;
 } ASTRoot_T;
 
-typedef struct AST_DATA_TYPE ASTDataType_T;
-
-struct AST_DATA_TYPE
-{
-    ASTBasicDataType_T basicType;
-    ASTDataType_T* innerType;
-};
-
 typedef struct AST_EXPR_STRUCT
 {
     ASTExprType_T type;
     void* expr;
 } ASTExpr_T;
+
+typedef struct AST_DATA_TYPE ASTDataType_T;
+struct AST_DATA_TYPE
+{
+    ASTBasicDataType_T basicType;
+    ASTDataType_T* innerType;
+    ASTExpr_T* numberOfIndices;
+};
 
 typedef struct AST_EXPR_CONSTANT_STRUCT
 {

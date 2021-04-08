@@ -93,7 +93,7 @@ static char* transpileDataType(ASTDataType_T* ast, transpiler_T* transpiler)
             return "char ";
         case AST_STR:
             return "char* ";
-        case AST_VEC: {
+        case AST_ARRAY: {
             char* innerType = transpileDataType(ast->innerType, transpiler);
             char* type = calloc(strlen(innerType) + 2, sizeof(char));
             strcpy(type, innerType);

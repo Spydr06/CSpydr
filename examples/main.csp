@@ -2,10 +2,11 @@
 
 let test: bool = true;
 
-fn main(argc: i32, argv: vec<str>): i32 = {
+fn main(argc: i32, argv: [str]): i32 => {
     let foo: u64 = 5;
+    let arr: [[i32: 2]: 2] = [[3, 5], [2, 1]];
 
     <- 0
 }
 
-fn print(msg: str) = printf("%s\n", msg);
+fn print(msg: str) => printf("%s\n", msg);

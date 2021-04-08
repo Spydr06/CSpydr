@@ -39,6 +39,7 @@ ASTDataType_T* parserParseDataType(parser_T* parser)
 {
     ASTBasicDataType_T basicType = AST_UNDEF;
     ASTDataType_T* subType = NULL;
+    ASTExpr_T* numberOfIndices = NULL;
 
     char* type = parser->token->value;
     if(strcmp(type, "i32") == 0)
@@ -86,14 +87,18 @@ ASTDataType_T* parserParseDataType(parser_T* parser)
         basicType = AST_STR;
         parserAdvance(parser);
     }
-    else if(strcmp(type, "vec") == 0)
+    else if(strcmp(type, "[") == 0)
     {
-        basicType = AST_VEC;
-
         parserAdvance(parser);
-        parserConsume(parser, TOKEN_LESS, "expect \"<\" after \"vec\" data type");
         subType = parserParseDataType(parser);
-        parserConsume(parser, TOKEN_GREATER, "expect \">\" after vector type");
+        basicType = AST_ARRAY;
+
+        if(parser->token->type == TOKEN_COLON)
+        {
+            parserAdvance(parser);
+            numberOfIndices = parserParseExpr(parser);
+        }
+        parserConsume(parser, TOKEN_RIGHT_BRACKET, "expect \"]\" after array type declaration");
     }
     else 
     {
@@ -103,6 +108,7 @@ ASTDataType_T* parserParseDataType(parser_T* parser)
 
     ASTDataType_T* ast = initASTDataType_T(basicType);
     ast->innerType = subType;
+    ast->numberOfIndices = numberOfIndices;
     return ast;
 }
 
@@ -245,7 +251,7 @@ static ASTFunction_T* parserParseFunction(parser_T* parser)
         ast->returnType = initASTDataType_T(AST_VOID);
     }
 
-    parserConsume(parser, TOKEN_EQUALS, "expect \"=\" after function definition");
+    parserConsume(parser, TOKEN_EQUALS_GREATER, "expect \"=>\" after function definition");
 
     ast->body = parserParseCompound(parser);
 
