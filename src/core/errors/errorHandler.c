@@ -58,7 +58,7 @@ void throwError(errorHandler_T* handler, errorMessage_T* message)
             LOG_WARN_F("%s\n", message->message);
             break;
         case ERR_UNDEFINED:
-            LOG_INFO_F("%s\n", message->message);
+            LOG_ERROR_F("%s\n", message->message);
             break;
         case ERR_INTERNAL:  // this should never happen
             LOG_ERROR_F("%s\n", message->message);
@@ -113,6 +113,22 @@ void throwRedefinitionError(errorHandler_T* handler, const char* message, const 
     sprintf(value, template, srcPath, lineNumber, character, message, LINE_NUMBER_SPACES, lineNumber, lineCode, LINE_NUMBER_SPACES, "", character, "^~");
 
     errorMessage_T* error = initErrorMessage(ERR_REDEFINITION, lineNumber, false, value); //generate the error struct
+    throwError(handler, error); //submit the error
+    free(value);
+}
+
+void throwUndefinitionError(errorHandler_T* handler, const char* message, const char* srcPath, unsigned int lineNumber, unsigned int character)
+{
+    const char* template = COLOR_BOLD_WHITE "%s:%d:%d " COLOR_RESET "=>" COLOR_BOLD_RED " [undef]" COLOR_RESET 
+                           " %s\n %*d | %s\n %*s | " COLOR_BOLD_BLUE "%*shere\n";
+    char* lineCode = handler->currentLine;
+    const char* pointer = "^~";
+
+    //generate the message
+    char* value = calloc(strlen(template) + strlen(srcPath) + strlen(message) + strlen(pointer) + strlen(lineCode) + 128, sizeof(char));
+    sprintf(value, template, srcPath, lineNumber, character, message, LINE_NUMBER_SPACES, lineNumber, lineCode, LINE_NUMBER_SPACES, "", character, "^~");
+
+    errorMessage_T* error = initErrorMessage(ERR_UNDEFINED, lineNumber, true, value); //generate the error struct
     throwError(handler, error); //submit the error
     free(value);
 }

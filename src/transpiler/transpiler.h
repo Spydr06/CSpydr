@@ -8,9 +8,11 @@ typedef struct TRANSPILER_STRUCT
     char* includeSection;
     char* defineSection;
     char* codeSection;
+
+    char* stdPath;
 } transpiler_T;
 
-transpiler_T* initTranspiler();
+transpiler_T* initTranspiler(char* stdPath);
 
 void transpileAST(ASTRoot_T* ast, transpiler_T* transpiler);
 

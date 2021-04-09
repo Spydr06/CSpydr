@@ -15,8 +15,8 @@
 
 namespace CSpydr
 {
-    LLVMCompiler::LLVMCompiler(std::string targetPath, std::string moduleName, bool emitDebugInfo)
-        : targetPath(targetPath), moduleName(moduleName), emitDebugInfo(emitDebugInfo)
+    LLVMCompiler::LLVMCompiler(std::string targetPath, std::string moduleName)
+        : targetPath(targetPath), moduleName(moduleName)
     {
         llvmContext = std::make_unique<llvm::LLVMContext>();
         
@@ -41,11 +41,8 @@ namespace CSpydr
         {
             this->generateFunction((ASTFunction_T*) ast->functions->items[i]);
         }
-
-        if(emitDebugInfo) 
-        {
-            llvmModule->print(llvm::errs(), nullptr);
-        }
+        //tmp
+        llvmModule->print(llvm::errs(), nullptr);
     }
 
     llvm::GlobalVariable* LLVMCompiler::generateGlobalVar(ASTGlobal_T* ASTGlobal)

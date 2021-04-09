@@ -8,12 +8,13 @@
 #define WRITE_DEFINE(str) WRITE(str, transpiler->defineSection)
 #define WRITE_CODE(str) WRITE(str, transpiler->codeSection)
 
-transpiler_T* initTranspiler()
+transpiler_T* initTranspiler(char* stdPath)
 {
     transpiler_T* transpiler = calloc(1, sizeof(struct TRANSPILER_STRUCT));
     transpiler->includeSection = calloc(1, sizeof(char));
     transpiler->defineSection = calloc(1, sizeof(char));
     transpiler->codeSection = calloc(1, sizeof(char));
+    transpiler->stdPath = stdPath;
 
     return transpiler;
 }
@@ -36,9 +37,9 @@ static char* transpileDataType(ASTDataType_T* ast, transpiler_T* transpiler);
 
 void transpileAST(ASTRoot_T* ast, transpiler_T* transpiler)
 {
-    WRITE_INCLUDE("#include <stdio.h>\n");
-    WRITE_INCLUDE("#include <stdlib.h>\n");
-    WRITE_INCLUDE("#include <stdbool.h>\n");
+    WRITE_INCLUDE("#include <");
+    WRITE_INCLUDE(transpiler->stdPath);
+    WRITE_INCLUDE(">\n");
 
     for(int i = 0; i < ast->globals->size; i++)
     {

@@ -9,6 +9,7 @@
 
 #define SYNTAX_ERROR(msg) throwSyntaxError(parser->lexer->errorHandler, msg, parser->lexer->srcPath, parser->lexer->line, parser->lexer->iInLine)
 #define REDEF_ERROR(msg) throwRedefinitionError(parser->lexer->errorHandler, msg, parser->lexer->srcPath, parser->lexer->line, parser->lexer->iInLine)
+#define UNDEF_ERROR(msg) throwUndefinitionError(parser->lexer->errorHandler, msg, parser->lexer->srcPath, parser->lexer->line, parser->lexer->iInLine)
 
 parser_T* initParser(lexer_T* lexer)
 {
@@ -418,6 +419,11 @@ ASTRoot_T* parserParse(parser_T* parser)
                 exit(1);
             }
         }
+    }
+
+    if(checkFunction("main", ast))
+    {
+        UNDEF_ERROR(" could not find required function \"main\"");
     }
 
     freeList(parser->localVars);

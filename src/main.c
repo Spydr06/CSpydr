@@ -19,9 +19,13 @@
 #endif
 
 #ifdef _WIN32
+    #include <windows.h>
+
     #define DEFAULT_OUTPUT_FILE "a.exe"
 #endif
 #ifdef __linux__
+    #include <linux/limits.h>
+
     #define DEFAULT_OUTPUT_FILE "a.o"
 #endif
 
@@ -64,7 +68,7 @@ const char* versionText = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE 
 
 const char* getCSpydrVersion();
 const char* getCSpydrBuild();
-
+static char* getAbsoluteStdPath(char* relativePath);
 void compileLLVM(char* path, char* target);
 void compileTranspiling(char* path, char* target);
 
@@ -165,9 +169,17 @@ void compileTranspiling(char* path, char* target)
     parser_T* parser = initParser(lexer);
     ASTRoot_T* root = parserParse(parser);
 
-    transpiler_T* transpiler = initTranspiler();
+    transpiler_T* transpiler = initTranspiler(getAbsoluteStdPath("std/impl/csp_std.cpp"));
     transpileAST(root, transpiler);
     char* outputCode = emitCode(transpiler);
+
+#if defined(__linux__)
+    sh("mkdir -p .cache");    
+#elif defined(_WIN32)
+    //TODO
+#endif
+
+    writeFile(".cache/tmp.cpp", outputCode);
 
     printf("%s\n", outputCode);
     free(outputCode);
@@ -177,4 +189,13 @@ void compileTranspiling(char* path, char* target)
     free(transpiler);
     free(lexer);
     free(parser);
+}
+
+static char* getAbsoluteStdPath(char* relativePath)
+{
+#ifdef __linux__
+    char* absolutePath = calloc(PATH_MAX, sizeof(char));
+    realpath(relativePath, absolutePath);
+    return absolutePath;
+#endif
 }

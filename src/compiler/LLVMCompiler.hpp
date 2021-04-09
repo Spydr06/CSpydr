@@ -15,7 +15,7 @@ namespace CSpydr
     class LLVMCompiler 
     {
     public:
-        LLVMCompiler(std::string targetPath, std::string sourcePath, bool emitDebugInfo = false);
+        LLVMCompiler(std::string targetPath, std::string sourcePath);
         ~LLVMCompiler();
 
         void compile(ASTRoot_T* ast);
@@ -32,8 +32,6 @@ namespace CSpydr
 
         llvm::Type* generateLLVMType(ASTDataType_T* ast);
     private:
-        bool emitDebugInfo;
-
         std::string targetPath;
         std::string moduleName;
 
