@@ -65,3 +65,61 @@ char* tokenToString(token_T* token);
 const char* tokenTypeToString(tokenType_T type);
 
 #endif
+
+/*TOKEN_ID,           //names
+    TOKEN_NUMBER,       // 0, 3, 5, 5.6, etc.
+    TOKEN_CHAR,         // 'f'
+    TOKEN_STRING,       // "foo"
+
+    TOKEN_TRUE,         // true
+    TOKEN_FALSE,        // false
+
+    TOKEN_LPAREN,       // (
+    TOKEN_RPAREN,       // )
+    TOKEN_LBRACE,       // {
+    TOKEN_RBRACE,       // }
+    TOKEN_LBRACKET,     // [
+    TOKEN_RBRACKET,     // ]
+
+    TOKEN_GT,           // >
+    TOKEN_LT,           // <
+    TOKEN_EQ,           // ==
+    TOKEN_NOT_EQ,       // !=
+    TOKEN_GT_EQ,        // >=
+    TOKEN_LT_EQ,        // <=
+    TOKEN_BANG,         // !
+
+    TOKEN_PLUS,         // +
+    TOKEN_MINUS,        // -
+    TOKEN_STAR,         // *
+    TOKEN_SLASH,        // /
+    TOKEN_RANGE,        // ..
+    TOKEN_ARROW,        // =>
+    TOKEN_AND,          // &&
+    TOKEN_OR,           // ||
+
+    TOKEN_INC,          // ++
+    TOKEN_DEC,          // --
+
+    TOKEN_ADD,          // +=
+    TOKEN_SUB,          // -=
+    TOKEN_MULT,         // *=
+    TOKEN_DIV,          // /=
+
+    TOKEN_COLON,        // :
+    TOKEN_COMMA,        // ,
+    TOKEN_DOT,          // .
+    TOKEN_SEMICOLON,    // ;
+    TOKEN_UNDERSCORE,   // _
+
+    TOKEN_AT,           // @
+    TOKEN_DOLLAR,       // $
+
+    TOKEN_IF,           // if
+    TOKEN_LOOP,         // loop
+    TOKEN_FN,           // fn
+    TOKEN_LET,          // let
+    TOKEN_TYPE,         // type
+    TOKEN_STRUCT,       // struct
+    TOKEN_ENUM,         // enum
+    TOKEN_INCLUDE,      // include*/

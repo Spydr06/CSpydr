@@ -52,9 +52,26 @@ void transpileAST(ASTRoot_T* ast, transpiler_T* transpiler)
     }
 }
 
-static void transpileFunction(ASTFunction_T* ast, transpiler_T* transpiler)
+static char* transpileExpr(ASTExpr_T* ast, transpiler_T* transpiler)
 {
-    //const char* template = "%s %s(%s)";
+    char* expr = calloc(1, sizeof(char));
+    return expr;
+}
+
+static void transpileLocal(ASTLocal_T* ast, transpiler_T* transpiler)
+{
+    WRITE_CODE(transpileDataType(ast->dataType, transpiler));
+    WRITE_CODE(ast->name);
+
+    if(ast->value != NULL)
+    {
+        WRITE_CODE("=");
+        char* value = transpileExpr(ast->value, transpiler);
+        WRITE_CODE(value);
+        free(value);
+    }
+
+    WRITE_CODE(";\n");
 }
 
 static void transpileGlobal(ASTGlobal_T* ast, transpiler_T* transpiler)
@@ -64,10 +81,80 @@ static void transpileGlobal(ASTGlobal_T* ast, transpiler_T* transpiler)
 
     if(ast->value != NULL)
     {
-
+        WRITE_DEFINE("=");
+        char* value = transpileExpr(ast->value, transpiler);
+        WRITE_DEFINE(value);
+        free(value);
     }
 
     WRITE_DEFINE(";\n");
+}
+
+static void transpileCompoundInstruction(ASTCompoundInstruction_T* ast, transpiler_T* transpiler)
+{
+    switch(ast->type)
+    {
+        case AST_CI_LOCALDEF:
+            transpileLocal(ast->ptr, transpiler);
+            break;
+        default:
+            break;
+    }
+}
+
+static void transpileCompound(ASTCompound_T* ast, transpiler_T* transpiler)
+{
+    WRITE_CODE("{\n");
+    
+    for(int i = 0; i < ast->body->size; i++)
+    {
+        transpileCompoundInstruction(ast->body->items[i], transpiler);
+    }
+
+    WRITE_CODE("}\n");
+}
+
+static void transpileFunction(ASTFunction_T* ast, transpiler_T* transpiler)
+{
+    char* declaration = calloc(1, sizeof(char));
+
+    if(strcmp(ast->name, "main") == 0)
+    {
+        const char* mainFunc = "int main(int argc, char** argv)";
+        declaration = realloc(declaration, (strlen(mainFunc) + 1) * sizeof(char));
+        strcpy(declaration, mainFunc);
+    }
+    else 
+    {
+        const char* declarationTemplate = "%s%s(%s)";
+        char* returnType = transpileDataType(ast->returnType, transpiler);
+
+        char* arguments = calloc(1, sizeof(char));
+        for(int i = 0; i < ast->args->size; i++)
+        {
+            const char* argTemplate = "%s,%s%s";
+            char* dataType = transpileDataType(((ASTArgument_T*) ast->args->items[i])->dataType, transpiler);
+            arguments = realloc(arguments, (strlen(arguments) + strlen(dataType) + strlen(argTemplate) + strlen(((ASTArgument_T*)ast->args->items[i])->name) + 1) * sizeof(char));       
+            sprintf(arguments, argTemplate, arguments, dataType, ((ASTArgument_T*)ast->args->items[i])->name);
+        }   
+        if(strlen(arguments) > 1)
+        {
+            arguments += 1;
+        }
+
+        declaration = realloc(declaration, (strlen(declarationTemplate) + strlen(ast->name) + strlen(returnType) + strlen(arguments) + 1) * sizeof(char));
+        sprintf(declaration, declarationTemplate, returnType, ast->name, arguments);
+    }
+
+    WRITE_DEFINE(declaration);
+    WRITE_DEFINE(";\n");
+
+    WRITE_CODE(declaration);
+
+    //function body
+    transpileCompound(ast->body, transpiler);
+
+    free(declaration);
 }
 
 static char* transpileDataType(ASTDataType_T* ast, transpiler_T* transpiler)
@@ -97,7 +184,7 @@ static char* transpileDataType(ASTDataType_T* ast, transpiler_T* transpiler)
         case AST_ARRAY: {
             char* innerType = transpileDataType(ast->innerType, transpiler);
             char* type = calloc(strlen(innerType) + 2, sizeof(char));
-            strcpy(type, innerType);
+            strcpy(type, innerType); 
             strcat(type, "*");
             return type;
         }

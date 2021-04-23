@@ -54,7 +54,7 @@ const char* helpText = COLOR_BOLD_WHITE "usage:" COLOR_RESET " cspydr [options] 
                        "  -v, --version\t\tdisplays the version of CSpydr and quits.\n"
                        "  -i, --info\t\tdisplays information text and quits.\n"
                        "  -o, --output [file]\tset the target output file (default: " DEFAULT_OUTPUT_FILE ")\n"
-                       "  -t, --transpile\tsets the compile type to transpile to c++,\n" 
+                       "  -t, --transpile\tsets the compile type to transpile to c++,\n"
                        "                   \tthen compile (default: compile to LLVM IR)\n"
                        "  -d, --debug\t\tenable debug output.\n"
                        "\n"
@@ -72,9 +72,9 @@ static char* getAbsoluteStdPath(char* relativePath);
 void compileLLVM(char* path, char* target);
 void compileTranspiling(char* path, char* target);
 
-typedef enum COMPILE_TYPE_ENUM 
-{ 
-    COMPILE_LLVM, COMPILE_TRANSPILING 
+typedef enum COMPILE_TYPE_ENUM
+{
+    COMPILE_LLVM, COMPILE_TRANSPILING
 } compileType_T;
 
 int main(int argc, char* argv[])
@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
     char* inputFile = NULL;
     char* outputFile = DEFAULT_OUTPUT_FILE;
 
-    compileType_T compileType = COMPILE_LLVM; 
+    compileType_T compileType = COMPILE_LLVM;
 
     flagDispatcher_T* dispatcher = dispatchFlags(argc, argv);
     for(int i = 0; i < dispatcher->flags->size; i++)
@@ -174,7 +174,7 @@ void compileTranspiling(char* path, char* target)
     char* outputCode = emitCode(transpiler);
 
 #if defined(__linux__)
-    sh("mkdir -p .cache");    
+    sh("mkdir -p .cache");
 #elif defined(_WIN32)
     //TODO
 #endif
@@ -199,3 +199,5 @@ static char* getAbsoluteStdPath(char* relativePath)
     return absolutePath;
 #endif
 }
+
+

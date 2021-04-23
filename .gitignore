@@ -45,6 +45,14 @@
 #valgrind files
 vgcore.*
 
+# temporary folders
+.cache/
+.vscode/
+.vs/
+bin/
+obj/
+.xcode/
+
 # Kernel Module Compile Results
 *.mod*
 *.cmd

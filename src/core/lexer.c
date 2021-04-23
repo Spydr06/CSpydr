@@ -129,7 +129,7 @@ static token_T* lexerParseId(lexer_T* lexer)
     char* value = calloc(1, sizeof(char));
     tokenType_T type = TOKEN_ID;
 
-    while(isalnum(lexer->c))
+    while(isalnum(lexer->c) || lexer->c == '_')
     {
         value = realloc(value, (strlen(value) + 2) * sizeof(char));
         strcat(value, (char[]){lexer->c, 0});
