@@ -56,6 +56,7 @@ typedef enum TOKEN_TYPE {
     TOKEN_DOLLAR,       // $
 
     TOKEN_IF,           // if
+    TOKEN_ELSE,         // else
     TOKEN_LOOP,         // loop
     TOKEN_RETURN,       // ret
     TOKEN_MATCH,        // match

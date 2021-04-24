@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define NUM_KEYWORDS 13
+#define NUM_KEYWORDS 14
 
 struct {const char* str; tokenType_T type;} keyWords[NUM_KEYWORDS] = {
     {"true", TOKEN_TRUE},
@@ -18,6 +18,7 @@ struct {const char* str; tokenType_T type;} keyWords[NUM_KEYWORDS] = {
     {"fn", TOKEN_FN},
     {"loop", TOKEN_LOOP},
     {"if", TOKEN_IF},
+    {"else", TOKEN_ELSE},
     {"ret", TOKEN_RETURN},
     {"match", TOKEN_MATCH},
     {"type", TOKEN_TYPE},

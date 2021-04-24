@@ -137,20 +137,23 @@ void freeASTExprStmt(ASTExprStmt_T* e)
     free(e);
 }
 
-ASTMatch_T* initASTMatch(list_T* conditions, list_T* bodys, ASTCompound_T* defaultBody)
+ASTMatch_T* initASTMatch(ASTExpr_T* condition, list_T* cases, list_T* bodys, ASTCompound_T* defaultBody)
 {
     ASTMatch_T* m = calloc(1, sizeof(struct AST_MATCH_STRUCT));
+    m->condition = condition;
     m->bodys = bodys;
-    m->conditions = conditions;
+    m->cases = cases;
     m->defaultBody = defaultBody;
     return m;
 }
 
 void freeASTMatch(ASTMatch_T* m)
 {
-    for(int i = 0; i < m->conditions->size; i++)
-        freeASTExpr(m->conditions->items[i]);
-    freeList(m->conditions);
+    freeASTExpr(m->condition);
+
+    for(int i = 0; i < m->cases->size; i++)
+        freeASTExpr(m->cases->items[i]);
+    freeList(m->cases);
 
     for(int i = 0; i < m->bodys->size; i++)
         freeASTCompound(m->bodys->items[i]);
@@ -217,19 +220,16 @@ void freeASTIf(ASTIf_T* i)
     free(i);
 }
 
-ASTReturn_T* initASTReturn(ASTType_T* type, ASTExpr_T* value)
+ASTReturn_T* initASTReturn(ASTExpr_T* value)
 {
     ASTReturn_T* r = calloc(1, sizeof(struct AST_RETURN_STRUCT));
     r->value = value;
-    r->returnType = type;
     return r;
 }
 
 void freeASTReturn(ASTReturn_T* r)
 {
     freeASTExpr(r->value);
-    freeASTType(r->returnType);
-
     free(r);
 }
 

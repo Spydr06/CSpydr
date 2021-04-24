@@ -194,11 +194,10 @@ void freeASTStmt(ASTStmt_T* s);
 
 typedef struct AST_RETURN_STRUCT
 {
-    ASTType_T* returnType;
     ASTExpr_T* value;
 } ASTReturn_T;
 
-ASTReturn_T* initASTReturn(ASTType_T* type, ASTExpr_T* value);
+ASTReturn_T* initASTReturn(ASTExpr_T* value);
 void freeASTReturn(ASTReturn_T* r);
 
 typedef struct AST_If_STRUCT
@@ -233,12 +232,13 @@ void freeASTLocal(ASTLocal_T* l);
 
 typedef struct AST_MATCH_STRUCT
 {
-    list_T* conditions;
+    list_T* cases;
     list_T* bodys;
+    ASTExpr_T* condition;
     ASTCompound_T* defaultBody;
 } ASTMatch_T;
 
-ASTMatch_T* initASTMatch(list_T* conditions, list_T* bodys, ASTCompound_T* defaultBody);
+ASTMatch_T* initASTMatch(ASTExpr_T* condition, list_T* cases, list_T* bodys, ASTCompound_T* defaultBody);
 void freeASTMatch(ASTMatch_T* m);
 
 typedef struct AST_EXPR_STMT_STRUCT

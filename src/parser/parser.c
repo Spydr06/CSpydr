@@ -51,6 +51,7 @@ static ASTGlobal_T* parserParseGlobal(parser_T* parser);
 static ASTFunction_T* parserParseFunction(parser_T* parser);
 static ASTImport_T* parserParseImport(parser_T* parser);
 static ASTTypedef_T* parserParseTypedef(parser_T* parser);
+static ASTCompound_T* parserParseCompound(parser_T* parser);
 
 ASTRoot_T* parserParse(parser_T* parser)
 {
@@ -117,14 +118,181 @@ static ASTType_T* parserParseType(parser_T* parser)
 
 static ASTExpr_T* parserParseExpr(parser_T* parser, precedence_T precedence)
 {
+    
+}
 
+static ASTLoop_T* parserParseLoop(parser_T* parser) // TODO: loops will for now only support while-like syntax; for and foreach come soon
+{
+    parserConsume(parser, TOKEN_LOOP, "expect `loop` keyword");
+
+    ASTExpr_T* condition = parserParseExpr(parser, LOWEST);
+    ASTCompound_T* body = parserParseCompound(parser);
+
+    return initASTLoop(condition, body);
+}
+
+static ASTMatch_T* parserParseMatch(parser_T* parser)
+{
+    parserConsume(parser, TOKEN_MATCH, "expect `match` keyword");
+    
+    ASTExpr_T* condition = parserParseExpr(parser, LOWEST);
+    parserConsume(parser, TOKEN_LBRACE, "expect `{` after match condtion");
+
+    list_T* cases = initList(sizeof(struct AST_EXPRESSION_STRUCT*));
+    list_T* bodys = initList(sizeof(struct AST_COMPOUND_STRUCT*));
+    ASTCompound_T* defaultBody = NULL;
+    while(!tokIs(parser, TOKEN_RBRACE))
+    {   
+        switch(parser->tok->type)
+        {
+            case TOKEN_UNDERSCORE:
+                if(defaultBody == NULL) {
+                    parserConsume(parser, TOKEN_UNDERSCORE, "expect `_` for default case");
+                    parserConsume(parser, TOKEN_ARROW, "expect `=>` after match case");
+                    defaultBody = parserParseCompound(parser);
+                } else
+                {
+                    throwRedefinitionError(parser->eh, "redefinition of default match case", parser->tok->line, parser->tok->pos);
+                    exit(1);
+                }
+                break;
+
+            case TOKEN_EOF:
+                throwSyntaxError(parser->eh, "expect '}' after match statement", parser->tok->line, parser->tok->pos);
+                exit(1);
+                break;
+
+            default:
+                listPush(cases, parserParseExpr(parser, LOWEST));
+                parserConsume(parser, TOKEN_ARROW, "expect `=>` after match case");
+                listPush(bodys, parserParseCompound(parser));
+                break;
+        }
+    }
+    parserAdvance(parser);
+
+    return initASTMatch(condition, cases, bodys, defaultBody);
+}
+
+static ASTIf_T* parserParseIf(parser_T* parser)
+{
+    parserConsume(parser, TOKEN_IF, "expect `if` keyword");
+    ASTExpr_T* condition = parserParseExpr(parser, LOWEST);
+    ASTCompound_T* ifBody = parserParseCompound(parser);
+    ASTCompound_T* elseBody = NULL;
+
+    if(tokIs(parser, TOKEN_ELSE)) {
+        parserAdvance(parser);
+        elseBody = parserParseCompound(parser);
+    }
+    
+    return initASTIf(condition, ifBody, elseBody);
+}
+
+static ASTReturn_T* parserParseReturn(parser_T* parser)
+{
+    parserConsume(parser, TOKEN_RETURN, "expect `ret` keyword");
+    ASTReturn_T* ast = initASTReturn(parserParseExpr(parser, LOWEST));
+    parserConsume(parser, TOKEN_SEMICOLON, "expect `;` after return value");
+    return ast;
+}
+
+static ASTLocal_T* parserParseLocal(parser_T* parser)
+{
+    parserConsume(parser, TOKEN_LET, "expect `let` keyword");
+    char* name = strdup(parser->tok->value);
+    parserConsume(parser, TOKEN_ID, "expect variable name");
+    parserConsume(parser, TOKEN_COLON, "expect `:` after variable name");
+
+    ASTType_T* type = parserParseType(parser);
+
+    ASTExpr_T* value = NULL;
+    if(tokIs(parser, TOKEN_ASSIGN))
+        value = parserParseExpr(parser, LOWEST);
+    
+    parserConsume(parser, TOKEN_SEMICOLON, "expect `;` after variable definition");
+
+    ASTLocal_T* ast = initASTLocal(type, value, name);
+    free(name);
+    return ast;
+}
+
+static ASTExprStmt_T* parserParseExpressionStatement(parser_T* parser)
+{
+    ASTExprStmt_T* ast = initASTExprStmt(parserParseExpr(parser, LOWEST));
+    parserConsume(parser, TOKEN_SEMICOLON, "expect `;` after expression");
+    return ast;
+}
+
+static ASTStmt_T* parserParseStatement(parser_T* parser)
+{
+    void* stmt;
+    ASTStmtType_T type;
+
+    switch(parser->tok->type)
+    {
+        case TOKEN_LOOP:
+            stmt = parserParseLoop(parser);
+            type = STMT_LOOP;
+            break;
+        
+        case TOKEN_MATCH:
+            stmt = parserParseMatch(parser);
+            type = STMT_MATCH;
+            break;
+
+        case TOKEN_IF:
+            stmt = parserParseIf(parser);
+            type = STMT_IF;
+            break;
+
+        case TOKEN_RETURN:
+            type = STMT_RETURN;
+            stmt = parserParseReturn(parser);
+            break;
+
+        case TOKEN_LET:
+            type = STMT_LET;
+            stmt = parserParseLocal(parser);
+            break;
+
+        case TOKEN_ID:
+            type = STMT_EXPRESSION;
+            stmt = parserParseExpressionStatement(parser);
+            break;
+        
+        default:
+            throwSyntaxError(parser->eh, "expect statement", parser->tok->line, parser->tok->pos);
+            exit(1);
+            break;
+    }
+
+    return initASTStmt(type, stmt);
 }
 
 static ASTCompound_T* parserParseCompound(parser_T* parser)
 {
-    parserConsume(parser, TOKEN_LBRACE, "expect `{` before compound");
     list_T* stmts = initList(sizeof(struct AST_STATEMENT_STRUCT*));
-    parserConsume(parser, TOKEN_RBRACE, "expect `}` after compound");
+
+    if(tokIs(parser, TOKEN_LBRACE))
+    {
+        parserAdvance(parser);
+        
+        while(!tokIs(parser, TOKEN_RBRACE))
+        {
+            listPush(stmts, parserParseStatement(parser));
+
+            if(tokIs(parser, TOKEN_EOF))
+            {
+                throwSyntaxError(parser->eh, "expect '}' after compound", parser->tok->line, parser->tok->pos);
+                exit(1);
+            }
+        }
+        parserAdvance(parser);
+    } else  // enables to do single statement compounds without braces
+    {
+        listPush(stmts, parserParseStatement(parser));
+    }
 
     return initASTCompound(stmts);
 }
