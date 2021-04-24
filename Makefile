@@ -22,8 +22,9 @@ release: compileRelease link clean
 compileDebug: $(c_files)
 	utils/createbuildnumber src/buildnumber.h && \
 	mkdir -p obj/ && \
-	$(CC) -g -DDEBUG $(LLVM_CFLAGS) -Wall -fPIC -c $(c_files) && \
-	$(CPP) -g -DDEBUG $(LLVM_CPPFLAGS) -Wall -fPIC -c $(cpp_files)
+	$(CC) -g -DDEBUG $(LLVM_CFLAGS) -Wall -fPIC -c $(c_files)
+
+#$(CPP) -g -DDEBUG $(LLVM_CPPFLAGS) -Wall -fPIC -c $(cpp_files)
 
 .PHONY: compileRelease
 compileRelease: $(c_files)

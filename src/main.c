@@ -1,18 +1,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "flags.h"
-#include "io.h"
-#include "log.h"
+#include "io/flags.h"
+#include "io/io.h"
+#include "io/log.h"
 #include "version.h"
-
-#include "compiler/cppBindings.h"
-#include "core/errors/errorHandler.h"
-
-#include "core/parser/parser.h"
-#include "core/parser/AST.h"
-
-#include "transpiler/transpiler.h"
+#include "lexer/lexer.h"
 
 #ifndef __linux__
 #error "CSpydr currently only supports x86 linux!"
@@ -120,6 +113,8 @@ int main(int argc, char* argv[])
         }
     }
 
+    freeFlagDispatcher(dispatcher);
+
     if(inputFile == NULL)
     {
         LOG_ERROR("Must define input file. Type -h for help.\n");
@@ -139,56 +134,43 @@ int main(int argc, char* argv[])
             break;
     }
 
+    free(inputFile);
+    
+    if(strcmp(outputFile, DEFAULT_OUTPUT_FILE) != 0) {
+        free(outputFile);
+    }
+
     return 0;
 }
 
 void compileLLVM(char* path, char* target)
 {
     LOG_OK_F(COLOR_BOLD_GREEN "Compiling" COLOR_RESET " \"%s\"\n", path);
-    char* src = readFile(path);
+    srcFile_T* file = readFile(path);
 
-    lexer_T* lexer = initLexer(src, path);
-    parser_T* parser = initParser(lexer);
-    ASTRoot_T* root = parserParse(parser);
+    lexer_T* lexer = initLexer(file);
 
-    compile(root, target, path);
+    token_T* tok;
+    while((tok = lexerNextToken(lexer))->type != TOKEN_EOF)
+    {
+        char* s = tokenToString(tok);
+        printf("%s\n", s);
+        free(s);
+        freeToken(tok);
+    }
 
-    freeAST(root);
+    char* s = tokenToString(tok);
+    printf("%s\n", s);
+    free(s);
+    freeToken(tok);
 
-    free(root);
-    free(lexer);
-    free(parser);
+    freeLexer(lexer);
+    freeSrcFile(file);
 }
 
 void compileTranspiling(char* path, char* target)
 {
-    LOG_OK_F(COLOR_BOLD_GREEN "Compiling" COLOR_RESET " \"%s\"\n", path);
-    char* src = readFile(path);
 
-    lexer_T* lexer = initLexer(src, path);
-    parser_T* parser = initParser(lexer);
-    ASTRoot_T* root = parserParse(parser);
-
-    transpiler_T* transpiler = initTranspiler(getAbsoluteStdPath("std/impl/csp_std.cpp"));
-    transpileAST(root, transpiler);
-    char* outputCode = emitCode(transpiler);
-
-#if defined(__linux__)
-    sh("mkdir -p .cache");
-#elif defined(_WIN32)
-    //TODO
-#endif
-
-    writeFile(".cache/tmp.cpp", outputCode);
-
-    printf("%s\n", outputCode);
-    free(outputCode);
-
-    freeAST(root);
-
-    free(transpiler);
-    free(lexer);
-    free(parser);
 }
 
 static char* getAbsoluteStdPath(char* relativePath)

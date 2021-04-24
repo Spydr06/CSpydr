@@ -1,12 +1,17 @@
 #include "io.h"
 
+#include "file.h"
+#include "log.h"
+
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 
-char* readFile(const char* path)
+srcFile_T* readFile(const char* path)
 {
+    list_T* bufferList = initList(sizeof(char*));
+
     FILE* fp;
     char* line = NULL;
     size_t len = 0;
@@ -15,17 +20,13 @@ char* readFile(const char* path)
     fp = fopen(path, "r");
     if(fp == NULL) 
     {
-        fprintf(stderr, "[IO] Could not read file '%s'\n", path);
+        LOG_ERROR_F("Could not read file '%s'\n", path);
         exit(1);
     }
 
-    char* buffer = (char*) calloc(1, sizeof(char));
-    buffer[0] = '\0';
-
     while((read = getline(&line, &len, fp)) != -1) 
     {
-        buffer = (char*) realloc(buffer, (strlen(buffer) + strlen(line) + 1) * sizeof(char));
-        strcat(buffer, line);
+        listPush(bufferList, strdup(line));
     }
 
     fclose(fp);
@@ -34,7 +35,7 @@ char* readFile(const char* path)
         free(line);
     }
 
-    return buffer;
+    return initSrcFile(bufferList, path);
 }
 
 void writeFile(const char* path, char* buffer)
@@ -44,7 +45,7 @@ void writeFile(const char* path, char* buffer)
     fp = fopen(path, "wb");
     if(fp == NULL)
     {
-        fprintf(stderr, "[ERROR] IO: could not open file '%s'\n", path);
+        LOG_ERROR_F("[ERROR] IO: could not open file '%s'\n", path);
         exit(1);
     }
 
@@ -64,7 +65,7 @@ char* sh(const char* cmd)
 
     if(fp == NULL) 
     {
-        printf("Failed to run command\n");
+        LOG_ERROR("Failed to run command\n");
         exit(1);
     }
 

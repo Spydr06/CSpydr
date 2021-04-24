@@ -1,5 +1,5 @@
 #include "flags.h"
-#include "core/list.h"
+#include "../list.h"
 #include <string.h>
 #include <stdio.h>
 #include "log.h"
@@ -15,6 +15,11 @@ flag_T* initFlag(flagType_T type, char* value)
         strcpy(flag->value, value);
     }
     return flag;
+}
+
+void freeFlag(flag_T* flag) {
+    free(flag->value);
+    free(flag);
 }
 
 flagDispatcher_T* dispatchFlags(int argc, char* argv[])
@@ -66,4 +71,13 @@ flagDispatcher_T* dispatchFlags(int argc, char* argv[])
     }
 
     return dispatcher;
+}
+
+void freeFlagDispatcher(flagDispatcher_T* dispatcher) {
+    for(int i = 0; i < dispatcher->flags->size; i++) {
+        freeFlag(dispatcher->flags->items[i]);
+    }
+
+    freeList(dispatcher->flags);
+    free(dispatcher);
 }

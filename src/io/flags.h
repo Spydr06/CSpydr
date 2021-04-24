@@ -1,7 +1,7 @@
 #ifndef CSPYDR_FLAGS_H
 #define CSPYDR_FLAGS_H
 
-#include "core/list.h"
+#include "../list.h"
 
 typedef enum FLAG_TYPE
 {
@@ -28,6 +28,8 @@ typedef struct FLAG_DISPATCHER_STRUCT
 } flagDispatcher_T;
 
 flag_T* initFlag(flagType_T type, char* value);
+void freeFlag(flag_T* flag);
 flagDispatcher_T* dispatchFlags(int argc, char* argv[]);
+void freeFlagDispatcher(flagDispatcher_T* flag);
 
 #endif
