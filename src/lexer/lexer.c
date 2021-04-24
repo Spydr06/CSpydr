@@ -32,11 +32,12 @@ static token_T* lexerGetId(lexer_T* lexer);
 static token_T* lexerGetNumber(lexer_T* lexer);
 static token_T* lexerGetSymbol(lexer_T* lexer);
 
-lexer_T* initLexer(srcFile_T* src) 
+lexer_T* initLexer(srcFile_T* src, errorHandler_T* eh) 
 {
     lexer_T* lexer = calloc(1, sizeof(struct LEXER_STRUCT));
 
     lexer->file = src;
+    lexer->eh = eh;
 
     lexer->pos = 0;
     lexer->line = 0;
@@ -111,21 +112,52 @@ static void lexerSkipWhitespace(lexer_T* lexer)
     }
 }
 
-static void lexerSkipComment(lexer_T* lexer)
+static void lexerSkipMultilineComment(lexer_T* lexer)
 {
-    if(lexer->line >= lexer->file->numLines - 1)
+    unsigned int startLine = lexer->line;
+    unsigned int startPos = lexer->pos;
+
+    lexerAdvance(lexer);
+    lexerAdvance(lexer);
+
+    while(lexer->c != '#' && lexerPeek(lexer, 1) != '#')
     {
-        lexer->c = '\0';
-        // end of file
-        return;
+        if(lexer->c == '\0')
+        {    //end of file
+            throwSyntaxError(lexer->eh, "unterminated multiline comment", startLine, startPos);
+            return;
+        }
+        lexerAdvance(lexer);
     }
 
-    lexer->pos = 0;
-    lexer->line++;
+    lexerAdvance(lexer);
+    lexerAdvance(lexer);
+}
 
-    lexer->c = getChar(lexer->file, lexer->line, lexer->pos);
+static void lexerSkipComment(lexer_T* lexer)
+{
+    if(lexerPeek(lexer, 1) == '#') {
+        lexerSkipMultilineComment(lexer);
+    }
+    else 
+    {
+        if(lexer->line >= lexer->file->numLines - 1)
+        {
+            lexer->c = '\0';
+            // end of file
+            return;
+        }
+
+        lexer->pos = 0;
+        lexer->line++;
+
+        lexer->c = getChar(lexer->file, lexer->line, lexer->pos);
+    }
 
     lexerSkipWhitespace(lexer);
+
+    if(lexer->c == '#')
+        lexerSkipComment(lexer);
 }
 
 static tokenType_T lexerGetIdType(char* id)
@@ -167,13 +199,20 @@ static token_T* lexerGetNumber(lexer_T* lexer)
 
         if(lexer->c == '.')
         {   
+            if(lexerPeek(lexer, 1) == '.')
+            {
+                token_T* token = initToken(buffer, lexer->line, lexer->pos, type);
+                free(buffer);
+                return token;
+            }
+
             if(type == TOKEN_FLOAT)
             {
                 token_T* token = initToken(buffer, lexer->line, lexer->pos, type);
 
                 free(buffer);
-                //TODO: replace with proper error call
-                LOG_ERROR("Multiple `.` in number.\n");
+                
+                throwSyntaxError(lexer->eh, "multiple `.` found in number", lexer->line, lexer->pos);
                 return token;
             }
 
@@ -193,7 +232,8 @@ static token_T* lexerGetString(lexer_T* lexer)
     lexerAdvance(lexer);
 
     char* buffer = calloc(1, sizeof(char));
-    int startLine = lexer->line;
+    unsigned int startLine = lexer->line;
+    unsigned int startPos = lexer->pos;
 
     while(lexer->c != '"')
     {
@@ -204,8 +244,7 @@ static token_T* lexerGetString(lexer_T* lexer)
         if(lexer->c == '\0')
         {
             free(buffer);
-            LOG_ERROR_F("Unterminated string in line %d.\n", startLine);
-
+            throwSyntaxError(lexer->eh, "unterminated string literal", startLine, startPos);
             return initToken("EOF", startLine, lexer->pos, TOKEN_EOF);
         }
     }
@@ -223,7 +262,7 @@ static token_T* lexerGetChar(lexer_T* lexer)
 
     if(lexer->c == '\'')
     {
-        LOG_ERROR_F("Empty char in line %d.\n", lexer->line);
+        throwSyntaxError(lexer->eh, "empty char literal", lexer->line, lexer->pos);
         return initToken("EOF", lexer->line, lexer->pos, TOKEN_EOF);
     }
 
@@ -232,7 +271,7 @@ static token_T* lexerGetChar(lexer_T* lexer)
 
     if(lexer->c != '\'')
     {
-        LOG_ERROR_F("Unterminated char in line %d.\n", lexer->line);
+        throwSyntaxError(lexer->eh, "unterminated char, expect `'`", lexer->line, lexer->pos);
         freeToken(token);
 
         return initToken("EOF", lexer->line, lexer->pos, TOKEN_EOF); 
@@ -261,8 +300,6 @@ static token_T* lexerGetSymbol(lexer_T* lexer)
             return lexerConsumeType(lexer, TOKEN_COLON);
         case ';': 
             return lexerConsumeType(lexer, TOKEN_SEMICOLON);
-        case '.':
-            return lexerConsumeType(lexer, TOKEN_DOT);
         case ',': 
             return lexerConsumeType(lexer, TOKEN_COMMA);
         case '_':
@@ -284,6 +321,12 @@ static token_T* lexerGetSymbol(lexer_T* lexer)
                 return lexerConsume(lexer, lexerConsume(lexer, initToken("=>", lexer->line, lexer->pos, TOKEN_ARROW)));
             else
                 return lexerConsume(lexer, initToken("=", lexer->line, lexer->pos, TOKEN_ASSIGN)); 
+
+        case '.':
+            if(lexerPeek(lexer, 1) == '.') 
+                return lexerConsume(lexer, lexerConsume(lexer, initToken("..", lexer->line, lexer->pos, TOKEN_RANGE)));
+            else
+                return lexerConsume(lexer, initToken(".", lexer->line, lexer->pos, TOKEN_DOT)); 
 
         case '>': 
             if(lexerPeek(lexer, 1) == '=') 
@@ -340,9 +383,13 @@ static token_T* lexerGetSymbol(lexer_T* lexer)
         case '\0':
             return initToken("EOF", lexer->line, lexer->pos, TOKEN_EOF);
 
-        default:
-            //TODO: replace with proper error message
-            LOG_ERROR_F("Unexpected token `%c` in line %d.\n", lexer->c, lexer->line + 1);
+        default: {
+            const char* template = "unexpected symbol `%c`";
+            char* msg = calloc(strlen(template) + 1, sizeof(char));
+            sprintf(msg, template, lexer->c);
+
+            throwSyntaxError(lexer->eh, msg, lexer->line, lexer->pos);
             return initToken("EOF", lexer->line, lexer->pos, TOKEN_EOF);
+        }
     }
 }

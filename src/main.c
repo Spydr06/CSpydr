@@ -6,6 +6,7 @@
 #include "io/log.h"
 #include "version.h"
 #include "lexer/lexer.h"
+#include "error/errorHandler.h"
 
 #ifndef __linux__
 #error "CSpydr currently only supports x86 linux!"
@@ -148,7 +149,8 @@ void compileLLVM(char* path, char* target)
     LOG_OK_F(COLOR_BOLD_GREEN "Compiling" COLOR_RESET " \"%s\"\n", path);
     srcFile_T* file = readFile(path);
 
-    lexer_T* lexer = initLexer(file);
+    errorHandler_T* errorHandler = initErrorHandler(file);
+    lexer_T* lexer = initLexer(file, errorHandler);
 
     token_T* tok;
     while((tok = lexerNextToken(lexer))->type != TOKEN_EOF)
@@ -165,6 +167,7 @@ void compileLLVM(char* path, char* target)
     freeToken(tok);
 
     freeLexer(lexer);
+    freeErrorHandler(errorHandler);
     freeSrcFile(file);
 }
 

@@ -2,10 +2,11 @@
 # this is a test to show, how I want to design this language, so this will most likely not compile
 
 ##
-    multi line comments
+    multi-line comments
+    nice
 ##
 
-mod main; # something like a namespace or so
+mod main; # comments after code also work
 
 type Foo: struct {
     x: i32
