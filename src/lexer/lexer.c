@@ -23,7 +23,7 @@ struct {const char* str; tokenType_T type;} keyWords[NUM_KEYWORDS] = {
     {"type", TOKEN_TYPE},
     {"struct", TOKEN_STRUCT},
     {"enum", TOKEN_ENUM},
-    {"include", TOKEN_INCLUDE}
+    {"import", TOKEN_IMPORT}
 };
 
 static void lexerSkipWhitespace(lexer_T* lexer);

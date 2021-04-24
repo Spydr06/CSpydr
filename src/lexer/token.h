@@ -64,7 +64,7 @@ typedef enum TOKEN_TYPE {
     TOKEN_TYPE,         // type
     TOKEN_STRUCT,       // struct
     TOKEN_ENUM,         // enum
-    TOKEN_INCLUDE,      // include
+    TOKEN_IMPORT,       // import
 
     TOKEN_ERROR,        // error handling token
     TOKEN_EOF,          // end of file

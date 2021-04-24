@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "ast/ast.h"
 #include "io/flags.h"
 #include "io/io.h"
 #include "io/log.h"
 #include "version.h"
 #include "lexer/lexer.h"
+#include "parser/parser.h"
 #include "error/errorHandler.h"
 
 #ifndef __linux__
@@ -151,21 +153,11 @@ void compileLLVM(char* path, char* target)
 
     errorHandler_T* errorHandler = initErrorHandler(file);
     lexer_T* lexer = initLexer(file, errorHandler);
+    parser_T* parser = initParser(lexer);
+    ASTRoot_T* ast = parserParse(parser);
 
-    token_T* tok;
-    while((tok = lexerNextToken(lexer))->type != TOKEN_EOF)
-    {
-        char* s = tokenToString(tok);
-        printf("%s\n", s);
-        free(s);
-        freeToken(tok);
-    }
-
-    char* s = tokenToString(tok);
-    printf("%s\n", s);
-    free(s);
-    freeToken(tok);
-
+    freeASTRoot(ast);
+    freeParser(parser);
     freeLexer(lexer);
     freeErrorHandler(errorHandler);
     freeSrcFile(file);

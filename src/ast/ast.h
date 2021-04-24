@@ -19,6 +19,7 @@ typedef enum
     AST_ARRAY,
     AST_STRUCT,
     AST_ENUM,
+    AST_VOID,
 } ASTDataType_T;
 
 typedef enum 
@@ -252,14 +253,24 @@ void freeASTExprStmt(ASTExprStmt_T* e);
 // base structures             //
 /////////////////////////////////
 
+typedef struct AST_ARGUMENT_STRUCT
+{
+    char* name;
+    ASTType_T* dataType;
+} ASTArgument_T;
+
+ASTArgument_T* initASTArgument(const char* name, ASTType_T* dataType);
+void freeASTArgument(ASTArgument_T* a);
+
 typedef struct AST_FUCTION_STRUCT
 {
     char* name;
     ASTCompound_T* body;
     ASTType_T* returnType;
+    list_T* args;
 } ASTFunction_T;
 
-ASTFunction_T* initASTFunction(const char* name, ASTType_T* returnType, ASTCompound_T* body);
+ASTFunction_T* initASTFunction(const char* name, ASTType_T* returnType, ASTCompound_T* body, list_T* args);
 void freeASTFunction(ASTFunction_T* f);
 
 typedef struct AST_GLOBAL_STRUCT

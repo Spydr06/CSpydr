@@ -3,7 +3,7 @@
 let test: bool = true;
 let testArr: [i32] = [4, 4, 4];
 
-fn main(argc: i32, argv: [str]): i32 => {
+fn main(argc: i32, argv: [str]): i32 {
     let foo: u64 = 5;
     let arr: [[i32: 2]: 2] = nil;
     arr = [[1, 3], test - 1];

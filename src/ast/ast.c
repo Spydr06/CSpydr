@@ -80,25 +80,48 @@ void freeASTGlobal(ASTGlobal_T* g)
 {
     free(g->name);
     freeASTType(g->type);
-    freeASTExpr(g->value);
+    
+    if(g->value != NULL)
+        freeASTExpr(g->value);
+
     free(g);
 }
 
-ASTFunction_T* initASTFunction(const char* name, ASTType_T* returnType, ASTCompound_T* body)
+ASTFunction_T* initASTFunction(const char* name, ASTType_T* returnType, ASTCompound_T* body, list_T* args)
 {
     ASTFunction_T* f = calloc(1, sizeof(struct AST_FUCTION_STRUCT));
     f->name = strdup(name);
     f->body = body;
     f->returnType = returnType;
+    f->args = args;
     return f;
 }
 
 void freeASTFunction(ASTFunction_T* f)
 {
+    for(int i = 0; i < f->args->size; i++)
+        freeASTArgument(f->args->items[i]);
+    freeList(f->args);
+
     freeASTCompound(f->body);
     freeASTType(f->returnType);
     free(f->name);
     free(f);
+}
+
+ASTArgument_T* initASTArgument(const char* name, ASTType_T* dataType)
+{
+    ASTArgument_T* a = calloc(1, sizeof(struct AST_ARGUMENT_STRUCT));
+    a->name = strdup(name);
+    a->dataType = dataType;
+    return a;
+}
+
+void freeASTArgument(ASTArgument_T* a)
+{
+    freeASTType(a->dataType);
+    free(a->name);
+    free(a);
 }
 
 ASTExprStmt_T* initASTExprStmt(ASTExpr_T* expr)
@@ -151,7 +174,10 @@ ASTLocal_T* initASTLocal(ASTType_T* dataType, ASTExpr_T* value, const char* name
 void freeASTLocal(ASTLocal_T* l)
 {
     free(l->name);
-    freeASTExpr(l->value);
+    
+    if(l->value != NULL)
+        freeASTExpr(l->value);
+
     freeASTType(l->dataType);
     free(l);
 }
@@ -427,6 +453,7 @@ void freeASTCompound(ASTCompound_T* c)
 {
     for(int i = 0; i < c->stmts->size; i++)
         freeASTStmt(c->stmts->items[i]);
+    freeList(c->stmts);
 
     free(c);
 }
@@ -442,6 +469,7 @@ ASTType_T* initASTType(ASTDataType_T type, ASTType_T* subtype)
 
 void freeASTType(ASTType_T* t)
 {
-    freeASTType(t->subtype);
+    if(t->subtype != NULL)
+        freeASTType(t->subtype);
     free(t);
 }
