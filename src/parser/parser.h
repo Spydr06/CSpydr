@@ -5,34 +5,32 @@
 #include "../error/errorHandler.h"
 #include "../ast/ast.h"
 
-typedef ASTExpr_T* (*prefixParseFn)();
-typedef ASTExpr_T* (*infixParseFn)(ASTExpr_T* left);
+typedef struct PARSER_STRUCT parser_T;
 
-#define NUM_PREFIX_PARSE_FNS 0
-#define NUM_INFIX_PARSE_FNS 0
+typedef ASTExpr_T* (*prefixParseFn)(parser_T* parser);
+typedef ASTExpr_T* (*infixParseFn)(parser_T* parser, ASTExpr_T* left);
 
-typedef struct PARSER_STRUCT
+struct PARSER_STRUCT
 {
     lexer_T* lexer;
     errorHandler_T* eh;
     ASTRoot_T* rootRef;
     list_T* localVars;
     token_T* tok;
-
-    struct {tokenType_T tt; prefixParseFn fn;} prefixParseFns[NUM_PREFIX_PARSE_FNS];
-    struct {tokenType_T tt; infixParseFn fn;}  infixParseFns [NUM_INFIX_PARSE_FNS];
-} parser_T;
+};
 
 typedef enum {
-    LOWEST  = 0,
-    EQUALS  = 1, // ==
-    LTGT    = 2, // < >
-    SUM     = 3, // + -
-    PRODUCT = 4, // * /
-    PREFIX  = 5, // -x, !x
-    CALL    = 6, // x(y)
-    INDEX   = 7, // x[y]
-    HIGHEST = 8,
+    LOWEST  =  0,
+    ASSIGN  =  1, // x = y, x += y
+    EQUALS  =  2, // ==
+    LTGT    =  3, // < >
+    SUM     =  4, // + -
+    PRODUCT =  5, // * /
+    POSTFIX =  6, // x++, x--
+    PREFIX  =  7, // -x, !x
+    CALL    =  8, // x(y)
+    INDEX   =  9, // x[y]
+    HIGHEST = 10,
 } precedence_T;
 
 parser_T* initParser(lexer_T* lexer);

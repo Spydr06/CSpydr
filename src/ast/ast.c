@@ -282,6 +282,7 @@ void freeASTArray(ASTArray_T* a)
 {
     for(int i = 0; i < a->len; i++)
         freeASTExpr(a->exprs->items[i]);
+    freeList(a->exprs);
     free(a);
 }
 
@@ -347,17 +348,34 @@ void freeASTInt(ASTInt_T* i)
     free(i);
 }
 
-ASTIdentifer_T* initASTIdentifier(const char* callee)
+ASTIdentifer_T* initASTIdentifier(const char* callee, ASTIdentifer_T* child)
 {
     ASTIdentifer_T* i = calloc(1, sizeof(struct AST_IDENTIFIER_STRUCT));
     i->callee = strdup(callee);
+    i->childId = child;
     return i;
 }
 
 void freeASTIdentifier(ASTIdentifer_T* i)
 {
     free(i->callee);
+    if(i->childId != NULL)
+        freeASTIdentifier(i->childId);
     free(i);
+}
+
+ASTPostfix_T* initASTPostfix(ASTPostfixOpType_T op, ASTExpr_T* left)
+{
+    ASTPostfix_T* p = calloc(1, sizeof(struct AST_POSTFIX_STRUCT));
+    p->op = op;
+    p->left = left;
+    return p;
+}
+
+void freeASTPostfix(ASTPostfix_T* p)
+{
+    freeASTExpr(p->left);
+    free(p);
 }
 
 ASTPrefix_T* initASTPrefix(ASTPrefixOpType_T op, ASTExpr_T* right)
@@ -393,6 +411,39 @@ void freeASTInfix(ASTInfix_T* i)
     free(i);
 }
 
+ASTCall_T* initASTCall(const char* callee, list_T* args)
+{
+    ASTCall_T* c = calloc(1, sizeof(struct AST_CALL_STRUCT));
+    c->callee = strdup(callee);
+    c->args = args;
+    return c;
+}
+
+void freeASTCall(ASTCall_T* c)
+{   
+    for(int i = 0; i < c->args->size; i++)
+        freeASTExpr(c->args->items[i]);
+        
+    freeList(c->args);
+    free(c->callee);
+    free(c);
+}
+
+ASTIndex_T* initASTIndex(ASTExpr_T* value, ASTExpr_T* idx)
+{
+    ASTIndex_T* i = calloc(1, sizeof(struct AST_INDEX_STRUCT));
+    i->idx = idx;
+    i->value = value;
+    return i;
+}
+
+void freeASTIndex(ASTIndex_T* i)
+{   
+    freeASTExpr(i->idx);
+    freeASTExpr(i->value);
+    free(i);
+}
+
 ASTExpr_T* initASTExpr(ASTType_T* dataType, ASTExprType_T type, void* ptr)
 {
     ASTExpr_T* e = calloc(1, sizeof(struct AST_EXPRESSION_STRUCT));
@@ -404,8 +455,6 @@ ASTExpr_T* initASTExpr(ASTType_T* dataType, ASTExprType_T type, void* ptr)
 
 void freeASTExpr(ASTExpr_T* e)
 {
-    freeASTType(e->dataType);
-
     switch(e->type) {
         case EXPR_PREFIX:
             freeASTPrefix(e->expr);
@@ -413,8 +462,17 @@ void freeASTExpr(ASTExpr_T* e)
         case EXPR_INFIX:
             freeASTInfix(e->expr);
             break;
+        case EXPR_POSTFIX:
+            freeASTPrefix(e->expr);
+            break;
         case EXPR_IDENTIFIER:
             freeASTIdentifier(e->expr);
+            break;
+        case EXPR_CALL:
+            freeASTCall(e->expr);
+            break;
+        case EXPR_INDEX:
+            freeASTIndex(e->expr);
             break;
         case EXPR_INT_LITERAL:
             freeASTInt(e->expr);
@@ -439,6 +497,9 @@ void freeASTExpr(ASTExpr_T* e)
             break;
     }
 
+    if(e->dataType != NULL)
+        freeASTType(e->dataType);
+
     free(e);
 }
 
@@ -458,11 +519,12 @@ void freeASTCompound(ASTCompound_T* c)
     free(c);
 }
 
-ASTType_T* initASTType(ASTDataType_T type, ASTType_T* subtype)
+ASTType_T* initASTType(ASTDataType_T type, ASTType_T* subtype, void* body)
 {
     ASTType_T* t = calloc(1, sizeof(struct AST_TYPE_STRUCT));
     t->type = type;
     t->subtype = subtype;
+    t->body = body;
 
     return t;
 }
@@ -471,5 +533,49 @@ void freeASTType(ASTType_T* t)
 {
     if(t->subtype != NULL)
         freeASTType(t->subtype);
+
+    if(t->type == AST_STRUCT)
+        freeASTStructType(t->body);
+    else if(t->type == AST_ENUM)
+        freeASTEnumType(t->body);
+
     free(t);
+}
+
+ASTStructType_T* initASTStructType(list_T* fieldTypes, list_T* fieldNames)
+{
+    ASTStructType_T* s = calloc(1, sizeof(struct AST_STRUCT_TYPE_STRUCT));
+    s->fieldTypes = fieldTypes;
+    s->fieldNames = fieldNames;
+
+    return s;
+}
+
+void freeASTStructType(ASTStructType_T* s)
+{
+    for(int i = 0; i < s->fieldTypes->size; i++)
+        freeASTType(s->fieldTypes->items[i]);
+    freeList(s->fieldTypes);
+
+    for(int i = 0; i < s->fieldNames->size; i++)
+        free(s->fieldNames->items[i]);
+    freeList(s->fieldNames);
+
+    free(s);
+}
+
+ASTEnumType_T* initASTEnumType(list_T* fields)
+{
+    ASTEnumType_T* e = calloc(1, sizeof(struct AST_ENUM_TYPE_STRUCT));
+    e->fields = fields;
+    return e;
+}
+
+void freeASTEnumType(ASTEnumType_T* e)
+{
+    for(int i = 0; i < e->fields->size; i++)
+        free(e->fields->items[i]);
+    freeList(e->fields);
+
+    free(e);
 }

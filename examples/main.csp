@@ -8,7 +8,7 @@ fn main(argc: i32, argv: [str]): i32 {
     let arr: [[i32: 2]: 2] = nil;
     arr = [[1, 3], test - 1];
 
-    <- 0
+    ret 0;
 }
 
 fn print_(msg: str) => printf("%s\n", msg);

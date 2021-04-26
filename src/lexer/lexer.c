@@ -311,7 +311,10 @@ static token_T* lexerGetSymbol(lexer_T* lexer)
             return lexerConsumeType(lexer, TOKEN_DOLLAR);
 
         case '&':
-            return lexerConsume(lexer, lexerConsume(lexer, initToken("&&", lexer->line, lexer->pos, TOKEN_AND)));
+            if(lexerPeek(lexer, 1) == '*')
+                return lexerConsume(lexer, lexerConsume(lexer, initToken("&&", lexer->line, lexer->pos, TOKEN_AND)));
+            else
+                return lexerConsume(lexer, initToken("&", lexer->line, lexer->pos, TOKEN_REF));
         case '|':
             return lexerConsume(lexer, lexerConsume(lexer, initToken("||", lexer->line, lexer->pos, TOKEN_OR)));
 

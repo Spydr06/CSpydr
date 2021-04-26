@@ -18,7 +18,9 @@ typedef enum
     AST_STRING,
     AST_ARRAY,
     AST_STRUCT,
+    AST_TYPEDEF,    // this is the default type for the parser and will later be replaced with the typedef'd type
     AST_ENUM,
+    AST_POINTER,
     AST_VOID,
 } ASTDataType_T;
 
@@ -36,6 +38,9 @@ typedef enum
 {
     EXPR_PREFIX,
     EXPR_INFIX,
+    EXPR_POSTFIX,
+    EXPR_INDEX,
+    EXPR_CALL,
     EXPR_IDENTIFIER,
     EXPR_INT_LITERAL,
     EXPR_BOOL_LITERAL,
@@ -54,6 +59,8 @@ typedef enum
     OP_GT,
     OP_LT,
     OP_EQ,
+    OP_GT_EQ,
+    OP_LT_EQ,
     OP_NOT_EQ,
     OP_ASSIGN,
     OP_RANGE,
@@ -63,16 +70,42 @@ typedef enum
 {
     OP_NOT,
     OP_NEGATE,
+    OP_REF,
+    OP_DEREF,
 } ASTPrefixOpType_T;
+
+typedef enum
+{
+    OP_INC,
+    OP_DEC,
+} ASTPostfixOpType_T;
 
 typedef struct AST_TYPE_STRUCT
 {
     ASTDataType_T type;
     struct AST_TYPE_STRUCT* subtype;
+    void* body; // body for enums and structs
 } ASTType_T;
 
-ASTType_T* initASTType(ASTDataType_T type, ASTType_T* subtype);
+ASTType_T* initASTType(ASTDataType_T type, ASTType_T* subtype, void* body);
 void freeASTType(ASTType_T* t);
+
+typedef struct AST_STRUCT_TYPE_STRUCT
+{
+    list_T* fieldTypes;
+    list_T* fieldNames;
+} ASTStructType_T;
+
+ASTStructType_T* initASTStructType(list_T* fieldTypes, list_T* fieldNames);
+void freeASTStructType(ASTStructType_T* s);
+
+typedef struct AST_ENUM_TYPE_STRUCT
+{
+    list_T* fields;
+} ASTEnumType_T;
+
+ASTEnumType_T* initASTEnumType(list_T* fields);
+void freeASTEnumType(ASTEnumType_T* e);
 
 typedef struct AST_COMPOUND_STRUCT
 {
@@ -117,13 +150,42 @@ typedef struct AST_PREFIX_STRUCT
 ASTPrefix_T* initASTPrefix(ASTPrefixOpType_T op, ASTExpr_T* right);
 void freeASTPrefix(ASTPrefix_T* p);
 
+typedef struct AST_POSTFIX_STRUCT
+{
+    ASTPostfixOpType_T op;
+    
+    ASTExpr_T* left;
+} ASTPostfix_T;
+
+ASTPostfix_T* initASTPostfix(ASTPostfixOpType_T op, ASTExpr_T* left);
+void freeASTPostfix(ASTPostfix_T* p);
+
 typedef struct AST_IDENTIFIER_STRUCT
 {
     char* callee;
+    struct AST_IDENTIFIER_STRUCT* childId;
 } ASTIdentifer_T;
 
-ASTIdentifer_T* initASTIdentifier(const char* callee);
+ASTIdentifer_T* initASTIdentifier(const char* callee, ASTIdentifer_T* child);
 void freeASTIdentifier(ASTIdentifer_T* i);
+
+typedef struct AST_CALL_STRUCT
+{
+    list_T* args;
+    char* callee;
+} ASTCall_T;
+
+ASTCall_T* initASTCall(const char* callee, list_T* args);
+void freeASTCall(ASTCall_T* c);
+
+typedef struct AST_INDEX_STRUCT
+{
+    ASTExpr_T* idx;
+    ASTExpr_T* value;
+} ASTIndex_T;
+
+ASTIndex_T* initASTIndex(ASTExpr_T* value, ASTExpr_T* idx);
+void freeASTIndex(ASTIndex_T* i);
 
 /////////////////////////////////
 // Literals                    //
