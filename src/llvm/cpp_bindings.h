@@ -1,0 +1,8 @@
+#ifndef CSPYDR_CPP_BINDINGS_H
+#define CSPYDR_CPP_BINDINGS_H
+
+#include "../ast/ast.h"
+
+extern void generateLLVM(ASTRoot_T* ast, const char* targetPath, const char* sourePath);
+
+#endif

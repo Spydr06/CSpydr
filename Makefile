@@ -23,8 +23,7 @@ compileDebug: $(c_files)
 	utils/createbuildnumber src/buildnumber.h && \
 	mkdir -p obj/ && \
 	$(CC) -g -DDEBUG $(LLVM_CFLAGS) -Wall -fPIC -c $(c_files)
-
-#$(CPP) -g -DDEBUG $(LLVM_CPPFLAGS) -Wall -fPIC -c $(cpp_files)
+	$(CPP) -g -DDEBUG $(LLVM_CPPFLAGS) -Wall -fPIC -c $(cpp_files)
 
 .PHONY: compileRelease
 compileRelease: $(c_files)
@@ -48,4 +47,5 @@ reset:
 	rm -rf *.o && \
 	rm -rf *.out && \
 	rm -rf bin/ && \
-	rm -rf vgcore.*
+	rm -rf vgcore.* && \
+	rm -rf *.cpp.gch 

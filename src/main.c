@@ -9,6 +9,7 @@
 #include "lexer/lexer.h"
 #include "parser/parser.h"
 #include "error/errorHandler.h"
+#include "llvm/cpp_bindings.h"
 
 #ifndef __linux__
 #error "CSpydr currently only supports x86 linux!"
@@ -155,6 +156,8 @@ void compileLLVM(char* path, char* target)
     lexer_T* lexer = initLexer(file, errorHandler);
     parser_T* parser = initParser(lexer);
     ASTRoot_T* ast = parserParse(parser);
+
+    generateLLVM(ast, target, path);
 
     freeASTRoot(ast);
     freeParser(parser);
