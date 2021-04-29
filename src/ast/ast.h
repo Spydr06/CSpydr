@@ -41,6 +41,7 @@ typedef enum
     EXPR_POSTFIX,
     EXPR_INDEX,
     EXPR_CALL,
+    EXPR_NIL,
     EXPR_IDENTIFIER,
     EXPR_INT_LITERAL,
     EXPR_BOOL_LITERAL,
@@ -48,6 +49,7 @@ typedef enum
     EXPR_CHAR_LITERAL,
     EXPR_STRING_LITERAL,
     EXPR_ARRAY_LITERAL,
+    EXPR_STRUCT_LITERAL,
 } ASTExprType_T;
 
 typedef enum
@@ -232,6 +234,13 @@ typedef struct AST_BOOL_LITERAL
 ASTBool_T* initASTBool(bool _bool);
 void freeASTBool(ASTBool_T* b);
 
+typedef struct AST_NIL_LITERAL
+{
+} ASTNil_T;
+
+ASTNil_T* initASTNil();
+void freeASTNil(ASTNil_T* n);
+
 typedef struct AST_ARRAY_LITERAL
 {
     list_T* exprs;
@@ -240,6 +249,15 @@ typedef struct AST_ARRAY_LITERAL
 
 ASTArray_T* initASTArray(list_T* exprs);
 void freeASTArray(ASTArray_T* a);
+
+typedef struct AST_STRUCT_LITERAL
+{
+    list_T* exprs;
+    list_T* fields;
+} ASTStruct_T;
+
+ASTStruct_T* initASTStruct(list_T* exprs, list_T* fields);
+void freeASTStruct(ASTStruct_T* s);
 
 /////////////////////////////////
 // Statements                  //
@@ -354,25 +372,26 @@ typedef struct AST_TYPEDEF_STRUCT
 ASTTypedef_T* initASTTypedef(ASTType_T* type, const char* name);
 void freeASTTypedef(ASTTypedef_T* t);
 
-typedef struct AST_IMPORT_STRUCT
-{
-    char* includeFile;
-} ASTImport_T;
-
-ASTImport_T* initASTImport(const char* file);
-void freeASTImport(ASTImport_T* i);
-
-typedef struct AST_ROOT_STRUCT
+typedef struct AST_FILE_STRUCT
 {
     char* filepath;
 
-    list_T* imports;
     list_T* types;
     list_T* globals;
     list_T* functions;
-} ASTRoot_T;
+} ASTFile_T;
 
-ASTRoot_T* initASTRoot(const char* filepath);
-void freeASTRoot(ASTRoot_T* r);
+ASTFile_T* initASTFile(const char* filepath);
+void freeASTFile(ASTFile_T* f);
+
+typedef struct AST_PROGRAM_STRUCT
+{
+    char* mainFile;
+
+    list_T* files;
+} ASTProgram_T;
+
+ASTProgram_T* initASTProgram(const char* mainFile);
+void freeASTProgram(ASTProgram_T* p);
 
 #endif

@@ -14,9 +14,10 @@ struct PARSER_STRUCT
 {
     lexer_T* lexer;
     errorHandler_T* eh;
-    ASTRoot_T* rootRef;
+    ASTProgram_T* rootRef;
     list_T* localVars;
     token_T* tok;
+    list_T* imports;
 };
 
 typedef enum {
@@ -39,6 +40,6 @@ void freeParser(parser_T* parser);
 token_T* parserAdvance(parser_T* parser);
 token_T* parserConsume(parser_T* parser, tokenType_T type, const char* msg);
 
-ASTRoot_T* parserParse(parser_T* parser);
+ASTProgram_T* parserParse(parser_T* parser, const char* mainFile);
 
 #endif

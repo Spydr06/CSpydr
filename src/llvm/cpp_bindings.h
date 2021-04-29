@@ -3,6 +3,6 @@
 
 #include "../ast/ast.h"
 
-extern void generateLLVM(ASTRoot_T* ast, const char* targetPath, const char* sourePath);
+extern void generateLLVM(ASTProgram_T* ast, const char* targetPath, const char* sourePath);
 
 #endif

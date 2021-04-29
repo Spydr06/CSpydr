@@ -20,7 +20,8 @@ namespace CSpydr
             STATUS_WARNINGS
         };
 
-        status generate(ASTRoot_T* ast);
+        status generate(ASTProgram_T* ast);
+        void generateFile(ASTFile_T *ast);
     private:
         llvm::GlobalVariable* generateGlobalVar(ASTGlobal_T* global);
         llvm::Function* createFunction(ASTFunction_T* func);

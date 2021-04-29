@@ -193,8 +193,14 @@ static token_T* lexerGetNumber(lexer_T* lexer)
     char* buffer = calloc(1, sizeof(char));
     tokenType_T type = TOKEN_INT;
 
-    while(isdigit(lexer->c) || lexer->c == '.')
+    while(isdigit(lexer->c) || lexer->c == '.' || lexer->c == '_')
     {
+        if(lexer->c == '_')
+        {
+            lexerAdvance(lexer);
+            continue;
+        }
+
         buffer = realloc(buffer, (strlen(buffer) + 2) * sizeof(char));
         strcat(buffer, (char[]){lexer->c, '\0'});
 

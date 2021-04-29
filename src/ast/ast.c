@@ -3,20 +3,38 @@
 
 #include <string.h>
 
-ASTRoot_T* initASTRoot(const char* filepath)
+ASTProgram_T* initASTProgram(const char* mainFile)
 {
-    ASTRoot_T* r = calloc(1, sizeof(struct AST_ROOT_STRUCT));
+    ASTProgram_T* p = malloc(sizeof(struct AST_PROGRAM_STRUCT));
+    p->files = initList(sizeof(struct AST_FILE_STRUCT*));
+    p->mainFile = strdup(mainFile);
+    return p;
+}
+
+void freeASTProgram(ASTProgram_T* p)
+{
+    free(p->mainFile);
+    
+    for(int i = 0; i < p->files->size; i++)
+        freeASTFile(p->files->items[i]);
+    freeList(p->files);
+
+    free(p);
+}
+
+ASTFile_T* initASTFile(const char* filepath)
+{
+    ASTFile_T* r = calloc(1, sizeof(struct AST_FILE_STRUCT));
 
     r->filepath = strdup(filepath);
     r->functions = initList(sizeof(struct AST_FUCTION_STRUCT*));
     r->globals = initList(sizeof(struct AST_GLOBAL_STRUCT*));
-    r->imports = initList(sizeof(struct AST_IMPORT_STRUCT*));
     r->types = initList(sizeof(struct AST_TYPEDEF_STRUCT*));
 
     return r;
 }
 
-void freeASTRoot(ASTRoot_T* r)
+void freeASTFile(ASTFile_T* r)
 {
     free(r->filepath);
 
@@ -28,28 +46,11 @@ void freeASTRoot(ASTRoot_T* r)
         freeASTGlobal((ASTGlobal_T*) r->globals->items[i]);
     freeList(r->globals);
 
-    for(int i = 0; i < r->imports->size; i++)
-        freeASTImport((ASTImport_T*) r->imports->items[i]);
-    freeList(r->imports);
-
     for(int i = 0; i < r->types->size; i++)
         freeASTTypedef((ASTTypedef_T*) r->types->items[i]);
     freeList(r->types);
 
     free(r);
-}
-
-ASTImport_T* initASTImport(const char* file)
-{
-    ASTImport_T* i = calloc(1, sizeof(struct AST_IMPORT_STRUCT));
-    i->includeFile = strdup(file);
-    return i;
-}
-
-void freeASTImport(ASTImport_T* i)
-{
-    free(i->includeFile);
-    free(i);
 }
 
 ASTTypedef_T* initASTTypedef(ASTType_T* type, const char* name)
@@ -160,7 +161,7 @@ void freeASTMatch(ASTMatch_T* m)
     freeList(m->bodys);
 
     if(m->defaultBody != NULL)
-        free(m->defaultBody);
+        freeASTCompound(m->defaultBody);
     
     free(m);
 }
@@ -492,6 +493,12 @@ void freeASTExpr(ASTExpr_T* e)
         case EXPR_BOOL_LITERAL:
             freeASTBool(e->expr);
             break;
+        case EXPR_NIL:
+            freeASTNil(e->expr);
+            break;
+        case EXPR_STRUCT_LITERAL:
+            freeASTStruct(e->expr);
+            break;
         default:
             LOG_ERROR_F("Undefined epression ast type %d\n", e->type);
             break;
@@ -578,4 +585,36 @@ void freeASTEnumType(ASTEnumType_T* e)
     freeList(e->fields);
 
     free(e);
+}
+
+ASTNil_T* initASTNil()
+{
+    ASTNil_T* n = calloc(1, sizeof(struct AST_NIL_LITERAL));
+    return n;
+}
+
+void freeASTNil(ASTNil_T* n)
+{
+    free(n);
+}
+
+ASTStruct_T* initASTStruct(list_T* exprs, list_T* fields)
+{
+    ASTStruct_T* s = calloc(1, sizeof(struct AST_STRUCT_LITERAL));
+    s->exprs = exprs;
+    s->fields = fields;
+    return s;
+}
+
+void freeASTStruct(ASTStruct_T* s)
+{
+    for(int i = 0; i < s->fields->size; i++)
+        free(s->fields->items[i]);
+    freeList(s->fields);
+
+    for(int i = 0; i < s->exprs->size; i++)
+        freeASTExpr(s->exprs->items[i]);
+    freeList(s->exprs);
+
+    free(s);
 }

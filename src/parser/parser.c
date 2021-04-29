@@ -1,14 +1,22 @@
 #include "parser.h"
 #include "../io/log.h"
+#include "optimizer.h"
+#include "../io/io.h"
 
 #include <string.h>
 #include <stdio.h>
+
+#ifdef __linux__
+    #include <libgen.h>
+#endif
+
+#include <unistd.h>
 
 /////////////////////////////////
 // Expression parsing settings //
 /////////////////////////////////
 
-#define NUM_PREFIX_PARSE_FNS 13
+#define NUM_PREFIX_PARSE_FNS 15
 #define NUM_INFIX_PARSE_FNS  19
 #define NUM_PRECEDENCES      19
 
@@ -24,11 +32,14 @@ static ASTExpr_T* parserParseClosure(parser_T* parser);
 static ASTExpr_T* parserParseArray(parser_T* parser);
 static ASTExpr_T* parserParseDeref(parser_T* parser);
 static ASTExpr_T* parserParseRef(parser_T* parser);
+static ASTExpr_T* parserParseNil(parser_T* parser);
+static ASTExpr_T* parserParseStruct(parser_T* parser);
 
 struct {tokenType_T tt; prefixParseFn fn;} prefixParseFns[NUM_PREFIX_PARSE_FNS] = {
     {TOKEN_ID, parserParseIdentifier},
     {TOKEN_INT, parserParseInt},
     {TOKEN_FLOAT, parserParseFloat},
+    {TOKEN_NIL, parserParseNil},
     {TOKEN_TRUE, parserParseBool},
     {TOKEN_FALSE, parserParseBool},
     {TOKEN_CHAR, parserParseChar},
@@ -37,6 +48,7 @@ struct {tokenType_T tt; prefixParseFn fn;} prefixParseFns[NUM_PREFIX_PARSE_FNS] 
     {TOKEN_MINUS, parserParseNegate},
     {TOKEN_LPAREN, parserParseClosure},
     {TOKEN_LBRACKET, parserParseArray},
+    {TOKEN_LBRACE, parserParseStruct},
     {TOKEN_STAR, parserParseDeref},
     {TOKEN_REF, parserParseRef},
 };
@@ -102,6 +114,7 @@ parser_T* initParser(lexer_T* lexer)
     parser->eh = parser->lexer->eh;
     parser->localVars = initList(sizeof(struct AST_LOCAL_STRUCT*));
     parser->tok = lexerNextToken(parser->lexer);
+    parser->imports = initList(sizeof(char*));
 
     return parser;
 }
@@ -110,6 +123,11 @@ void freeParser(parser_T* parser)
 {
     freeList(parser->localVars);
     freeToken(parser->tok);
+
+    for(int i = 0; i < parser->imports->size; i++)
+        free(parser->imports->items[i]);
+    freeList(parser->imports);
+
     free(parser);
 }
 
@@ -181,15 +199,30 @@ bool expressionIsExecutable(ASTExpr_T* expr)    // checks if the expression can 
 // Parser                      //
 /////////////////////////////////
 
+static ASTFile_T* parserParseFile(parser_T* parser, const char* filePath, ASTProgram_T* programRef);
+
+ASTProgram_T* parserParse(parser_T* parser, const char* mainFile)
+{
+    ASTProgram_T* program = initASTProgram(mainFile);
+
+    listPush(program->files, parserParseFile(parser, mainFile, program));
+
+    optimizer_T* opt = initOptimizer();
+    optimizeAST(opt, program);
+    freeOptimizer(opt);
+
+    return program;    
+}
+
 static ASTGlobal_T* parserParseGlobal(parser_T* parser);
 static ASTFunction_T* parserParseFunction(parser_T* parser);
-static ASTImport_T* parserParseImport(parser_T* parser);
+static void parserParseImport(parser_T* parser, ASTProgram_T* programRef);
 static ASTTypedef_T* parserParseTypedef(parser_T* parser);
 static ASTCompound_T* parserParseCompound(parser_T* parser);
 
-ASTRoot_T* parserParse(parser_T* parser)
+static ASTFile_T* parserParseFile(parser_T* parser, const char* filePath, ASTProgram_T* programRef)
 {
-    ASTRoot_T* root = initASTRoot(parser->lexer->file->path);
+    ASTFile_T* root = initASTFile(parser->lexer->file->path);
 
     while(!tokIs(parser, TOKEN_EOF))
     {
@@ -202,7 +235,7 @@ ASTRoot_T* parserParse(parser_T* parser)
                 listPush(root->functions, parserParseFunction(parser));
                 break;
             case TOKEN_IMPORT:
-                listPush(root->imports, parserParseImport(parser));
+                parserParseImport(parser, programRef);
                 break;
             case TOKEN_TYPE:
                 listPush(root->types, parserParseTypedef(parser));
@@ -469,6 +502,12 @@ static ASTExpr_T* parserParseString(parser_T* parser)
     return ast;
 }
 
+static ASTExpr_T* parserParseNil(parser_T* parser)
+{
+    parserConsume(parser, TOKEN_NIL, "expect `nil`");
+    return initASTExpr(initASTType(AST_POINTER, initASTType(AST_VOID, NULL, NULL), NULL), EXPR_NIL, initASTNil());  // nil is just *void 0
+}
+
 static ASTExpr_T* parserParseArray(parser_T* parser)
 {
     parserConsume(parser, TOKEN_LBRACKET, "expect `[` for array literal");
@@ -476,6 +515,34 @@ static ASTExpr_T* parserParseArray(parser_T* parser)
     parserAdvance(parser);
 
     return initASTExpr(initASTType(AST_ARRAY, NULL, NULL), EXPR_ARRAY_LITERAL, initASTArray(indexes));
+}
+
+static ASTExpr_T* parserParseStruct(parser_T* parser)
+{
+    parserConsume(parser, TOKEN_LBRACE, "expect `{` for struct literal");
+    list_T* fields = initList(sizeof(char*));
+    list_T* exprs = initList(sizeof(struct AST_EXPRESSION_STRUCT*));
+
+    unsigned int startLine = parser->tok->line, startPos = parser->tok->pos;
+
+    while(!tokIs(parser, TOKEN_RBRACE))
+    {
+        listPush(fields, strdup(parser->tok->value));
+        parserConsume(parser, TOKEN_ID, "expect struct field name");
+        parserConsume(parser, TOKEN_COLON, "expect `:` after struct field");
+        listPush(exprs, parserParseExpr(parser, LOWEST));
+
+        if(tokIs(parser, TOKEN_EOF))
+        {
+            throwSyntaxError(parser->eh, "unclosed struct literal body, expect `}`", startLine, startPos);
+            exit(1);
+        }
+        else if(!tokIs(parser, TOKEN_RBRACE))
+            parserConsume(parser, TOKEN_COMMA, "expect `,` between struct fields");
+    }
+    parserAdvance(parser);
+
+    return initASTExpr(initASTType(AST_STRUCT, NULL, initASTStructType(initList(sizeof(struct AST_TYPE_STRUCT*)), initList(sizeof(char*)))), EXPR_STRUCT_LITERAL, initASTStruct(exprs, fields));
 }
 
 static ASTExpr_T* parserParseInfixExpression(parser_T* parser, ASTExpr_T* left)
@@ -887,8 +954,10 @@ static ASTFunction_T* parserParseFunction(parser_T* parser)
     parserAdvance(parser);
     
     ASTType_T* returnType = NULL;
-    if(tokIs(parser, TOKEN_COLON))
+    if(tokIs(parser, TOKEN_COLON)) {
+        parserAdvance(parser);
         returnType = parserParseType(parser);
+    }
     else {
         returnType = initASTType(AST_VOID, NULL, NULL);
     }
@@ -900,14 +969,57 @@ static ASTFunction_T* parserParseFunction(parser_T* parser)
     return ast;
 }
 
-static ASTImport_T* parserParseImport(parser_T* parser)
+static char* getDirectoryFromRelativePath(char* mainPath)
+{
+#if defined (__linux__)
+    char* fullPath = realpath(mainPath, NULL);
+    if(fullPath == NULL)
+        return NULL;
+
+    return dirname(fullPath);
+#endif
+}
+
+static void parserParseImport(parser_T* parser, ASTProgram_T* programRef)
 {
     parserConsume(parser, TOKEN_IMPORT, "expect `import` keyword");
-    ASTImport_T* ast = initASTImport(parser->tok->value);
+    char* relativePath = strdup(parser->tok->value);
     parserConsume(parser, TOKEN_STRING, "expect filepath to import");
+
+    char* directory = getDirectoryFromRelativePath(programRef->mainFile);
+    char* importPath = calloc(strlen(directory) + strlen(relativePath) + 2, sizeof(char*));
+    sprintf(importPath, "%s/%s", directory, relativePath);
+
+    if(access(importPath, F_OK) != 0)
+    {
+        const char* template = "could not open file \"%s\": no such file or directory";
+        char* message = calloc(strlen(template) + strlen(importPath) + 1, sizeof(char));
+        sprintf(message, template, importPath);
+        throwUndefinitionError(parser->eh, message, parser->tok->line, parser->tok->pos);
+        exit(1);
+    }
+
     parserConsume(parser, TOKEN_SEMICOLON, "expect `;` after import");
 
-    return ast;
+    for(int i = 0; i < parser->imports->size; i++)
+    {
+        if(strcmp(parser->imports->items[i], importPath) == 0) {
+            return;
+        }
+    }
+    listPush(parser->imports, importPath);
+
+    srcFile_T* file = readFile(importPath);
+    errorHandler_T* eh = initErrorHandler(file);
+    lexer_T* lexer = initLexer(file, eh);
+    parser_T* _parser = initParser(lexer);
+    ASTFile_T* ast = parserParseFile(_parser, importPath, programRef);
+    listPush(programRef->files, ast);
+
+    freeParser(_parser);
+    freeLexer(lexer);
+    freeSrcFile(file);
+    freeErrorHandler(eh);
 }
 
 static ASTTypedef_T* parserParseTypedef(parser_T* parser)

@@ -21,7 +21,16 @@ namespace CSpydr
     {
     }
 
-    LLVMGenerator::status LLVMGenerator::generate(ASTRoot_T *ast)
+    LLVMGenerator::status LLVMGenerator::generate(ASTProgram_T *ast)
+    {
+        for(size_t i = 0; i < ast->files->size; i++)
+            generateFile((ASTFile_T*) ast->files->items[i]);
+
+        llvmModule->print(llvm::errs(), nullptr);
+        return STATUS_OK;
+    }
+
+    void LLVMGenerator::generateFile(ASTFile_T *ast)
     {
         for(size_t i = 0; i < ast->globals->size; i++)
         {
@@ -32,9 +41,6 @@ namespace CSpydr
         {
             generateFunction((ASTFunction_T*) ast->functions->items[i]);
         }
-
-        llvmModule->print(llvm::errs(), nullptr);
-        return STATUS_OK;
     }
 
     llvm::Type* LLVMGenerator::generateType(ASTType_T* type)

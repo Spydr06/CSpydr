@@ -5,7 +5,7 @@
 
 #include <iostream>
 
-void generateLLVM(ASTRoot_T *ast, const char *targetPath, const char *sourcePath)
+void generateLLVM(ASTProgram_T *ast, const char *targetPath, const char *sourcePath)
 {
     LOG_OK(COLOR_BOLD_GREEN "Generating" COLOR_RESET " llvm code\n");
 

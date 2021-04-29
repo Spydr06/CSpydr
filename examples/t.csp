@@ -1,4 +1,4 @@
-import "stdio";
+import "s.csp";
 
 type Integer: i32;
 
@@ -12,19 +12,15 @@ type State: enum {
     STATE_ERR
 };
 
-let x: str = "Hello World";
+let message: str = "Hello World";
+let longNumber: u64 = 1_000_000_000;
 
-fn main(argc: i32, argv: str) {
-    let a: Integer;
-    a += 3;
+fn main(argc: i32, argv: str): i32 {
+    let test: Test = {x: [4, 2], y: [3, 2]};
 
-    let b: *Integer = &3;
-    let c: Integer = [(2 + a--) * (*b.s)++, 3, 67];
-    let d: Integer = c[4];
-
-    if -b == !a {
-        
+    if test.x[0] > test.y[1] {
+        puts(message);
     }
 
-    test(2, 3);
+    ret STATE_OK;
 }

@@ -155,11 +155,11 @@ void compileLLVM(char* path, char* target)
     errorHandler_T* errorHandler = initErrorHandler(file);
     lexer_T* lexer = initLexer(file, errorHandler);
     parser_T* parser = initParser(lexer);
-    ASTRoot_T* ast = parserParse(parser);
+    ASTProgram_T* ast = parserParse(parser, path);
 
     generateLLVM(ast, target, path);
 
-    freeASTRoot(ast);
+    freeASTProgram(ast);
     freeParser(parser);
     freeLexer(lexer);
     freeErrorHandler(errorHandler);
