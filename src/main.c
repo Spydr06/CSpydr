@@ -149,7 +149,6 @@ int main(int argc, char* argv[])
 
 void compileLLVM(char* path, char* target)
 {
-    LOG_OK_F(COLOR_BOLD_GREEN "Compiling" COLOR_RESET " \"%s\"\n", path);
     srcFile_T* file = readFile(path);
 
     errorHandler_T* errorHandler = initErrorHandler(file);

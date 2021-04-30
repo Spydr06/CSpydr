@@ -222,6 +222,7 @@ static ASTCompound_T* parserParseCompound(parser_T* parser);
 
 static ASTFile_T* parserParseFile(parser_T* parser, const char* filePath, ASTProgram_T* programRef)
 {
+    LOG_OK_F(COLOR_BOLD_GREEN "  Compiling" COLOR_RESET " \"%s\"\n", filePath);
     ASTFile_T* root = initASTFile(parser->lexer->file->path);
 
     while(!tokIs(parser, TOKEN_EOF))
@@ -971,7 +972,7 @@ static ASTFunction_T* parserParseFunction(parser_T* parser)
 
 static char* getDirectoryFromRelativePath(char* mainPath)
 {
-#if defined (__linux__)
+#ifdef __linux__
     char* fullPath = realpath(mainPath, NULL);
     if(fullPath == NULL)
         return NULL;
@@ -989,6 +990,7 @@ static void parserParseImport(parser_T* parser, ASTProgram_T* programRef)
     char* directory = getDirectoryFromRelativePath(programRef->mainFile);
     char* importPath = calloc(strlen(directory) + strlen(relativePath) + 2, sizeof(char*));
     sprintf(importPath, "%s/%s", directory, relativePath);
+    free(relativePath);
 
     if(access(importPath, F_OK) != 0)
     {
@@ -996,23 +998,28 @@ static void parserParseImport(parser_T* parser, ASTProgram_T* programRef)
         char* message = calloc(strlen(template) + strlen(importPath) + 1, sizeof(char));
         sprintf(message, template, importPath);
         throwUndefinitionError(parser->eh, message, parser->tok->line, parser->tok->pos);
+        free(message);
         exit(1);
     }
 
     parserConsume(parser, TOKEN_SEMICOLON, "expect `;` after import");
 
-    for(int i = 0; i < parser->imports->size; i++)
+    for(int i = 0; i < parser->imports->size; i++)  // check if the file is already included, when its included, skip it. 
+                                                    // No error gets thrown, because 2 files including each other is valid in Spydr
     {
         if(strcmp(parser->imports->items[i], importPath) == 0) {
+            free(importPath);
             return;
         }
     }
     listPush(parser->imports, importPath);
 
+    // if the file is not included, compile it to a new ASTFile_T.
     srcFile_T* file = readFile(importPath);
     errorHandler_T* eh = initErrorHandler(file);
     lexer_T* lexer = initLexer(file, eh);
     parser_T* _parser = initParser(lexer);
+
     ASTFile_T* ast = parserParseFile(_parser, importPath, programRef);
     listPush(programRef->files, ast);
 
