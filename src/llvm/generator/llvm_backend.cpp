@@ -3,8 +3,6 @@
 
 #include "utils/stringutils.hpp"
 
-#include <iostream>
-
 void generateLLVM(ASTProgram_T *ast, const char *targetPath, const char *sourcePath)
 {
     LOG_OK(COLOR_BOLD_GREEN "  Generating" COLOR_RESET " llvm code\n");

@@ -125,7 +125,7 @@ void freeParser(parser_T* parser)
     freeToken(parser->tok);
 
     for(int i = 0; i < parser->imports->size; i++)
-        free(parser->imports->items[i]);
+        free((char*) parser->imports->items[i]);
     freeList(parser->imports);
 
     free(parser);
@@ -991,6 +991,7 @@ static void parserParseImport(parser_T* parser, ASTProgram_T* programRef)
     char* importPath = calloc(strlen(directory) + strlen(relativePath) + 2, sizeof(char*));
     sprintf(importPath, "%s/%s", directory, relativePath);
     free(relativePath);
+    free(directory);
 
     if(access(importPath, F_OK) != 0)
     {

@@ -188,7 +188,67 @@ static token_T* lexerGetId(lexer_T* lexer)
     return token;
 }
 
-static token_T* lexerGetNumber(lexer_T* lexer)
+static token_T* lexerGetHexadecimal(lexer_T* lexer)
+{
+    lexerAdvance(lexer);    // cut the '0x'
+    lexerAdvance(lexer);
+
+    char* buffer = calloc(1, sizeof(char));
+
+    while(isxdigit(lexer->c) || lexer->c == '_')
+    {
+        if(lexer->c == '_')
+        {
+            lexerAdvance(lexer);
+            continue;
+        }
+
+        buffer = realloc(buffer, (strlen(buffer) + 2) * sizeof(char));
+        strcat(buffer, (char[]){lexer->c, '\0'});
+
+        lexerAdvance(lexer);
+    }
+
+    long decimal = strtol(buffer, NULL, 0);
+    buffer = realloc(buffer, (strlen("%ld") + 1) * sizeof(char));
+    sprintf(buffer, "%ld", decimal);
+
+    token_T* token = initToken(buffer, lexer->line, lexer->pos, TOKEN_INT);
+    free(buffer);
+    return token;
+}
+
+static token_T* lexerGetBinary(lexer_T* lexer)
+{
+    lexerAdvance(lexer);    // cut the '0b'
+    lexerAdvance(lexer);
+    
+    char* buffer = calloc(1, sizeof(char));
+
+    while(lexer->c == '0' || lexer->c == '1' || lexer->c == '_')
+    {
+        if(lexer->c == '_')
+        {
+            lexerAdvance(lexer);
+            continue;
+        }
+
+        buffer = realloc(buffer, (strlen(buffer) + 2) * sizeof(char));
+        strcat(buffer, (char[]){lexer->c, '\0'});
+
+        lexerAdvance(lexer);
+    }
+
+    long decimal = strtol(buffer, NULL, 2);
+    buffer = realloc(buffer, (strlen("%ld") + 1) * sizeof(char));
+    sprintf(buffer, "%ld", decimal);
+
+    token_T* token = initToken(buffer, lexer->line, lexer->pos, TOKEN_INT);
+    free(buffer);
+    return token;
+}
+
+static token_T* lexerGetDecimal(lexer_T* lexer)
 {
     char* buffer = calloc(1, sizeof(char));
     tokenType_T type = TOKEN_INT;
@@ -232,6 +292,23 @@ static token_T* lexerGetNumber(lexer_T* lexer)
 
     free(buffer);
     return token;
+}
+
+static token_T* lexerGetNumber(lexer_T* lexer)
+{
+    if(lexer->c == '0')
+    {
+        switch(lexerPeek(lexer, 1)) {
+            case 'x':
+                return lexerGetHexadecimal(lexer);
+            case 'b':
+                return lexerGetBinary(lexer);
+
+            default:
+                break;
+        }
+    }
+    return lexerGetDecimal(lexer);    
 }
 
 static token_T* lexerGetString(lexer_T* lexer)
