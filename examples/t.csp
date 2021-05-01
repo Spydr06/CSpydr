@@ -13,10 +13,11 @@ type State: enum {
 };
 
 let message: str = "Hello World";
-let longNumber: u64 = 0xfffc;
+let longNumber: Integer = 0xfffc;
 
-fn main(argc: i32, argv: str): i32 {
+fn main(argc: i32, argv: str): i64 {
     let test: Test = {x: &[4, 2], y: &[3, 2]};
+    let test: i32 = 5;
 
     if test.x[0] > test.y[1] {
         puts(message);

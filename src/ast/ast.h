@@ -86,10 +86,11 @@ typedef struct AST_TYPE_STRUCT
 {
     ASTDataType_T type;
     struct AST_TYPE_STRUCT* subtype;
-    void* body; // body for enums and structs
+    char* callee;   // callee for typedefs
+    void* body;     // body for enums and structs
 } ASTType_T;
 
-ASTType_T* initASTType(ASTDataType_T type, ASTType_T* subtype, void* body);
+ASTType_T* initASTType(ASTDataType_T type, ASTType_T* subtype, void* body, char* callee);
 void freeASTType(ASTType_T* t);
 
 typedef struct AST_STRUCT_TYPE_STRUCT
@@ -348,9 +349,12 @@ typedef struct AST_FUCTION_STRUCT
     ASTCompound_T* body;
     ASTType_T* returnType;
     list_T* args;
+
+    unsigned int line;
+    unsigned int pos;
 } ASTFunction_T;
 
-ASTFunction_T* initASTFunction(const char* name, ASTType_T* returnType, ASTCompound_T* body, list_T* args);
+ASTFunction_T* initASTFunction(const char* name, ASTType_T* returnType, ASTCompound_T* body, list_T* args, unsigned int line, unsigned int pos);
 void freeASTFunction(ASTFunction_T* f);
 
 typedef struct AST_GLOBAL_STRUCT
@@ -358,18 +362,26 @@ typedef struct AST_GLOBAL_STRUCT
     char* name;
     ASTType_T* type;
     ASTExpr_T* value;
+
+    bool typeHasToBeFreed;
+
+    unsigned int line;
+    unsigned int pos;
 } ASTGlobal_T;
 
-ASTGlobal_T* initASTGlobal(const char* name, ASTType_T* type, ASTExpr_T* value);
+ASTGlobal_T* initASTGlobal(const char* name, ASTType_T* type, ASTExpr_T* value, unsigned int line, unsigned int pos);
 void freeASTGlobal(ASTGlobal_T* g);
 
 typedef struct AST_TYPEDEF_STRUCT
 {
     ASTType_T* dataType;
     char* name;
+
+    unsigned int line;
+    unsigned int pos;
 } ASTTypedef_T;
 
-ASTTypedef_T* initASTTypedef(ASTType_T* type, const char* name);
+ASTTypedef_T* initASTTypedef(ASTType_T* type, const char* name, unsigned int line, unsigned int pos);
 void freeASTTypedef(ASTTypedef_T* t);
 
 typedef struct AST_FILE_STRUCT

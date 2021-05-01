@@ -424,6 +424,8 @@ static token_T* lexerGetSymbol(lexer_T* lexer)
         case '<': 
             if(lexerPeek(lexer, 1) == '=') 
                 return lexerConsume(lexer, lexerConsume(lexer, initToken("<=", lexer->line, lexer->pos, TOKEN_LT_EQ)));
+            else if(lexerPeek(lexer, 1) == '-')
+                return lexerConsume(lexer, lexerConsume(lexer, initToken("<-", lexer->line, lexer->pos, TOKEN_RETURN)));
             else 
                 return lexerConsume(lexer, initToken("<", lexer->line, lexer->pos, TOKEN_LT));
 

@@ -54,21 +54,21 @@ void throwError(errorHandler_T* handler, errorMessage_T* message)
     {
         case ERR_SYNTAX_ERROR:
         case ERR_ILLEGAL_TYPE_CAST:
-            LOG_ERROR_F("%s\n", message->message);
+            LOG_ERROR_F("%s", message->message);
             break;
         case ERR_REDEFINITION:
             handler->exitAfterParsing = true;
-            LOG_ERROR_F("%s\n", message->message);
+            LOG_ERROR_F("%s", message->message);
             break;
         case ERR_SYNTAX_WARNING:
         case ERR_TYPE_CAST_WARN:
-            LOG_WARN_F("%s\n", message->message);
+            LOG_WARN_F("%s", message->message);
             break;
         case ERR_UNDEFINED:
-            LOG_ERROR_F("%s\n", message->message);
+            LOG_ERROR_F("%s", message->message);
             break;
         case ERR_INTERNAL:  // this should never happen
-            LOG_ERROR_F("%s\n", message->message);
+            LOG_ERROR_F("%s", message->message);
             break;
         default:
             LOG_ERROR_F("Undefined error: %d =!=> %s\n", message->type, message->message);
@@ -100,7 +100,7 @@ void throwSyntaxError(errorHandler_T* handler, const char* message, unsigned int
 
     //generate the message
     char* value = calloc(strlen(template) + strlen(handler->file->path) + strlen(message) + strlen(pointer) + strlen(lineCode) + 128, sizeof(char));
-    sprintf(value, template, handler->file->path, lineNumber + 1, character, message, LINE_NUMBER_SPACES, lineNumber + 1, lineCode, LINE_NUMBER_SPACES, "", character, " ^~");
+    sprintf(value, template, handler->file->path, lineNumber + 1, character + 1, message, LINE_NUMBER_SPACES, lineNumber + 1, lineCode, LINE_NUMBER_SPACES, "", character + 1, " ^~");
 
     errorMessage_T* error = initErrorMessage(ERR_SYNTAX_ERROR, lineNumber, true, value); //generate the error struct
     throwError(handler, error); //submit the error
@@ -116,7 +116,7 @@ void throwRedefinitionError(errorHandler_T* handler, const char* message, unsign
 
     //generate the message
     char* value = calloc(strlen(template) + strlen(handler->file->path) + strlen(message) + strlen(pointer) + strlen(lineCode) + 128, sizeof(char));
-    sprintf(value, template, handler->file->path, lineNumber + 1, character, message, LINE_NUMBER_SPACES, lineNumber + 1, lineCode, LINE_NUMBER_SPACES, "", character, " ^~");
+    sprintf(value, template, handler->file->path, lineNumber + 1, character + 1, message, LINE_NUMBER_SPACES, lineNumber + 1, lineCode, LINE_NUMBER_SPACES, "", character + 1, " ^~");
 
     errorMessage_T* error = initErrorMessage(ERR_REDEFINITION, lineNumber, false, value); //generate the error struct
     throwError(handler, error); //submit the error
@@ -132,7 +132,7 @@ void throwUndefinitionError(errorHandler_T* handler, const char* message, unsign
 
     //generate the message
     char* value = calloc(strlen(template) + strlen(handler->file->path) + strlen(message) + strlen(pointer) + strlen(lineCode) + 128, sizeof(char));
-    sprintf(value, template, handler->file->path, lineNumber + 1, character, message, LINE_NUMBER_SPACES, lineNumber + 1, lineCode, LINE_NUMBER_SPACES, "", character, " ^~");
+    sprintf(value, template, handler->file->path, lineNumber + 1, character + 1, message, LINE_NUMBER_SPACES, lineNumber + 1, lineCode, LINE_NUMBER_SPACES, "", character + 1, " ^~");
 
     errorMessage_T* error = initErrorMessage(ERR_UNDEFINED, lineNumber, true, value); //generate the error struct
     throwError(handler, error); //submit the error

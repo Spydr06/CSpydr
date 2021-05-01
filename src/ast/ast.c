@@ -53,11 +53,14 @@ void freeASTFile(ASTFile_T* r)
     free(r);
 }
 
-ASTTypedef_T* initASTTypedef(ASTType_T* type, const char* name)
+ASTTypedef_T* initASTTypedef(ASTType_T* type, const char* name, unsigned int line, unsigned int pos)
 {
     ASTTypedef_T* t = calloc(1, sizeof(struct AST_TYPEDEF_STRUCT));
     t->dataType = type;
     t->name = strdup(name);
+
+    t->line = line;
+    t->pos = pos;
     return t;
 }
 
@@ -68,19 +71,26 @@ void freeASTTypedef(ASTTypedef_T* t)
     free(t);
 }
 
-ASTGlobal_T* initASTGlobal(const char* name, ASTType_T* type, ASTExpr_T* value)
+ASTGlobal_T* initASTGlobal(const char* name, ASTType_T* type, ASTExpr_T* value, unsigned int line, unsigned int pos)
 {
     ASTGlobal_T* g = calloc(1, sizeof(struct AST_GLOBAL_STRUCT));
     g->name = strdup(name);
     g->type = type;
     g->value = value;
+
+    g->typeHasToBeFreed = true;
+
+    g->line = line;
+    g->pos = pos;
     return g;
 }
 
 void freeASTGlobal(ASTGlobal_T* g)
 {
     free(g->name);
-    freeASTType(g->type);
+
+    if(g->typeHasToBeFreed)
+        freeASTType(g->type);
     
     if(g->value != NULL)
         freeASTExpr(g->value);
@@ -88,13 +98,17 @@ void freeASTGlobal(ASTGlobal_T* g)
     free(g);
 }
 
-ASTFunction_T* initASTFunction(const char* name, ASTType_T* returnType, ASTCompound_T* body, list_T* args)
+ASTFunction_T* initASTFunction(const char* name, ASTType_T* returnType, ASTCompound_T* body, list_T* args, unsigned int line, unsigned int pos)
 {
     ASTFunction_T* f = calloc(1, sizeof(struct AST_FUCTION_STRUCT));
     f->name = strdup(name);
     f->body = body;
     f->returnType = returnType;
     f->args = args;
+
+    f->line = line;
+    f->pos = pos;
+
     return f;
 }
 
@@ -526,12 +540,15 @@ void freeASTCompound(ASTCompound_T* c)
     free(c);
 }
 
-ASTType_T* initASTType(ASTDataType_T type, ASTType_T* subtype, void* body)
+ASTType_T* initASTType(ASTDataType_T type, ASTType_T* subtype, void* body, char* callee)
 {
     ASTType_T* t = calloc(1, sizeof(struct AST_TYPE_STRUCT));
     t->type = type;
     t->subtype = subtype;
     t->body = body;
+
+    if(callee)
+        t->callee = strdup(callee);
 
     return t;
 }
@@ -545,6 +562,9 @@ void freeASTType(ASTType_T* t)
         freeASTStructType(t->body);
     else if(t->type == AST_ENUM)
         freeASTEnumType(t->body);
+
+    if(t->callee != NULL)
+        free(t->callee);
 
     free(t);
 }
