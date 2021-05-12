@@ -29,8 +29,10 @@ MKDIR := mkdir -p
 MV := mv
 ECHO := echo
 
+BUILD_NUMBER_H ?= $(SRC_DIR)/buildnumber.h
+
 # main build process
-$(BUILD_DIR)/$(TARGET_EXEC): $(OBJS) $(BUILD_DIR)/$(TEST_EXEC) 
+$(BUILD_DIR)/$(TARGET_EXEC): $(OBJS) $(BUILD_DIR)/$(TEST_EXEC)
 # build main executable but exclude the unit test files
 	@$(LD) $(LLVM_LDFLAGS) $(filter-out $(BUILD_DIR)/$(TEST_DIR)/$(TEST_FILE).o,$(OBJS)) -o $@ $(LDFLAGS)
 	@$(MKDIR) $(TARGET_DEST)

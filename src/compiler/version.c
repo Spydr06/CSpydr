@@ -11,10 +11,10 @@ const char* getCSpydrVersion()
 
 const char* getCSpydrBuild()
 {
-    const char* buildTmp = "%ld-%s";
+    const char* buildTmp = "%s";
     const char* buildType = strcmp(CSPYDR_VERSION_W, "d") == 0 ? "debug" : "release";
 
     char* build = (char*) calloc(strlen(buildTmp) + strlen(buildType) + 1, sizeof(char));
-    sprintf(build, buildTmp, BUILD_NUMBER, buildType);
+    sprintf(build, buildTmp, buildType);
     return build;
 }
