@@ -1,51 +1,62 @@
-c_files := $(shell find src/compiler -name '*.c')
-cpp_files := $(shell find src/compiler -name '*.cpp')
-object_files := $(shell find . -name '*.o')
+TARGET_EXEC ?= CSpydr.out
+TEST_EXEC ?= tests.out
+TARGET_DEST ?= ./bin
 
-executable = bin/CSpydr.out
+SRC_DIR ?= ./src/compiler
+TEST_DIR ?= ./tests
+BUILD_DIR ?= ./build
+
+MAIN_FILE = main.c
+TEST_FILE = unit_tests.c
 
 LLVM_LDFLAGS = `llvm-config --ldflags --libs core executionengine interpreter analysis native bitwriter --system-libs`
 LLVM_CFLAGS = `llvm-config --cflags`
 LLVM_CPPFLAGS = `llvm-config --cppflags`
 
+CXXFLAGS ?= -DDBUG -Wall -fPIC
+
+SRCS := $(shell find $(SRC_DIR) -name *.cpp -or -name *.c)
+SRCS += $(shell find $(TEST_DIR) -name *.cpp -or -name *.c) 
+
+OBJS :=   $(SRCS:%=$(BUILD_DIR)/%.o)
+DEPS := $(OBJS:.o=.d)
+
 CC = gcc
-CPP = g++
+CXX = g++
 LD = g++
 
-.PHONY: build
-build: compileDebug link clean
+MKDIR := mkdir -p
+MV := mv
+ECHO := echo
 
-.PHONY: release
-release: compileRelease link clean
+# main build process
+$(BUILD_DIR)/$(TARGET_EXEC): $(OBJS) $(BUILD_DIR)/$(TEST_EXEC) 
+# build main executable but exclude the unit test files
+	@$(LD) $(LLVM_LDFLAGS) $(filter-out $(BUILD_DIR)/$(TEST_DIR)/$(TEST_FILE).o,$(OBJS)) -o $@ $(LDFLAGS)
+	@$(MKDIR) $(TARGET_DEST)
+	@$(MV) $(BUILD_DIR)/$(TARGET_EXEC) $(TARGET_DEST)/$(TARGET_EXEC)
+	@$(ECHO) "Compilation successful"
 
-.PHONY: compileDebug
-compileDebug: $(c_files)
-	utils/createbuildnumber src/compiler/buildnumber.h && \
-	mkdir -p obj/ && \
-	$(CC) -g -DDEBUG $(LLVM_CFLAGS) -Wall -fPIC -c $(c_files)
-	$(CPP) -g -DDEBUG $(LLVM_CPPFLAGS) -Wall -fPIC -c $(cpp_files)
+# unit tests
+$(BUILD_DIR)/$(TEST_EXEC):
+	@$(LD) $(LLVM_LDFLAGS) $(filter-out $(BUILD_DIR)/$(SRC_DIR)/$(MAIN_FILE).o,$(OBJS)) -o $@ $(LDFLAGS)
+	@$(MKDIR) $(TARGET_DEST)
+	@$(MV) $(BUILD_DIR)/$(TEST_EXEC) $(TARGET_DEST)/$(TEST_EXEC)
+	@$(TARGET_DEST)/$(TEST_EXEC)
 
-.PHONY: compileRelease
-compileRelease: $(c_files)
-	utils/createbuildnumber src/compiler/buildnumber.h && \
-	mkdir -p obj/ && \
-	$(CC) $(LLVM_CFLAGS) -fPIC -c $(c_files) && \
-	$(CPP) $(LLVM_CPPFLAGS) -fPIC -c $(cpp_files)
+# c source
+$(BUILD_DIR)/%.c.o: %.c
+	@$(MKDIR) $(dir $@)
+	@$(CC) $(CXXFLAGS) $(LLVM_CFLAGS) -c $< -o $@
 
-.PHONY: link
-link: $(object_files)
-	mkdir -p bin/ && \
-	$(LD) $(LLVM_LDFLAGS) -o $(executable) *.o
+# cpp source
+$(BUILD_DIR)/%.cpp.o: %.cpp
+	@$(MKDIR) $(dir $@)
+	@$(CXX) $(CXXFLAGS) $(LLVM_CPPFLAGS) -c $< -o $@
 
 .PHONY: clean
-clean:
-	rm -rf *.o
+clean: 
+	rm -rf $(BUILD_DIR)
+	rm -rf $(TARGET_DEST)
 
-.PHONY: reset
-reset:
-	rm -rf obj/ && \
-	rm -rf *.o && \
-	rm -rf *.out && \
-	rm -rf bin/ && \
-	rm -rf vgcore.* && \
-	rm -rf *.cpp.gch 
+-include $(DEPS)
