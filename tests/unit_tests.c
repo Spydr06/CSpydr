@@ -1,18 +1,41 @@
 #include "lib/acutest.h"
 
-void test_example(void)
+#include "../src/compiler/lexer/lexer.h"
+#include <stdarg.h>
+#include <string.h>
+
+srcFile_T* getFile(int numLines, ...) 
 {
-    void* mem;
-    int a, b;
+    list_T* lines = initList(sizeof(char*));
+    va_list va;
 
-    mem = malloc(10);
-    TEST_ASSERT(mem != NULL);
+    va_start(va, numLines);
+    for(int i = 0; i < numLines; i++)
+        listPush(lines, va_arg(va, char*));
+    va_end(va);
 
-    mem = realloc(mem, 20);
-    TEST_ASSERT(mem != NULL);
+    return initSrcFile(lines, "generated");
 }
 
+void test_file_generation(void)
+{
+    srcFile_T* file = getFile(2, "hello", "world");
+    TEST_ASSERT(file != NULL);
+
+    TEST_ASSERT(file->path != NULL);
+    TEST_CHECK(strcmp(file->path, "generated") == 0);
+
+    TEST_ASSERT(file->numLines = 2);
+    TEST_ASSERT(file->lines != NULL);
+    
+    TEST_CHECK(strcmp(file->lines->items[0], "hello") == 0);
+    TEST_CHECK(strcmp(file->lines->items[1], "world") == 0);
+}
+
+#include "test_lexer.tt"
+
 TEST_LIST = {
-   { "example", test_example },
-   { NULL, NULL }     /* zeroed record marking the end of the list */
+   {"file generation", test_file_generation},
+   LEXER_TESTS,
+   {NULL, NULL}     /* zeroed record marking the end of the list */
 };

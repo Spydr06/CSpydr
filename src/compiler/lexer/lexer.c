@@ -209,7 +209,7 @@ static token_T* lexerGetHexadecimal(lexer_T* lexer)
         lexerAdvance(lexer);
     }
 
-    long decimal = strtol(buffer, NULL, 0);
+    long decimal = strtol(buffer, NULL, 16);
     buffer = realloc(buffer, (strlen("%ld") + 1) * sizeof(char));
     sprintf(buffer, "%ld", decimal);
 
