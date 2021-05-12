@@ -13,7 +13,7 @@ LLVM_LDFLAGS = `llvm-config --ldflags --libs core executionengine interpreter an
 LLVM_CFLAGS = `llvm-config --cflags`
 LLVM_CPPFLAGS = `llvm-config --cppflags`
 
-CXXFLAGS ?= -DDBUG -Wall -fPIC
+CXXFLAGS ?= -DDEBUG -Wall -fPIC
 
 SRCS := $(shell find $(SRC_DIR) -name *.cpp -or -name *.c)
 SRCS += $(shell find $(TEST_DIR) -name *.cpp -or -name *.c) 
@@ -28,8 +28,6 @@ LD = g++
 MKDIR := mkdir -p
 MV := mv
 ECHO := echo
-
-BUILD_NUMBER_H ?= $(SRC_DIR)/buildnumber.h
 
 # main build process
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS) $(BUILD_DIR)/$(TEST_EXEC)

@@ -67,6 +67,10 @@ namespace CSpydr
                 return llvm::Type::getInt8Ty(*LLVMContext);
             case AST_STRING:
                 return llvm::ArrayType::get(llvm::Type::getInt8Ty(*LLVMContext), 0);
+            case AST_POINTER:
+                return llvm::PointerType::get(generateType(type->subtype), 8);
+            case AST_ARRAY:
+                return llvm::ArrayType::get(generateType(type->subtype), 0);
 
             default:
                 LOG_ERROR_F("variable of type \"%d\" is currently not supported\n", type->type);
