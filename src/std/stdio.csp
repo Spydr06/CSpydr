@@ -1,0 +1,32 @@
+# the standard library input/output file for CSpydr. It is comparable to the C include #include<stdio.h>
+
+fn puts(message: str) {
+	
+}
+
+type file_t: struct {
+	path: str,
+	buffer: str,
+	size: u64
+}
+
+let stdout: file_t;
+let stdin:  file_t;
+let stderr: file_t;
+
+fn printf(template: str, values: []str) {
+	fprintf(stdout, template, values);
+	fflush(stdout);
+}
+
+fn fprintf(template: str, values: []str) {
+	
+}
+
+fn readFromPath(path: str): *file_t {
+
+}
+
+fn readFile(file: *file_t) {
+	
+}

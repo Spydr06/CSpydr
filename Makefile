@@ -1,5 +1,5 @@
-c_files := $(shell find src -name '*.c')
-cpp_files := $(shell find src -name '*.cpp')
+c_files := $(shell find src/compiler -name '*.c')
+cpp_files := $(shell find src/compiler -name '*.cpp')
 object_files := $(shell find . -name '*.o')
 
 executable = bin/CSpydr.out
@@ -20,14 +20,14 @@ release: compileRelease link clean
 
 .PHONY: compileDebug
 compileDebug: $(c_files)
-	utils/createbuildnumber src/buildnumber.h && \
+	utils/createbuildnumber src/compiler/buildnumber.h && \
 	mkdir -p obj/ && \
 	$(CC) -g -DDEBUG $(LLVM_CFLAGS) -Wall -fPIC -c $(c_files)
 	$(CPP) -g -DDEBUG $(LLVM_CPPFLAGS) -Wall -fPIC -c $(cpp_files)
 
 .PHONY: compileRelease
 compileRelease: $(c_files)
-	utils/createbuildnumber src/buildnumber.h && \
+	utils/createbuildnumber src/compiler/buildnumber.h && \
 	mkdir -p obj/ && \
 	$(CC) $(LLVM_CFLAGS) -fPIC -c $(c_files) && \
 	$(CPP) $(LLVM_CPPFLAGS) -fPIC -c $(cpp_files)
