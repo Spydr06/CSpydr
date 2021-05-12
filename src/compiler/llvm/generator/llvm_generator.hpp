@@ -4,6 +4,7 @@
 #include "../../ast/ast.h"
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/PassManager.h>
 #include <memory>
 
 namespace CSpydr
@@ -20,6 +21,7 @@ namespace CSpydr
             STATUS_WARNINGS
         };
 
+        int emitToFile(std::string targetPath);
         status generate(ASTProgram_T* ast);
         void generateFile(ASTFile_T *ast);
     private:
@@ -28,6 +30,7 @@ namespace CSpydr
         llvm::Function* generateFunction(ASTFunction_T* func);
         llvm::BasicBlock* generateCompound(ASTCompound_T* com, llvm::Function* funcRef, std::string name = "entry");
         llvm::Type* generateType(ASTType_T* type);
+        llvm::Value* generateExpression(ASTExpr_T* expr);
 
         std::string moduleName;
 

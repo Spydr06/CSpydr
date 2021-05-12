@@ -10,6 +10,12 @@ void generateLLVM(ASTProgram_T *ast, const char *targetPath, const char *sourceP
     CSpydr::LLVMGenerator* generator = new CSpydr::LLVMGenerator(getFilenameFromPath(std::string(sourcePath)));
 
     generator->generate(ast);
+    
+    if(generator->emitToFile(targetPath))
+    {
+        LOG_ERROR_F("Error emitting LLVM bitcode to %s.", targetPath);
+        exit(1);
+    }
 
     delete generator;
 }

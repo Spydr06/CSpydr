@@ -1,10 +1,27 @@
 #include "llvm_generator.hpp"
-#include <llvm/IR/BasicBlock.h>
-#include <llvm/IR/DerivedTypes.h>
-#include <llvm/IR/Function.h>
-#include <llvm/IR/Verifier.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/IR/PassManager.h>
 #include <memory>
 #include "../../io/log.h"
+#include "llvm/Bitcode/BitcodeWriter.h"
+
+#ifdef _WIN32
+#define DLLEXPORT __declspec(dllexport)
+#else
+#define DLLEXPORT
+#endif
+
+/// putchard - putchar that takes a double and returns 0.
+extern "C" DLLEXPORT double putchard(double X) {
+  fputc((char)X, stderr);
+  return 0;
+}
+
+/// printd - printf that takes a double prints it as "%f\n", returning 0.
+extern "C" DLLEXPORT double printd(double X) {
+  fprintf(stderr, "%f\n", X);
+  return 0;
+}
 
 namespace CSpydr 
 {
@@ -19,6 +36,12 @@ namespace CSpydr
 
     LLVMGenerator::~LLVMGenerator()
     {
+    }
+
+    int LLVMGenerator::emitToFile(std::string targetPath)
+    {
+        //TODO
+        return 0;
     }
 
     LLVMGenerator::status LLVMGenerator::generate(ASTProgram_T *ast)
@@ -98,6 +121,7 @@ namespace CSpydr
         generateCompound(func->body, function);
 
         llvm::verifyFunction(*function);
+
         return function;
     }
 
@@ -143,8 +167,11 @@ namespace CSpydr
                 case STMT_LOOP:
                     break;
 
-                case STMT_RETURN:
-                    break;
+                case STMT_RETURN:{
+                    ASTReturn_T* ret = (ASTReturn_T*) stmt->stmt;
+
+                    llvmBuilder->CreateRet(generateExpression(ret->value));
+                } break;
 
                 case STMT_IF:
                     break;
@@ -161,5 +188,23 @@ namespace CSpydr
         }
 
         return bb;
+    }
+
+    llvm::Value* LLVMGenerator::generateExpression(ASTExpr_T* expr)
+    {
+        switch(expr->type)
+        {
+            case EXPR_INT_LITERAL:
+                return llvm::ConstantInt::get(*LLVMContext, llvm::APInt(32, ((ASTInt_T*) expr->expr)->_int, false));
+            case EXPR_FLOAT_LITERAL:
+                return llvm::ConstantFP::get(*LLVMContext, llvm::APFloat(((ASTFloat_T*) expr->expr)->_float));
+            case EXPR_BOOL_LITERAL:
+                return llvm::ConstantInt::get(*LLVMContext, llvm::APInt(1, ((ASTBool_T*) expr->expr)->_bool, false));
+            case EXPR_CHAR_LITERAL:
+                return llvm::ConstantInt::get(*LLVMContext, llvm::APInt(8, ((ASTChar_T*) expr->expr)->_char, false));
+            default:  
+                LOG_ERROR_F("Expressions of type %d are currently not supported", expr->type);
+                exit(1);
+        }
     }
 }
