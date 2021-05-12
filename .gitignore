@@ -51,6 +51,7 @@ vgcore.*
 .vs/
 bin/
 obj/
+build/
 .xcode/
 
 # Kernel Module Compile Results
