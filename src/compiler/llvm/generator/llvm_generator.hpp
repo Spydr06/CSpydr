@@ -34,6 +34,7 @@ namespace CSpydr
         // expression generation
         llvm::Value* generateExpression(ASTExpr_T* expr);
         llvm::Value* generateInfixExpression(ASTExpr_T* expr);
+        llvm::Value* generateCallExpression(ASTExpr_T* expr);
 
         std::string moduleName;
 

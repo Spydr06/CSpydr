@@ -1,5 +1,9 @@
 # a basic test program used for developing this programming language
 
 fn main(argc: i32, argv: *str): i32 {
-    ret 2 + 2 * 2;
+    ret 2 + 2 * test();
+}
+
+fn test(): i32 {
+    ret 2;
 }

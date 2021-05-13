@@ -4,6 +4,7 @@
 #include <llvm/IR/PassManager.h>
 #include <llvm/Support/CodeGen.h>
 #include <memory>
+#include <vector>
 #include "../../io/log.h"
 #include "llvm/Bitcode/BitcodeWriter.h"
 
@@ -92,14 +93,12 @@ namespace CSpydr
     void LLVMGenerator::generateFile(ASTFile_T *ast)
     {
         for(size_t i = 0; i < ast->globals->size; i++)
-        {
             generateGlobalVar((ASTGlobal_T*) ast->globals->items[i]);
-        }
 
-        for(size_t i = 0; i < ast->functions->size; i++)
-        {
+        for(size_t i = 0; i < ast->functions->size; i++) // first declare all functions
+            createFunction((ASTFunction_T*) ast->functions->items[i]);
+        for(size_t i = 0; i < ast->functions->size; i++) // then generate them, because order does not matter in CSpydr
             generateFunction((ASTFunction_T*) ast->functions->items[i]);
-        }
     }
 
     llvm::Type* LLVMGenerator::generateType(ASTType_T* type)
@@ -246,6 +245,8 @@ namespace CSpydr
                 return llvm::ConstantInt::get(*LLVMContext, llvm::APInt(8, ((ASTChar_T*) expr->expr)->_char, false));
             case EXPR_INFIX:
                 return generateInfixExpression(expr);
+            case EXPR_CALL:
+                return generateCallExpression(expr);
             default:  
                 LOG_ERROR_F("Expressions of type %d are currently not supported", expr->type);
                 exit(1);
@@ -288,5 +289,31 @@ namespace CSpydr
                 LOG_ERROR_F("Infix expressions of type %d are currently not supported", ifx->op);
                 exit(1);
         } 
+    }
+
+    llvm::Value* LLVMGenerator::generateCallExpression(ASTExpr_T* expr)
+    {
+        ASTCall_T* call = (ASTCall_T*) expr->expr;
+        llvm::Function* calleeF = llvmModule->getFunction(call->callee);
+        if(!calleeF)
+        {
+            LOG_ERROR_F("Called unknown function %s\n", call->callee);
+            exit(1);
+        }
+
+        if (calleeF->arg_size() != call->args->size)
+        {
+            LOG_ERROR_F("Incorrect number of arguments for function %s: expect %ld, got %ld", call->callee, calleeF->arg_size(), call->args->size);
+            exit(1);
+        }
+
+        std::vector<llvm::Value*> argv;
+        for (unsigned i = 0, e = call->args->size; i != e; ++i) {
+            argv.push_back(generateExpression((ASTExpr_T*) call->args->items[i]));
+            if (!argv.back())
+                return nullptr;
+        }
+
+        return llvmBuilder->CreateCall(calleeF, argv, "calltmp");
     }
 }
