@@ -59,4 +59,10 @@ clean:
 	rm -rf $(BUILD_DIR)
 	rm -rf $(TARGET_DEST)
 
+.PHONY: reset
+reset: clean
+	rm -rf *.o
+	rm -rf *.out
+	rm -rf vgcore.*
+
 -include $(DEPS)
