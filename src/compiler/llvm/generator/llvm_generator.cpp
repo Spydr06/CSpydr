@@ -244,9 +244,49 @@ namespace CSpydr
                 return llvm::ConstantInt::get(*LLVMContext, llvm::APInt(1, ((ASTBool_T*) expr->expr)->_bool, false));
             case EXPR_CHAR_LITERAL:
                 return llvm::ConstantInt::get(*LLVMContext, llvm::APInt(8, ((ASTChar_T*) expr->expr)->_char, false));
+            case EXPR_INFIX:
+                return generateInfixExpression(expr);
             default:  
                 LOG_ERROR_F("Expressions of type %d are currently not supported", expr->type);
                 exit(1);
         }
+    }
+
+    llvm::Value* LLVMGenerator::generateInfixExpression(ASTExpr_T* expr)
+    {
+        ASTInfix_T* ifx = (ASTInfix_T*) expr->expr;
+
+        auto l = generateExpression(ifx->left);
+        auto r = generateExpression(ifx->right);
+        if(!l || !r)
+            return nullptr;
+
+        switch(ifx->op)
+        {
+            case OP_ADD:
+                return llvmBuilder->CreateAdd(l, r, "addtmp");
+            case OP_SUB:
+                return llvmBuilder->CreateSub(l, r, "subtmp");
+            case OP_MULT:
+                return llvmBuilder->CreateMul(l, r, "multmp");
+            case OP_DIV:
+                return llvmBuilder->CreateFDiv(l, r, "divtmp"); // TODO: cast type if necessary
+            case OP_GT:
+                return llvmBuilder->CreateICmpUGT(l, r, "gtcmptmp"); // TODO: cast type if necessary
+            case OP_LT:
+                return llvmBuilder->CreateICmpULT(l, r, "ltcmptmp"); // TODO: cast type if necessary
+            case OP_GT_EQ:
+                return llvmBuilder->CreateICmpUGE(l, r, "gecmptmp"); // TODO: cast type if necessary
+            case OP_LT_EQ:
+                return llvmBuilder->CreateICmpULE(l, r, "lecmptmp"); // TODO: cast type if necessary
+            case OP_EQ:
+                return llvmBuilder->CreateICmpEQ(l, r, "eqcmptmp"); // TODO: cast type if necessary
+            case OP_NOT_EQ:
+                return llvmBuilder->CreateICmpNE(l, r, "necmptmp"); // TODO: cast type if necessary
+
+            default:
+                LOG_ERROR_F("Infix expressions of type %d are currently not supported", ifx->op);
+                exit(1);
+        } 
     }
 }

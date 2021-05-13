@@ -30,7 +30,10 @@ namespace CSpydr
         llvm::Function* generateFunction(ASTFunction_T* func);
         llvm::BasicBlock* generateCompound(ASTCompound_T* com, llvm::Function* funcRef, std::string name = "entry");
         llvm::Type* generateType(ASTType_T* type);
+
+        // expression generation
         llvm::Value* generateExpression(ASTExpr_T* expr);
+        llvm::Value* generateInfixExpression(ASTExpr_T* expr);
 
         std::string moduleName;
 
