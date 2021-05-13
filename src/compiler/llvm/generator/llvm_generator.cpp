@@ -1,27 +1,11 @@
 #include "llvm_generator.hpp"
+#include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/PassManager.h>
+#include <llvm/Support/CodeGen.h>
 #include <memory>
 #include "../../io/log.h"
 #include "llvm/Bitcode/BitcodeWriter.h"
-
-#ifdef _WIN32
-#define DLLEXPORT __declspec(dllexport)
-#else
-#define DLLEXPORT
-#endif
-
-/// putchard - putchar that takes a double and returns 0.
-extern "C" DLLEXPORT double putchard(double X) {
-  fputc((char)X, stderr);
-  return 0;
-}
-
-/// printd - printf that takes a double prints it as "%f\n", returning 0.
-extern "C" DLLEXPORT double printd(double X) {
-  fprintf(stderr, "%f\n", X);
-  return 0;
-}
 
 namespace CSpydr 
 {
@@ -40,7 +24,58 @@ namespace CSpydr
 
     int LLVMGenerator::emitToFile(std::string targetPath)
     {
-        //TODO
+        // Initialize the target registry etc.
+        llvm::InitializeAllTargetInfos();
+        llvm::InitializeAllTargets();
+        llvm::InitializeAllTargetMCs();
+        llvm::InitializeAllAsmParsers();
+        llvm::InitializeAllAsmPrinters();
+
+        auto targetTriple = llvm::sys::getDefaultTargetTriple();
+        llvmModule->setTargetTriple(targetTriple);
+
+        std::string error;
+        auto target = llvm::TargetRegistry::lookupTarget(targetTriple, error);
+
+        // Print an error and exit if we couldn't find the requested target.
+        // This generally occurs if we've forgotten to initialise the
+        // TargetRegistry or we have a bogus target triple.
+        if (!target) {
+          LOG_ERROR_F("Error creating compilation target: %s\n", error.c_str());
+          return 1;
+        }
+
+        std::string cpu = "generic";
+        std::string features = "";
+
+        llvm::TargetOptions opt;
+        auto rm = llvm::Optional<llvm::Reloc::Model>();
+        auto targetMachine = target->createTargetMachine(targetTriple, cpu, features, opt, rm);
+
+        llvmModule->setDataLayout(targetMachine->createDataLayout());
+
+        std::error_code errorCode;
+        llvm::raw_fd_ostream dest(targetPath, errorCode, llvm::sys::fs::OF_None);
+
+        if (errorCode) {
+            LOG_ERROR_F("Could not open file %s: %s\n", targetPath.c_str(), errorCode.message().c_str());
+            return 1;
+        }
+
+        llvm::legacy::PassManager pass;
+        auto ft = llvm::CGFT_ObjectFile;
+
+        if (targetMachine->addPassesToEmitFile(pass, dest, nullptr, ft)) {
+            LOG_ERROR("the target machine cannot compile to this file\n");
+            return 1;
+        }
+
+        pass.run(*llvmModule);
+        dest.flush();
+        dest.close();
+
+        LOG_OK_F("Wrote to %s\n", targetPath.c_str());
+
         return 0;
     }
 
@@ -89,9 +124,9 @@ namespace CSpydr
             case AST_CHAR:
                 return llvm::Type::getInt8Ty(*LLVMContext);
             case AST_STRING:
-                return llvm::ArrayType::get(llvm::Type::getInt8Ty(*LLVMContext), 0);
+                return llvm::PointerType::get(llvm::Type::getInt8Ty(*LLVMContext), 0);
             case AST_POINTER:
-                return llvm::PointerType::get(generateType(type->subtype), 8);
+                return llvm::PointerType::get(generateType(type->subtype), 0);
             case AST_ARRAY:
                 return llvm::ArrayType::get(generateType(type->subtype), 0);
 
@@ -120,7 +155,10 @@ namespace CSpydr
 
         generateCompound(func->body, function);
 
-        llvm::verifyFunction(*function);
+        if(llvm::verifyFunction(*function, &llvm::errs())) {
+            LOG_ERROR_F("Error validating function `%s`\n", func->name);
+            exit(1);
+        }
 
         return function;
     }
@@ -186,6 +224,9 @@ namespace CSpydr
                     break;
             }
         }
+
+        if(funcRef->getReturnType()->isVoidTy())
+            llvmBuilder->CreateRetVoid();
 
         return bb;
     }
