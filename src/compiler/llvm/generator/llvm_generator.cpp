@@ -76,6 +76,7 @@ namespace CSpydr
 
         LOG_OK_F("Wrote to %s\n", targetPath.c_str());
 
+        delete targetMachine;
         return 0;
     }
 
