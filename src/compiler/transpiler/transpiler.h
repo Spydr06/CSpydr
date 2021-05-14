@@ -8,9 +8,10 @@ typedef struct TRANSPILER_STRUCT
     const char* target;
     const char* cachePath;
 
-    char* inclSection;
-    char* defSection;
-    char* implSection;
+    char* inclSection;  //houses all includes
+    char* typeSection;  //houses all typedefs
+    char* defSection;   //houses all function and global definitions
+    char* implSection;  //houses all function implementations
 } transpiler_T;
 
 transpiler_T* initTranspiler(const char* target, const char* cachePath);

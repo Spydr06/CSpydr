@@ -18,7 +18,11 @@ transpiler_T* initTranspiler(const char* target, const char* cachePath)
     tp->inclSection = malloc(sizeof(char));
     tp->inclSection[0] = '\0';
 
-    // the second section where functions and globals are defined, because order does not matter in CSpydr
+    // the second section of the source file where typedefs are located
+    tp->typeSection = malloc(sizeof(char));
+    tp->typeSection[0] = '\0';
+
+    // the third section where functions and globals are defined, because order does not matter in CSpydr
     tp->defSection = malloc(sizeof(char));
     tp->defSection[0] = '\0';
 
@@ -32,6 +36,7 @@ transpiler_T* initTranspiler(const char* target, const char* cachePath)
 void freeTranspiler(transpiler_T* tp)
 {
     free(tp->inclSection);
+    free(tp->typeSection);
     free(tp->defSection);
     free(tp->implSection);
 
@@ -46,13 +51,14 @@ void transpile(ASTProgram_T* ast, char* target)
     generateCCode(tp, ast);
 
     // merge the 3 code sections to one source file to compile
-    const char* CSrcTmp = "//transpiled by the CSpydr compiler\n%s\n%s\n%s";
+    const char* CSrcTmp = "//transpiled by the CSpydr compiler\n%s\n%s\n%s\n%s";
     char* CSrc = calloc(strlen(CSrcTmp) 
                       + strlen(tp->inclSection) 
+                      + strlen(tp->typeSection)
                       + strlen(tp->defSection) 
                       + strlen(tp->implSection) 
                       + 1, sizeof(char));
-    sprintf(CSrc, CSrcTmp, tp->inclSection, tp->defSection, tp->implSection);
+    sprintf(CSrc, CSrcTmp, tp->inclSection, tp->typeSection, tp->defSection, tp->implSection);
     //temporary
     LOG_INFO_F("%s\n", CSrc);
 
