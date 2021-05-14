@@ -10,6 +10,7 @@
 #include "parser/parser.h"
 #include "error/errorHandler.h"
 #include "llvm/cpp_bindings.h"
+#include "transpiler/transpiler.h"
 
 #ifndef __linux__
 #error "CSpydr currently only supports x86 linux!"
@@ -23,7 +24,7 @@
 #ifdef __linux__
     #include <linux/limits.h>
 
-    #define DEFAULT_OUTPUT_FILE "a.o"
+    #define DEFAULT_OUTPUT_FILE "a.out"
 #endif
 
 #define CSPYDR_GIT_REPOSITORY "https://github.com/spydr06/cspydr.git"
@@ -167,7 +168,20 @@ void compileLLVM(char* path, char* target)
 
 void compileTranspiling(char* path, char* target)
 {
+    srcFile_T* file = readFile(path);
 
+    errorHandler_T* errorHandler = initErrorHandler(file);
+    lexer_T* lexer = initLexer(file, errorHandler);
+    parser_T* parser = initParser(lexer);
+    ASTProgram_T* ast = parserParse(parser, path);
+
+    transpile(ast, target);
+
+    freeASTProgram(ast);
+    freeParser(parser);
+    freeLexer(lexer);
+    freeErrorHandler(errorHandler);
+    freeSrcFile(file);
 }
 
 static char* getAbsoluteStdPath(char* relativePath)
