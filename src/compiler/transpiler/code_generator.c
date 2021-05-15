@@ -11,13 +11,20 @@
 #define ADD_IMPL(str, tp) ADD_STR(str, tp->implSection);
 
 static void generateFile(transpiler_T* tp, ASTFile_T* file);
+
 static void generateGlobal(transpiler_T* tp, ASTGlobal_T* global);
 static void generateFunction(transpiler_T* tp, ASTFunction_T* func);
-static char* generateType(transpiler_T* tp, ASTType_T* type);
 static void generateCompound(transpiler_T* tp, ASTCompound_T* comp);
+
 static void generateStmt(transpiler_T* tp, ASTStmt_T* stmt);
 static void generateReturn(transpiler_T* tp, ASTReturn_T* ret);
+static void generateLocal(transpiler_T* tp, ASTLocal_T* loc);
+
+static char* generateType(transpiler_T* tp, ASTType_T* type);
 static char* generateExpr(transpiler_T* tp, ASTExpr_T* expr);
+static char* generateInfixExpression(transpiler_T* tp, ASTInfix_T* ifx);
+static char* generatePrefixExpression(transpiler_T* tp, ASTPrefix_T* pfx);
+static char* generatePostfixExpression(transpiler_T* tp, ASTPostfix_T* pfx);
 
 void generateCCode(transpiler_T* tp, ASTProgram_T* ast)
 {
@@ -127,6 +134,17 @@ static void generateStmt(transpiler_T* tp, ASTStmt_T* stmt)
         case STMT_RETURN:
             generateReturn(tp, (ASTReturn_T*) stmt->stmt);
             break;
+        case STMT_LET:
+            generateLocal(tp, (ASTLocal_T*) stmt->stmt);
+            break;
+        case STMT_EXPRESSION:
+        {
+            char* val = generateExpr(tp, ((ASTExprStmt_T*) stmt->stmt)->expr);
+            ADD_IMPL(val, tp);
+            free(val);
+            ADD_IMPL(";\n", tp);
+            break;
+        }
 
         default:
             LOG_ERROR_F("Statements of type %d are currently not support transpiling\n", stmt->type);
@@ -141,6 +159,45 @@ static void generateReturn(transpiler_T* tp, ASTReturn_T* ret)
     ADD_IMPL(expr, tp);
     ADD_IMPL(";\n", tp);
     free(expr);
+}
+
+static void generateLocal(transpiler_T* tp, ASTLocal_T* loc)
+{
+    char* dataType = generateType(tp, loc->dataType);
+    ADD_IMPL(dataType, tp);
+    free(dataType);
+
+    ADD_IMPL(" ", tp);
+    ADD_IMPL(loc->name, tp);
+
+    if(loc->value)
+    {
+        ADD_IMPL("=", tp);
+        char* value = generateExpr(tp, loc->value);
+        ADD_IMPL(value, tp);
+        free(value);
+    }
+    ADD_IMPL(";\n", tp);
+}
+
+static char* generateCallArgs(transpiler_T* tp, list_T* args)
+{
+    char* argsStr = malloc(sizeof(char));
+    argsStr[0] = '\0';
+
+    for(int i = 0; i < args->size; i++)
+    {
+        char* arg = generateExpr(tp, (ASTExpr_T*) args->items[i]);
+        ADD_STR(arg, argsStr);
+        free(arg);
+
+        if(i < args->size - 1)
+        {
+           ADD_STR(",", argsStr);
+        }
+    }
+
+    return argsStr;
 }
 
 static char* generateExpr(transpiler_T* tp, ASTExpr_T* expr)
@@ -179,11 +236,152 @@ static char* generateExpr(transpiler_T* tp, ASTExpr_T* expr)
             sprintf(sStr, tmp, ((ASTString_T*) expr->expr)->_string);
             return sStr;
         }
+        case EXPR_IDENTIFIER:
+            return strdup(((ASTIdentifer_T*) expr->expr)->callee); //TODO: add child support
+        case EXPR_CALL:
+        {
+            const char* tmp = "%s(%s)";
+            char* args = generateCallArgs(tp, ((ASTCall_T*) expr->expr)->args);
+            char* callee = ((ASTCall_T*) expr->expr)->callee;
+            char* call = calloc(strlen(tmp) 
+                              + strlen(callee) 
+                              + strlen(args) 
+                              + 1, sizeof(char));
+            sprintf(call, tmp, callee, args);
+            free(args);
+            return call;
+        }
+        case EXPR_INFIX:
+            return generateInfixExpression(tp, (ASTInfix_T*) expr->expr);
+        case EXPR_PREFIX:
+            return generatePrefixExpression(tp, (ASTPrefix_T*) expr->expr);
+        case EXPR_POSTFIX:
+            return generatePostfixExpression(tp, (ASTPostfix_T*) expr->expr);
 
         default:
             LOG_ERROR_F("Expression of type %d currently not support transpiling\n", expr->type);
             exit(1);
     }
+}
+
+static char* generateInfixExpression(transpiler_T* tp, ASTInfix_T* ifx)
+{
+    char* l = generateExpr(tp, ifx->left);
+    char* r = generateExpr(tp, ifx->right);
+    char* op;
+
+    switch(ifx->op)
+    {
+        case OP_ADD:
+            op = "+";
+            break;
+        case OP_SUB:
+            op = "-";
+            break;
+        case OP_MULT:
+            op = "*";
+            break;
+        case OP_DIV:
+            op = "/";
+            break;
+        case OP_EQ:
+            op = "==";
+            break;
+        case OP_NOT_EQ:
+            op = "!=";
+            break;
+        case OP_GT:
+            op = ">";
+            break;
+        case OP_LT:
+            op = "<";
+            break;
+        case OP_GT_EQ:
+            op = ">=";
+            break;
+        case OP_LT_EQ:
+            op = "<=";
+            break;
+        case OP_ASSIGN:
+            op = "=";
+            break;
+
+        default:
+            LOG_ERROR_F("Infix operation of type %d currently not support transpiling\n", ifx->op);
+            exit(1);
+    }
+
+    char* expr = calloc(strlen(l)
+                      + strlen(r)
+                      + strlen(op)
+                      + strlen("%s%s%s")
+                      + 1, sizeof(char));
+    sprintf(expr, "%s%s%s", l, op, r);
+    free(l);
+    free(r);
+    return expr;
+}
+
+static char* generatePrefixExpression(transpiler_T* tp, ASTPrefix_T* pfx)
+{
+    char* r = generateExpr(tp, pfx->right);
+    char* op;
+
+    switch(pfx->op)
+    {
+        case OP_NEGATE:
+            op = "-";
+            break;
+        case OP_NOT:
+            op = "!";
+            break;
+        case OP_REF:
+            op = "&";
+            break;
+        case OP_DEREF:
+            op = "*";
+            break;
+        
+        default:
+            LOG_ERROR_F("Prefix operation of type %d currently not support transpiling\n", pfx->op);
+            exit(1);
+    }
+
+    char* expr = calloc(strlen(r)
+                      + strlen(op)
+                      + strlen("%s%s")
+                      + 1, sizeof(char));
+    sprintf(expr, "%s%s", op, r);
+    free(r);
+    return expr;
+}
+
+static char* generatePostfixExpression(transpiler_T* tp, ASTPostfix_T* pfx)
+{
+    char* l = generateExpr(tp, pfx->left);
+    char* op;
+
+    switch(pfx->op)
+    {
+        case OP_INC:
+            op = "++";
+            break;
+        case OP_DEC:
+            op = "--";
+            break;
+        
+        default:
+            LOG_ERROR_F("Pstfix operation of type %d currently not support transpiling\n", pfx->op);
+            exit(1);
+    }
+
+    char* expr = calloc(strlen(l)
+                      + strlen(op)
+                      + strlen("%s%s")
+                      + 1, sizeof(char));
+    sprintf(expr, "%s%s", l, op);
+    free(l);
+    return expr;
 }
 
 static char* generateType(transpiler_T* tp, ASTType_T* type)
