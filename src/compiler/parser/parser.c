@@ -446,14 +446,14 @@ static ASTExpr_T* parserParseExpr(parser_T* parser, precedence_T precedence)
 
 static ASTExpr_T* parserParseIdentifier(parser_T* parser) 
 {
-    ASTIdentifer_T* id = initASTIdentifier(parser->tok->value, NULL);
+    ASTIdentifier_T* id = initASTIdentifier(parser->tok->value, NULL);
     parserConsume(parser, TOKEN_ID, "expect identifier");
 
     if(tokIs(parser, TOKEN_DOT))
     {
         parserAdvance(parser);
         ASTExpr_T* expr = parserParseIdentifier(parser);
-        id->childId = ((ASTIdentifer_T*) expr->expr);
+        id->childId = ((ASTIdentifier_T*) expr->expr);
         free(expr);
     }
 
@@ -608,7 +608,7 @@ static ASTExpr_T* parserParseCallExpression(parser_T* parser, ASTExpr_T* left)
     list_T* args = parserParseExpressionList(parser, TOKEN_RPAREN);
     parserConsume(parser, TOKEN_RPAREN, "expect `)` after function call arguments");    
 
-    ASTExpr_T* ast = initASTExpr(NULL, EXPR_CALL, initASTCall(((ASTIdentifer_T*) left->expr)->callee, args));
+    ASTExpr_T* ast = initASTExpr(NULL, EXPR_CALL, initASTCall(((ASTIdentifier_T*) left->expr)->callee, args));
     freeASTExpr(left);  // free the left ast node because we only store the callee
     return ast;
 }
@@ -685,7 +685,7 @@ static ASTExpr_T* parserParseAssignmentOp(ASTExpr_T* left, ASTInfixOpType_T op, 
                     initASTInfix(op, right, left)), 
                     initASTExpr(
                         NULL, EXPR_IDENTIFIER, 
-                        initASTIdentifier(((ASTIdentifer_T*) left->expr)->callee, NULL)
+                        initASTIdentifier(((ASTIdentifier_T*) left->expr)->callee, NULL)
                     )
                 )
             );

@@ -167,10 +167,10 @@ typedef struct AST_IDENTIFIER_STRUCT
 {
     char* callee;
     struct AST_IDENTIFIER_STRUCT* childId;
-} ASTIdentifer_T;
+} ASTIdentifier_T;
 
-ASTIdentifer_T* initASTIdentifier(const char* callee, ASTIdentifer_T* child);
-void freeASTIdentifier(ASTIdentifer_T* i);
+ASTIdentifier_T* initASTIdentifier(const char* callee, ASTIdentifier_T* child);
+void freeASTIdentifier(ASTIdentifier_T* i);
 
 typedef struct AST_CALL_STRUCT
 {

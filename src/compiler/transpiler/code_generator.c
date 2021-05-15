@@ -24,7 +24,10 @@ static void generateLoop(transpiler_T* tp, ASTLoop_T* loop);
 static void generateMatch(transpiler_T* tp, ASTMatch_T* match);
 
 static char* generateType(transpiler_T* tp, ASTType_T* type);
+static char* generateStructType(transpiler_T* tp, ASTStructType_T* st);
+
 static char* generateExpr(transpiler_T* tp, ASTExpr_T* expr);
+static char* generateId(transpiler_T* tp, ASTIdentifier_T* id);
 static char* generateInfixExpression(transpiler_T* tp, ASTInfix_T* ifx);
 static char* generatePrefixExpression(transpiler_T* tp, ASTPrefix_T* pfx);
 static char* generatePostfixExpression(transpiler_T* tp, ASTPostfix_T* pfx);
@@ -312,7 +315,7 @@ static char* generateExpr(transpiler_T* tp, ASTExpr_T* expr)
             return sStr;
         }
         case EXPR_IDENTIFIER:
-            return strdup(((ASTIdentifer_T*) expr->expr)->callee); //TODO: add child support
+            return generateId(tp, (ASTIdentifier_T*) expr->expr);
         case EXPR_CALL:
         {
             const char* tmp = "%s(%s)";
@@ -339,6 +342,22 @@ static char* generateExpr(transpiler_T* tp, ASTExpr_T* expr)
             LOG_ERROR_F("Expression of type %d currently not support transpiling\n", expr->type);
             exit(1);
     }
+}
+
+static char* generateId(transpiler_T* tp, ASTIdentifier_T* id)
+{
+    char* idStr = calloc(sizeof(id->callee) + 1, sizeof(char));
+    strcat(idStr, id->callee);
+
+    if(id->childId)
+    {
+        char* childStr = generateId(tp, id->childId);
+        ADD_STR(".", idStr); // TODO: generate '.' or '->' based off of the type
+        ADD_STR(childStr, idStr);
+        free(childStr);
+    }
+
+    return idStr;
 }
 
 static char* generateInfixExpression(transpiler_T* tp, ASTInfix_T* ifx)
@@ -504,8 +523,36 @@ static char* generateType(transpiler_T* tp, ASTType_T* type)
             strcat(st, "*");
             return st;
         }
+        case AST_STRUCT: {
+            return generateStructType(tp, (ASTStructType_T*) type->body);
+        }
         default:
             LOG_ERROR_F("Transpiling of data type %d is currently not supported", type->type);
             exit(1);
     }
 }
+
+
+static char* generateStructType(transpiler_T* tp, ASTStructType_T* st)
+{
+    const char* structTmp = "struct {%s}";
+
+    char* fieldsStr= malloc(sizeof(char));
+    fieldsStr[0] = '\0';
+    for(int i = 0; i < st->fieldNames->size; i++)
+    {
+        char* fType = generateType(tp, (ASTType_T*) st->fieldTypes->items[i]);
+        ADD_STR(fType, fieldsStr);
+        free(fType);
+        ADD_STR(" ", fieldsStr);
+
+        ADD_STR((char*) st->fieldNames->items[i], fieldsStr);
+        ADD_STR(";", fieldsStr);
+    }   
+    char* structStr = calloc(strlen(fieldsStr)
+                           + strlen(structTmp)
+                           + 1, sizeof(char));
+    sprintf(structStr, structTmp, fieldsStr);
+    free(fieldsStr);
+    return structStr;
+}   

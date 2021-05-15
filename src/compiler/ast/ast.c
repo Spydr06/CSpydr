@@ -363,15 +363,15 @@ void freeASTInt(ASTInt_T* i)
     free(i);
 }
 
-ASTIdentifer_T* initASTIdentifier(const char* callee, ASTIdentifer_T* child)
+ASTIdentifier_T* initASTIdentifier(const char* callee, ASTIdentifier_T* child)
 {
-    ASTIdentifer_T* i = calloc(1, sizeof(struct AST_IDENTIFIER_STRUCT));
+    ASTIdentifier_T* i = calloc(1, sizeof(struct AST_IDENTIFIER_STRUCT));
     i->callee = strdup(callee);
     i->childId = child;
     return i;
 }
 
-void freeASTIdentifier(ASTIdentifer_T* i)
+void freeASTIdentifier(ASTIdentifier_T* i)
 {
     free(i->callee);
     if(i->childId != NULL)
