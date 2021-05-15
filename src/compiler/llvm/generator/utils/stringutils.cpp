@@ -1,19 +1,11 @@
 #include "stringutils.hpp"
+#include "../../../platform/platform_bindings.h"
 
 std::string getFilenameFromPath(std::string path) 
 {
-
-#if defined(_WIN32)
-    const char* delims = "\\";
-#elif defined(__linux__)
-    const char* delims = "/";
-#else
-    #error "Only Linux and Windows are currently supported!"
-#endif
-
     // Remove directory if present.
     // Do this before extension removal incase directory has a period character.
-    const size_t last_slash_idx = path.find_last_of(delims);
+    const size_t last_slash_idx = path.find_last_of(DIRECTORY_DELIMS);
     if (std::string::npos != last_slash_idx)
     {
         path.erase(0, last_slash_idx + 1);

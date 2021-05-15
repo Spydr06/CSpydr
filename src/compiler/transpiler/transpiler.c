@@ -92,12 +92,9 @@ void compile(transpiler_T* tp)
                         + 1, sizeof(char));
     sprintf(gccCmd, gccTemplate, tp->cachePath, tp->target, tp->target);
 
-#ifdef __linux
     char* compilerFeedback = sh(gccCmd);
     LOG_OK_F(COLOR_RESET "%s", compilerFeedback);
     free(compilerFeedback);
-#elif defind(_WIN32)
-    #error compilation for windows is currently not supported //FIXME:
-#endif
+
     free(gccCmd);
 }

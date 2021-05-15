@@ -11,21 +11,7 @@
 #include "error/errorHandler.h"
 #include "llvm/cpp_bindings.h"
 #include "transpiler/transpiler.h"
-
-#ifndef __linux__
-#error "CSpydr currently only supports x86 linux!"
-#endif
-
-#ifdef _WIN32
-    #include <windows.h>
-
-    #define DEFAULT_OUTPUT_FILE "a.exe"
-#endif
-#ifdef __linux__
-    #include <linux/limits.h>
-
-    #define DEFAULT_OUTPUT_FILE "a.out"
-#endif
+#include "platform/platform_bindings.h"
 
 #define CSPYDR_GIT_REPOSITORY "https://github.com/spydr06/cspydr.git"
 #define CSPYDR_GIT_DEVELOPER "https://github.com/spydr06"
@@ -66,7 +52,6 @@ const char* versionText = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE 
 
 const char* getCSpydrVersion();
 const char* getCSpydrBuild();
-static char* getAbsoluteStdPath(char* relativePath);
 void compileLLVM(char* path, char* target);
 void compileTranspiling(char* path, char* target);
 
@@ -183,14 +168,3 @@ void compileTranspiling(char* path, char* target)
     freeErrorHandler(errorHandler);
     freeSrcFile(file);
 }
-
-static char* getAbsoluteStdPath(char* relativePath)
-{
-#ifdef __linux__
-    char* absolutePath = calloc(PATH_MAX, sizeof(char));
-    realpath(relativePath, absolutePath);
-    return absolutePath;
-#endif
-}
-
-
