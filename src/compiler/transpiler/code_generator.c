@@ -19,12 +19,16 @@ static void generateCompound(transpiler_T* tp, ASTCompound_T* comp);
 static void generateStmt(transpiler_T* tp, ASTStmt_T* stmt);
 static void generateReturn(transpiler_T* tp, ASTReturn_T* ret);
 static void generateLocal(transpiler_T* tp, ASTLocal_T* loc);
+static void generateIf(transpiler_T* tp, ASTIf_T* ifs);
+static void generateLoop(transpiler_T* tp, ASTLoop_T* loop);
+static void generateMatch(transpiler_T* tp, ASTMatch_T* match);
 
 static char* generateType(transpiler_T* tp, ASTType_T* type);
 static char* generateExpr(transpiler_T* tp, ASTExpr_T* expr);
 static char* generateInfixExpression(transpiler_T* tp, ASTInfix_T* ifx);
 static char* generatePrefixExpression(transpiler_T* tp, ASTPrefix_T* pfx);
 static char* generatePostfixExpression(transpiler_T* tp, ASTPostfix_T* pfx);
+static char* generateIndexExpression(transpiler_T* tp, ASTIndex_T* idx);
 
 void generateCCode(transpiler_T* tp, ASTProgram_T* ast)
 {
@@ -145,6 +149,15 @@ static void generateStmt(transpiler_T* tp, ASTStmt_T* stmt)
             ADD_IMPL(";\n", tp);
             break;
         }
+        case STMT_IF:
+            generateIf(tp, (ASTIf_T*) stmt->stmt);
+            break;
+        case STMT_LOOP:
+            generateLoop(tp, (ASTLoop_T*) stmt->stmt);
+            break;
+        case STMT_MATCH:
+            generateMatch(tp, (ASTMatch_T*) stmt->stmt);
+            break;
 
         default:
             LOG_ERROR_F("Statements of type %d are currently not support transpiling\n", stmt->type);
@@ -178,6 +191,68 @@ static void generateLocal(transpiler_T* tp, ASTLocal_T* loc)
         free(value);
     }
     ADD_IMPL(";\n", tp);
+}
+
+static void generateIf(transpiler_T* tp, ASTIf_T* ifs)
+{
+    ADD_IMPL("if(", tp);
+    char* cond = generateExpr(tp, ifs->condition);
+    ADD_IMPL(cond, tp);
+    free(cond);
+
+    ADD_IMPL("){\n", tp);
+    generateCompound(tp, ifs->ifBody);
+    ADD_IMPL("}\n", tp);
+
+    if(ifs->elseBody) {
+        ADD_IMPL("else{\n", tp);
+        generateCompound(tp, ifs->elseBody);
+        ADD_IMPL("}\n", tp); 
+    }
+}
+
+static void generateLoop(transpiler_T* tp, ASTLoop_T* loop)
+{
+    ADD_IMPL("while(", tp);
+    char* cond = generateExpr(tp, loop->condition);
+    ADD_IMPL(cond, tp);
+    free(cond);
+
+    ADD_IMPL("){\n", tp);
+    generateCompound(tp, loop->body);
+    ADD_IMPL("}\n", tp);
+}
+
+static void generateMatch(transpiler_T* tp, ASTMatch_T* match)
+{
+    ADD_IMPL("switch(", tp);
+    char* cond = generateExpr(tp, match->condition);
+    ADD_IMPL(cond, tp);
+    free(cond);
+    ADD_IMPL("){\n", tp);
+    
+    for(int i = 0; i < match->bodys->size; i++)
+    {
+        ASTCompound_T* body = (ASTCompound_T*) match->bodys->items[i];
+        char* cond = generateExpr(tp, (ASTExpr_T*) match->cases->items[i]);
+
+        ADD_IMPL("case ", tp);
+        ADD_IMPL(cond, tp);
+        free(cond);
+
+        ADD_IMPL(":{\n", tp);
+        generateCompound(tp, body);
+        ADD_IMPL("}; break;\n", tp);   
+    }
+
+    if(match->defaultBody)
+    {
+        ADD_IMPL("default:{\n", tp);
+        generateCompound(tp, match->defaultBody);
+        ADD_IMPL("}; break;\n", tp); 
+    }
+
+    ADD_IMPL("}\n", tp);
 }
 
 static char* generateCallArgs(transpiler_T* tp, list_T* args)
@@ -257,6 +332,8 @@ static char* generateExpr(transpiler_T* tp, ASTExpr_T* expr)
             return generatePrefixExpression(tp, (ASTPrefix_T*) expr->expr);
         case EXPR_POSTFIX:
             return generatePostfixExpression(tp, (ASTPostfix_T*) expr->expr);
+        case EXPR_INDEX:
+            return generateIndexExpression(tp, (ASTIndex_T*) expr->expr);
 
         default:
             LOG_ERROR_F("Expression of type %d currently not support transpiling\n", expr->type);
@@ -382,6 +459,21 @@ static char* generatePostfixExpression(transpiler_T* tp, ASTPostfix_T* pfx)
     sprintf(expr, "%s%s", l, op);
     free(l);
     return expr;
+}
+
+static char* generateIndexExpression(transpiler_T* tp, ASTIndex_T* idx)
+{
+    const char* idxTmp = "%s[%s]";
+    char* value = generateExpr(tp, idx->value);
+    char* index = generateExpr(tp, idx->idx);
+    char* idxStr = calloc(strlen(idxTmp)
+                        + strlen(value)
+                        + strlen(index)
+                        + 1, sizeof(char));
+    sprintf(idxStr, idxTmp, value, index);
+    free(index);
+    free(value);
+    return idxStr;
 }
 
 static char* generateType(transpiler_T* tp, ASTType_T* type)

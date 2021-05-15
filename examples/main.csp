@@ -5,6 +5,7 @@ let x: i32 = 4;
 fn main(argc: i32, argv: *str): i32 {
     test(4);
     let y: i32 = 5;
+   
     ret y++ + -2;
 }
 
