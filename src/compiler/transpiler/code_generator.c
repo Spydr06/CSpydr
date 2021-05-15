@@ -25,6 +25,7 @@ static void generateMatch(transpiler_T* tp, ASTMatch_T* match);
 
 static char* generateType(transpiler_T* tp, ASTType_T* type);
 static char* generateStructType(transpiler_T* tp, ASTStructType_T* st);
+static char* generateEnumType(transpiler_T* tp, ASTEnumType_T* et);
 
 static char* generateExpr(transpiler_T* tp, ASTExpr_T* expr);
 static char* generateId(transpiler_T* tp, ASTIdentifier_T* id);
@@ -526,6 +527,9 @@ static char* generateType(transpiler_T* tp, ASTType_T* type)
         case AST_STRUCT: {
             return generateStructType(tp, (ASTStructType_T*) type->body);
         }
+        case AST_ENUM: {
+            return generateEnumType(tp, (ASTEnumType_T*) type->body);
+        }
         default:
             LOG_ERROR_F("Transpiling of data type %d is currently not supported", type->type);
             exit(1);
@@ -537,7 +541,7 @@ static char* generateStructType(transpiler_T* tp, ASTStructType_T* st)
 {
     const char* structTmp = "struct {%s}";
 
-    char* fieldsStr= malloc(sizeof(char));
+    char* fieldsStr = malloc(sizeof(char));
     fieldsStr[0] = '\0';
     for(int i = 0; i < st->fieldNames->size; i++)
     {
@@ -556,3 +560,22 @@ static char* generateStructType(transpiler_T* tp, ASTStructType_T* st)
     free(fieldsStr);
     return structStr;
 }   
+
+static char* generateEnumType(transpiler_T* tp, ASTEnumType_T* et)
+{
+    const char* enumTmp = "enum {%s}";
+
+    char* fieldsStr = malloc(sizeof(char));
+    fieldsStr[0] = '\0';
+    for(int i = 0; i < et->fields->size; i++)
+    {
+        ADD_STR((char*) et->fields->items[i], fieldsStr);
+        ADD_STR(",", fieldsStr);
+    }
+    char* enumStr = calloc(strlen(enumTmp)
+                         + strlen(fieldsStr)
+                         + 1, sizeof(char));
+    sprintf(enumStr, enumTmp, fieldsStr);
+    free(fieldsStr);
+    return enumStr;
+}
