@@ -6,7 +6,7 @@
 #include <string.h>
 #include <stdio.h>
 
-token_T* initToken(char* value, unsigned int line, unsigned int pos, tokenType_T type) 
+token_T* initToken(char* value, unsigned int line, unsigned int pos, tokenType_T type)
 {
     token_T* token = calloc(1, sizeof(token_T));
 
@@ -19,7 +19,7 @@ token_T* initToken(char* value, unsigned int line, unsigned int pos, tokenType_T
     return token;
 }
 
-void freeToken(token_T* token) 
+void freeToken(token_T* token)
 {
     free(token->value);
     free(token);

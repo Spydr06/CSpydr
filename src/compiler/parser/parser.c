@@ -296,10 +296,6 @@ static ASTType_T* parserParseType(parser_T* parser)
     else if(streq(type, "char")) {
         parserAdvance(parser);
         dt = AST_CHAR;
-    }  
-    else if(streq(type, "str")) {
-        parserAdvance(parser);
-        dt = AST_STRING;
     }
     else if(streq(type, "struct")) 
     {
@@ -500,7 +496,7 @@ static ASTExpr_T* parserParseChar(parser_T* parser)
 
 static ASTExpr_T* parserParseString(parser_T* parser)
 {
-    ASTExpr_T* ast = initASTExpr(initASTType(AST_STRING, NULL, NULL, ""), EXPR_STRING_LITERAL, initASTString(parser->tok->value));
+    ASTExpr_T* ast = initASTExpr(initASTType(AST_POINTER, initASTType(AST_CHAR, NULL, NULL, ""), NULL, ""), EXPR_STRING_LITERAL, initASTString(parser->tok->value));
     parserConsume(parser, TOKEN_STRING, "expect string");
     return ast;
 }

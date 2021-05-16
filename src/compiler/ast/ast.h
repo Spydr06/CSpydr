@@ -15,7 +15,6 @@ typedef enum
     AST_F64,
     AST_BOOL,
     AST_CHAR,
-    AST_STRING,
     AST_ARRAY,
     AST_STRUCT,
     AST_TYPEDEF,    // this is the default type for the parser and will later be replaced with the typedef'd type

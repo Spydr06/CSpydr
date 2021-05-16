@@ -125,7 +125,7 @@ int main(int argc, char* argv[])
     }
 
     free(inputFile);
-    
+
     if(strcmp(outputFile, DEFAULT_OUTPUT_FILE) != 0) {
         free(outputFile);
     }

@@ -123,8 +123,6 @@ namespace CSpydr
                 return llvm::Type::getVoidTy(*LLVMContext);
             case AST_CHAR:
                 return llvm::Type::getInt8Ty(*LLVMContext);
-            case AST_STRING:
-                return llvm::PointerType::get(llvm::Type::getInt8Ty(*LLVMContext), 0);
             case AST_POINTER:
                 return llvm::PointerType::get(generateType(type->subtype), 0);
             case AST_ARRAY:

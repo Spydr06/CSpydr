@@ -514,8 +514,6 @@ static char* generateType(transpiler_T* tp, ASTType_T* type)
             return strdup("double");
         case AST_CHAR:
             return strdup("char");
-        case AST_STRING:
-            return strdup("char*");
         case AST_BOOL:
             return strdup("uint8_t");
         case AST_POINTER: {

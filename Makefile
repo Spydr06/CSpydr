@@ -1,5 +1,5 @@
 # target executables to link to
-TARGET_EXEC ?= CSpydr
+TARGET_EXEC ?= cspydr
 TEST_EXEC ?= tests.out
 
 # source, test, build and target directories
