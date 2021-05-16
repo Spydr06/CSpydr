@@ -38,7 +38,7 @@ A simple hello-world program:
 
 fn main(argc: i32, argv: *str): i32
 {
-    printf("Hello World!");         # at the moment, this calls stdio.h directly through C. I will write my own implementation once the code features are done.
+    printf("Hello World!");         # at the moment, this calls stdio.h directly through C. I will write my own implementation once the core features are done.
     <- 0;
 }
 ```
