@@ -87,9 +87,13 @@ typedef struct AST_TYPE_STRUCT
     struct AST_TYPE_STRUCT* subtype;
     char* callee;   // callee for typedefs
     void* body;     // body for enums and structs
+
+    bool free;
+    unsigned int line;
+    unsigned int pos;
 } ASTType_T;
 
-ASTType_T* initASTType(ASTDataType_T type, ASTType_T* subtype, void* body, char* callee);
+ASTType_T* initASTType(ASTDataType_T type, ASTType_T* subtype, void* body, char* callee, unsigned int line, unsigned int pos);
 void freeASTType(ASTType_T* t);
 
 typedef struct AST_STRUCT_TYPE_STRUCT
@@ -305,9 +309,13 @@ typedef struct AST_LOCAL_STRUCT
     ASTType_T* dataType;
     ASTExpr_T* value;
     char* name;
+
+    bool typeHasToBeFreed;
+    unsigned int line;
+    unsigned int pos;
 } ASTLocal_T;
 
-ASTLocal_T* initASTLocal(ASTType_T* dataType, ASTExpr_T* value, const char* name);
+ASTLocal_T* initASTLocal(ASTType_T* dataType, ASTExpr_T* value, const char* name, unsigned int line, unsigned int pos);
 void freeASTLocal(ASTLocal_T* l);
 
 typedef struct AST_MATCH_STRUCT

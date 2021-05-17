@@ -324,7 +324,7 @@ static ASTType_T* parserParseType(parser_T* parser)
     if(dt == AST_TYPEDEF)   // no special type was found, skip.
         parserAdvance(parser);
 
-    ASTType_T* t = initASTType(dt, subtype, body, type);
+    ASTType_T* t = initASTType(dt, subtype, body, type, parser->tok->line, parser->tok->pos);
     free(type);
     return t;
 }
@@ -458,14 +458,14 @@ static ASTExpr_T* parserParseIdentifier(parser_T* parser)
 
 static ASTExpr_T* parserParseInt(parser_T* parser)
 {
-    ASTExpr_T* ast = initASTExpr(initASTType(AST_I32, NULL, NULL, ""), EXPR_INT_LITERAL, initASTInt(atoi(parser->tok->value)));
+    ASTExpr_T* ast = initASTExpr(initASTType(AST_I32, NULL, NULL, "", parser->tok->line, parser->tok->pos), EXPR_INT_LITERAL, initASTInt(atoi(parser->tok->value)));
     parserConsume(parser, TOKEN_INT, "expect number");
     return ast;
 }
 
 static ASTExpr_T* parserParseFloat(parser_T* parser)
 {
-    ASTExpr_T* ast = initASTExpr(initASTType(AST_F32, NULL, NULL, ""), EXPR_FLOAT_LITERAL, initASTFloat(atof(parser->tok->value)));
+    ASTExpr_T* ast = initASTExpr(initASTType(AST_F32, NULL, NULL, "", parser->tok->line, parser->tok->pos), EXPR_FLOAT_LITERAL, initASTFloat(atof(parser->tok->value)));
     parserConsume(parser, TOKEN_FLOAT, "expect number");
     return ast;
 }
@@ -482,21 +482,21 @@ static ASTExpr_T* parserParseBool(parser_T* parser)
         exit(1);
     }
 
-    ASTExpr_T* ast = initASTExpr(initASTType(AST_BOOL, NULL, NULL, ""), EXPR_BOOL_LITERAL, initASTBool(boolVal));
+    ASTExpr_T* ast = initASTExpr(initASTType(AST_BOOL, NULL, NULL, "", parser->tok->line, parser->tok->pos), EXPR_BOOL_LITERAL, initASTBool(boolVal));
     parserAdvance(parser);
     return ast;
 }
 
 static ASTExpr_T* parserParseChar(parser_T* parser)
 {
-    ASTExpr_T* ast = initASTExpr(initASTType(AST_CHAR, NULL, NULL, ""), EXPR_CHAR_LITERAL, initASTChar(parser->tok->value[0]));
+    ASTExpr_T* ast = initASTExpr(initASTType(AST_CHAR, NULL, NULL, "", parser->tok->line, parser->tok->pos), EXPR_CHAR_LITERAL, initASTChar(parser->tok->value[0]));
     parserConsume(parser, TOKEN_CHAR, "expect character");
     return ast;
 }
 
 static ASTExpr_T* parserParseString(parser_T* parser)
 {
-    ASTExpr_T* ast = initASTExpr(initASTType(AST_POINTER, initASTType(AST_CHAR, NULL, NULL, ""), NULL, ""), EXPR_STRING_LITERAL, initASTString(parser->tok->value));
+    ASTExpr_T* ast = initASTExpr(initASTType(AST_POINTER, initASTType(AST_CHAR, NULL, NULL, "", parser->tok->line, parser->tok->pos), NULL, "", parser->tok->line, parser->tok->pos), EXPR_STRING_LITERAL, initASTString(parser->tok->value));
     parserConsume(parser, TOKEN_STRING, "expect string");
     return ast;
 }
@@ -504,7 +504,7 @@ static ASTExpr_T* parserParseString(parser_T* parser)
 static ASTExpr_T* parserParseNil(parser_T* parser)
 {
     parserConsume(parser, TOKEN_NIL, "expect `nil`");
-    return initASTExpr(initASTType(AST_POINTER, initASTType(AST_VOID, NULL, NULL, ""), NULL, ""), EXPR_NIL, initASTNil());  // nil is just *void 0
+    return initASTExpr(initASTType(AST_POINTER, initASTType(AST_VOID, NULL, NULL, "", parser->tok->line, parser->tok->pos), NULL, "", parser->tok->line, parser->tok->pos), EXPR_NIL, initASTNil());  // nil is just *void 0
 }
 
 static ASTExpr_T* parserParseArray(parser_T* parser)
@@ -513,7 +513,7 @@ static ASTExpr_T* parserParseArray(parser_T* parser)
     list_T* indexes = parserParseExpressionList(parser, TOKEN_RBRACKET);
     parserAdvance(parser);
 
-    return initASTExpr(initASTType(AST_ARRAY, NULL, NULL, ""), EXPR_ARRAY_LITERAL, initASTArray(indexes));
+    return initASTExpr(initASTType(AST_ARRAY, NULL, NULL, "", parser->tok->line, parser->tok->pos), EXPR_ARRAY_LITERAL, initASTArray(indexes));
 }
 
 static ASTExpr_T* parserParseStruct(parser_T* parser)
@@ -541,7 +541,7 @@ static ASTExpr_T* parserParseStruct(parser_T* parser)
     }
     parserAdvance(parser);
 
-    return initASTExpr(initASTType(AST_STRUCT, NULL, initASTStructType(initList(sizeof(struct AST_TYPE_STRUCT*)), initList(sizeof(char*))), ""), EXPR_STRUCT_LITERAL, initASTStruct(exprs, fields));
+    return initASTExpr(initASTType(AST_STRUCT, NULL, initASTStructType(initList(sizeof(struct AST_TYPE_STRUCT*)), initList(sizeof(char*))), "", parser->tok->line, parser->tok->pos), EXPR_STRUCT_LITERAL, initASTStruct(exprs, fields));
 }
 
 static ASTExpr_T* parserParseInfixExpression(parser_T* parser, ASTExpr_T* left)
@@ -621,7 +621,7 @@ static ASTExpr_T* parserParseIndexExpression(parser_T* parser, ASTExpr_T* left)
 static ASTExpr_T* parserParseNot(parser_T* parser)
 {
     parserConsume(parser, TOKEN_BANG, "expect `!` for `not` operator");
-    return initASTExpr(initASTType(AST_BOOL, NULL, NULL, ""), EXPR_PREFIX, initASTPrefix(OP_NOT, parserParseExpr(parser, LOWEST)));
+    return initASTExpr(initASTType(AST_BOOL, NULL, NULL, "", parser->tok->line, parser->tok->pos), EXPR_PREFIX, initASTPrefix(OP_NOT, parserParseExpr(parser, LOWEST)));
 }
 
 static ASTExpr_T* parserParseNegate(parser_T* parser)
@@ -814,7 +814,7 @@ static ASTLocal_T* parserParseLocal(parser_T* parser)
     
     parserConsume(parser, TOKEN_SEMICOLON, "expect `;` after variable definition");
 
-    ASTLocal_T* ast = initASTLocal(type, value, name);
+    ASTLocal_T* ast = initASTLocal(type, value, name, parser->tok->line, parser->tok->pos);
     free(name);
     return ast;
 }
@@ -966,7 +966,7 @@ static ASTFunction_T* parserParseFunction(parser_T* parser)
         returnType = parserParseType(parser);
     }
     else {
-        returnType = initASTType(AST_VOID, NULL, NULL, "");
+        returnType = initASTType(AST_VOID, NULL, NULL, "", parser->tok->line, parser->tok->pos);
     }
 
     ASTCompound_T* body = parserParseCompound(parser);

@@ -1,11 +1,21 @@
 # a basic test program used for developing this programming language
 
-type En: enum {
-    OF,
-    OG,
+type str: struct {
+    alloc: u64,
+    len:   u64,
+    data:  char
 };
 
-let ff: En = OG;
+fn string_create(string: *char): *str {
+    let s: *str = malloc(sizeof(str));
+
+    if string != nil {
+        let len: u64 = strlen(string);
+        s.alloc = len + 1;
+    }
+
+    <- s;
+}
 
 fn main(argc: i32, argv: **char): i32 {
     let x: i32 = 0;

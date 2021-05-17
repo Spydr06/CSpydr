@@ -12,6 +12,7 @@
 
 static void generateFile(transpiler_T* tp, ASTFile_T* file);
 
+static void generateTypedef(transpiler_T* tp, ASTTypedef_T* tdef);
 static void generateGlobal(transpiler_T* tp, ASTGlobal_T* global);
 static void generateFunction(transpiler_T* tp, ASTFunction_T* func);
 static void generateCompound(transpiler_T* tp, ASTCompound_T* comp);
@@ -46,6 +47,11 @@ void generateCCode(transpiler_T* tp, ASTProgram_T* ast)
 
 static void generateFile(transpiler_T* tp, ASTFile_T* file)
 {
+    for(int i = 0; i < file->types->size; i++)
+    {
+        generateTypedef(tp, (ASTTypedef_T*) file->types->items[i]);
+    }
+
     for(int i = 0; i < file->globals->size; i++)
     {
         generateGlobal(tp, (ASTGlobal_T*) file->globals->items[i]);
@@ -55,6 +61,17 @@ static void generateFile(transpiler_T* tp, ASTFile_T* file)
     {
         generateFunction(tp, (ASTFunction_T*) file->functions->items[i]);
     }
+}
+
+static void generateTypedef(transpiler_T* tp, ASTTypedef_T* tdef)
+{
+    ADD_TYPE("typedef ", tp);
+    char* dataType = generateType(tp, tdef->dataType);
+    ADD_TYPE(dataType, tp);
+    free(dataType);
+
+    ADD_TYPE(tdef->name, tp);
+    ADD_TYPE(";\n", tp);
 }
 
 static void generateGlobal(transpiler_T* tp, ASTGlobal_T* global)
@@ -505,9 +522,9 @@ static char* generateType(transpiler_T* tp, ASTType_T* type)
         case AST_I64:
             return strdup("ini64_t");
         case AST_U32:
-            return strdup("uint32_t");
+            return strdup("u_int32_t");
         case AST_U64:
-            return strdup("uint64_t");
+            return strdup("u_int64_t");
         case AST_F32:
             return strdup("float");
         case AST_F64:
@@ -515,7 +532,7 @@ static char* generateType(transpiler_T* tp, ASTType_T* type)
         case AST_CHAR:
             return strdup("char");
         case AST_BOOL:
-            return strdup("uint8_t");
+            return strdup("u_int8_t");
         case AST_POINTER: {
             char* st = generateType(tp, type->subtype);
             st = realloc(st, (sizeof(st) + 2) * sizeof(char));
@@ -528,6 +545,8 @@ static char* generateType(transpiler_T* tp, ASTType_T* type)
         case AST_ENUM: {
             return generateEnumType(tp, (ASTEnumType_T*) type->body);
         }
+        case AST_TYPEDEF:
+            return strdup(type->callee);
         default:
             LOG_ERROR_F("Transpiling of data type %d is currently not supported", type->type);
             exit(1);

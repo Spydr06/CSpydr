@@ -58,6 +58,7 @@ void transpile(ASTProgram_T* ast, char* target)
                       + strlen(tp->implSection) 
                       + 1, sizeof(char));
     sprintf(CSrc, CSrcTmp, tp->inclSection, tp->typeSection, tp->defSection, tp->implSection);
+    LOG_INFO_F("%s\n", CSrc);
 
     // Get the temporary path for the C source code for compilation
     struct stat st = {0};

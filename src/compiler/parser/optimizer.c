@@ -116,25 +116,52 @@ static void registerFunction(optimizer_T* opt, ASTFunction_T* fn)
     listPush(opt->functions, fn);
 }
 
+static void optimizeType(optimizer_T* opt, ASTType_T* type)
+{
+    if(type->type == AST_TYPEDEF)
+    {
+        if(!findTypedef(opt, type->callee))
+        {
+            const char* template = "undefined type `%s`";
+        char* msg = calloc(strlen(template) + strlen(type->callee) + 1, sizeof(char));
+        sprintf(msg, template, type->callee);
+        throwUndefinitionError(opt->eh, msg, type->line, type->pos);
+        }
+    }
+}
+
 static void optimizeGlobal(optimizer_T* opt, ASTGlobal_T* gl)
 {
-    if(gl->type->type == AST_TYPEDEF)   // resolve typedefs
+   optimizeType(opt, gl->type);
+}
+
+static void optimizeLocal(optimizer_T* opt, ASTLocal_T* loc)
+{
+    optimizeType(opt, loc->dataType);
+}
+
+static void optimizeStmt(optimizer_T* opt, ASTStmt_T* stmt)
+{
+    switch(stmt->type)
     {
-        ASTTypedef_T* tdef = findTypedef(opt, gl->type->callee);
-        if(!tdef) 
-        {
-            opt->errors++;
-
-            const char* template = "undefined type `%s`";
-            char* msg = calloc(strlen(template) + strlen(gl->type->callee) + 1, sizeof(char));
-            sprintf(msg, template, gl->type->callee);
-            throwUndefinitionError(opt->eh, msg, gl->line, gl->pos);
-        }
-
-        freeASTType(gl->type);
-        gl->type = tdef->dataType;
-        gl->typeHasToBeFreed = false;
+        case STMT_LET:
+            optimizeLocal(opt, (ASTLocal_T*) stmt->stmt);
+            break;
     }
+}
+
+static void optimizeCompund(optimizer_T* opt, ASTCompound_T* com)
+{
+    for(int i = 0; i < com->stmts->size; i++)
+    {
+        optimizeStmt(opt, (ASTStmt_T*)com->stmts->items[i]);    
+    }
+}
+
+static void optimizeFunction(optimizer_T* opt, ASTFunction_T* func)
+{
+    optimizeType(opt, func->returnType);
+    optimizeCompund(opt, func->body);
 }
 
 static void optimizeASTFile(optimizer_T* opt, ASTFile_T* file)
@@ -152,6 +179,9 @@ static void optimizeASTFile(optimizer_T* opt, ASTFile_T* file)
     // Optimize everything
     for(int i = 0; i < file->globals->size; i++)
         optimizeGlobal(opt, (ASTGlobal_T*) file->globals->items[i]);
+
+    for(int i = 0; i < file->functions->size; i++)
+        optimizeFunction(opt, (ASTFunction_T*) file->functions->items[i]);
 }
 
 void optimizeAST(optimizer_T* opt, ASTProgram_T* ast)

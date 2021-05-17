@@ -180,12 +180,15 @@ void freeASTMatch(ASTMatch_T* m)
     free(m);
 }
 
-ASTLocal_T* initASTLocal(ASTType_T* dataType, ASTExpr_T* value, const char* name)
+ASTLocal_T* initASTLocal(ASTType_T* dataType, ASTExpr_T* value, const char* name, unsigned int line, unsigned int pos)
 {
     ASTLocal_T* l = calloc(1, sizeof(struct AST_LOCAL_STRUCT));
     l->dataType = dataType;
     l->value = value;
     l->name = strdup(name);
+    l->line = line;
+    l->pos = pos;
+    l->typeHasToBeFreed = true;
     return l;
 }
 
@@ -195,8 +198,8 @@ void freeASTLocal(ASTLocal_T* l)
     
     if(l->value != NULL)
         freeASTExpr(l->value);
-
-    freeASTType(l->dataType);
+    if(l->typeHasToBeFreed)
+        freeASTType(l->dataType);
     free(l);
 }
 
@@ -540,12 +543,15 @@ void freeASTCompound(ASTCompound_T* c)
     free(c);
 }
 
-ASTType_T* initASTType(ASTDataType_T type, ASTType_T* subtype, void* body, char* callee)
+ASTType_T* initASTType(ASTDataType_T type, ASTType_T* subtype, void* body, char* callee, unsigned int line, unsigned int pos)
 {
     ASTType_T* t = calloc(1, sizeof(struct AST_TYPE_STRUCT));
     t->type = type;
     t->subtype = subtype;
     t->body = body;
+    t->free = true;
+    t->line = line;
+    t->pos = pos;
 
     if(callee)
         t->callee = strdup(callee);
@@ -558,15 +564,18 @@ void freeASTType(ASTType_T* t)
     if(t->subtype != NULL)
         freeASTType(t->subtype);
 
-    if(t->type == AST_STRUCT)
-        freeASTStructType(t->body);
-    else if(t->type == AST_ENUM)
-        freeASTEnumType(t->body);
+    if(t->free) 
+    {
+        if(t->type == AST_STRUCT)
+            freeASTStructType(t->body);
+        else if(t->type == AST_ENUM)
+            freeASTEnumType(t->body);
 
-    if(t->callee != NULL)
-        free(t->callee);
+        if(t->callee != NULL)
+            free(t->callee);
 
-    free(t);
+        free(t);
+    }
 }
 
 ASTStructType_T* initASTStructType(list_T* fieldTypes, list_T* fieldNames)
