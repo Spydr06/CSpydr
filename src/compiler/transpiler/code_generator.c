@@ -370,7 +370,11 @@ static char* generateId(transpiler_T* tp, ASTIdentifier_T* id)
     if(id->childId)
     {
         char* childStr = generateId(tp, id->childId);
-        ADD_STR(".", idStr); // TODO: generate '.' or '->' based off of the type
+        if(id->isPtr) {
+            ADD_STR("->", idStr);
+        } else {
+            ADD_STR(".", idStr);
+        }
         ADD_STR(childStr, idStr);
         free(childStr);
     }
@@ -485,7 +489,7 @@ static char* generatePostfixExpression(transpiler_T* tp, ASTPostfix_T* pfx)
             break;
         
         default:
-            LOG_ERROR_F("Pstfix operation of type %d currently not support transpiling\n", pfx->op);
+            LOG_ERROR_F("Postfix operation of type %d currently not support transpiling\n", pfx->op);
             exit(1);
     }
 
@@ -517,6 +521,8 @@ static char* generateType(transpiler_T* tp, ASTType_T* type)
 {
     switch(type->type)
     {
+        case AST_VOID:
+            return strdup("void");
         case AST_I32:
             return strdup("int32_t");
         case AST_I64:

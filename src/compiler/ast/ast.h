@@ -170,6 +170,7 @@ typedef struct AST_IDENTIFIER_STRUCT
 {
     char* callee;
     struct AST_IDENTIFIER_STRUCT* childId;
+    bool isPtr;
 } ASTIdentifier_T;
 
 ASTIdentifier_T* initASTIdentifier(const char* callee, ASTIdentifier_T* child);

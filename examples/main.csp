@@ -1,28 +1,11 @@
 # a basic test program used for developing this programming language
-
-type str: struct {
-    alloc: u64,
-    len:   u64,
-    data:  char
-};
-
-fn string_create(string: *char): *str {
-    let s: *str = malloc(sizeof(str));
-
-    if string != nil {
-        let len: u64 = strlen(string);
-        s.alloc = len + 1;
-    }
-
-    <- s;
-}
+import "string.csp";
 
 fn main(argc: i32, argv: **char): i32 {
-    let x: i32 = 0;
-    
-    loop x {
+    let string: str = create_str("Hello ");
 
-    }
+    add_str(string, 'F');
+    printf("%s\n", string.data);
 
-    ret 0;
+    free_str(string);
 }

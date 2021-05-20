@@ -12,6 +12,7 @@ typedef struct OPTIMIZER_STRUCT {
     list_T* functions; 
     list_T* locals;
     list_T* globals;
+    list_T* args;
 
     errorHandler_T* eh;
     int errors;

@@ -689,7 +689,7 @@ static ASTExpr_T* parserParseAssignmentOp(ASTExpr_T* left, ASTInfixOpType_T op, 
 
 static ASTExpr_T* parserParseAssignment(parser_T* parser, ASTExpr_T* left)
 {
-    if(left->type != EXPR_IDENTIFIER)
+    if(left->type != EXPR_IDENTIFIER && left->type != EXPR_INDEX)
     {
         throwSyntaxError(parser->eh, "can only assing a value to a variable", parser->tok->line, parser->tok->pos);
         exit(1);

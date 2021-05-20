@@ -1,0 +1,74 @@
+# a implementation of a dynamic string type
+
+type str_s: struct {
+    alloc: u64,
+    len:   u64,
+    data:  *char
+};
+type str: *str_s;
+
+fn create_str(string: *char): str {
+    let s: str = malloc(sizeof(str_s));
+
+    if string != nil {
+        let len: u64 = strlen(string);
+        s.alloc = len + 1;
+        s.data = malloc(s.alloc);
+        memcpy(s.data, string, len);
+        s.len = len;
+    }
+    else {
+        s.alloc = 1;
+        s.data = malloc(s.alloc);
+        s.data[0] = 0;
+
+        s.len = 0;
+    }
+
+    <- s;
+}
+
+fn free_str(s: str) {
+    free(s.data);
+    free(s);
+}
+
+fn get_string(s: str): *char {
+    <- s.data;
+}
+
+fn str_len(s: str): u64 {
+    <- s.len;
+}
+
+fn get_str_alloc(s: str): u64 {
+    <- s.alloc;
+}
+
+fn reallocate_str(s: str): *char {
+    s.alloc = s.alloc * 2;
+    
+    let newdata: *char = malloc(s.alloc);
+    memcpy(newdata, s.data, s.len);
+    if s.data != nil {
+        free(s.data);
+    }
+    s.data = newdata;
+    <- newdata;
+}
+
+fn str_has_space(s: str): bool {
+    <- s.alloc - (s.len + 1) > 0;
+}
+
+fn add_str(s: str, c: char) {
+    let data: *char;
+    if str_has_space(s) {
+        data = s.data;
+    }
+    else {
+        data = reallocate_str(s);
+    }
+    data[s.len++] = c;
+    data[s.len] = 0;
+}

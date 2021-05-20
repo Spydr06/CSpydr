@@ -371,6 +371,7 @@ ASTIdentifier_T* initASTIdentifier(const char* callee, ASTIdentifier_T* child)
     ASTIdentifier_T* i = calloc(1, sizeof(struct AST_IDENTIFIER_STRUCT));
     i->callee = strdup(callee);
     i->childId = child;
+    i->isPtr = false;
     return i;
 }
 
