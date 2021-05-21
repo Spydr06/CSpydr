@@ -835,7 +835,7 @@ static ASTLocal_T* parserParseLocal(parser_T* parser)
     parserConsume(parser, TOKEN_SEMICOLON, "expect `;` after variable definition");
 
     ASTLocal_T* ast = initASTLocal(type, value, name, parser->tok->line, parser->tok->pos);
-    ast->mutable = mutable;
+    ast->isMutable = mutable;
     free(name);
     return ast;
 }
@@ -960,7 +960,7 @@ static ASTGlobal_T* parserParseGlobal(parser_T* parser)
     parserConsume(parser, TOKEN_SEMICOLON, "expect `;` after variable definition");
 
     ASTGlobal_T* ast = initASTGlobal(name, type, value, line, pos);
-    ast->mutable = mutable;
+    ast->isMutable = mutable;
     free(name);
     return ast;
 }
