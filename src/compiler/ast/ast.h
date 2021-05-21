@@ -312,7 +312,7 @@ typedef struct AST_LOCAL_STRUCT
     ASTExpr_T* value;
     char* name;
 
-    bool mutable;
+    bool isMutable;
 
     unsigned int line;
     unsigned int pos;
@@ -373,7 +373,7 @@ typedef struct AST_GLOBAL_STRUCT
     ASTType_T* type;
     ASTExpr_T* value;
 
-    bool mutable;
+    bool isMutable;
 
     unsigned int line;
     unsigned int pos;

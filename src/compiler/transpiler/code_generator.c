@@ -76,7 +76,7 @@ static void generateTypedef(transpiler_T* tp, ASTTypedef_T* tdef)
 
 static void generateGlobal(transpiler_T* tp, ASTGlobal_T* global)
 {
-    if(!global->mutable)
+    if(!global->isMutable)
     {
         ADD_DEF("const ", tp);
     }
@@ -202,7 +202,7 @@ static void generateReturn(transpiler_T* tp, ASTReturn_T* ret)
 
 static void generateLocal(transpiler_T* tp, ASTLocal_T* loc)
 {
-    if(!loc->mutable)
+    if(!loc->isMutable)
     {
         ADD_IMPL("const ", tp);
     }

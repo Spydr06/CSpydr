@@ -78,7 +78,7 @@ ASTGlobal_T* initASTGlobal(const char* name, ASTType_T* type, ASTExpr_T* value, 
     g->type = type;
     g->value = value;
 
-    g->mutable = false;
+    g->isMutable = false;
 
     g->line = line;
     g->pos = pos;
@@ -187,7 +187,7 @@ ASTLocal_T* initASTLocal(ASTType_T* dataType, ASTExpr_T* value, const char* name
     l->name = strdup(name);
     l->line = line;
     l->pos = pos;
-    l->mutable = false;
+    l->isMutable = false;
     return l;
 }
 
