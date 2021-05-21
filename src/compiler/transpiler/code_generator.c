@@ -459,6 +459,9 @@ static char* generatePrefixExpression(transpiler_T* tp, ASTPrefix_T* pfx)
         case OP_DEREF:
             op = "*";
             break;
+        case OP_BIT_NEG:
+            op = "~";
+            break;
         
         default:
             LOG_ERROR_F("Prefix operation of type %d currently not support transpiling\n", pfx->op);

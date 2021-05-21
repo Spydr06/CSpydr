@@ -16,7 +16,7 @@
 // Expression parsing settings //
 /////////////////////////////////
 
-#define NUM_PREFIX_PARSE_FNS 15
+#define NUM_PREFIX_PARSE_FNS 16
 #define NUM_INFIX_PARSE_FNS  19
 #define NUM_PRECEDENCES      19
 
@@ -34,6 +34,7 @@ static ASTExpr_T* parserParseDeref(parser_T* parser);
 static ASTExpr_T* parserParseRef(parser_T* parser);
 static ASTExpr_T* parserParseNil(parser_T* parser);
 static ASTExpr_T* parserParseStruct(parser_T* parser);
+static ASTExpr_T* parserParseBitwiseNegation(parser_T* parser);
 
 struct {tokenType_T tt; prefixParseFn fn;} prefixParseFns[NUM_PREFIX_PARSE_FNS] = {
     {TOKEN_ID, parserParseIdentifier},
@@ -51,6 +52,7 @@ struct {tokenType_T tt; prefixParseFn fn;} prefixParseFns[NUM_PREFIX_PARSE_FNS] 
     {TOKEN_LBRACE, parserParseStruct},
     {TOKEN_STAR, parserParseDeref},
     {TOKEN_REF, parserParseRef},
+    {TOKEN_TILDE, parserParseBitwiseNegation},
 };
 
 static ASTExpr_T* parserParseInfixExpression(parser_T* parser, ASTExpr_T* left);
@@ -640,6 +642,12 @@ static ASTExpr_T* parserParseRef(parser_T* parser)
 {
     parserConsume(parser, TOKEN_REF, "expect `&` to get a pointer");
     return initASTExpr(NULL, EXPR_PREFIX, initASTPrefix(OP_REF, parserParseExpr(parser, LOWEST)));
+}
+
+static ASTExpr_T* parserParseBitwiseNegation(parser_T* parser)
+{
+    parserConsume(parser, TOKEN_TILDE, "expect `~` for bitwise negation");
+    return initASTExpr(NULL, EXPR_PREFIX, initASTPrefix(OP_BIT_NEG, parserParseExpr(parser, LOWEST)));
 }
 
 static ASTExpr_T* parserParseClosure(parser_T* parser)

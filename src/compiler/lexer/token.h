@@ -37,6 +37,7 @@ typedef enum TOKEN_TYPE {
     TOKEN_AND,          // &&
     TOKEN_OR,           // ||
     TOKEN_REF,          // &
+    TOKEN_TILDE,        // ~
 
     TOKEN_INC,          // ++
     TOKEN_DEC,          // --

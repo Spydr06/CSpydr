@@ -71,6 +71,7 @@ typedef enum
 {
     OP_NOT,
     OP_NEGATE,
+    OP_BIT_NEG,
     OP_REF,
     OP_DEREF,
 } ASTPrefixOpType_T;

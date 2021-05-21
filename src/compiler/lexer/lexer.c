@@ -392,6 +392,8 @@ static token_T* lexerGetSymbol(lexer_T* lexer)
             return lexerConsumeType(lexer, TOKEN_AT);
         case '$':
             return lexerConsumeType(lexer, TOKEN_DOLLAR);
+        case '~':
+            return lexerConsumeType(lexer, TOKEN_TILDE);
 
         case '&':
             if(lexerPeek(lexer, 1) == '*')
