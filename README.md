@@ -53,6 +53,12 @@ Then execute it:
 
 *I will write a proper documentation in the future.*
 
+## Editor support
+
+CSpydr currently only supports Visual Studio Code, since thats the code editor I personally use for developing. I will add support for other editors later on.
+
+Check out the Visual Studio Code extension [here](https://github.com/spydr06/cspydr-vscode-extension).
+
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
