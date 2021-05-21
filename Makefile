@@ -23,8 +23,8 @@ LLVM_CPPFLAGS = `llvm-config --cppflags`
 CXXFLAGS ?= -DDEBUG -Wall -fPIC
 
 # C/C++ source files
-SRCS := $(shell find $(SRC_DIR) -name *.cpp -or -name *.c)
-SRCS += $(shell find $(TEST_DIR) -name *.cpp -or -name *.c) 
+SRCS := $(shell find $(SRC_DIR) -name *.cpp -or -name *.c -or -name *.s)
+SRCS += $(shell find $(TEST_DIR) -name *.cpp -or -name *.c -or -name *.s) 
 
 # Object files
 OBJS :=   $(SRCS:%=$(BUILD_DIR)/%.o)
@@ -32,6 +32,7 @@ DEPS := $(OBJS:.o=.d)
 
 # C/C++ Compiler and Linker
 CC = gcc
+ASM = as
 CXX = g++
 LD = g++
 
@@ -79,6 +80,12 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 	@$(ECHO) "[CPP]$(GRE) Compiling$(CLR)$<" 
 	@$(MKDIR) $(dir $@)
 	@$(CXX) $(CXXFLAGS) $(LLVM_CPPFLAGS) -c $< -o $@
+
+# assembly source
+$(BUILD_DIR)/%.s.o: %.s
+	@$(ECHO) "[ASM]$(GRE) Compiling$(CLR)$<"
+	@$(MKDIR) $(dir $@)
+	@$(ASM) $(ASFLAGS) -c $< -o $@
 
 .PHONY: install
 install: 
