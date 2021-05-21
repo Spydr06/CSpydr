@@ -1,12 +1,5 @@
 # a basic test program used for developing this programming language
-import "string.csp";
 
-fn main(argc: i32, argv: **char): i32 {
-    let string: str = create_str("Hello ");
-
-    add_str(string, 'F');
-    add_str(string, 'F');
-    printf("%s\n", string.data);
-
-    free_str(string);
+fn main(): i32 {
+    <- 0;
 }
