@@ -76,6 +76,11 @@ static void generateTypedef(transpiler_T* tp, ASTTypedef_T* tdef)
 
 static void generateGlobal(transpiler_T* tp, ASTGlobal_T* global)
 {
+    if(!global->mutable)
+    {
+        ADD_DEF("const ", tp);
+    }
+
     char* dataType = generateType(tp, global->type);
     ADD_DEF(dataType, tp);
     free(dataType);
@@ -197,6 +202,11 @@ static void generateReturn(transpiler_T* tp, ASTReturn_T* ret)
 
 static void generateLocal(transpiler_T* tp, ASTLocal_T* loc)
 {
+    if(!loc->mutable)
+    {
+        ADD_IMPL("const ", tp);
+    }
+
     char* dataType = generateType(tp, loc->dataType);
     ADD_IMPL(dataType, tp);
     free(dataType);

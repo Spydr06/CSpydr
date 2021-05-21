@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define NUM_KEYWORDS 14
+#define NUM_KEYWORDS 15
 
 struct {const char* str; tokenType_T type;} keyWords[NUM_KEYWORDS] = {
     {"true", TOKEN_TRUE},
@@ -24,7 +24,8 @@ struct {const char* str; tokenType_T type;} keyWords[NUM_KEYWORDS] = {
     {"type", TOKEN_TYPE},
     {"struct", TOKEN_STRUCT},
     {"enum", TOKEN_ENUM},
-    {"import", TOKEN_IMPORT}
+    {"import", TOKEN_IMPORT},
+    {"mut", TOKEN_MUT},
 };
 
 static void lexerSkipWhitespace(lexer_T* lexer);

@@ -813,6 +813,13 @@ static ASTReturn_T* parserParseReturn(parser_T* parser)
 static ASTLocal_T* parserParseLocal(parser_T* parser)
 {
     parserConsume(parser, TOKEN_LET, "expect `let` keyword");
+    bool mutable = false;
+    if(tokIs(parser, TOKEN_MUT))
+    {
+        mutable = true;
+        parserAdvance(parser);
+    }
+
     char* name = strdup(parser->tok->value);
     parserConsume(parser, TOKEN_ID, "expect variable name");
     parserConsume(parser, TOKEN_COLON, "expect `:` after variable name");
@@ -828,6 +835,7 @@ static ASTLocal_T* parserParseLocal(parser_T* parser)
     parserConsume(parser, TOKEN_SEMICOLON, "expect `;` after variable definition");
 
     ASTLocal_T* ast = initASTLocal(type, value, name, parser->tok->line, parser->tok->pos);
+    ast->mutable = mutable;
     free(name);
     return ast;
 }
@@ -925,6 +933,14 @@ static ASTCompound_T* parserParseCompound(parser_T* parser)
 static ASTGlobal_T* parserParseGlobal(parser_T* parser)
 {
     parserConsume(parser, TOKEN_LET, "expect `let` keyword");
+
+    bool mutable = false;
+    if(tokIs(parser, TOKEN_MUT))
+    {
+        parserAdvance(parser);
+        mutable = true;
+    }
+
     char* name = strdup(parser->tok->value);
 
     unsigned int line = parser->tok->line;
@@ -944,6 +960,7 @@ static ASTGlobal_T* parserParseGlobal(parser_T* parser)
     parserConsume(parser, TOKEN_SEMICOLON, "expect `;` after variable definition");
 
     ASTGlobal_T* ast = initASTGlobal(name, type, value, line, pos);
+    ast->mutable = mutable;
     free(name);
     return ast;
 }

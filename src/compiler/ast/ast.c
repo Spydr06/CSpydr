@@ -78,7 +78,7 @@ ASTGlobal_T* initASTGlobal(const char* name, ASTType_T* type, ASTExpr_T* value, 
     g->type = type;
     g->value = value;
 
-    g->typeHasToBeFreed = true;
+    g->mutable = false;
 
     g->line = line;
     g->pos = pos;
@@ -89,8 +89,7 @@ void freeASTGlobal(ASTGlobal_T* g)
 {
     free(g->name);
 
-    if(g->typeHasToBeFreed)
-        freeASTType(g->type);
+    freeASTType(g->type);
     
     if(g->value != NULL)
         freeASTExpr(g->value);
@@ -188,7 +187,7 @@ ASTLocal_T* initASTLocal(ASTType_T* dataType, ASTExpr_T* value, const char* name
     l->name = strdup(name);
     l->line = line;
     l->pos = pos;
-    l->typeHasToBeFreed = true;
+    l->mutable = false;
     return l;
 }
 
@@ -198,8 +197,7 @@ void freeASTLocal(ASTLocal_T* l)
     
     if(l->value != NULL)
         freeASTExpr(l->value);
-    if(l->typeHasToBeFreed)
-        freeASTType(l->dataType);
+    freeASTType(l->dataType);
     free(l);
 }
 

@@ -312,7 +312,8 @@ typedef struct AST_LOCAL_STRUCT
     ASTExpr_T* value;
     char* name;
 
-    bool typeHasToBeFreed;
+    bool mutable;
+
     unsigned int line;
     unsigned int pos;
 } ASTLocal_T;
@@ -372,7 +373,7 @@ typedef struct AST_GLOBAL_STRUCT
     ASTType_T* type;
     ASTExpr_T* value;
 
-    bool typeHasToBeFreed;
+    bool mutable;
 
     unsigned int line;
     unsigned int pos;
