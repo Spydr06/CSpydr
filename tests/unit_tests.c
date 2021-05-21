@@ -1,6 +1,7 @@
 #include "lib/acutest.h"
 
 #include "../src/compiler/lexer/lexer.h"
+#include "../src/compiler/parser/parser.h"
 #include <stdarg.h>
 #include <string.h>
 
@@ -33,9 +34,11 @@ void test_file_generation(void)
 }
 
 #include "test_lexer.tt"
+#include "test_parser.tt"
 
 TEST_LIST = {
    {"file generation", test_file_generation},
-   LEXER_TESTS,
-   {NULL, NULL}     /* zeroed record marking the end of the list */
+   LEXER_TESTS,     // all lexer tests included from "test_lexer.tt"
+   PARSER_TESTS,    // all parser tests included from "test_parser.tt"
+   {NULL, NULL}     // end of the tests
 };
