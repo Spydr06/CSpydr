@@ -279,6 +279,9 @@ static void optimizeExpression(preprocessor_T* opt, ASTExpr_T* expr)
         case EXPR_INDEX:
             optimizeIndexExpr(opt, expr);
             break;
+        
+        default:
+            break;
     }
 }
 
@@ -296,6 +299,11 @@ static void optimizeLocal(preprocessor_T* opt, ASTLocal_T* loc)
 
     if(loc->value)
         optimizeExpression(opt, loc->value);
+}
+
+static void optimizeMatch(preprocessor_T* pre, ASTMatch_T* match)
+{
+    optimizeExpression(pre, match->condition);
 }
 
 static void optimizeCompund(preprocessor_T* opt, ASTCompound_T* com)
@@ -328,6 +336,10 @@ static void optimizeCompund(preprocessor_T* opt, ASTCompound_T* com)
             break;
         case STMT_RETURN:
             optimizeExpression(opt, ((ASTReturn_T*) stmt->stmt)->value);
+            break;
+        case STMT_MATCH:
+            optimizeMatch(opt, (ASTMatch_T*) stmt->stmt);
+            break;
         }
     }
 

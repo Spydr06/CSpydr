@@ -118,6 +118,8 @@ parser_T* initParser(lexer_T* lexer)
     parser->tok = lexerNextToken(parser->lexer);
     parser->imports = initList(sizeof(char*));
 
+    parser->silent = false;
+
     return parser;
 }
 
@@ -224,7 +226,10 @@ static ASTCompound_T* parserParseCompound(parser_T* parser);
 
 static ASTFile_T* parserParseFile(parser_T* parser, const char* filePath, ASTProgram_T* programRef)
 {
-    LOG_OK_F(COLOR_BOLD_GREEN "  Compiling" COLOR_RESET " \"%s\"\n", filePath);
+    if(!parser->silent)
+    {
+        LOG_OK_F(COLOR_BOLD_GREEN "  Compiling" COLOR_RESET " \"%s\"\n", filePath);
+    }
     ASTFile_T* root = initASTFile(parser->lexer->file->path);
 
     while(!tokIs(parser, TOKEN_EOF))

@@ -12,6 +12,7 @@
     TEST_ASSERT(lexer != NULL);                                  \
     parser_T* parser = initParser(lexer);                        \
     TEST_ASSERT(parser != NULL);                                 \
+    parser->silent = 1;                                          \
     ASTProgram_T* prog = parserParse(parser, msg);               \
     TEST_ASSERT(prog != NULL);                                   \
     code                                                         \

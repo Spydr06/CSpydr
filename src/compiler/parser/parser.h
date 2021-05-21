@@ -18,6 +18,8 @@ struct PARSER_STRUCT
     list_T* localVars;
     token_T* tok;
     list_T* imports;
+
+    bool silent;
 };
 
 typedef enum {
