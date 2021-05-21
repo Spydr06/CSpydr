@@ -1,6 +1,6 @@
 #include "parser.h"
 #include "../io/log.h"
-#include "optimizer.h"
+#include "preprocessor.h"
 #include "../io/io.h"
 
 #include <string.h>
@@ -209,9 +209,9 @@ ASTProgram_T* parserParse(parser_T* parser, const char* mainFile)
 
     listPush(program->files, parserParseFile(parser, mainFile, program));
 
-    optimizer_T* opt = initOptimizer(parser->eh);
-    optimizeAST(opt, program);
-    freeOptimizer(opt);
+    preprocessor_T* pre = initPreprocessor(parser->eh);
+    optimizeAST(pre, program);
+    freePreprocessor(pre);
 
     return program;    
 }

@@ -7,7 +7,7 @@
 
 // this is the stage, where the AST gets optimized and all expression types get resolved
 
-typedef struct OPTIMIZER_STRUCT {
+typedef struct PREPROCESSOR_STRUCT {
     list_T* typedefs;
     list_T* functions; 
     list_T* locals;
@@ -16,11 +16,11 @@ typedef struct OPTIMIZER_STRUCT {
 
     errorHandler_T* eh;
     int errors;
-} optimizer_T;
+} preprocessor_T;
 
-optimizer_T* initOptimizer(errorHandler_T* eh);
-void freeOptimizer(optimizer_T* opt);
+preprocessor_T* initPreprocessor(errorHandler_T* eh);
+void freePreprocessor(preprocessor_T* pre);
 
-void optimizeAST(optimizer_T* opt, ASTProgram_T* ast);
+void optimizeAST(preprocessor_T* opt, ASTProgram_T* ast);
 
 #endif

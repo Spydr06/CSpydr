@@ -1,39 +1,39 @@
-#include "optimizer.h"
+#include "preprocessor.h"
 #include "../io/log.h"
 
 #include <string.h>
 #include <stdio.h>
 
-static void optimizeExpression(optimizer_T* opt, ASTExpr_T* expr);
+static void optimizeExpression(preprocessor_T* opt, ASTExpr_T* expr);
 
-optimizer_T* initOptimizer(errorHandler_T* eh)
+preprocessor_T* initPreprocessor(errorHandler_T* eh)
 {
-    optimizer_T* opt = malloc(sizeof(struct OPTIMIZER_STRUCT));
+    preprocessor_T* pre = malloc(sizeof(struct PREPROCESSOR_STRUCT));
 
-    opt->functions = initList(sizeof(struct AST_FUCTION_STRUCT*));
-    opt->typedefs = initList(sizeof(struct AST_TYPEDEF_STRUCT*));
-    opt->globals = initList(sizeof(struct AST_GLOBAL_STRUCT*));
-    opt->locals = initList(sizeof(struct AST_LOCAL_STRUCT*));
-    opt->args = initList(sizeof(struct AST_ARGUMENT_STRUCT*));
+    pre->functions = initList(sizeof(struct AST_FUCTION_STRUCT*));
+    pre->typedefs = initList(sizeof(struct AST_TYPEDEF_STRUCT*));
+    pre->globals = initList(sizeof(struct AST_GLOBAL_STRUCT*));
+    pre->locals = initList(sizeof(struct AST_LOCAL_STRUCT*));
+    pre->args = initList(sizeof(struct AST_ARGUMENT_STRUCT*));
 
-    opt->eh = eh;
-    opt->errors = 0;
+    pre->eh = eh;
+    pre->errors = 0;
 
-    return opt;
+    return pre;
 }
 
-void freeOptimizer(optimizer_T* opt)
+void freePreprocessor(preprocessor_T* pre)
 {
-    freeList(opt->functions);
-    freeList(opt->typedefs);
-    freeList(opt->globals);
-    freeList(opt->locals);
-    freeList(opt->args);
+    freeList(pre->functions);
+    freeList(pre->typedefs);
+    freeList(pre->globals);
+    freeList(pre->locals);
+    freeList(pre->args);
 
-    free(opt);
+    free(pre);
 }
 
-static ASTTypedef_T* findTypedef(optimizer_T* opt, char* tdef)
+static ASTTypedef_T* findTypedef(preprocessor_T* opt, char* tdef)
 {
     for(int i = 0; i < opt->typedefs->size; i++)
     {
@@ -44,7 +44,7 @@ static ASTTypedef_T* findTypedef(optimizer_T* opt, char* tdef)
     return NULL;
 }
 
-static ASTGlobal_T* findGlobal(optimizer_T* opt, char* callee)
+static ASTGlobal_T* findGlobal(preprocessor_T* opt, char* callee)
 {
     for(int i = 0; i < opt->globals->size; i++)
     {
@@ -55,7 +55,7 @@ static ASTGlobal_T* findGlobal(optimizer_T* opt, char* callee)
     return NULL;
 }
 
-static ASTLocal_T* findLocal(optimizer_T* opt, char* callee)
+static ASTLocal_T* findLocal(preprocessor_T* opt, char* callee)
 {
     for(int i = 0; i < opt->locals->size; i++)
     {
@@ -66,7 +66,7 @@ static ASTLocal_T* findLocal(optimizer_T* opt, char* callee)
     return NULL;
 }
 
-static ASTArgument_T* findArgument(optimizer_T* opt, char* callee)
+static ASTArgument_T* findArgument(preprocessor_T* opt, char* callee)
 {
     for(int i = 0; i < opt->args->size; i++)
     {
@@ -77,7 +77,7 @@ static ASTArgument_T* findArgument(optimizer_T* opt, char* callee)
     return NULL;
 }
 
-static ASTFunction_T* findFunction(optimizer_T* opt, char* callee)
+static ASTFunction_T* findFunction(preprocessor_T* opt, char* callee)
 {
     for(int i = 0; i < opt->functions->size; i++)
     {
@@ -88,7 +88,7 @@ static ASTFunction_T* findFunction(optimizer_T* opt, char* callee)
     return NULL;
 }
 
-static void registerTypedef(optimizer_T* opt, ASTTypedef_T* tdef)
+static void registerTypedef(preprocessor_T* opt, ASTTypedef_T* tdef)
 {
     ASTTypedef_T* ast = findTypedef(opt, tdef->name);
     if(ast != NULL)
@@ -106,7 +106,7 @@ static void registerTypedef(optimizer_T* opt, ASTTypedef_T* tdef)
     listPush(opt->typedefs, tdef);
 }
 
-static void registerGlobal(optimizer_T* opt, ASTGlobal_T* gl)
+static void registerGlobal(preprocessor_T* opt, ASTGlobal_T* gl)
 {
     ASTGlobal_T* ast = findGlobal(opt, gl->name);
     if(ast)
@@ -124,7 +124,7 @@ static void registerGlobal(optimizer_T* opt, ASTGlobal_T* gl)
     listPush(opt->globals, gl);
 }
 
-static void registerLocal(optimizer_T* opt, ASTLocal_T* loc)
+static void registerLocal(preprocessor_T* opt, ASTLocal_T* loc)
 {
     ASTLocal_T* ast = findLocal(opt, loc->name);
     if(ast)
@@ -142,7 +142,7 @@ static void registerLocal(optimizer_T* opt, ASTLocal_T* loc)
     listPush(opt->locals, loc);
 }
 
-static void registerFunction(optimizer_T* opt, ASTFunction_T* fn)
+static void registerFunction(preprocessor_T* opt, ASTFunction_T* fn)
 {
     ASTFunction_T* ast = findFunction(opt, fn->name);
     if(ast != NULL)
@@ -160,7 +160,7 @@ static void registerFunction(optimizer_T* opt, ASTFunction_T* fn)
     listPush(opt->functions, fn);
 }
 
-static void optimizeType(optimizer_T* opt, ASTType_T* type)
+static void optimizeType(preprocessor_T* opt, ASTType_T* type)
 {
     if(type->type == AST_TYPEDEF)
     {
@@ -174,7 +174,7 @@ static void optimizeType(optimizer_T* opt, ASTType_T* type)
     }
 }
 
-static int typeIsPtr(optimizer_T* opt, ASTType_T* type)
+static int typeIsPtr(preprocessor_T* opt, ASTType_T* type)
 {
     int isPtr = type->type == AST_POINTER; //Temporary
     if(type->type == AST_TYPEDEF)
@@ -192,7 +192,7 @@ static int typeIsPtr(optimizer_T* opt, ASTType_T* type)
     return isPtr;
 }
 
-static void optimizeIdentifier(optimizer_T* opt, ASTExpr_T* expr)
+static void optimizeIdentifier(preprocessor_T* opt, ASTExpr_T* expr)
 {
     ASTIdentifier_T* id = (ASTIdentifier_T*) expr->expr;
     ASTLocal_T* loc = findLocal(opt, id->callee);
@@ -217,7 +217,7 @@ static void optimizeIdentifier(optimizer_T* opt, ASTExpr_T* expr)
     }
 }
 
-static void optimizeInfixExpr(optimizer_T* opt, ASTExpr_T* expr)
+static void optimizeInfixExpr(preprocessor_T* opt, ASTExpr_T* expr)
 {
     ASTInfix_T* ifx = (ASTInfix_T*) expr->expr;
 
@@ -225,21 +225,21 @@ static void optimizeInfixExpr(optimizer_T* opt, ASTExpr_T* expr)
     optimizeExpression(opt, ifx->right);   
 }
 
-static void optimizePrefixExpr(optimizer_T* opt, ASTExpr_T* expr)
+static void optimizePrefixExpr(preprocessor_T* opt, ASTExpr_T* expr)
 {
     ASTPrefix_T* pfx = (ASTPrefix_T*) expr->expr;
 
     optimizeExpression(opt, pfx->right);   
 }
 
-static void optimizePostfixExpr(optimizer_T* opt, ASTExpr_T* expr)
+static void optimizePostfixExpr(preprocessor_T* opt, ASTExpr_T* expr)
 {
     ASTPostfix_T* pfx = (ASTPostfix_T*) expr->expr;
 
     optimizeExpression(opt, pfx->left);   
 }
 
-static void optimizeCallExpr(optimizer_T* opt, ASTExpr_T* expr)
+static void optimizeCallExpr(preprocessor_T* opt, ASTExpr_T* expr)
 {
     ASTCall_T* call = (ASTCall_T*) expr->expr;
 
@@ -249,7 +249,7 @@ static void optimizeCallExpr(optimizer_T* opt, ASTExpr_T* expr)
     }
 }
 
-static void optimizeIndexExpr(optimizer_T* opt, ASTExpr_T* expr)
+static void optimizeIndexExpr(preprocessor_T* opt, ASTExpr_T* expr)
 {
     ASTIndex_T* idx = (ASTIndex_T*) expr->expr;
 
@@ -257,7 +257,7 @@ static void optimizeIndexExpr(optimizer_T* opt, ASTExpr_T* expr)
     optimizeExpression(opt, idx->value); 
 }
 
-static void optimizeExpression(optimizer_T* opt, ASTExpr_T* expr)
+static void optimizeExpression(preprocessor_T* opt, ASTExpr_T* expr)
 {
     switch(expr->type)
     {
@@ -282,7 +282,7 @@ static void optimizeExpression(optimizer_T* opt, ASTExpr_T* expr)
     }
 }
 
-static void optimizeGlobal(optimizer_T* opt, ASTGlobal_T* gl)
+static void optimizeGlobal(preprocessor_T* opt, ASTGlobal_T* gl)
 {
     optimizeType(opt, gl->type);
    
@@ -290,7 +290,7 @@ static void optimizeGlobal(optimizer_T* opt, ASTGlobal_T* gl)
         optimizeExpression(opt, gl->value);
 }
 
-static void optimizeLocal(optimizer_T* opt, ASTLocal_T* loc)
+static void optimizeLocal(preprocessor_T* opt, ASTLocal_T* loc)
 {
     optimizeType(opt, loc->dataType);
 
@@ -298,7 +298,7 @@ static void optimizeLocal(optimizer_T* opt, ASTLocal_T* loc)
         optimizeExpression(opt, loc->value);
 }
 
-static void optimizeCompund(optimizer_T* opt, ASTCompound_T* com)
+static void optimizeCompund(preprocessor_T* opt, ASTCompound_T* com)
 {
     unsigned int localCount = 0;
 
@@ -337,7 +337,7 @@ static void optimizeCompund(optimizer_T* opt, ASTCompound_T* com)
     }
 }
 
-static void optimizeFunction(optimizer_T* opt, ASTFunction_T* func)
+static void optimizeFunction(preprocessor_T* opt, ASTFunction_T* func)
 {
     optimizeType(opt, func->returnType);
 
@@ -353,7 +353,7 @@ static void optimizeFunction(optimizer_T* opt, ASTFunction_T* func)
     opt->args->size -= argc;
 }
 
-static void optimizeASTFile(optimizer_T* opt, ASTFile_T* file)
+static void optimizeASTFile(preprocessor_T* opt, ASTFile_T* file)
 {
     // first, register all contents of the file. This needs to happen first, because the Order of the components does not matter in Spydr
     for(int i = 0; i < file->types->size; i++)
@@ -373,7 +373,7 @@ static void optimizeASTFile(optimizer_T* opt, ASTFile_T* file)
         optimizeFunction(opt, (ASTFunction_T*) file->functions->items[i]);
 }
 
-void optimizeAST(optimizer_T* opt, ASTProgram_T* ast)
+void optimizeAST(preprocessor_T* opt, ASTProgram_T* ast)
 {
     for(int i = 0; i < ast->files->size; i++)
     {
