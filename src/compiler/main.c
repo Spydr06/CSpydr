@@ -26,6 +26,7 @@
 #include "llvm/cpp_bindings.h"
 #include "transpiler/transpiler.h"
 #include "platform/platform_bindings.h"
+#include "codegen/codegen.h"
 
 // default texts, which get shown if you enter help, info or version flags
 // links to me, the creator of CSpydr
@@ -74,11 +75,12 @@ extern const char* getCSpydrVersion();
 extern const char* getCSpydrBuild();
 extern void compileLLVM(char* path, char* target);
 extern void compileTranspiling(char* path, char* target);
+void compile_asm(char* path, char* target);
 
 // sets, how the .csp file gets compiled, transpiling will be removed once either llvm or asm works
 typedef enum COMPILE_TYPE_ENUM
 {
-    COMPILE_LLVM, COMPILE_TRANSPILING
+    COMPILE_LLVM, COMPILE_TRANSPILING, COMPILE_ASSEMBLY
 } compileType_T;
 
 // entry point
@@ -146,6 +148,9 @@ int main(int argc, char* argv[])
         case COMPILE_TRANSPILING:
             compileTranspiling(inputFile, outputFile);
             break;
+        case COMPILE_ASSEMBLY:
+            compile_asm(inputFile, outputFile);
+            break;
         default:
             LOG_ERROR_F("Unknown compile type \"%d\"\n", compileType);
             break;
@@ -190,6 +195,27 @@ void compileTranspiling(char* path, char* target)
     ASTProgram_T* ast = parserParse(parser, path);
 
     transpile(ast, target);
+
+    freeASTProgram(ast);
+    freeParser(parser);
+    freeLexer(lexer);
+    freeErrorHandler(errorHandler);
+    freeSrcFile(file);
+}
+
+// sets up and runs the compilation pipeline to compile to ASM
+void compile_asm(char* path, char* target)
+{
+    srcFile_T* file = readFile(path);
+
+    errorHandler_T* errorHandler = initErrorHandler(file);
+    lexer_T* lexer = initLexer(file, errorHandler);
+    parser_T* parser = initParser(lexer);
+    ASTProgram_T* ast = parserParse(parser, path);
+
+    codeGenerator_T* cg = init_generator(errorHandler);
+    generate_asm(cg, ast, target);
+    free_generator(cg);
 
     freeASTProgram(ast);
     freeParser(parser);
