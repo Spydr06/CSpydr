@@ -1,5 +1,6 @@
 #include "ast.h"
 #include "../io/log.h"
+#include "types.h"
 
 #include <string.h>
 
@@ -563,7 +564,7 @@ void freeASTType(ASTType_T* t)
     if(t->subtype != NULL)
         freeASTType(t->subtype);
 
-    if(t->free) 
+    if(t->free && !t->isPrimitive) 
     {
         if(t->type == AST_STRUCT)
             freeASTStructType(t->body);

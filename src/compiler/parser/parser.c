@@ -3,6 +3,8 @@
 #include "preprocessor.h"
 #include "../io/io.h"
 
+#include "../ast/types.h"
+
 #include <string.h>
 #include <stdio.h>
 
@@ -264,47 +266,24 @@ static ASTEnumType_T* parserParseEnumType(parser_T* parser);
 static ASTType_T* parserParseType(parser_T* parser)
 {
     char* type = strdup(parser->tok->value);
+
+    ASTType_T* primitive = getPrimitiveType(type);
+    if(primitive)
+    {
+        parserAdvance(parser);
+        primitive->line = parser->tok->line; //FIXME:
+        primitive->pos = parser->tok->pos;   //FIXME:
+
+        free(type);
+
+        return primitive;
+    }
+
     ASTDataType_T dt = AST_TYPEDEF;
     void* body = NULL;
     ASTType_T* subtype = NULL;
 
-    if(streq(type, "i32")) {
-        parserAdvance(parser);
-        dt = AST_I32;
-    }
-    else if(streq(type, "i64")) {
-        parserAdvance(parser);
-        dt = AST_I64;
-    }
-    else if(streq(type, "u32")) {
-        parserAdvance(parser);
-        dt = AST_U32;
-    }
-    else if(streq(type, "u64")) {
-        parserAdvance(parser);
-        dt = AST_U64;
-    }
-    else if(streq(type, "f32")) {
-        parserAdvance(parser);
-        dt = AST_F32;
-    }
-    else if(streq(type, "f64")) {
-        parserAdvance(parser);
-        dt = AST_F64;
-    }
-    else if(streq(type, "bool")) {
-        parserAdvance(parser);
-        dt = AST_BOOL;
-    }
-    else if(streq(type, "char")) {
-        parserAdvance(parser);
-        dt = AST_CHAR;
-    }
-    else if(streq(type, "char")) {
-        parserAdvance(parser);
-        dt = AST_CHAR;
-    }
-    else if(streq(type, "struct")) 
+    if(streq(type, "struct")) 
     {
         dt = AST_STRUCT;
         body = parserParseStructType(parser);
@@ -465,14 +444,14 @@ static ASTExpr_T* parserParseIdentifier(parser_T* parser)
 
 static ASTExpr_T* parserParseInt(parser_T* parser)
 {
-    ASTExpr_T* ast = initASTExpr(initASTType(AST_I32, NULL, NULL, "", parser->tok->line, parser->tok->pos), EXPR_INT_LITERAL, initASTInt(atoi(parser->tok->value)));
+    ASTExpr_T* ast = initASTExpr(primitives[AST_I32], EXPR_INT_LITERAL, initASTInt(atoi(parser->tok->value)));
     parserConsume(parser, TOKEN_INT, "expect number");
     return ast;
 }
 
 static ASTExpr_T* parserParseFloat(parser_T* parser)
 {
-    ASTExpr_T* ast = initASTExpr(initASTType(AST_F32, NULL, NULL, "", parser->tok->line, parser->tok->pos), EXPR_FLOAT_LITERAL, initASTFloat(atof(parser->tok->value)));
+    ASTExpr_T* ast = initASTExpr(primitives[AST_F32], EXPR_FLOAT_LITERAL, initASTFloat(atof(parser->tok->value)));
     parserConsume(parser, TOKEN_FLOAT, "expect number");
     return ast;
 }
@@ -489,21 +468,21 @@ static ASTExpr_T* parserParseBool(parser_T* parser)
         exit(1);
     }
 
-    ASTExpr_T* ast = initASTExpr(initASTType(AST_BOOL, NULL, NULL, "", parser->tok->line, parser->tok->pos), EXPR_BOOL_LITERAL, initASTBool(boolVal));
+    ASTExpr_T* ast = initASTExpr(primitives[AST_BOOL], EXPR_BOOL_LITERAL, initASTBool(boolVal));
     parserAdvance(parser);
     return ast;
 }
 
 static ASTExpr_T* parserParseChar(parser_T* parser)
 {
-    ASTExpr_T* ast = initASTExpr(initASTType(AST_CHAR, NULL, NULL, "", parser->tok->line, parser->tok->pos), EXPR_CHAR_LITERAL, initASTChar(parser->tok->value[0]));
+    ASTExpr_T* ast = initASTExpr(primitives[AST_CHAR], EXPR_CHAR_LITERAL, initASTChar(parser->tok->value[0]));
     parserConsume(parser, TOKEN_CHAR, "expect character");
     return ast;
 }
 
 static ASTExpr_T* parserParseString(parser_T* parser)
 {
-    ASTExpr_T* ast = initASTExpr(initASTType(AST_POINTER, initASTType(AST_CHAR, NULL, NULL, "", parser->tok->line, parser->tok->pos), NULL, "", parser->tok->line, parser->tok->pos), EXPR_STRING_LITERAL, initASTString(parser->tok->value));
+    ASTExpr_T* ast = initASTExpr(initASTType(AST_POINTER, primitives[AST_CHAR], NULL, "", parser->tok->line, parser->tok->pos), EXPR_STRING_LITERAL, initASTString(parser->tok->value));
     parserConsume(parser, TOKEN_STRING, "expect string");
     return ast;
 }
@@ -511,7 +490,7 @@ static ASTExpr_T* parserParseString(parser_T* parser)
 static ASTExpr_T* parserParseNil(parser_T* parser)
 {
     parserConsume(parser, TOKEN_NIL, "expect `nil`");
-    return initASTExpr(initASTType(AST_POINTER, initASTType(AST_VOID, NULL, NULL, "", parser->tok->line, parser->tok->pos), NULL, "", parser->tok->line, parser->tok->pos), EXPR_NIL, initASTNil());  // nil is just *void 0
+    return initASTExpr(initASTType(AST_POINTER, primitives[AST_VOID], NULL, "", parser->tok->line, parser->tok->pos), EXPR_NIL, initASTNil());  // nil is just *void 0
 }
 
 static ASTExpr_T* parserParseArray(parser_T* parser)

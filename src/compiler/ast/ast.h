@@ -7,12 +7,20 @@
 
 typedef enum 
 {
+    AST_I8,
+    AST_I16,
     AST_I32,
     AST_I64,
+
+    AST_U8,
+    AST_U16,
     AST_U32,
     AST_U64,
+
     AST_F32,
     AST_F64,
+    AST_F80,
+
     AST_BOOL,
     AST_CHAR,
     AST_ARRAY,
@@ -90,6 +98,7 @@ typedef struct AST_TYPE_STRUCT
     void* body;     // body for enums and structs
 
     bool free;
+    bool isPrimitive;
     unsigned int line;
     unsigned int pos;
 } ASTType_T;
