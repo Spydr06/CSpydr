@@ -10,7 +10,7 @@
 
 #define NUM_KEYWORDS 15
 
-struct {const char* str; tokenType_T type;} keyWords[NUM_KEYWORDS] = {
+const struct { const char* str; tokenType_T type; } keyWords[NUM_KEYWORDS] = {
     {"true", TOKEN_TRUE},
     {"false", TOKEN_FALSE},
     {"nil", TOKEN_NIL},
@@ -27,6 +27,46 @@ struct {const char* str; tokenType_T type;} keyWords[NUM_KEYWORDS] = {
     {"import", TOKEN_IMPORT},
     {"mut", TOKEN_MUT},
 };
+
+const struct { const char* symbol; tokenType_T type; } symbols[] = {
+    {"++", TOKEN_INC},
+    {"+=", TOKEN_ADD},
+    {"+", TOKEN_PLUS},
+    {"--", TOKEN_DEC},
+    {"-=", TOKEN_SUB},
+    {"-", TOKEN_MINUS},
+    {"*=", TOKEN_MULT},
+    {"*", TOKEN_STAR},
+    {"/=", TOKEN_DIV},
+    {"/", TOKEN_SLASH},
+    {"&&", TOKEN_AND},
+    {"&", TOKEN_REF},
+    {"||", TOKEN_OR},
+    {"==", TOKEN_EQ},
+    {"=>", TOKEN_ARROW},
+    {"=", TOKEN_ASSIGN},
+    {"!=", TOKEN_NOT_EQ},
+    {"!", TOKEN_BANG},
+    {">=", TOKEN_GT_EQ},
+    {">", TOKEN_GT},
+    {"<=", TOKEN_LT_EQ},
+    {"<-", TOKEN_RETURN},
+    {"<", TOKEN_LT},
+    {"(", TOKEN_LPAREN},
+    {")", TOKEN_RPAREN},
+    {"{", TOKEN_LBRACE},
+    {"}", TOKEN_RBRACE},
+    {"[", TOKEN_LBRACKET},
+    {"]", TOKEN_RBRACKET},
+    {"~", TOKEN_TILDE},
+    {",", TOKEN_COMMA},
+    {";", TOKEN_SEMICOLON},
+    {"_", TOKEN_UNDERSCORE},
+    {":", TOKEN_COLON},
+    {"..", TOKEN_RANGE},
+    {".", TOKEN_DOT},
+    {NULL, TOKEN_EOF}   // the last one has to be null as an indicator for the end of the array
+};  
 
 static void lexerSkipWhitespace(lexer_T* lexer);
 static void lexerSkipComment(lexer_T* lexer);
@@ -368,117 +408,30 @@ static token_T* lexerGetChar(lexer_T* lexer)
 
 static token_T* lexerGetSymbol(lexer_T* lexer)
 {
+    for(int i = 0; symbols[i].symbol != NULL; i++)
+    {
+        const char* s = symbols[i].symbol;
+        if(strlen(s) == 1 && lexer->c == s[0])
+            return lexerConsume(lexer, initToken((char*) s, lexer->line, lexer->pos, symbols[i].type));
+        if(strlen(s) == 2 && lexer->c == s[0] && lexerPeek(lexer, 1) == s[1])
+            return lexerConsume(lexer, lexerConsume(lexer, initToken((char*) s, lexer->line, lexer->pos, symbols[i].type)));
+    }
+
     switch(lexer->c) {
-        case '(':
-            return lexerConsumeType(lexer, TOKEN_LPAREN);            
-        case ')':
-            return lexerConsumeType(lexer, TOKEN_RPAREN);      
-        case '{':
-            return lexerConsumeType(lexer, TOKEN_LBRACE);      
-        case '}':
-            return lexerConsumeType(lexer, TOKEN_RBRACE);      
-        case '[':
-            return lexerConsumeType(lexer, TOKEN_LBRACKET);      
-        case ']':
-            return lexerConsumeType(lexer, TOKEN_RBRACKET);    
-        case ':':
-            return lexerConsumeType(lexer, TOKEN_COLON);
-        case ';': 
-            return lexerConsumeType(lexer, TOKEN_SEMICOLON);
-        case ',': 
-            return lexerConsumeType(lexer, TOKEN_COMMA);
-        case '_':
-            return lexerConsumeType(lexer, TOKEN_UNDERSCORE);
-        case '@': 
-            return lexerConsumeType(lexer, TOKEN_AT);
-        case '$':
-            return lexerConsumeType(lexer, TOKEN_DOLLAR);
-        case '~':
-            return lexerConsumeType(lexer, TOKEN_TILDE);
-
-        case '&':
-            if(lexerPeek(lexer, 1) == '*')
-                return lexerConsume(lexer, lexerConsume(lexer, initToken("&&", lexer->line, lexer->pos, TOKEN_AND)));
-            else
-                return lexerConsume(lexer, initToken("&", lexer->line, lexer->pos, TOKEN_REF));
-        case '|':
-            return lexerConsume(lexer, lexerConsume(lexer, initToken("||", lexer->line, lexer->pos, TOKEN_OR)));
-
-        case '=':
-            if(lexerPeek(lexer, 1) == '=') 
-                return lexerConsume(lexer, lexerConsume(lexer, initToken("==", lexer->line, lexer->pos, TOKEN_EQ)));
-            else if(lexerPeek(lexer, 1) == '>')
-                return lexerConsume(lexer, lexerConsume(lexer, initToken("=>", lexer->line, lexer->pos, TOKEN_ARROW)));
-            else
-                return lexerConsume(lexer, initToken("=", lexer->line, lexer->pos, TOKEN_ASSIGN)); 
-
-        case '.':
-            if(lexerPeek(lexer, 1) == '.') 
-                return lexerConsume(lexer, lexerConsume(lexer, initToken("..", lexer->line, lexer->pos, TOKEN_RANGE)));
-            else
-                return lexerConsume(lexer, initToken(".", lexer->line, lexer->pos, TOKEN_DOT)); 
-
-        case '>': 
-            if(lexerPeek(lexer, 1) == '=') 
-                return lexerConsume(lexer, lexerConsume(lexer, initToken(">=", lexer->line, lexer->pos, TOKEN_GT_EQ)));
-            else 
-                return lexerConsume(lexer, initToken(">", lexer->line, lexer->pos, TOKEN_GT));
-
-        case '<': 
-            if(lexerPeek(lexer, 1) == '=') 
-                return lexerConsume(lexer, lexerConsume(lexer, initToken("<=", lexer->line, lexer->pos, TOKEN_LT_EQ)));
-            else if(lexerPeek(lexer, 1) == '-')
-                return lexerConsume(lexer, lexerConsume(lexer, initToken("<-", lexer->line, lexer->pos, TOKEN_RETURN)));
-            else 
-                return lexerConsume(lexer, initToken("<", lexer->line, lexer->pos, TOKEN_LT));
-
-        case '+': 
-            if(lexerPeek(lexer, 1) == '=') 
-                return lexerConsume(lexer, lexerConsume(lexer, initToken("+=", lexer->line, lexer->pos, TOKEN_ADD)));
-            else if(lexerPeek(lexer, 1) == '+') 
-                return lexerConsume(lexer, lexerConsume(lexer, initToken("++", lexer->line, lexer->pos, TOKEN_INC)));
-            else 
-                return lexerConsume(lexer, initToken("+", lexer->line, lexer->pos, TOKEN_PLUS));
-
-        case '-': 
-            if(lexerPeek(lexer, 1) == '=') 
-                return lexerConsume(lexer, lexerConsume(lexer, initToken("-=", lexer->line, lexer->pos, TOKEN_SUB)));
-            else if(lexerPeek(lexer, 1) == '-') 
-                return lexerConsume(lexer, lexerConsume(lexer, initToken("--", lexer->line, lexer->pos, TOKEN_DEC)));
-            else 
-                return lexerConsume(lexer, initToken("-", lexer->line, lexer->pos, TOKEN_MINUS));
-
-        case '*': 
-            if(lexerPeek(lexer, 1) == '=') 
-                return lexerConsume(lexer, lexerConsume(lexer, initToken("*=", lexer->line, lexer->pos, TOKEN_MULT)));
-            else 
-                return lexerConsume(lexer, initToken("*", lexer->line, lexer->pos, TOKEN_STAR));
-
-        case '/': 
-            if(lexerPeek(lexer, 1) == '=') 
-                return lexerConsume(lexer, lexerConsume(lexer, initToken("/=",lexer->line, lexer->pos, TOKEN_DIV)));
-            else 
-                return lexerConsume(lexer, initToken("/", lexer->line, lexer->pos, TOKEN_SLASH));
-
-        case '!': 
-            if(lexerPeek(lexer, 1) == '=') 
-                return lexerConsume(lexer, lexerConsume(lexer, initToken("!=", lexer->line, lexer->pos, TOKEN_NOT_EQ)));
-            else 
-                return lexerConsume(lexer, initToken("!", lexer->line, lexer->pos, TOKEN_BANG));
 
         case '"':
             return lexerGetString(lexer);
 
         case '\'':
             return lexerGetChar(lexer);
-
+        
         case '\0':
             return initToken("EOF", lexer->line, lexer->pos, TOKEN_EOF);
 
         default: {
-            const char* template = "unexpected symbol `%c`";
+            const char* template = "unexpected symbol `%c` [id: %d]";
             char* msg = calloc(strlen(template) + 1, sizeof(char));
-            sprintf(msg, template, lexer->c);
+            sprintf(msg, template, lexer->c, lexer->c);
 
             throwSyntaxError(lexer->eh, msg, lexer->line, lexer->pos);
             return initToken("EOF", lexer->line, lexer->pos, TOKEN_EOF);
