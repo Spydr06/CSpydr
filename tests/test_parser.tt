@@ -12,10 +12,10 @@
     Parser_T* parser = init_parser(lexer);                       \
     TEST_ASSERT(parser != NULL);                                 \
     parser->silent = 1;                                          \
-    ASTProgram_T* prog = parse(parser, msg);                     \
+    ASTProg_T* prog = parse(parser, msg);                        \
     TEST_ASSERT(prog != NULL);                                   \
     code                                                         \
-    free_ast_program(prog);                                      \
+    free_ast_prog(prog);                                         \
     free_parser(parser);                                         \
     free_lexer(lexer);                                           \
     free_errorhandler(eh);                                       \

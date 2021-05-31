@@ -7,14 +7,14 @@
 
 typedef struct PARSER_STRUCT Parser_T;
 
-typedef ASTExpr_T* (*prefix_parse_fn)(Parser_T* parser);
-typedef ASTExpr_T* (*infix_parse_fn)(Parser_T* parser, ASTExpr_T* left);
+typedef ASTNode_T* (*prefix_parse_fn)(Parser_T* parser);
+typedef ASTNode_T* (*infix_parse_fn)(Parser_T* parser, ASTNode_T* left);
 
 struct PARSER_STRUCT
 {
     Lexer_T* lexer;
     ErrorHandler_T* eh;
-    ASTProgram_T* root_ref;
+    ASTProg_T* root_ref;
     Token_T* tok;
     List_T* imports;
 
@@ -41,6 +41,6 @@ void free_parser(Parser_T* parser);
 Token_T* parser_advance(Parser_T* parser);
 Token_T* parser_consume(Parser_T* parser, TokenType_T type, const char* msg);
 
-ASTProgram_T* parse(Parser_T* parser, const char* mainFile);
+ASTProg_T* parse(Parser_T* parser, const char* mainFile);
 
 #endif

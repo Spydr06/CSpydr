@@ -1,6 +1,5 @@
 #include "parser.h"
 #include "../io/log.h"
-#include "preprocessor.h"
 #include "../io/io.h"
 
 #include "../ast/types.h"
@@ -18,7 +17,7 @@
 // expression parsing settings //
 /////////////////////////////////
 
-#define NUM_PREFIX_PARSE_FNS 16
+/*#define NUM_PREFIX_PARSE_FNS 16
 #define NUM_INFIX_PARSE_FNS  19
 #define NUM_PRECEDENCES      19
 
@@ -105,7 +104,7 @@ struct {TokenType_T tt; precedence_T prec;} precedences[NUM_PRECEDENCES] = {
     {TOKEN_SUB, ASSIGN},
     {TOKEN_MULT, ASSIGN},
     {TOKEN_DIV, ASSIGN},
-};
+};*/
 
 /////////////////////////////////
 // helperfunctions             //
@@ -162,6 +161,15 @@ Token_T* parser_consume(Parser_T* parser, TokenType_T type, const char* msg)
     return parser_advance(parser);
 }
 
+ASTProg_T* parse(Parser_T* parser, const char* main_file)
+{
+    ASTProg_T* prog = init_ast_prog(main_file, NULL);
+
+
+
+    return prog;
+}
+/*
 prefix_parse_fn get_prefix_parse_fn(TokenType_T type)
 {
     for(int i = 0; i < NUM_PREFIX_PARSE_FNS; i++)
@@ -1060,4 +1068,4 @@ static ASTTypedef_T* parse_typedef(Parser_T* parser)
 
     parser_consume(parser, TOKEN_SEMICOLON, "expect `;` after type defintion");
     return ast;
-}
+}*/

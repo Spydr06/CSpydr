@@ -1,14 +1,14 @@
-#ifndef CSPYDR_PRIMITIVES_H
-#define CSPYDR_PRIMITIVES_H
+#ifndef CSPYDR_TYPES_H
+#define CSPYDR_TYPES_H
 
 #include "ast.h"
 
-#define NUM_TYPES AST_VOID + 1 // AST_VOID is the last item in the ASTDataType_T enum 
+#define NUM_TYPES TY_UNDEF + 1 // TY_UNDEF is the last item in the ASTDataType_T enum. TY_UNDEF should never occur
 
 // a struct for a single index in the String-to-Type Map
 struct StrTypeIdx { 
     char* t;
-    ASTDataType_T dt;
+    ASTTypeKind_T dt;
 };
 
 extern const struct StrTypeIdx str_type_map[NUM_TYPES];

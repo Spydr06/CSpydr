@@ -142,11 +142,11 @@ void compile_llvm(char* path, char* target)
     ErrorHandler_T* eh = init_errorhandler(file);
     Lexer_T* lexer = init_lexer(file, eh);
     Parser_T* parser = init_parser(lexer);
-    ASTProgram_T* ast = parse(parser, path);
+    ASTProg_T* ast = parse(parser, path);
 
     //TODO:
 
-    free_ast_program(ast);
+    free_ast_prog(ast);
     free_parser(parser);
     free_lexer(lexer);
     free_errorhandler(eh);
