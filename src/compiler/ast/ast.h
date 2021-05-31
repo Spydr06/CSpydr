@@ -97,6 +97,8 @@ typedef struct AST_TYPE_STRUCT
     char* callee;   // callee for typedefs
     void* body;     // body for enums and structs
 
+    int size;
+
     bool free;
     bool isPrimitive;
     unsigned int line;
@@ -323,6 +325,9 @@ typedef struct AST_LOCAL_STRUCT
 
     bool isMutable;
 
+    int offset;
+    int align;
+
     unsigned int line;
     unsigned int pos;
 } ASTLocal_T;
@@ -357,6 +362,7 @@ typedef struct AST_ARGUMENT_STRUCT
 {
     char* name;
     ASTType_T* dataType;
+    int offset;
 } ASTArgument_T;
 
 ASTArgument_T* initASTArgument(const char* name, ASTType_T* dataType);
@@ -368,6 +374,9 @@ typedef struct AST_FUCTION_STRUCT
     ASTCompound_T* body;
     ASTType_T* returnType;
     list_T* args;
+
+    int stack_size;
+    ASTLocal_T* alloca_bottom;
 
     unsigned int line;
     unsigned int pos;
@@ -383,6 +392,7 @@ typedef struct AST_GLOBAL_STRUCT
     ASTExpr_T* value;
 
     bool isMutable;
+    int align;
 
     unsigned int line;
     unsigned int pos;

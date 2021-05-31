@@ -13,6 +13,7 @@ struct StrTypeIdx {
 
 extern const struct StrTypeIdx strTypeMap[NUM_TYPES];
 extern ASTType_T* primitives[NUM_TYPES];
+extern const int typeSizeMap[NUM_TYPES];
 
 ASTType_T* getPrimitiveType(char* type);
 

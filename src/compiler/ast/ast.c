@@ -80,6 +80,7 @@ ASTGlobal_T* initASTGlobal(const char* name, ASTType_T* type, ASTExpr_T* value, 
     g->value = value;
 
     g->isMutable = false;
+    g->align = 1;
 
     g->line = line;
     g->pos = pos;
@@ -105,9 +106,11 @@ ASTFunction_T* initASTFunction(const char* name, ASTType_T* returnType, ASTCompo
     f->body = body;
     f->returnType = returnType;
     f->args = args;
+    f->stack_size = -2;
 
     f->line = line;
     f->pos = pos;
+    f->alloca_bottom = NULL;
 
     return f;
 }
@@ -129,6 +132,7 @@ ASTArgument_T* initASTArgument(const char* name, ASTType_T* dataType)
     ASTArgument_T* a = calloc(1, sizeof(struct AST_ARGUMENT_STRUCT));
     a->name = strdup(name);
     a->dataType = dataType;
+    a->offset = 0;
     return a;
 }
 
@@ -189,6 +193,8 @@ ASTLocal_T* initASTLocal(ASTType_T* dataType, ASTExpr_T* value, const char* name
     l->line = line;
     l->pos = pos;
     l->isMutable = false;
+    l->offset = 0;
+    l->align = 1;
     return l;
 }
 
@@ -552,6 +558,8 @@ ASTType_T* initASTType(ASTDataType_T type, ASTType_T* subtype, void* body, char*
     t->free = true;
     t->line = line;
     t->pos = pos;
+    t->size = 0;
+    t->isPrimitive = false;
 
     if(callee)
         t->callee = strdup(callee);
@@ -561,10 +569,10 @@ ASTType_T* initASTType(ASTDataType_T type, ASTType_T* subtype, void* body, char*
 
 void freeASTType(ASTType_T* t)
 {
-    if(t->subtype != NULL)
+    if(t->subtype)
         freeASTType(t->subtype);
 
-    if(t->free && !t->isPrimitive) 
+    if(t->free && t->isPrimitive) 
     {
         if(t->type == AST_STRUCT)
             freeASTStructType(t->body);

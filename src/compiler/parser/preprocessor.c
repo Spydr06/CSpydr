@@ -1,5 +1,7 @@
 #include "preprocessor.h"
 #include "../io/log.h"
+#include "../ast/types.h"
+#include "../codegen/codegen.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -167,11 +169,13 @@ static void optimizeType(preprocessor_T* opt, ASTType_T* type)
         if(!findTypedef(opt, type->callee))
         {
             const char* template = "undefined type `%s`";
-        char* msg = calloc(strlen(template) + strlen(type->callee) + 1, sizeof(char));
-        sprintf(msg, template, type->callee);
-        throwUndefinitionError(opt->eh, msg, type->line, type->pos);
+            char* msg = calloc(strlen(template) + strlen(type->callee) + 1, sizeof(char));
+            sprintf(msg, template, type->callee);
+            throwUndefinitionError(opt->eh, msg, type->line, type->pos);
         }
     }
+
+    type->size = typeSizeMap[type->type];
 }
 
 static int typeIsPtr(preprocessor_T* opt, ASTType_T* type)
@@ -289,6 +293,8 @@ static void optimizeGlobal(preprocessor_T* opt, ASTGlobal_T* gl)
 {
     optimizeType(opt, gl->type);
    
+    gl->align = gl->type->size ? gl->type->size : 1;
+
     if(gl->value)
         optimizeExpression(opt, gl->value);
 }
@@ -299,6 +305,8 @@ static void optimizeLocal(preprocessor_T* opt, ASTLocal_T* loc)
 
     if(loc->value)
         optimizeExpression(opt, loc->value);
+
+    loc->align = loc->dataType->size ? loc->dataType->size : 1;
 }
 
 static void optimizeMatch(preprocessor_T* pre, ASTMatch_T* match)
@@ -363,6 +371,9 @@ static void optimizeFunction(preprocessor_T* opt, ASTFunction_T* func)
     optimizeCompund(opt, func->body);
 
     opt->args->size -= argc;
+
+    assign_alloca_size(func);
+    assign_lvar_offsets(func);
 }
 
 static void optimizeASTFile(preprocessor_T* opt, ASTFile_T* file)

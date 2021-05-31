@@ -1,6 +1,8 @@
 #include "types.h"
+#include "ast.h"
 
 #include <string.h>
+#include <stdbool.h>
 
 ASTType_T* primitives[NUM_TYPES] = {
     [AST_I8]  = &(ASTType_T){.type = AST_I8,  .isPrimitive = true},
@@ -47,6 +49,31 @@ const struct StrTypeIdx strTypeMap[NUM_TYPES] = {
     {"*", AST_POINTER},
     {"[", AST_ARRAY},
     {NULL, AST_TYPEDEF}
+};
+
+const int typeSizeMap[NUM_TYPES] = {
+    [AST_I8]  = 1,
+    [AST_I16] = 2,
+    [AST_I32] = 4,
+    [AST_I64] = 8,
+
+    [AST_U8]  = 1,
+    [AST_U16] = 2,
+    [AST_U32] = 4,
+    [AST_U64] = 8,
+
+    [AST_F32] = 4,
+    [AST_F64] = 8,
+    [AST_F80] = 16,
+
+    [AST_CHAR] = 1,
+    [AST_BOOL] = 1,
+    [AST_VOID] = 1,
+
+    [AST_POINTER] = 8,
+    [AST_ARRAY]   = 0,    // TODO: evaluate further
+    [AST_ENUM]    = 4,
+    [AST_STRUCT]  = 0
 };
 
 ASTDataType_T getDataTypeFromStr(char* str)

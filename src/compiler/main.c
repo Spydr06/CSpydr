@@ -91,7 +91,7 @@ int main(int argc, char* argv[])
     char* outputFile = DEFAULT_OUTPUT_FILE;
 
     // set the default compile type
-    compileType_T compileType = COMPILE_LLVM;
+    compileType_T compileType = COMPILE_ASSEMBLY;
 
     // dispatch all given flags
     flagDispatcher_T* dispatcher = dispatchFlags(argc, argv);
@@ -213,7 +213,7 @@ void compile_asm(char* path, char* target)
     parser_T* parser = initParser(lexer);
     ASTProgram_T* ast = parserParse(parser, path);
 
-    codeGenerator_T* cg = init_generator(errorHandler);
+    CodeGen_T* cg = init_generator(errorHandler);
     generate_asm(cg, ast, target);
     free_generator(cg);
 
