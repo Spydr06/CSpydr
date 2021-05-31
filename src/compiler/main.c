@@ -23,10 +23,7 @@
 #include "lexer/lexer.h"
 #include "parser/parser.h"
 #include "error/errorHandler.h"
-#include "llvm/cpp_bindings.h"
-#include "transpiler/transpiler.h"
 #include "platform/platform_bindings.h"
-#include "codegen/codegen.h"
 
 // default texts, which get shown if you enter help, info or version flags
 // links to me, the creator of CSpydr
@@ -73,15 +70,7 @@ const char* versionText = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE 
 // declaration of the functions used below
 extern const char* getCSpydrVersion();
 extern const char* getCSpydrBuild();
-extern void compileLLVM(char* path, char* target);
-extern void compileTranspiling(char* path, char* target);
-void compile_asm(char* path, char* target);
-
-// sets, how the .csp file gets compiled, transpiling will be removed once either llvm or asm works
-typedef enum COMPILE_TYPE_ENUM
-{
-    COMPILE_LLVM, COMPILE_TRANSPILING, COMPILE_ASSEMBLY
-} compileType_T;
+extern void compile_llvm(char* path, char* target);
 
 // entry point
 int main(int argc, char* argv[])
@@ -89,9 +78,6 @@ int main(int argc, char* argv[])
     // declare the input/output files
     char* inputFile = NULL;
     char* outputFile = DEFAULT_OUTPUT_FILE;
-
-    // set the default compile type
-    compileType_T compileType = COMPILE_ASSEMBLY;
 
     // dispatch all given flags
     flagDispatcher_T* dispatcher = dispatchFlags(argc, argv);
@@ -115,9 +101,6 @@ int main(int argc, char* argv[])
                 inputFile = calloc(strlen(currentFlag->value) + 1, sizeof(char));
                 strcpy(inputFile, currentFlag->value);
                 break;
-            case FLAG_ENABLE_TRANSPILING:
-                compileType = COMPILE_TRANSPILING;
-                break;
             case FLAG_DEBUG:
                 //TODO: create a global debugging flag
                 break;
@@ -139,22 +122,7 @@ int main(int argc, char* argv[])
         return 0;
     }
 
-    // select the compilation type
-    switch(compileType)
-    {
-        case COMPILE_LLVM:
-            compileLLVM(inputFile, outputFile);
-            break;
-        case COMPILE_TRANSPILING:
-            compileTranspiling(inputFile, outputFile);
-            break;
-        case COMPILE_ASSEMBLY:
-            compile_asm(inputFile, outputFile);
-            break;
-        default:
-            LOG_ERROR_F("Unknown compile type \"%d\"\n", compileType);
-            break;
-    }
+    compile_llvm(inputFile, outputFile);
 
     free(inputFile);
 
@@ -166,7 +134,7 @@ int main(int argc, char* argv[])
 }
 
 // sets up and runs the compilation pipeline using LLVM
-void compileLLVM(char* path, char* target)
+void compile_llvm(char* path, char* target)
 {
     srcFile_T* file = readFile(path);
 
@@ -175,47 +143,7 @@ void compileLLVM(char* path, char* target)
     parser_T* parser = initParser(lexer);
     ASTProgram_T* ast = parserParse(parser, path);
 
-    generateLLVM(ast, target, path);
-
-    freeASTProgram(ast);
-    freeParser(parser);
-    freeLexer(lexer);
-    freeErrorHandler(errorHandler);
-    freeSrcFile(file);
-}
-
-// sets up and runs the compilation pipeline to transpile to C
-void compileTranspiling(char* path, char* target)
-{
-    srcFile_T* file = readFile(path);
-
-    errorHandler_T* errorHandler = initErrorHandler(file);
-    lexer_T* lexer = initLexer(file, errorHandler);
-    parser_T* parser = initParser(lexer);
-    ASTProgram_T* ast = parserParse(parser, path);
-
-    transpile(ast, target);
-
-    freeASTProgram(ast);
-    freeParser(parser);
-    freeLexer(lexer);
-    freeErrorHandler(errorHandler);
-    freeSrcFile(file);
-}
-
-// sets up and runs the compilation pipeline to compile to ASM
-void compile_asm(char* path, char* target)
-{
-    srcFile_T* file = readFile(path);
-
-    errorHandler_T* errorHandler = initErrorHandler(file);
-    lexer_T* lexer = initLexer(file, errorHandler);
-    parser_T* parser = initParser(lexer);
-    ASTProgram_T* ast = parserParse(parser, path);
-
-    CodeGen_T* cg = init_generator(errorHandler);
-    generate_asm(cg, ast, target);
-    free_generator(cg);
+    //TODO:
 
     freeASTProgram(ast);
     freeParser(parser);
