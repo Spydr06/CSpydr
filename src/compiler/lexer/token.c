@@ -6,9 +6,9 @@
 #include <string.h>
 #include <stdio.h>
 
-token_T* initToken(char* value, unsigned int line, unsigned int pos, tokenType_T type)
+Token_T* init_token(char* value, unsigned int line, unsigned int pos, TokenType_T type)
 {
-    token_T* token = calloc(1, sizeof(token_T));
+    Token_T* token = calloc(1, sizeof(struct TOKEN_STRUCT));
 
     token->line = line;
     token->pos = pos;
@@ -19,13 +19,13 @@ token_T* initToken(char* value, unsigned int line, unsigned int pos, tokenType_T
     return token;
 }
 
-void freeToken(token_T* token)
+void free_token(Token_T* token)
 {
     free(token->value);
     free(token);
 }
 
-char* tokenToString(token_T* token)
+char* token_to_str(Token_T* token)
 {
     const char* template = "Tok: [type: %d, value: `%s`, line: %d, pos: %d]";
     char* buffer = calloc(strlen(template) + strlen(token->value) + 1, sizeof(char));

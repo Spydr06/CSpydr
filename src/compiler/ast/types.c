@@ -5,26 +5,26 @@
 #include <stdbool.h>
 
 ASTType_T* primitives[NUM_TYPES] = {
-    [AST_I8]  = &(ASTType_T){.type = AST_I8,  .isPrimitive = true},
-    [AST_I16] = &(ASTType_T){.type = AST_I16, .isPrimitive = true},
-    [AST_I32] = &(ASTType_T){.type = AST_I32, .isPrimitive = true},
-    [AST_I64] = &(ASTType_T){.type = AST_I64, .isPrimitive = true},
+    [AST_I8]  = &(ASTType_T){.type = AST_I8,  .is_primitive = true},
+    [AST_I16] = &(ASTType_T){.type = AST_I16, .is_primitive = true},
+    [AST_I32] = &(ASTType_T){.type = AST_I32, .is_primitive = true},
+    [AST_I64] = &(ASTType_T){.type = AST_I64, .is_primitive = true},
 
-    [AST_U8]  = &(ASTType_T){.type = AST_U8,  .isPrimitive = true},
-    [AST_U16] = &(ASTType_T){.type = AST_U16, .isPrimitive = true},
-    [AST_U32] = &(ASTType_T){.type = AST_U32, .isPrimitive = true},
-    [AST_U64] = &(ASTType_T){.type = AST_U64, .isPrimitive = true},
+    [AST_U8]  = &(ASTType_T){.type = AST_U8,  .is_primitive = true},
+    [AST_U16] = &(ASTType_T){.type = AST_U16, .is_primitive = true},
+    [AST_U32] = &(ASTType_T){.type = AST_U32, .is_primitive = true},
+    [AST_U64] = &(ASTType_T){.type = AST_U64, .is_primitive = true},
 
-    [AST_F32] = &(ASTType_T){.type = AST_F32, .isPrimitive = true},
-    [AST_F64] = &(ASTType_T){.type = AST_F64, .isPrimitive = true},
-    [AST_F80] = &(ASTType_T){.type = AST_F80, .isPrimitive = true},
+    [AST_F32] = &(ASTType_T){.type = AST_F32, .is_primitive = true},
+    [AST_F64] = &(ASTType_T){.type = AST_F64, .is_primitive = true},
+    [AST_F80] = &(ASTType_T){.type = AST_F80, .is_primitive = true},
 
-    [AST_VOID] = &(ASTType_T){.type = AST_VOID, .isPrimitive = true},
-    [AST_CHAR] = &(ASTType_T){.type = AST_CHAR, .isPrimitive = true},
-    [AST_BOOL] = &(ASTType_T){.type = AST_BOOL, .isPrimitive = true}
+    [AST_VOID] = &(ASTType_T){.type = AST_VOID, .is_primitive = true},
+    [AST_CHAR] = &(ASTType_T){.type = AST_CHAR, .is_primitive = true},
+    [AST_BOOL] = &(ASTType_T){.type = AST_BOOL, .is_primitive = true}
 };
 
-const struct StrTypeIdx strTypeMap[NUM_TYPES] = {
+const struct StrTypeIdx str_type_map[NUM_TYPES] = {
     {"i8",  AST_I8},
     {"i16", AST_I16},
     {"i32", AST_I32},
@@ -51,7 +51,7 @@ const struct StrTypeIdx strTypeMap[NUM_TYPES] = {
     {NULL, AST_TYPEDEF}
 };
 
-const int typeSizeMap[NUM_TYPES] = {
+const int type_byte_size_map[NUM_TYPES] = {
     [AST_I8]  = 1,
     [AST_I16] = 2,
     [AST_I32] = 4,
@@ -76,17 +76,17 @@ const int typeSizeMap[NUM_TYPES] = {
     [AST_STRUCT]  = 0
 };
 
-ASTDataType_T getDataTypeFromStr(char* str)
+ASTDataType_T get_datatype_from_str(char* str)
 {
     for(int i = 0; i < NUM_TYPES; i++)
-        if(strTypeMap[i].t)
-            if(strcmp(strTypeMap[i].t, str) == 0)
-                return strTypeMap[i].dt;
+        if(str_type_map[i].t)
+            if(strcmp(str_type_map[i].t, str) == 0)
+                return str_type_map[i].dt;
     return AST_TYPEDEF;
 }
 
-ASTType_T* getPrimitiveType(char* type)
+ASTType_T* get_primitive_type(char* type)
 {
-    ASTType_T* prim = primitives[getDataTypeFromStr(type)];
+    ASTType_T* prim = primitives[get_datatype_from_str(type)];
     return prim;
 }

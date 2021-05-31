@@ -4,8 +4,8 @@
 #include "../list.h"
 #include "file.h"
 
-srcFile_T* readFile(const char* path);
-void writeFile(const char* path, char* buffer);
+SrcFile_T* read_file(const char* path);
+void write_file(const char* path, char* buffer);
 char* sh(const char* cmd);
 
 #endif

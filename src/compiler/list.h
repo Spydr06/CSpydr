@@ -7,12 +7,12 @@ typedef struct LIST_STRUCT
 {
     void** items;
     size_t size;
-    size_t itemSize;
-} list_T;
+    size_t item_size;
+} List_T;
 
-list_T* initList(size_t itemsize);
-void freeList(list_T* list);
+List_T* init_list(size_t itemsize);
+void free_list(List_T* list);
 
-void listPush(list_T* list, void* item);
+void list_push(List_T* list, void* item);
 
 #endif

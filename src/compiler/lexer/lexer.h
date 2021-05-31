@@ -7,20 +7,18 @@
 #include "../error/errorHandler.h"
 
 typedef struct LEXER_STRUCT {
-    srcFile_T* file;
-    errorHandler_T* eh;
+    SrcFile_T* file;
+    ErrorHandler_T* eh;
 
     char c;
     unsigned int line;
     unsigned int pos;
-} lexer_T;
+} Lexer_T;
 
-lexer_T* initLexer(srcFile_T* src, errorHandler_T* eh);
-void freeLexer(lexer_T* lexer);
-
-token_T* lexerConsume(lexer_T* lexer, token_T* token);
-token_T* lexerConsumeType(lexer_T* lexer, tokenType_T type);
-
-token_T* lexerNextToken(lexer_T* lexer);
+Lexer_T* init_lexer(SrcFile_T* src, ErrorHandler_T* eh);
+void     free_lexer(Lexer_T* lexer);
+Token_T* lexer_consume(Lexer_T* lexer, Token_T* token);
+Token_T* lexer_consume_type(Lexer_T* lexer, TokenType_T type);
+Token_T* lexer_next_token(Lexer_T* lexer);
 
 #endif

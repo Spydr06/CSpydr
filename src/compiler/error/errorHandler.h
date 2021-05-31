@@ -17,32 +17,32 @@ typedef enum ERROR_TYPE
     ERR_TYPE_CAST_WARN,
 
     ERR_INTERNAL,
-} errorType_T;
+} ErrorType_T;
 
 typedef struct ERROR_MESSAGE
 {
-    errorType_T type;
+    ErrorType_T type;
 
-    bool forceExit;
+    bool force_exit;
     char* message;
-} errorMessage_T;
+} ErrorMessage_T;
 
 typedef struct ERROR_HANDLER
 {
-    srcFile_T* file;
-    list_T* errorMessages;
+    SrcFile_T* file;
+    List_T* error_messages;
 
-    bool exitAfterParsing;
-} errorHandler_T;
+    bool exit_after_parsing;
+} ErrorHandler_T;
 
-errorHandler_T* initErrorHandler();
-void freeErrorHandler(errorHandler_T* eh);
-errorMessage_T* initErrorMessage(errorType_T type, unsigned int lineNumber, bool forceExit, char* message);
-void freeErrorMessage(errorMessage_T* em);
+ErrorHandler_T* init_errorhandler();
+void            free_errorhandler(ErrorHandler_T* eh);
+ErrorMessage_T* init_errormessage(ErrorType_T type, unsigned int line_num, bool force_exit, char* message);
+void            free_errormessage(ErrorMessage_T* em);
 
-void throwError(errorHandler_T* hander, errorMessage_T* message);
-void throwSyntaxError(errorHandler_T* handler, const char* message, unsigned int lineNumber, unsigned int character);
-void throwRedefinitionError(errorHandler_T* handler, const char* message, unsigned int lineNumber, unsigned int character);
-void throwUndefinitionError(errorHandler_T* handler, const char* message, unsigned int lineNumber, unsigned int character);
+void throw_error(ErrorHandler_T* hander, ErrorMessage_T* message);
+void throw_syntax_error(ErrorHandler_T* handler, const char* message, unsigned int line_num, unsigned int character);
+void throw_redef_error(ErrorHandler_T* handler, const char* message, unsigned int line_num, unsigned int character);
+void throw_undef_error(ErrorHandler_T* handler, const char* message, unsigned int line_num, unsigned int character);
 
 #endif

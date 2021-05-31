@@ -27,11 +27,12 @@
 
 // default texts, which get shown if you enter help, info or version flags
 // links to me, the creator of CSpydr
+// please be nice and don't change them
 #define CSPYDR_GIT_REPOSITORY "https://github.com/spydr06/cspydr.git"
 #define CSPYDR_GIT_DEVELOPER "https://github.com/spydr06"
 
 // this text gets shown if -i or --info is used
-const char* infoText = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE COMPILER **\n" COLOR_RESET
+const char* info_text = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE COMPILER **\n" COLOR_RESET
                        COLOR_BOLD_WHITE "Version:" COLOR_RESET " %s\n"
                        COLOR_BOLD_WHITE "Build:" COLOR_RESET " %s\n"
                        "\n"
@@ -48,7 +49,7 @@ const char* infoText = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE COM
                        "Type -h or --help for help page.\n";
 
 // this text gets shown if -h or --help is used
-const char* helpText = COLOR_BOLD_WHITE "usage:" COLOR_RESET " cspydr [options] source files [options]\n"
+const char* help_text = COLOR_BOLD_WHITE "usage:" COLOR_RESET " cspydr [options] source files [options]\n"
                        COLOR_BOLD_WHITE "options:\n" COLOR_RESET
                        "  -h, --help\t\tdisplays this help text and quits.\n"
                        "  -v, --version\t\tdisplays the version of CSpydr and quits.\n"
@@ -61,15 +62,15 @@ const char* helpText = COLOR_BOLD_WHITE "usage:" COLOR_RESET " cspydr [options] 
                        "If you are unsure, what CSpydr is, please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n";
 
 // this text gets shown if -v or --version is used
-const char* versionText = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE COMPILER **\n" COLOR_RESET
+const char* version_text = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE COMPILER **\n" COLOR_RESET
                           COLOR_BOLD_WHITE "Version:" COLOR_RESET " %s\n"
                           COLOR_BOLD_WHITE "Build:" COLOR_RESET " %s\n"
                           "\n"
                           "For more information type -i.\n";
 
 // declaration of the functions used below
-extern const char* getCSpydrVersion();
-extern const char* getCSpydrBuild();
+extern const char* get_cspydr_version();
+extern const char* get_cspydr_build();
 extern void compile_llvm(char* path, char* target);
 
 // entry point
@@ -80,18 +81,18 @@ int main(int argc, char* argv[])
     char* outputFile = DEFAULT_OUTPUT_FILE;
 
     // dispatch all given flags
-    flagDispatcher_T* dispatcher = dispatchFlags(argc, argv);
+    FlagDispatcher_T* dispatcher = dispatch_flags(argc, argv);
     for(int i = 0; i < dispatcher->flags->size; i++)
     {
-        flag_T* currentFlag = dispatcher->flags->items[i];
+        Flag_T* currentFlag = dispatcher->flags->items[i];
 
         switch(currentFlag->type)
         {
             case FLAG_HELP:
-                printf("%s", helpText);
+                printf("%s", help_text);
                 return 0;
             case FLAG_VERSION:
-                printf(versionText, getCSpydrVersion(), getCSpydrBuild());
+                printf(version_text, get_cspydr_version(), get_cspydr_version());
                 return 0;
             case FLAG_OUTPUT:
                 outputFile = calloc(strlen(currentFlag->value) + 1, sizeof(char));
@@ -105,7 +106,7 @@ int main(int argc, char* argv[])
                 //TODO: create a global debugging flag
                 break;
             case FLAG_INFO:
-                printf(infoText, getCSpydrVersion(), getCSpydrBuild());
+                printf(info_text, get_cspydr_version(), get_cspydr_build());
                 return 0;
             default:
                 LOG_ERROR_F("Unknown flag '%d'. Type -h for help.\n", currentFlag->type);
@@ -113,7 +114,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    freeFlagDispatcher(dispatcher);
+    free_flagdispatcher(dispatcher);
 
     // check if an input file was given
     if(inputFile == NULL)
@@ -136,18 +137,18 @@ int main(int argc, char* argv[])
 // sets up and runs the compilation pipeline using LLVM
 void compile_llvm(char* path, char* target)
 {
-    srcFile_T* file = readFile(path);
+    SrcFile_T* file = read_file(path);
 
-    errorHandler_T* errorHandler = initErrorHandler(file);
-    lexer_T* lexer = initLexer(file, errorHandler);
-    parser_T* parser = initParser(lexer);
-    ASTProgram_T* ast = parserParse(parser, path);
+    ErrorHandler_T* eh = init_errorhandler(file);
+    Lexer_T* lexer = init_lexer(file, eh);
+    Parser_T* parser = init_parser(lexer);
+    ASTProgram_T* ast = parse(parser, path);
 
     //TODO:
 
-    freeASTProgram(ast);
-    freeParser(parser);
-    freeLexer(lexer);
-    freeErrorHandler(errorHandler);
-    freeSrcFile(file);
+    free_ast_program(ast);
+    free_parser(parser);
+    free_lexer(lexer);
+    free_errorhandler(eh);
+    free_srcfile(file);
 }

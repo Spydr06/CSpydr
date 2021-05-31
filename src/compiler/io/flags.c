@@ -4,9 +4,9 @@
 #include <stdio.h>
 #include "log.h"
 
-flag_T* initFlag(flagType_T type, char* value)
+Flag_T* init_flag(FlagType_T type, char* value)
 {
-    flag_T* flag = calloc(1, sizeof(struct FLAG_STRUCT));
+    Flag_T* flag = calloc(1, sizeof(struct FLAG_STRUCT));
     flag->type = type;
 
     if(value != NULL)
@@ -17,19 +17,19 @@ flag_T* initFlag(flagType_T type, char* value)
     return flag;
 }
 
-void freeFlag(flag_T* flag) {
+void freeFlag(Flag_T* flag) {
     free(flag->value);
     free(flag);
 }
 
-flagDispatcher_T* dispatchFlags(int argc, char* argv[])
+FlagDispatcher_T* dispatch_flags(int argc, char* argv[])
 {
-    flagDispatcher_T* dispatcher = calloc(1, sizeof(struct FLAG_DISPATCHER_STRUCT));
-    dispatcher->flags = initList(sizeof(struct FLAG_STRUCT*));
+    FlagDispatcher_T* dispatcher = calloc(1, sizeof(struct FLAG_DISPATCHER_STRUCT));
+    dispatcher->flags = init_list(sizeof(struct FLAG_STRUCT*));
 
     if(argc == 0)
     {
-        listPush(dispatcher->flags, initFlag(FLAG_HELP, NULL));
+        list_push(dispatcher->flags, init_flag(FLAG_HELP, NULL));
     }
 
     for(int i = 1; i < argc; i++)
@@ -38,27 +38,27 @@ flagDispatcher_T* dispatchFlags(int argc, char* argv[])
 
         if(strcmp(arg, "-h") == 0 || strcmp(arg, "--help") == 0)
         {
-            listPush(dispatcher->flags, initFlag(FLAG_HELP, NULL));
+            list_push(dispatcher->flags, init_flag(FLAG_HELP, NULL));
         }
         else if(strcmp(arg, "-o") == 0 || strcmp(arg, "--out") == 0 || strcmp(arg, "--output") == 0)
         {
-            listPush(dispatcher->flags, initFlag(FLAG_OUTPUT, argv[i++ + 1]));
+            list_push(dispatcher->flags, init_flag(FLAG_OUTPUT, argv[i++ + 1]));
         }
         else if(strcmp(arg, "-v") == 0 || strcmp(arg, "--version") == 0)
         {
-            listPush(dispatcher->flags, initFlag(FLAG_VERSION, NULL));
+            list_push(dispatcher->flags, init_flag(FLAG_VERSION, NULL));
         }
         else if(strcmp(arg, "-d") == 0 || strcmp(arg, "--debug") == 0)
         {
-            listPush(dispatcher->flags, initFlag(FLAG_DEBUG, NULL));
+            list_push(dispatcher->flags, init_flag(FLAG_DEBUG, NULL));
         }
         else if(strcmp(arg, "-i") == 0 || strcmp(arg, "--info") == 0)
         {
-            listPush(dispatcher->flags, initFlag(FLAG_INFO, NULL));
+            list_push(dispatcher->flags, init_flag(FLAG_INFO, NULL));
         }
         else if(strcmp(arg, "-t") == 0 || strcmp(arg, "--transpile") == 0)
         {
-            listPush(dispatcher->flags, initFlag(FLAG_ENABLE_TRANSPILING, NULL));
+            list_push(dispatcher->flags, init_flag(FLAG_ENABLE_TRANSPILING, NULL));
         }
         else if(arg[0] == '-')
         {
@@ -66,18 +66,18 @@ flagDispatcher_T* dispatchFlags(int argc, char* argv[])
             exit(1);
         }
         else {
-            listPush(dispatcher->flags, initFlag(FLAG_INPUT, arg));
+            list_push(dispatcher->flags, init_flag(FLAG_INPUT, arg));
         }
     }
 
     return dispatcher;
 }
 
-void freeFlagDispatcher(flagDispatcher_T* dispatcher) {
+void free_flagdispatcher(FlagDispatcher_T* dispatcher) {
     for(int i = 0; i < dispatcher->flags->size; i++) {
         freeFlag(dispatcher->flags->items[i]);
     }
 
-    freeList(dispatcher->flags);
+    free_list(dispatcher->flags);
     free(dispatcher);
 }

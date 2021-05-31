@@ -5,17 +5,17 @@
 
 typedef struct SRC_FILE_STRUCT 
 {
-    list_T* lines;
-    unsigned int numLines;
+    List_T* lines;
+    unsigned int num_lines;
 
     const char* path;
-} srcFile_T;
+} SrcFile_T;
 
-srcFile_T* initSrcFile(list_T* lines, const char* path);
-void freeSrcFile(srcFile_T* file);
+SrcFile_T* init_srcfile(List_T* lines, const char* path);
+void       free_srcfile(SrcFile_T* file);
 
-char* getLine(srcFile_T* file, unsigned int line);
-char getChar(srcFile_T* file, unsigned int line, unsigned int i);
-unsigned int getLineLength(srcFile_T* file, unsigned int line);
+char* get_line(SrcFile_T* file, unsigned int line);
+char get_char(SrcFile_T* file, unsigned int line, unsigned int i);
+unsigned int get_line_len(SrcFile_T* file, unsigned int line);
 
 #endif

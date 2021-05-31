@@ -14,22 +14,22 @@ typedef enum FLAG_TYPE
     FLAG_INFO,
     FLAG_UNDEFINED,
     FLAG_ENABLE_TRANSPILING
-} flagType_T;
+} FlagType_T;
 
 typedef struct FLAG_STRUCT
 {
-    flagType_T type;
+    FlagType_T type;
     char* value;
-} flag_T;
+} Flag_T;
 
 typedef struct FLAG_DISPATCHER_STRUCT
 {
-    list_T* flags;
-} flagDispatcher_T;
+    List_T* flags;
+} FlagDispatcher_T;
 
-flag_T* initFlag(flagType_T type, char* value);
-void freeFlag(flag_T* flag);
-flagDispatcher_T* dispatchFlags(int argc, char* argv[]);
-void freeFlagDispatcher(flagDispatcher_T* flag);
+Flag_T* init_flag(FlagType_T type, char* value);
+void    free_flag(Flag_T* flag);
+FlagDispatcher_T* dispatch_flags(int argc, char* argv[]);
+void              free_flagdispatcher(FlagDispatcher_T* flag);
 
 #endif

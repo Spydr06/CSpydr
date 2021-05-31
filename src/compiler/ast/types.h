@@ -11,10 +11,10 @@ struct StrTypeIdx {
     ASTDataType_T dt;
 };
 
-extern const struct StrTypeIdx strTypeMap[NUM_TYPES];
+extern const struct StrTypeIdx str_type_map[NUM_TYPES];
 extern ASTType_T* primitives[NUM_TYPES];
-extern const int typeSizeMap[NUM_TYPES];
+extern const int type_byte_size_map[NUM_TYPES];
 
-ASTType_T* getPrimitiveType(char* type);
+ASTType_T* get_primitive_type(char* type);
 
 #endif

@@ -5,19 +5,18 @@
 #include "../error/errorHandler.h"
 #include "../ast/ast.h"
 
-typedef struct PARSER_STRUCT parser_T;
+typedef struct PARSER_STRUCT Parser_T;
 
-typedef ASTExpr_T* (*prefixParseFn)(parser_T* parser);
-typedef ASTExpr_T* (*infixParseFn)(parser_T* parser, ASTExpr_T* left);
+typedef ASTExpr_T* (*prefix_parse_fn)(Parser_T* parser);
+typedef ASTExpr_T* (*infix_parse_fn)(Parser_T* parser, ASTExpr_T* left);
 
 struct PARSER_STRUCT
 {
-    lexer_T* lexer;
-    errorHandler_T* eh;
-    ASTProgram_T* rootRef;
-    list_T* localVars;
-    token_T* tok;
-    list_T* imports;
+    Lexer_T* lexer;
+    ErrorHandler_T* eh;
+    ASTProgram_T* root_ref;
+    Token_T* tok;
+    List_T* imports;
 
     bool silent;
 };
@@ -36,12 +35,12 @@ typedef enum {
     HIGHEST = 10,
 } precedence_T;
 
-parser_T* initParser(lexer_T* lexer);
-void freeParser(parser_T* parser);
+Parser_T* init_parser(Lexer_T* lexer);
+void free_parser(Parser_T* parser);
 
-token_T* parserAdvance(parser_T* parser);
-token_T* parserConsume(parser_T* parser, tokenType_T type, const char* msg);
+Token_T* parser_advance(Parser_T* parser);
+Token_T* parser_consume(Parser_T* parser, TokenType_T type, const char* msg);
 
-ASTProgram_T* parserParse(parser_T* parser, const char* mainFile);
+ASTProgram_T* parse(Parser_T* parser, const char* mainFile);
 
 #endif

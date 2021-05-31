@@ -2,45 +2,45 @@
 
 #include <string.h>
 
-srcFile_T* initSrcFile(list_T* lines, const char* path)
+SrcFile_T* init_srcfile(List_T* lines, const char* path)
 {
-    srcFile_T* file = calloc(1, sizeof(srcFile_T));
+    SrcFile_T* file = calloc(1, sizeof(SrcFile_T));
 
     file->lines = lines;
     file->path = path;
-    file->numLines = file->lines->size;
+    file->num_lines = file->lines->size;
 
     return file;
 }
 
-void freeSrcFile(srcFile_T* file)
+void free_srcfile(SrcFile_T* file)
 {
-    for(int i = 0; i < file->numLines; i++)
+    for(int i = 0; i < file->num_lines; i++)
         free(file->lines->items[i]);
 
-    freeList(file->lines);
+    free_list(file->lines);
     free(file);
 }
 
-char* getLine(srcFile_T* file, unsigned int line)
+char* get_line(SrcFile_T* file, unsigned int line)
 {
-    if(line >= file->numLines)
+    if(line >= file->num_lines)
         return NULL;
     
     return file->lines->items[line];
 }
 
-unsigned int getLineLength(srcFile_T* file, unsigned int line)
+unsigned int get_line_len(SrcFile_T* file, unsigned int line)
 {
-    if(line >= file->numLines)
+    if(line >= file->num_lines)
         return 0;
 
     return strlen((char*) file->lines->items[line]);
 }
 
-char getChar(srcFile_T* file, unsigned int line, unsigned int i)
+char get_char(SrcFile_T* file, unsigned int line, unsigned int i)
 {
-    if(line >= file->numLines || i >= getLineLength(file, line))
+    if(line >= file->num_lines || i >= get_line_len(file, line))
         return -1;
 
     return ((char*) file->lines->items[line])[i];

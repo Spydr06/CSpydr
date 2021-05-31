@@ -8,19 +8,19 @@
 // this is the stage, where the AST gets optimized and all expression types get resolved
 
 typedef struct PREPROCESSOR_STRUCT {
-    list_T* typedefs;
-    list_T* functions; 
-    list_T* locals;
-    list_T* globals;
-    list_T* args;
+    List_T* typedefs;
+    List_T* functions; 
+    List_T* locals;
+    List_T* globals;
+    List_T* args;
 
-    errorHandler_T* eh;
+    ErrorHandler_T* eh;
     int errors;
-} preprocessor_T;
+} Preprocessor_T;
 
-preprocessor_T* initPreprocessor(errorHandler_T* eh);
-void freePreprocessor(preprocessor_T* pre);
+Preprocessor_T* init_preprocessor(ErrorHandler_T* eh);
+void free_preprocessor(Preprocessor_T* pre);
 
-void optimizeAST(preprocessor_T* opt, ASTProgram_T* ast);
+void optimize_ast(Preprocessor_T* opt, ASTProgram_T* ast);
 
 #endif

@@ -100,38 +100,38 @@ typedef struct AST_TYPE_STRUCT
     int size;
 
     bool free;
-    bool isPrimitive;
+    bool is_primitive;
     unsigned int line;
     unsigned int pos;
 } ASTType_T;
 
-ASTType_T* initASTType(ASTDataType_T type, ASTType_T* subtype, void* body, char* callee, unsigned int line, unsigned int pos);
-void freeASTType(ASTType_T* t);
+ASTType_T* init_ast_type(ASTDataType_T type, ASTType_T* subtype, void* body, char* callee, unsigned int line, unsigned int pos);
+void free_ast_type(ASTType_T* t);
 
 typedef struct AST_STRUCT_TYPE_STRUCT
 {
-    list_T* fieldTypes;
-    list_T* fieldNames;
+    List_T* field_types;
+    List_T* field_names;
 } ASTStructType_T;
 
-ASTStructType_T* initASTStructType(list_T* fieldTypes, list_T* fieldNames);
-void freeASTStructType(ASTStructType_T* s);
+ASTStructType_T* init_ast_struct_type(List_T* field_types, List_T* field_names);
+void free_ast_struct_type(ASTStructType_T* s);
 
 typedef struct AST_ENUM_TYPE_STRUCT
 {
-    list_T* fields;
+    List_T* fields;
 } ASTEnumType_T;
 
-ASTEnumType_T* initASTEnumType(list_T* fields);
-void freeASTEnumType(ASTEnumType_T* e);
+ASTEnumType_T* init_ast_enum_type(List_T* fields);
+void free_ast_enum_type(ASTEnumType_T* e);
 
 typedef struct AST_COMPOUND_STRUCT
 {
-    list_T* stmts;
+    List_T* stmts;
 } ASTCompound_T;
 
-ASTCompound_T* initASTCompound(list_T* stmts);
-void freeASTCompound(ASTCompound_T* c);
+ASTCompound_T* init_ast_compound(List_T* stmts);
+void free_ast_compound(ASTCompound_T* c);
 
 /////////////////////////////////
 // Expressions                 //
@@ -139,13 +139,13 @@ void freeASTCompound(ASTCompound_T* c);
 
 typedef struct AST_EXPRESSION_STRUCT
 {
-    ASTType_T* dataType;
+    ASTType_T* data_type;
     ASTExprType_T type;
     void* expr;
 } ASTExpr_T;
 
-ASTExpr_T* initASTExpr(ASTType_T* dataType, ASTExprType_T type, void* ptr);
-void freeASTExpr(ASTExpr_T* e);
+ASTExpr_T* init_ast_expr(ASTType_T* data_type, ASTExprType_T type, void* ptr);
+void free_ast_expr(ASTExpr_T* e);
 
 typedef struct AST_INFIX_STRUCT
 {
@@ -155,8 +155,8 @@ typedef struct AST_INFIX_STRUCT
     ASTExpr_T* right;
 } ASTInfix_T;
 
-ASTInfix_T* initASTInfix(ASTInfixOpType_T op, ASTExpr_T* right, ASTExpr_T* left);
-void freeASTInfix(ASTInfix_T* i);
+ASTInfix_T* init_ast_infix(ASTInfixOpType_T op, ASTExpr_T* right, ASTExpr_T* left);
+void free_ast_infix(ASTInfix_T* i);
 
 typedef struct AST_PREFIX_STRUCT
 {
@@ -165,8 +165,8 @@ typedef struct AST_PREFIX_STRUCT
     ASTExpr_T* right;
 } ASTPrefix_T;
 
-ASTPrefix_T* initASTPrefix(ASTPrefixOpType_T op, ASTExpr_T* right);
-void freeASTPrefix(ASTPrefix_T* p);
+ASTPrefix_T* init_ast_prefix(ASTPrefixOpType_T op, ASTExpr_T* right);
+void free_ast_prefix(ASTPrefix_T* p);
 
 typedef struct AST_POSTFIX_STRUCT
 {
@@ -175,27 +175,27 @@ typedef struct AST_POSTFIX_STRUCT
     ASTExpr_T* left;
 } ASTPostfix_T;
 
-ASTPostfix_T* initASTPostfix(ASTPostfixOpType_T op, ASTExpr_T* left);
-void freeASTPostfix(ASTPostfix_T* p);
+ASTPostfix_T* init_ast_postfix(ASTPostfixOpType_T op, ASTExpr_T* left);
+void free_ast_postfix(ASTPostfix_T* p);
 
 typedef struct AST_IDENTIFIER_STRUCT
 {
     char* callee;
-    struct AST_IDENTIFIER_STRUCT* childId;
+    struct AST_IDENTIFIER_STRUCT* child_id;
     bool isPtr;
 } ASTIdentifier_T;
 
-ASTIdentifier_T* initASTIdentifier(const char* callee, ASTIdentifier_T* child);
-void freeASTIdentifier(ASTIdentifier_T* i);
+ASTIdentifier_T* init_ast_identifier(const char* callee, ASTIdentifier_T* child);
+void free_ast_identifier(ASTIdentifier_T* i);
 
 typedef struct AST_CALL_STRUCT
 {
-    list_T* args;
+    List_T* args;
     char* callee;
 } ASTCall_T;
 
-ASTCall_T* initASTCall(const char* callee, list_T* args);
-void freeASTCall(ASTCall_T* c);
+ASTCall_T* init_ast_call(const char* callee, List_T* args);
+void free_ast_call(ASTCall_T* c);
 
 typedef struct AST_INDEX_STRUCT
 {
@@ -203,8 +203,8 @@ typedef struct AST_INDEX_STRUCT
     ASTExpr_T* value;
 } ASTIndex_T;
 
-ASTIndex_T* initASTIndex(ASTExpr_T* value, ASTExpr_T* idx);
-void freeASTIndex(ASTIndex_T* i);
+ASTIndex_T* init_ast_index(ASTExpr_T* value, ASTExpr_T* idx);
+void free_ast_index(ASTIndex_T* i);
 
 /////////////////////////////////
 // Literals                    //
@@ -215,24 +215,24 @@ typedef struct AST_INT_LITERAL
     int _int;
 } ASTInt_T;
 
-ASTInt_T* initASTInt(int _int);
-void freeASTInt(ASTInt_T* i);
+ASTInt_T* init_ast_int(int _int);
+void free_ast_int(ASTInt_T* i);
 
 typedef struct AST_FLOAT_LITERAL
 {
     float _float;
 } ASTFloat_T;
 
-ASTFloat_T* initASTFloat(float _float);
-void freeASTFloat(ASTFloat_T* f);
+ASTFloat_T* init_ast_float(float _float);
+void free_ast_float(ASTFloat_T* f);
 
 typedef struct AST_CHAR_LITERAL
 {
     char _char;
 } ASTChar_T;
 
-ASTChar_T* initASTChar(char _char);
-void freeASTChar(ASTChar_T* c);
+ASTChar_T* init_ast_char(char _char);
+void free_ast_char(ASTChar_T* c);
 
 typedef struct AST_STRING_LITERAL
 {
@@ -240,41 +240,41 @@ typedef struct AST_STRING_LITERAL
     unsigned int len;
 } ASTString_T;
 
-ASTString_T* initASTString(const char* _string);
-void freeASTString(ASTString_T* s);
+ASTString_T* init_ast_string(const char* _string);
+void free_ast_string(ASTString_T* s);
 
 typedef struct AST_BOOL_LITERAL
 {   
     bool _bool;
 } ASTBool_T;
 
-ASTBool_T* initASTBool(bool _bool);
-void freeASTBool(ASTBool_T* b);
+ASTBool_T* init_ast_bool(bool _bool);
+void free_ast_bool(ASTBool_T* b);
 
 typedef struct AST_NIL_LITERAL
 {
 } ASTNil_T;
 
-ASTNil_T* initASTNil();
-void freeASTNil(ASTNil_T* n);
+ASTNil_T* init_ast_nil();
+void free_ast_nil(ASTNil_T* n);
 
 typedef struct AST_ARRAY_LITERAL
 {
-    list_T* exprs;
+    List_T* exprs;
     unsigned int len;
 } ASTArray_T;
 
-ASTArray_T* initASTArray(list_T* exprs);
-void freeASTArray(ASTArray_T* a);
+ASTArray_T* init_ast_array(List_T* exprs);
+void free_ast_array(ASTArray_T* a);
 
 typedef struct AST_STRUCT_LITERAL
 {
-    list_T* exprs;
-    list_T* fields;
+    List_T* exprs;
+    List_T* fields;
 } ASTStruct_T;
 
-ASTStruct_T* initASTStruct(list_T* exprs, list_T* fields);
-void freeASTStruct(ASTStruct_T* s);
+ASTStruct_T* init_ast_struct(List_T* exprs, List_T* fields);
+void free_ast_struct(ASTStruct_T* s);
 
 /////////////////////////////////
 // Statements                  //
@@ -286,26 +286,26 @@ typedef struct AST_STATEMENT_STRUCT
     void* stmt;
 } ASTStmt_T;
 
-ASTStmt_T* initASTStmt(ASTStmtType_T type, void* stmt);
-void freeASTStmt(ASTStmt_T* s);
+ASTStmt_T* init_ast_stmt(ASTStmtType_T type, void* stmt);
+void free_ast_stmt(ASTStmt_T* s);
 
 typedef struct AST_RETURN_STRUCT
 {
     ASTExpr_T* value;
 } ASTReturn_T;
 
-ASTReturn_T* initASTReturn(ASTExpr_T* value);
-void freeASTReturn(ASTReturn_T* r);
+ASTReturn_T* init_ast_return(ASTExpr_T* value);
+void free_ast_return(ASTReturn_T* r);
 
 typedef struct AST_If_STRUCT
 {
     ASTExpr_T* condition;
-    ASTCompound_T* ifBody;
-    ASTCompound_T* elseBody;   
+    ASTCompound_T* if_body;
+    ASTCompound_T* else_body;   
 } ASTIf_T;
 
-ASTIf_T* initASTIf(ASTExpr_T* condition, ASTCompound_T* ifBody, ASTCompound_T* elseBody);
-void freeASTIf(ASTIf_T* i);
+ASTIf_T* init_ast_if(ASTExpr_T* condition, ASTCompound_T* if_body, ASTCompound_T* else_body);
+void free_ast_if(ASTIf_T* i);
 
 typedef struct AST_LOOP_STRUCT
 {
@@ -314,45 +314,42 @@ typedef struct AST_LOOP_STRUCT
     ASTCompound_T* body;
 } ASTLoop_T;
 
-ASTLoop_T* initASTLoop(ASTExpr_T* condition, ASTCompound_T* body);
-void freeASTLoop(ASTLoop_T* l);
+ASTLoop_T* init_ast_loop(ASTExpr_T* condition, ASTCompound_T* body);
+void free_ast_loop(ASTLoop_T* l);
 
 typedef struct AST_LOCAL_STRUCT
 {
-    ASTType_T* dataType;
+    ASTType_T* type;
     ASTExpr_T* value;
     char* name;
 
     bool isMutable;
 
-    int offset;
-    int align;
-
     unsigned int line;
     unsigned int pos;
 } ASTLocal_T;
 
-ASTLocal_T* initASTLocal(ASTType_T* dataType, ASTExpr_T* value, const char* name, unsigned int line, unsigned int pos);
-void freeASTLocal(ASTLocal_T* l);
+ASTLocal_T* init_ast_local(ASTType_T* dataType, ASTExpr_T* value, const char* name, unsigned int line, unsigned int pos);
+void free_ast_local(ASTLocal_T* l);
 
 typedef struct AST_MATCH_STRUCT
 {
-    list_T* cases;
-    list_T* bodys;
+    List_T* cases;
+    List_T* bodys;
     ASTExpr_T* condition;
-    ASTCompound_T* defaultBody;
+    ASTCompound_T* default_case;
 } ASTMatch_T;
 
-ASTMatch_T* initASTMatch(ASTExpr_T* condition, list_T* cases, list_T* bodys, ASTCompound_T* defaultBody);
-void freeASTMatch(ASTMatch_T* m);
+ASTMatch_T* init_ast_match(ASTExpr_T* condition, List_T* cases, List_T* bodys, ASTCompound_T* default_case);
+void free_ast_match(ASTMatch_T* m);
 
 typedef struct AST_EXPR_STMT_STRUCT
 {
     ASTExpr_T* expr;
 } ASTExprStmt_T;
 
-ASTExprStmt_T* initASTExprStmt(ASTExpr_T* expr);
-void freeASTExprStmt(ASTExprStmt_T* e);
+ASTExprStmt_T* init_ast_expr_stmt(ASTExpr_T* expr);
+void free_ast_expr_stmt(ASTExprStmt_T* e);
 
 /////////////////////////////////
 // base structures             //
@@ -361,29 +358,26 @@ void freeASTExprStmt(ASTExprStmt_T* e);
 typedef struct AST_ARGUMENT_STRUCT
 {
     char* name;
-    ASTType_T* dataType;
+    ASTType_T* type;
     int offset;
 } ASTArgument_T;
 
-ASTArgument_T* initASTArgument(const char* name, ASTType_T* dataType);
-void freeASTArgument(ASTArgument_T* a);
+ASTArgument_T* init_ast_argument(const char* name, ASTType_T* data_type);
+void free_ast_argument(ASTArgument_T* a);
 
 typedef struct AST_FUCTION_STRUCT
 {
     char* name;
     ASTCompound_T* body;
-    ASTType_T* returnType;
-    list_T* args;
-
-    int stack_size;
-    ASTLocal_T* alloca_bottom;
+    ASTType_T* return_type;
+    List_T* args;
 
     unsigned int line;
     unsigned int pos;
 } ASTFunction_T;
 
-ASTFunction_T* initASTFunction(const char* name, ASTType_T* returnType, ASTCompound_T* body, list_T* args, unsigned int line, unsigned int pos);
-void freeASTFunction(ASTFunction_T* f);
+ASTFunction_T* init_ast_function(const char* name, ASTType_T* return_type, ASTCompound_T* body, List_T* args, unsigned int line, unsigned int pos);
+void free_ast_function(ASTFunction_T* f);
 
 typedef struct AST_GLOBAL_STRUCT
 {
@@ -391,48 +385,47 @@ typedef struct AST_GLOBAL_STRUCT
     ASTType_T* type;
     ASTExpr_T* value;
 
-    bool isMutable;
-    int align;
+    bool is_mutable;
 
     unsigned int line;
     unsigned int pos;
 } ASTGlobal_T;
 
-ASTGlobal_T* initASTGlobal(const char* name, ASTType_T* type, ASTExpr_T* value, unsigned int line, unsigned int pos);
-void freeASTGlobal(ASTGlobal_T* g);
+ASTGlobal_T* init_ast_global(const char* name, ASTType_T* type, ASTExpr_T* value, unsigned int line, unsigned int pos);
+void free_ast_global(ASTGlobal_T* g);
 
 typedef struct AST_TYPEDEF_STRUCT
 {
-    ASTType_T* dataType;
+    ASTType_T* data_type;
     char* name;
 
     unsigned int line;
     unsigned int pos;
 } ASTTypedef_T;
 
-ASTTypedef_T* initASTTypedef(ASTType_T* type, const char* name, unsigned int line, unsigned int pos);
-void freeASTTypedef(ASTTypedef_T* t);
+ASTTypedef_T* init_ast_typedef(ASTType_T* type, const char* name, unsigned int line, unsigned int pos);
+void free_ast_typedef(ASTTypedef_T* t);
 
 typedef struct AST_FILE_STRUCT
 {
     char* filepath;
 
-    list_T* types;
-    list_T* globals;
-    list_T* functions;
+    List_T* types;
+    List_T* globals;
+    List_T* functions;
 } ASTFile_T;
 
-ASTFile_T* initASTFile(const char* filepath);
-void freeASTFile(ASTFile_T* f);
+ASTFile_T* init_ast_file(const char* filepath);
+void free_ast_file(ASTFile_T* f);
 
 typedef struct AST_PROGRAM_STRUCT
 {
-    char* mainFile;
+    char* main_file;
 
-    list_T* files;
+    List_T* files;
 } ASTProgram_T;
 
-ASTProgram_T* initASTProgram(const char* mainFile);
-void freeASTProgram(ASTProgram_T* p);
+ASTProgram_T* init_ast_program(const char* main_file);
+void free_ast_program(ASTProgram_T* p);
 
 #endif

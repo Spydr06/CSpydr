@@ -72,18 +72,18 @@ typedef enum TOKEN_TYPE {
 
     TOKEN_ERROR,        // error handling token
     TOKEN_EOF,          // end of file
-} tokenType_T;
+} TokenType_T;
 
 typedef struct TOKEN_STRUCT {
     char* value;
     unsigned int line;
     unsigned int pos;
-    tokenType_T type;
-} token_T;
+    TokenType_T type;
+} Token_T;
 
-token_T* initToken(char* value, unsigned int line, unsigned int position, tokenType_T type);
-void freeToken(token_T* token);
+Token_T* init_token(char* value, unsigned int line, unsigned int position, TokenType_T type);
+void free_token(Token_T* token);
 
-char* tokenToString(token_T* token);
+char* token_to_str(Token_T* token);
 
 #endif

@@ -2,24 +2,23 @@
                      {"parsing simple main function", test_parsing_simple_main_func},    \
                      {"parsing complex main function", test_parsing_complex_main_func}   \
 
-
 #define PARSER_TEST_FUNC(name, src, msg, code) void name(void) { \
-    srcFile_T* file = getFile(1, src);                           \
+    SrcFile_T* file = get_file(1, src);                          \
     TEST_ASSERT(file != NULL);                                   \
-    errorHandler_T* eh = initErrorHandler(file);                 \
+    ErrorHandler_T* eh = init_errorhandler(file);                \
     TEST_ASSERT(eh != NULL);                                     \
-    lexer_T* lexer = initLexer(file, eh);                        \
+    Lexer_T* lexer = init_lexer(file, eh);                       \
     TEST_ASSERT(lexer != NULL);                                  \
-    parser_T* parser = initParser(lexer);                        \
+    Parser_T* parser = init_parser(lexer);                       \
     TEST_ASSERT(parser != NULL);                                 \
     parser->silent = 1;                                          \
-    ASTProgram_T* prog = parserParse(parser, msg);               \
+    ASTProgram_T* prog = parse(parser, msg);                     \
     TEST_ASSERT(prog != NULL);                                   \
     code                                                         \
-    freeASTProgram(prog);                                        \
-    freeParser(parser);                                          \
-    freeLexer(lexer);                                            \
-    freeErrorHandler(eh);                                        \
+    free_ast_program(prog);                                      \
+    free_parser(parser);                                         \
+    free_lexer(lexer);                                           \
+    free_errorhandler(eh);                                       \
 }                                                                
 
 PARSER_TEST_FUNC(test_parsing_empty_file, " ", "00",)

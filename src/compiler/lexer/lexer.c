@@ -10,7 +10,7 @@
 
 #define NUM_KEYWORDS 15
 
-const struct { const char* str; tokenType_T type; } keyWords[NUM_KEYWORDS] = {
+const struct { const char* str; TokenType_T type; } keywords[NUM_KEYWORDS] = {
     {"true", TOKEN_TRUE},
     {"false", TOKEN_FALSE},
     {"nil", TOKEN_NIL},
@@ -28,7 +28,7 @@ const struct { const char* str; tokenType_T type; } keyWords[NUM_KEYWORDS] = {
     {"mut", TOKEN_MUT},
 };
 
-const struct { const char* symbol; tokenType_T type; } symbols[] = {
+const struct { const char* symbol; TokenType_T type; } symbols[] = {
     {"++", TOKEN_INC},
     {"+=", TOKEN_ADD},
     {"+", TOKEN_PLUS},
@@ -68,37 +68,37 @@ const struct { const char* symbol; tokenType_T type; } symbols[] = {
     {NULL, TOKEN_EOF}   // the last one has to be null as an indicator for the end of the array
 };  
 
-static void lexerSkipWhitespace(lexer_T* lexer);
-static void lexerSkipComment(lexer_T* lexer);
-static token_T* lexerGetId(lexer_T* lexer);
-static token_T* lexerGetNumber(lexer_T* lexer);
-static token_T* lexerGetSymbol(lexer_T* lexer);
+static void lexer_skip_whitespace(Lexer_T* lexer);
+static void lexer_skip_comment(Lexer_T* lexer);
+static Token_T* lexer_get_id(Lexer_T* lexer);
+static Token_T* lexer_get_number(Lexer_T* lexer);
+static Token_T* lexer_get_symbol(Lexer_T* lexer);
 
-lexer_T* initLexer(srcFile_T* src, errorHandler_T* eh) 
+Lexer_T* init_lexer(SrcFile_T* src, ErrorHandler_T* eh) 
 {
-    lexer_T* lexer = calloc(1, sizeof(struct LEXER_STRUCT));
+    Lexer_T* lexer = calloc(1, sizeof(struct LEXER_STRUCT));
 
     lexer->file = src;
     lexer->eh = eh;
 
     lexer->pos = 0;
     lexer->line = 0;
-    lexer->c = getChar(lexer->file, lexer->line, lexer->pos);
+    lexer->c = get_char(lexer->file, lexer->line, lexer->pos);
 
     return lexer;
 }
 
-void freeLexer(lexer_T* lexer)
+void free_lexer(Lexer_T* lexer)
 {
     free(lexer);
 }
 
-void lexerAdvance(lexer_T* lexer)
+void lexer_advance(Lexer_T* lexer)
 {
     lexer->pos++;
-    if(lexer->pos >= getLineLength(lexer->file, lexer->line))
+    if(lexer->pos >= get_line_len(lexer->file, lexer->line))
     {
-        if(lexer->line >= lexer->file->numLines - 1)
+        if(lexer->line >= lexer->file->num_lines - 1)
         {
             lexer->c = '\0';
             // end of file
@@ -109,81 +109,81 @@ void lexerAdvance(lexer_T* lexer)
         lexer->line++;
     }
 
-    lexer->c = getChar(lexer->file, lexer->line, lexer->pos);
+    lexer->c = get_char(lexer->file, lexer->line, lexer->pos);
 }
 
-char lexerPeek(lexer_T* lexer, int offset)
+char lexer_peek(Lexer_T* lexer, int offset)
 {
-    if(lexer->pos + offset >= getLineLength(lexer->file, lexer->line))
+    if(lexer->pos + offset >= get_line_len(lexer->file, lexer->line))
         return -1;
     
-    return getChar(lexer->file, lexer->line, lexer->pos + offset);
+    return get_char(lexer->file, lexer->line, lexer->pos + offset);
 }
 
-token_T* lexerConsume(lexer_T* lexer, token_T* token)
+Token_T* lexer_consume(Lexer_T* lexer, Token_T* token)
 {
-    lexerAdvance(lexer);
+    lexer_advance(lexer);
     return token;
 }
 
-token_T* lexerConsumeType(lexer_T* lexer, tokenType_T type)
+Token_T* lexer_consume_type(Lexer_T* lexer, TokenType_T type)
 {
-    return lexerConsume(lexer, initToken((char[]){lexer->c, '\0'}, lexer->line, lexer->pos, type));
+    return lexer_consume(lexer, init_token((char[]){lexer->c, '\0'}, lexer->line, lexer->pos, type));
 }
 
-token_T* lexerNextToken(lexer_T* lexer)
+Token_T* lexer_next_token(Lexer_T* lexer)
 {
-    lexerSkipWhitespace(lexer);
+    lexer_skip_whitespace(lexer);
 
     if(lexer->c == '#')
-        lexerSkipComment(lexer);
+        lexer_skip_comment(lexer);
 
     if(isalpha(lexer->c))
-        return lexerGetId(lexer);
+        return lexer_get_id(lexer);
     else if(isdigit(lexer->c))
-        return lexerGetNumber(lexer);
+        return lexer_get_number(lexer);
     else 
-        return lexerGetSymbol(lexer);
+        return lexer_get_symbol(lexer);
 }
 
-static void lexerSkipWhitespace(lexer_T* lexer)
+static void lexer_skip_whitespace(Lexer_T* lexer)
 {
     while(lexer->c == '\t' || lexer->c == ' ' || lexer->c == '\r' || lexer->c == '\n')
     {
-        lexerAdvance(lexer);
+        lexer_advance(lexer);
     }
 }
 
-static void lexerSkipMultilineComment(lexer_T* lexer)
+static void lexer_skip_multiline_comment(Lexer_T* lexer)
 {
-    unsigned int startLine = lexer->line;
-    unsigned int startPos = lexer->pos;
+    unsigned int start_line = lexer->line;
+    unsigned int start_pos = lexer->pos;
 
-    lexerAdvance(lexer);
-    lexerAdvance(lexer);
+    lexer_advance(lexer);
+    lexer_advance(lexer);
 
-    while(lexer->c != '#' && lexerPeek(lexer, 1) != '#')
+    while(lexer->c != '#' && lexer_peek(lexer, 1) != '#')
     {
         if(lexer->c == '\0')
         {    //end of file
-            throwSyntaxError(lexer->eh, "unterminated multiline comment", startLine, startPos);
+            throw_syntax_error(lexer->eh, "unterminated multiline comment", start_line, start_pos);
             return;
         }
-        lexerAdvance(lexer);
+        lexer_advance(lexer);
     }
 
-    lexerAdvance(lexer);
-    lexerAdvance(lexer);
+    lexer_advance(lexer);
+    lexer_advance(lexer);
 }
 
-static void lexerSkipComment(lexer_T* lexer)
+static void lexer_skip_comment(Lexer_T* lexer)
 {
-    if(lexerPeek(lexer, 1) == '#') {
-        lexerSkipMultilineComment(lexer);
+    if(lexer_peek(lexer, 1) == '#') {
+        lexer_skip_multiline_comment(lexer);
     }
     else 
     {
-        if(lexer->line >= lexer->file->numLines - 1)
+        if(lexer->line >= lexer->file->num_lines - 1)
         {
             lexer->c = '\0';
             // end of file
@@ -193,26 +193,26 @@ static void lexerSkipComment(lexer_T* lexer)
         lexer->pos = 0;
         lexer->line++;
 
-        lexer->c = getChar(lexer->file, lexer->line, lexer->pos);
+        lexer->c = get_char(lexer->file, lexer->line, lexer->pos);
     }
 
-    lexerSkipWhitespace(lexer);
+    lexer_skip_whitespace(lexer);
 
     if(lexer->c == '#')
-        lexerSkipComment(lexer);
+        lexer_skip_comment(lexer);
 }
 
-static tokenType_T lexerGetIdType(char* id)
+static TokenType_T lexer_get_id_type(char* id)
 {
-    tokenType_T type = TOKEN_ID;
+    TokenType_T type = TOKEN_ID;
     for(int i = 0; i < NUM_KEYWORDS; i++)
-        if(strcmp(keyWords[i].str, id) == 0)
-            type = keyWords[i].type;
+        if(strcmp(keywords[i].str, id) == 0)
+            type = keywords[i].type;
 
     return type;
 }
 
-static token_T* lexerGetId(lexer_T* lexer)
+static Token_T* lexer_get_id(Lexer_T* lexer)
 {
     char* buffer = calloc(1, sizeof(char));
 
@@ -220,19 +220,19 @@ static token_T* lexerGetId(lexer_T* lexer)
     {
         buffer = realloc(buffer, (strlen(buffer) + 2) * sizeof(char));
         strcat(buffer, (char[]){lexer->c, '\0'});
-        lexerAdvance(lexer);
+        lexer_advance(lexer);
     }
 
-    token_T* token = initToken(buffer, lexer->line, lexer->pos, lexerGetIdType(buffer));
+    Token_T* token = init_token(buffer, lexer->line, lexer->pos, lexer_get_id_type(buffer));
 
     free(buffer);
     return token;
 }
 
-static token_T* lexerGetHexadecimal(lexer_T* lexer)
+static Token_T* lexer_get_hexadecimal(Lexer_T* lexer)
 {
-    lexerAdvance(lexer);    // cut the '0x'
-    lexerAdvance(lexer);
+    lexer_advance(lexer);    // cut the '0x'
+    lexer_advance(lexer);
 
     char* buffer = calloc(1, sizeof(char));
 
@@ -240,29 +240,29 @@ static token_T* lexerGetHexadecimal(lexer_T* lexer)
     {
         if(lexer->c == '_')
         {
-            lexerAdvance(lexer);
+            lexer_advance(lexer);
             continue;
         }
 
         buffer = realloc(buffer, (strlen(buffer) + 2) * sizeof(char));
         strcat(buffer, (char[]){lexer->c, '\0'});
 
-        lexerAdvance(lexer);
+        lexer_advance(lexer);
     }
 
     long decimal = strtol(buffer, NULL, 16);
     buffer = realloc(buffer, (strlen("%ld") + 1) * sizeof(char));
     sprintf(buffer, "%ld", decimal);
 
-    token_T* token = initToken(buffer, lexer->line, lexer->pos, TOKEN_INT);
+    Token_T* token = init_token(buffer, lexer->line, lexer->pos, TOKEN_INT);
     free(buffer);
     return token;
 }
 
-static token_T* lexerGetBinary(lexer_T* lexer)
+static Token_T* lexer_get_binary(Lexer_T* lexer)
 {
-    lexerAdvance(lexer);    // cut the '0b'
-    lexerAdvance(lexer);
+    lexer_advance(lexer);    // cut the '0b'
+    lexer_advance(lexer);
     
     char* buffer = calloc(1, sizeof(char));
 
@@ -270,35 +270,35 @@ static token_T* lexerGetBinary(lexer_T* lexer)
     {
         if(lexer->c == '_')
         {
-            lexerAdvance(lexer);
+            lexer_advance(lexer);
             continue;
         }
 
         buffer = realloc(buffer, (strlen(buffer) + 2) * sizeof(char));
         strcat(buffer, (char[]){lexer->c, '\0'});
 
-        lexerAdvance(lexer);
+        lexer_advance(lexer);
     }
 
     long decimal = strtol(buffer, NULL, 2);
     buffer = realloc(buffer, (strlen("%ld") + 1) * sizeof(char));
     sprintf(buffer, "%ld", decimal);
 
-    token_T* token = initToken(buffer, lexer->line, lexer->pos, TOKEN_INT);
+    Token_T* token = init_token(buffer, lexer->line, lexer->pos, TOKEN_INT);
     free(buffer);
     return token;
 }
 
-static token_T* lexerGetDecimal(lexer_T* lexer)
+static Token_T* lexer_get_decimal(Lexer_T* lexer)
 {
     char* buffer = calloc(1, sizeof(char));
-    tokenType_T type = TOKEN_INT;
+    TokenType_T type = TOKEN_INT;
 
     while(isdigit(lexer->c) || lexer->c == '.' || lexer->c == '_')
     {
         if(lexer->c == '_')
         {
-            lexerAdvance(lexer);
+            lexer_advance(lexer);
             continue;
         }
 
@@ -307,134 +307,134 @@ static token_T* lexerGetDecimal(lexer_T* lexer)
 
         if(lexer->c == '.')
         {   
-            if(lexerPeek(lexer, 1) == '.')
+            if(lexer_peek(lexer, 1) == '.')
             {
-                token_T* token = initToken(buffer, lexer->line, lexer->pos, type);
+                Token_T* token = init_token(buffer, lexer->line, lexer->pos, type);
                 free(buffer);
                 return token;
             }
 
             if(type == TOKEN_FLOAT)
             {
-                token_T* token = initToken(buffer, lexer->line, lexer->pos, type);
+                Token_T* token = init_token(buffer, lexer->line, lexer->pos, type);
 
                 free(buffer);
                 
-                throwSyntaxError(lexer->eh, "multiple `.` found in number", lexer->line, lexer->pos);
+                throw_syntax_error(lexer->eh, "multiple `.` found in number", lexer->line, lexer->pos);
                 return token;
             }
 
             type = TOKEN_FLOAT;
         }
-        lexerAdvance(lexer);
+        lexer_advance(lexer);
     }
 
-    token_T* token = initToken(buffer, lexer->line, lexer->pos, type);
+    Token_T* token = init_token(buffer, lexer->line, lexer->pos, type);
 
     free(buffer);
     return token;
 }
 
-static token_T* lexerGetNumber(lexer_T* lexer)
+static Token_T* lexer_get_number(Lexer_T* lexer)
 {
     if(lexer->c == '0')
     {
-        switch(lexerPeek(lexer, 1)) {
+        switch(lexer_peek(lexer, 1)) {
             case 'x':
-                return lexerGetHexadecimal(lexer);
+                return lexer_get_hexadecimal(lexer);
             case 'b':
-                return lexerGetBinary(lexer);
+                return lexer_get_binary(lexer);
 
             default:
                 break;
         }
     }
-    return lexerGetDecimal(lexer);    
+    return lexer_get_decimal(lexer);    
 }
 
-static token_T* lexerGetString(lexer_T* lexer)
+static Token_T* lexer_get_str(Lexer_T* lexer)
 {
-    lexerAdvance(lexer);
+    lexer_advance(lexer);
 
     char* buffer = calloc(1, sizeof(char));
-    unsigned int startLine = lexer->line;
-    unsigned int startPos = lexer->pos;
+    unsigned int start_line = lexer->line;
+    unsigned int start_pos = lexer->pos;
 
     while(lexer->c != '"')
     {
         buffer = realloc(buffer, (strlen(buffer) + 2) * sizeof(char));
         strcat(buffer, (char[]){lexer->c, '\0'});
-        lexerAdvance(lexer);
+        lexer_advance(lexer);
 
         if(lexer->c == '\0')
         {
             free(buffer);
-            throwSyntaxError(lexer->eh, "unterminated string literal", startLine, startPos);
-            return initToken("EOF", startLine, lexer->pos, TOKEN_EOF);
+            throw_syntax_error(lexer->eh, "unterminated string literal", start_line, start_pos);
+            return init_token("EOF", start_line, lexer->pos, TOKEN_EOF);
         }
     }
-    lexerAdvance(lexer);
+    lexer_advance(lexer);
 
-    token_T* token = initToken(buffer, lexer->line, lexer->pos, TOKEN_STRING);
+    Token_T* token = init_token(buffer, lexer->line, lexer->pos, TOKEN_STRING);
 
     free(buffer);
     return token;
 }
 
-static token_T* lexerGetChar(lexer_T* lexer)
+static Token_T* lexer_get_char(Lexer_T* lexer)
 {
-    lexerAdvance(lexer);
+    lexer_advance(lexer);
 
     if(lexer->c == '\'')
     {
-        throwSyntaxError(lexer->eh, "empty char literal", lexer->line, lexer->pos);
-        return initToken("EOF", lexer->line, lexer->pos, TOKEN_EOF);
+        throw_syntax_error(lexer->eh, "empty char literal", lexer->line, lexer->pos);
+        return init_token("EOF", lexer->line, lexer->pos, TOKEN_EOF);
     }
 
-    token_T* token = initToken((char[]){lexer->c, 0}, lexer->line, lexer->pos, TOKEN_CHAR);
-    lexerAdvance(lexer);
+    Token_T* token = init_token((char[]){lexer->c, 0}, lexer->line, lexer->pos, TOKEN_CHAR);
+    lexer_advance(lexer);
 
     if(lexer->c != '\'')
     {
-        throwSyntaxError(lexer->eh, "unterminated char, expect `'`", lexer->line, lexer->pos);
-        freeToken(token);
+        throw_syntax_error(lexer->eh, "unterminated char, expect `'`", lexer->line, lexer->pos);
+        free_token(token);
 
-        return initToken("EOF", lexer->line, lexer->pos, TOKEN_EOF); 
+        return init_token("EOF", lexer->line, lexer->pos, TOKEN_EOF); 
     }
-    lexerAdvance(lexer);
+    lexer_advance(lexer);
 
     return token;
 }
 
-static token_T* lexerGetSymbol(lexer_T* lexer)
+static Token_T* lexer_get_symbol(Lexer_T* lexer)
 {
     for(int i = 0; symbols[i].symbol != NULL; i++)
     {
         const char* s = symbols[i].symbol;
         if(strlen(s) == 1 && lexer->c == s[0])
-            return lexerConsume(lexer, initToken((char*) s, lexer->line, lexer->pos, symbols[i].type));
-        if(strlen(s) == 2 && lexer->c == s[0] && lexerPeek(lexer, 1) == s[1])
-            return lexerConsume(lexer, lexerConsume(lexer, initToken((char*) s, lexer->line, lexer->pos, symbols[i].type)));
+            return lexer_consume(lexer, init_token((char*) s, lexer->line, lexer->pos, symbols[i].type));
+        if(strlen(s) == 2 && lexer->c == s[0] && lexer_peek(lexer, 1) == s[1])
+            return lexer_consume(lexer, lexer_consume(lexer, init_token((char*) s, lexer->line, lexer->pos, symbols[i].type)));
     }
 
     switch(lexer->c) {
 
         case '"':
-            return lexerGetString(lexer);
+            return lexer_get_str(lexer);
 
         case '\'':
-            return lexerGetChar(lexer);
+            return lexer_get_char(lexer);
         
         case '\0':
-            return initToken("EOF", lexer->line, lexer->pos, TOKEN_EOF);
+            return init_token("EOF", lexer->line, lexer->pos, TOKEN_EOF);
 
         default: {
             const char* template = "unexpected symbol `%c` [id: %d]";
             char* msg = calloc(strlen(template) + 1, sizeof(char));
             sprintf(msg, template, lexer->c, lexer->c);
 
-            throwSyntaxError(lexer->eh, msg, lexer->line, lexer->pos);
-            return initToken("EOF", lexer->line, lexer->pos, TOKEN_EOF);
+            throw_syntax_error(lexer->eh, msg, lexer->line, lexer->pos);
+            return init_token("EOF", lexer->line, lexer->pos, TOKEN_EOF);
         }
     }
 }

@@ -6,11 +6,11 @@
 
 #define LINE_NUMBER_SPACES 4
 
-errorHandler_T* initErrorHandler(srcFile_T* file)
+ErrorHandler_T* init_errorhandler(SrcFile_T* file)
 {
-    errorHandler_T* handler = calloc(1, sizeof(struct ERROR_HANDLER));
-    handler->errorMessages = initList(sizeof(struct ERROR_MESSAGE*));
-    handler->exitAfterParsing = false;
+    ErrorHandler_T* handler = calloc(1, sizeof(struct ERROR_HANDLER));
+    handler->error_messages = init_list(sizeof(struct ERROR_MESSAGE*));
+    handler->exit_after_parsing = false;
     handler->file = file;
 
     if(handler->file == NULL)
@@ -22,33 +22,33 @@ errorHandler_T* initErrorHandler(srcFile_T* file)
     return handler;
 }
 
-void freeErrorHandler(errorHandler_T* eh)
+void free_errorhandler(ErrorHandler_T* eh)
 {
-    for(int i = 0; i < eh->errorMessages->size; i++)
+    for(int i = 0; i < eh->error_messages->size; i++)
     {
-        freeErrorMessage((errorMessage_T*) eh->errorMessages->items[i]);
+        free_errormessage((ErrorMessage_T*) eh->error_messages->items[i]);
     }
-    freeList(eh->errorMessages);
+    free_list(eh->error_messages);
     free(eh);
 }
 
-errorMessage_T* initErrorMessage(errorType_T type, unsigned int lineNumber, bool forceExit, char* message)
+ErrorMessage_T* init_errormessage(ErrorType_T type, unsigned int lineNumber, bool force_exit, char* message)
 {
-    errorMessage_T* error = calloc(1, sizeof(struct ERROR_MESSAGE));
+    ErrorMessage_T* error = calloc(1, sizeof(struct ERROR_MESSAGE));
     error->type = type;
-    error->forceExit = forceExit;
+    error->force_exit = force_exit;
     error->message = message;
 
     return error;
 }
 
-void freeErrorMessage(errorMessage_T* em) 
+void free_errormessage(ErrorMessage_T* em) 
 {
     free(em->message);
     free(em);
 }
 
-void throwError(errorHandler_T* handler, errorMessage_T* message)
+void throw_error(ErrorHandler_T* handler, ErrorMessage_T* message)
 {
     switch(message->type)
     {
@@ -57,7 +57,7 @@ void throwError(errorHandler_T* handler, errorMessage_T* message)
             LOG_ERROR_F("%s", message->message);
             break;
         case ERR_REDEFINITION:
-            handler->exitAfterParsing = true;
+            handler->exit_after_parsing = true;
             LOG_ERROR_F("%s", message->message);
             break;
         case ERR_SYNTAX_WARNING:
@@ -75,66 +75,60 @@ void throwError(errorHandler_T* handler, errorMessage_T* message)
             break;
     }
 
-    if(message->forceExit) {
+    if(message->force_exit) {
         //TODO: exit safely
-        freeErrorHandler(handler);
+        free_errorhandler(handler);
         exit(1);
     }
 
     // if no termination is needed, push the error onto a stack for later debugging
-    listPush(handler->errorMessages, message);
+    list_push(handler->error_messages, message);
 }
 
-void throwSyntaxError(errorHandler_T* handler, const char* message, unsigned int lineNumber, unsigned int character)
+void throw_syntax_error(ErrorHandler_T* handler, const char* message, unsigned int line_number, unsigned int character)
 {
-    // original error message macro
-    /*LOG_ERROR(COLOR_BOLD_WHITE "%s:%d:%d " COLOR_RESET "=>" COLOR_BOLD_RED " [Error]" COLOR_RESET " %s\n %*d | %s\n %*s | " COLOR_BOLD_RED "%*s%s\n",  \
-                                parser->lexer->srcPath, parser->lexer->line, parser->lexer->iInLine, msg, LINE_NUMBER_SPACES, parser->lexer->line,      \
-                                parser->lexer->currentLine, LINE_NUMBER_SPACES, "", parser->lexer->iInLine, "^~", "here");*/
-
-    // new error message generator code
     const char* template = COLOR_BOLD_WHITE "%s:%d:%d " COLOR_RESET "=>" COLOR_BOLD_RED " [syntax]" COLOR_RESET 
                            " %s\n %*d | %s %*s | " COLOR_BOLD_BLUE "%*shere\n";
-    char* lineCode = getLine(handler->file, lineNumber);
+    char* line_code = get_line(handler->file, line_number);
     const char* pointer = "^~";
 
     //generate the message
-    char* value = calloc(strlen(template) + strlen(handler->file->path) + strlen(message) + strlen(pointer) + strlen(lineCode) + 128, sizeof(char));
-    sprintf(value, template, handler->file->path, lineNumber + 1, character + 1, message, LINE_NUMBER_SPACES, lineNumber + 1, lineCode, LINE_NUMBER_SPACES, "", character + 1, " ^~");
+    char* value = calloc(strlen(template) + strlen(handler->file->path) + strlen(message) + strlen(pointer) + strlen(line_code) + 128, sizeof(char));
+    sprintf(value, template, handler->file->path, line_number + 1, character + 1, message, LINE_NUMBER_SPACES, line_number + 1, line_code, LINE_NUMBER_SPACES, "", character + 1, " ^~");
 
-    errorMessage_T* error = initErrorMessage(ERR_SYNTAX_ERROR, lineNumber, true, value); //generate the error struct
-    throwError(handler, error); //submit the error
+    ErrorMessage_T* error = init_errormessage(ERR_SYNTAX_ERROR, line_number, true, value); //generate the error struct
+    throw_error(handler, error); //submit the error
     free(value);
 }
 
-void throwRedefinitionError(errorHandler_T* handler, const char* message, unsigned int lineNumber, unsigned int character)
+void throw_redef_error(ErrorHandler_T* handler, const char* message, unsigned int line_number, unsigned int character)
 {
     const char* template = COLOR_BOLD_WHITE "%s:%d:%d " COLOR_RESET "=>" COLOR_BOLD_RED " [redef]" COLOR_RESET 
                            " %s\n %*d | %s %*s | " COLOR_BOLD_BLUE "%*shere\n";
-    char* lineCode = getLine(handler->file, lineNumber);
+    char* line_code = get_line(handler->file, line_number);
     const char* pointer = "^~";
 
     //generate the message
-    char* value = calloc(strlen(template) + strlen(handler->file->path) + strlen(message) + strlen(pointer) + strlen(lineCode) + 128, sizeof(char));
-    sprintf(value, template, handler->file->path, lineNumber + 1, character + 1, message, LINE_NUMBER_SPACES, lineNumber + 1, lineCode, LINE_NUMBER_SPACES, "", character + 1, " ^~");
+    char* value = calloc(strlen(template) + strlen(handler->file->path) + strlen(message) + strlen(pointer) + strlen(line_code) + 128, sizeof(char));
+    sprintf(value, template, handler->file->path, line_number + 1, character + 1, message, LINE_NUMBER_SPACES, line_number + 1, line_code, LINE_NUMBER_SPACES, "", character + 1, " ^~");
 
-    errorMessage_T* error = initErrorMessage(ERR_REDEFINITION, lineNumber, false, value); //generate the error struct
-    throwError(handler, error); //submit the error
+    ErrorMessage_T* error = init_errormessage(ERR_REDEFINITION, line_number, false, value); //generate the error struct
+    throw_error(handler, error); //submit the error
     free(value);
 }
 
-void throwUndefinitionError(errorHandler_T* handler, const char* message, unsigned int lineNumber, unsigned int character)
+void throw_undef_error(ErrorHandler_T* handler, const char* message, unsigned int line_number, unsigned int character)
 {
     const char* template = COLOR_BOLD_WHITE "%s:%d:%d " COLOR_RESET "=>" COLOR_BOLD_RED " [undef]" COLOR_RESET 
                            " %s\n %*d | %s %*s | " COLOR_BOLD_BLUE "%*shere\n";
-    char* lineCode = getLine(handler->file, lineNumber);
+    char* line_code = get_line(handler->file, line_number);
     const char* pointer = "^~";
 
     //generate the message
-    char* value = calloc(strlen(template) + strlen(handler->file->path) + strlen(message) + strlen(pointer) + strlen(lineCode) + 128, sizeof(char));
-    sprintf(value, template, handler->file->path, lineNumber + 1, character + 1, message, LINE_NUMBER_SPACES, lineNumber + 1, lineCode, LINE_NUMBER_SPACES, "", character + 1, " ^~");
+    char* value = calloc(strlen(template) + strlen(handler->file->path) + strlen(message) + strlen(pointer) + strlen(line_code) + 128, sizeof(char));
+    sprintf(value, template, handler->file->path, line_number + 1, character + 1, message, LINE_NUMBER_SPACES, line_number + 1, line_code, LINE_NUMBER_SPACES, "", character + 1, " ^~");
 
-    errorMessage_T* error = initErrorMessage(ERR_UNDEFINED, lineNumber, true, value); //generate the error struct
-    throwError(handler, error); //submit the error
+    ErrorMessage_T* error = init_errormessage(ERR_UNDEFINED, line_number, true, value); //generate the error struct
+    throw_error(handler, error); //submit the error
     free(value);
 }

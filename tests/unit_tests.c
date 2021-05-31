@@ -5,28 +5,28 @@
 #include <stdarg.h>
 #include <string.h>
 
-srcFile_T* getFile(int numLines, ...) 
+static SrcFile_T* get_file(int num_lines, ...) 
 {
-    list_T* lines = initList(sizeof(char*));
+    List_T* lines = init_list(sizeof(char*));
     va_list va;
 
-    va_start(va, numLines);
-    for(int i = 0; i < numLines; i++)
-        listPush(lines, va_arg(va, char*));
+    va_start(va, num_lines);
+    for(int i = 0; i < num_lines; i++)
+        list_push(lines, va_arg(va, char*));
     va_end(va);
 
-    return initSrcFile(lines, "generated");
+    return init_srcfile(lines, "generated");
 }
 
 void test_file_generation(void)
 {
-    srcFile_T* file = getFile(2, "hello", "world");
+    SrcFile_T* file = get_file(2, "hello", "world");
     TEST_ASSERT(file != NULL);
 
     TEST_ASSERT(file->path != NULL);
     TEST_CHECK(strcmp(file->path, "generated") == 0);
 
-    TEST_ASSERT(file->numLines = 2);
+    TEST_ASSERT(file->num_lines = 2);
     TEST_ASSERT(file->lines != NULL);
     
     TEST_CHECK(strcmp(file->lines->items[0], "hello") == 0);

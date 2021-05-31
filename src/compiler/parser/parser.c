@@ -15,77 +15,77 @@
 #include <unistd.h>
 
 /////////////////////////////////
-// Expression parsing settings //
+// expression parsing settings //
 /////////////////////////////////
 
 #define NUM_PREFIX_PARSE_FNS 16
 #define NUM_INFIX_PARSE_FNS  19
 #define NUM_PRECEDENCES      19
 
-static ASTExpr_T* parserParseIdentifier(parser_T* parser);
-static ASTExpr_T* parserParseFloat(parser_T* parser);
-static ASTExpr_T* parserParseInt(parser_T* parser);
-static ASTExpr_T* parserParseBool(parser_T* parser);
-static ASTExpr_T* parserParseChar(parser_T* parser);
-static ASTExpr_T* parserParseString(parser_T* parser);
-static ASTExpr_T* parserParseNot(parser_T* parser);
-static ASTExpr_T* parserParseNegate(parser_T* parser);
-static ASTExpr_T* parserParseClosure(parser_T* parser);
-static ASTExpr_T* parserParseArray(parser_T* parser);
-static ASTExpr_T* parserParseDeref(parser_T* parser);
-static ASTExpr_T* parserParseRef(parser_T* parser);
-static ASTExpr_T* parserParseNil(parser_T* parser);
-static ASTExpr_T* parserParseStruct(parser_T* parser);
-static ASTExpr_T* parserParseBitwiseNegation(parser_T* parser);
+static ASTExpr_T* parse_identifier(Parser_T* parser);
+static ASTExpr_T* parse_float(Parser_T* parser);
+static ASTExpr_T* parse_int(Parser_T* parser);
+static ASTExpr_T* parse_bool(Parser_T* parser);
+static ASTExpr_T* parse_char(Parser_T* parser);
+static ASTExpr_T* parse_string(Parser_T* parser);
+static ASTExpr_T* parse_not(Parser_T* parser);
+static ASTExpr_T* parse_negate(Parser_T* parser);
+static ASTExpr_T* parse_closure(Parser_T* parser);
+static ASTExpr_T* parse_array(Parser_T* parser);
+static ASTExpr_T* parse_deref(Parser_T* parser);
+static ASTExpr_T* parse_ref(Parser_T* parser);
+static ASTExpr_T* parse_nil(Parser_T* parser);
+static ASTExpr_T* parse_struct(Parser_T* parser);
+static ASTExpr_T* parse_bitwise_negation(Parser_T* parser);
 
-struct {tokenType_T tt; prefixParseFn fn;} prefixParseFns[NUM_PREFIX_PARSE_FNS] = {
-    {TOKEN_ID, parserParseIdentifier},
-    {TOKEN_INT, parserParseInt},
-    {TOKEN_FLOAT, parserParseFloat},
-    {TOKEN_NIL, parserParseNil},
-    {TOKEN_TRUE, parserParseBool},
-    {TOKEN_FALSE, parserParseBool},
-    {TOKEN_CHAR, parserParseChar},
-    {TOKEN_STRING, parserParseString},
-    {TOKEN_BANG, parserParseNot},
-    {TOKEN_MINUS, parserParseNegate},
-    {TOKEN_LPAREN, parserParseClosure},
-    {TOKEN_LBRACKET, parserParseArray},
-    {TOKEN_LBRACE, parserParseStruct},
-    {TOKEN_STAR, parserParseDeref},
-    {TOKEN_REF, parserParseRef},
-    {TOKEN_TILDE, parserParseBitwiseNegation},
+struct {TokenType_T tt; prefix_parse_fn fn;} prefix_parse_fns[NUM_PREFIX_PARSE_FNS] = {
+    {TOKEN_ID, parse_identifier},
+    {TOKEN_INT, parse_int},
+    {TOKEN_FLOAT, parse_float},
+    {TOKEN_NIL, parse_nil},
+    {TOKEN_TRUE, parse_bool},
+    {TOKEN_FALSE, parse_bool},
+    {TOKEN_CHAR, parse_char},
+    {TOKEN_STRING, parse_string},
+    {TOKEN_BANG, parse_not},
+    {TOKEN_MINUS, parse_negate},
+    {TOKEN_LPAREN, parse_closure},
+    {TOKEN_LBRACKET, parse_array},
+    {TOKEN_LBRACE, parse_struct},
+    {TOKEN_STAR, parse_deref},
+    {TOKEN_REF, parse_ref},
+    {TOKEN_TILDE, parse_bitwise_negation},
 };
 
-static ASTExpr_T* parserParseInfixExpression(parser_T* parser, ASTExpr_T* left);
-static ASTExpr_T* parserParseCallExpression(parser_T* parser, ASTExpr_T* left);
-static ASTExpr_T* parserParseIndexExpression(parser_T* parser, ASTExpr_T* left);
-static ASTExpr_T* parserParsePostfixExpression(parser_T* parser, ASTExpr_T* left);
-static ASTExpr_T* parserParseAssignment(parser_T* parser, ASTExpr_T* left);
+static ASTExpr_T* parse_infix_expression(Parser_T* parser, ASTExpr_T* left);
+static ASTExpr_T* parse_call_expression(Parser_T* parser, ASTExpr_T* left);
+static ASTExpr_T* parse_index_expression(Parser_T* parser, ASTExpr_T* left);
+static ASTExpr_T* parse_postfix_expression(Parser_T* parser, ASTExpr_T* left);
+static ASTExpr_T* parse_assignment(Parser_T* parser, ASTExpr_T* left);
 
-struct {tokenType_T tt; infixParseFn fn;} infixParseFns[NUM_INFIX_PARSE_FNS] = {
-    {TOKEN_PLUS, parserParseInfixExpression},
-    {TOKEN_MINUS, parserParseInfixExpression},
-    {TOKEN_STAR, parserParseInfixExpression},
-    {TOKEN_SLASH, parserParseInfixExpression},
-    {TOKEN_EQ, parserParseInfixExpression},
-    {TOKEN_NOT_EQ, parserParseInfixExpression},
-    {TOKEN_GT, parserParseInfixExpression},
-    {TOKEN_LT, parserParseInfixExpression},
-    {TOKEN_GT_EQ, parserParseInfixExpression},
-    {TOKEN_LT_EQ, parserParseInfixExpression},
-    {TOKEN_LPAREN, parserParseCallExpression},
-    {TOKEN_LBRACKET, parserParseIndexExpression},
-    {TOKEN_INC, parserParsePostfixExpression},
-    {TOKEN_DEC, parserParsePostfixExpression},
-    {TOKEN_ASSIGN, parserParseAssignment},
-    {TOKEN_ADD, parserParseAssignment},
-    {TOKEN_MULT, parserParseAssignment},
-    {TOKEN_SUB, parserParseAssignment},
-    {TOKEN_DIV, parserParseAssignment},
+struct {TokenType_T tt; infix_parse_fn fn;} infix_parse_fns[NUM_INFIX_PARSE_FNS] = {
+    {TOKEN_PLUS, parse_infix_expression},
+    {TOKEN_MINUS, parse_infix_expression},
+    {TOKEN_STAR, parse_infix_expression},
+    {TOKEN_SLASH, parse_infix_expression},
+    {TOKEN_EQ, parse_infix_expression},
+    {TOKEN_NOT_EQ, parse_infix_expression},
+    {TOKEN_GT, parse_infix_expression},
+    {TOKEN_LT, parse_infix_expression},
+    {TOKEN_GT_EQ, parse_infix_expression},
+    {TOKEN_LT_EQ, parse_infix_expression},
+    {TOKEN_LPAREN, parse_call_expression},
+    {TOKEN_LBRACKET, parse_index_expression},
+    {TOKEN_INC, parse_postfix_expression},
+    {TOKEN_DEC, parse_postfix_expression},
+    {TOKEN_ASSIGN, parse_assignment},
+    {TOKEN_ADD, parse_assignment},
+    {TOKEN_MULT, parse_assignment},
+    {TOKEN_SUB, parse_assignment},
+    {TOKEN_DIV, parse_assignment},
 };
 
-struct {tokenType_T tt; precedence_T prec;} precedences[NUM_PRECEDENCES] = {
+struct {TokenType_T tt; precedence_T prec;} precedences[NUM_PRECEDENCES] = {
     {TOKEN_EQ, EQUALS},
     {TOKEN_NOT_EQ, EQUALS},
     {TOKEN_LT, LTGT},
@@ -111,40 +111,38 @@ struct {tokenType_T tt; precedence_T prec;} precedences[NUM_PRECEDENCES] = {
 // helperfunctions             //
 /////////////////////////////////
 
-parser_T* initParser(lexer_T* lexer)
+Parser_T* init_parser(Lexer_T* lexer)
 {
-    parser_T* parser = calloc(1, sizeof(struct PARSER_STRUCT));
+    Parser_T* parser = calloc(1, sizeof(struct PARSER_STRUCT));
     parser->lexer = lexer;
     parser->eh = parser->lexer->eh;
-    parser->localVars = initList(sizeof(struct AST_LOCAL_STRUCT*));
-    parser->tok = lexerNextToken(parser->lexer);
-    parser->imports = initList(sizeof(char*));
+    parser->tok = lexer_next_token(parser->lexer);
+    parser->imports = init_list(sizeof(char*));
 
     parser->silent = false;
 
     return parser;
 }
 
-void freeParser(parser_T* parser)
+void free_parser(Parser_T* parser)
 {
-    freeList(parser->localVars);
-    freeToken(parser->tok);
+    free_token(parser->tok);
 
     for(int i = 0; i < parser->imports->size; i++)
         free((char*) parser->imports->items[i]);
-    freeList(parser->imports);
+    free_list(parser->imports);
 
     free(parser);
 }
 
-token_T* parserAdvance(parser_T* parser)
+Token_T* parser_advance(Parser_T* parser)
 {
-    freeToken(parser->tok);
-    parser->tok = lexerNextToken(parser->lexer);
+    free_token(parser->tok);
+    parser->tok = lexer_next_token(parser->lexer);
     return parser->tok;
 }
 
-bool tokIs(parser_T* parser, tokenType_T type)
+bool tok_is(Parser_T* parser, TokenType_T type)
 {
     return parser->tok->type == type;
 }
@@ -154,35 +152,35 @@ bool streq(char* s1, char* s2)
     return strcmp(s1, s2) == 0;
 }
 
-token_T* parserConsume(parser_T* parser, tokenType_T type, const char* msg)
+Token_T* parser_consume(Parser_T* parser, TokenType_T type, const char* msg)
 {
-    if(!tokIs(parser, type))
+    if(!tok_is(parser, type))
     {
-        throwSyntaxError(parser->eh, msg, parser->tok->line, parser->tok->pos);
+        throw_syntax_error(parser->eh, msg, parser->tok->line, parser->tok->pos);
     }
 
-    return parserAdvance(parser);
+    return parser_advance(parser);
 }
 
-prefixParseFn getPrefixParseFn(tokenType_T type)
+prefix_parse_fn get_prefix_parse_fn(TokenType_T type)
 {
     for(int i = 0; i < NUM_PREFIX_PARSE_FNS; i++)
-        if(prefixParseFns[i].tt == type)
-            return prefixParseFns[i].fn;
+        if(prefix_parse_fns[i].tt == type)
+            return prefix_parse_fns[i].fn;
 
     return NULL;
 }
 
-infixParseFn getInfixParseFn(tokenType_T type)
+infix_parse_fn get_Infix_parse_fn(TokenType_T type)
 {
     for(int i = 0; i < NUM_INFIX_PARSE_FNS; i++)
-        if(infixParseFns[i].tt == type)
-            return infixParseFns[i].fn;
+        if(infix_parse_fns[i].tt == type)
+            return infix_parse_fns[i].fn;
 
     return NULL;
 }
 
-precedence_T getPrecedence(token_T* token)
+precedence_T get_precedence(Token_T* token)
 {
     for(int i = 0; i < NUM_PRECEDENCES; i++)
         if(precedences[i].tt == token->type)
@@ -191,7 +189,7 @@ precedence_T getPrecedence(token_T* token)
     return LOWEST;
 }
 
-bool expressionIsExecutable(ASTExpr_T* expr)    // checks if the expression can be used as a statement ("executable" means it has to assign something)
+bool expr_is_executable(ASTExpr_T* expr)    // checks if the expression can be used as a statement ("executable" means it has to assign something)
 {
     if(expr->type != EXPR_POSTFIX && expr->type != EXPR_INFIX && expr->type != EXPR_CALL)
         return false;
@@ -205,54 +203,54 @@ bool expressionIsExecutable(ASTExpr_T* expr)    // checks if the expression can 
 // Parser                      //
 /////////////////////////////////
 
-static ASTFile_T* parserParseFile(parser_T* parser, const char* filePath, ASTProgram_T* programRef);
+static ASTFile_T* parse_file(Parser_T* parser, const char* file_path, ASTProgram_T* program_ref);
 
-ASTProgram_T* parserParse(parser_T* parser, const char* mainFile)
+ASTProgram_T* parse(Parser_T* parser, const char* main_file)
 {
-    ASTProgram_T* program = initASTProgram(mainFile);
+    ASTProgram_T* program = init_ast_program(main_file);
 
-    listPush(program->files, parserParseFile(parser, mainFile, program));
+    list_push(program->files, parse_file(parser, main_file, program));
 
-    preprocessor_T* pre = initPreprocessor(parser->eh);
-    optimizeAST(pre, program);
-    freePreprocessor(pre);
+    Preprocessor_T* pre = init_preprocessor(parser->eh);
+    optimize_ast(pre, program);
+    free_preprocessor(pre);
 
     return program;    
 }
 
-static ASTGlobal_T* parserParseGlobal(parser_T* parser);
-static ASTFunction_T* parserParseFunction(parser_T* parser);
-static void parserParseImport(parser_T* parser, ASTProgram_T* programRef);
-static ASTTypedef_T* parserParseTypedef(parser_T* parser);
-static ASTCompound_T* parserParseCompound(parser_T* parser);
+static ASTGlobal_T* parse_global(Parser_T* parser);
+static ASTFunction_T* parse_function(Parser_T* parser);
+static void parse_import(Parser_T* parser, ASTProgram_T* program_ref);
+static ASTTypedef_T* parse_typedef(Parser_T* parser);
+static ASTCompound_T* parse_compound(Parser_T* parser);
 
-static ASTFile_T* parserParseFile(parser_T* parser, const char* filePath, ASTProgram_T* programRef)
+static ASTFile_T* parse_file(Parser_T* parser, const char* file_path, ASTProgram_T* program_ref)
 {
     if(!parser->silent)
     {
-        LOG_OK_F(COLOR_BOLD_GREEN "  Compiling" COLOR_RESET " \"%s\"\n", filePath);
+        LOG_OK_F(COLOR_BOLD_GREEN "  Compiling" COLOR_RESET " \"%s\"\n", file_path);
     }
-    ASTFile_T* root = initASTFile(parser->lexer->file->path);
+    ASTFile_T* root = init_ast_file(parser->lexer->file->path);
 
-    while(!tokIs(parser, TOKEN_EOF))
+    while(!tok_is(parser, TOKEN_EOF))
     {
         switch(parser->tok->type)
         {
             case TOKEN_LET:
-                listPush(root->globals, parserParseGlobal(parser));
+                list_push(root->globals, parse_global(parser));
                 break;
             case TOKEN_FN:
-                listPush(root->functions, parserParseFunction(parser));
+                list_push(root->functions, parse_function(parser));
                 break;
             case TOKEN_IMPORT:
-                parserParseImport(parser, programRef);
+                parse_import(parser, program_ref);
                 break;
             case TOKEN_TYPE:
-                listPush(root->types, parserParseTypedef(parser));
+                list_push(root->types, parse_typedef(parser));
                 break;
 
             default:
-                throwSyntaxError(parser->eh, "unexpected token", parser->tok->line, parser->tok->pos);
+                throw_syntax_error(parser->eh, "unexpected token", parser->tok->line, parser->tok->pos);
                 break;
         }
     }
@@ -260,17 +258,17 @@ static ASTFile_T* parserParseFile(parser_T* parser, const char* filePath, ASTPro
     return root;
 }
 
-static ASTStructType_T* parserParseStructType(parser_T* parser);
-static ASTEnumType_T* parserParseEnumType(parser_T* parser);
+static ASTStructType_T* parse_struct_type(Parser_T* parser);
+static ASTEnumType_T* parse_enum_type(Parser_T* parser);
 
-static ASTType_T* parserParseType(parser_T* parser)
+static ASTType_T* parse_type(Parser_T* parser)
 {
     char* type = strdup(parser->tok->value);
 
-    ASTType_T* primitive = getPrimitiveType(type);
+    ASTType_T* primitive = get_primitive_type(type);
     if(primitive)
     {
-        parserAdvance(parser);
+        parser_advance(parser);
         primitive->line = parser->tok->line; //FIXME:
         primitive->pos = parser->tok->pos;   //FIXME:
 
@@ -286,108 +284,108 @@ static ASTType_T* parserParseType(parser_T* parser)
     if(streq(type, "struct")) 
     {
         dt = AST_STRUCT;
-        body = parserParseStructType(parser);
+        body = parse_struct_type(parser);
     }
     else if(streq(type, "enum"))
     {
         dt = AST_ENUM;
-        body = parserParseEnumType(parser);
+        body = parse_enum_type(parser);
     }
     else if(streq(type, "*"))
     {
-        parserConsume(parser, TOKEN_STAR, "expect `*` for pointer type");
+        parser_consume(parser, TOKEN_STAR, "expect `*` for pointer type");
         dt = AST_POINTER;
-        subtype = parserParseType(parser);
+        subtype = parse_type(parser);
     }
     else if(streq(type, "["))
     {
-        parserConsume(parser, TOKEN_LBRACKET, "expect `[` for array type");
-        parserConsume(parser, TOKEN_RBRACKET, "expect `]` for array type");
+        parser_consume(parser, TOKEN_LBRACKET, "expect `[` for array type");
+        parser_consume(parser, TOKEN_RBRACKET, "expect `]` for array type");
         dt = AST_ARRAY;
-        subtype = parserParseType(parser);
+        subtype = parse_type(parser);
     }
 
     if(dt == AST_TYPEDEF)   // no special type was found, skip.
-        parserAdvance(parser);
+        parser_advance(parser);
 
-    ASTType_T* t = initASTType(dt, subtype, body, type, parser->tok->line, parser->tok->pos);
+    ASTType_T* t = init_ast_type(dt, subtype, body, type, parser->tok->line, parser->tok->pos);
     free(type);
     return t;
 }
 
-static ASTStructType_T* parserParseStructType(parser_T* parser)
+static ASTStructType_T* parse_struct_type(Parser_T* parser)
 {
-    parserConsume(parser, TOKEN_STRUCT, "expect `struct` keyword");
-    parserConsume(parser, TOKEN_LBRACE, "expect `{` after struct");
+    parser_consume(parser, TOKEN_STRUCT, "expect `struct` keyword");
+    parser_consume(parser, TOKEN_LBRACE, "expect `{` after struct");
 
-    list_T* names = initList(sizeof(char*));
-    list_T* types = initList(sizeof(ASTType_T*));
+    List_T* names = init_list(sizeof(char*));
+    List_T* types = init_list(sizeof(ASTType_T*));
 
-    while(!tokIs(parser, TOKEN_RBRACE))
+    while(!tok_is(parser, TOKEN_RBRACE))
     {
-        listPush(names, strdup(parser->tok->value));
-        parserConsume(parser, TOKEN_ID, "expect struct field name");
-        parserConsume(parser, TOKEN_COLON, "expect `:` after field name");
+        list_push(names, strdup(parser->tok->value));
+        parser_consume(parser, TOKEN_ID, "expect struct field name");
+        parser_consume(parser, TOKEN_COLON, "expect `:` after field name");
 
-        listPush(types, parserParseType(parser));
+        list_push(types, parse_type(parser));
         
-        if(tokIs(parser, TOKEN_EOF))
+        if(tok_is(parser, TOKEN_EOF))
         {
-            throwSyntaxError(parser->eh, "unclosed struct body", parser->tok->line, parser->tok->pos);
+            throw_syntax_error(parser->eh, "unclosed struct body", parser->tok->line, parser->tok->pos);
             exit(1);
         }
-        else if(!tokIs(parser, TOKEN_RBRACE))
-            parserConsume(parser, TOKEN_COMMA, "expect `,` between struct fields");
+        else if(!tok_is(parser, TOKEN_RBRACE))
+            parser_consume(parser, TOKEN_COMMA, "expect `,` between struct fields");
     }
-    parserAdvance(parser);
+    parser_advance(parser);
 
     if(names->size != types->size)
         LOG_ERROR_F("struct fields have different size: {names: %ld, types: %ld}", names->size, types->size);
 
-    return initASTStructType(types, names);
+    return init_ast_struct_type(types, names);
 }
 
-static ASTEnumType_T* parserParseEnumType(parser_T* parser)
+static ASTEnumType_T* parse_enum_type(Parser_T* parser)
 {
-    parserConsume(parser, TOKEN_ENUM, "expect `enum` keyword");
-    parserConsume(parser, TOKEN_LBRACE, "expect `{` after enum");
+    parser_consume(parser, TOKEN_ENUM, "expect `enum` keyword");
+    parser_consume(parser, TOKEN_LBRACE, "expect `{` after enum");
 
-    list_T* fields = initList(sizeof(char*));
+    List_T* fields = init_list(sizeof(char*));
     
-    while(!tokIs(parser, TOKEN_RBRACE))
+    while(!tok_is(parser, TOKEN_RBRACE))
     {
-        listPush(fields, strdup(parser->tok->value));
-        parserConsume(parser, TOKEN_ID, "expect enum field name");
+        list_push(fields, strdup(parser->tok->value));
+        parser_consume(parser, TOKEN_ID, "expect enum field name");
 
-        if(tokIs(parser, TOKEN_EOF))
+        if(tok_is(parser, TOKEN_EOF))
         {
-            throwSyntaxError(parser->eh, "unclosed enum body", parser->tok->line, parser->tok->pos);
+            throw_syntax_error(parser->eh, "unclosed enum body", parser->tok->line, parser->tok->pos);
             exit(1);
         }
-        else if(!tokIs(parser, TOKEN_RBRACE))
-            parserConsume(parser, TOKEN_COMMA, "expect `,` between enum fields");
+        else if(!tok_is(parser, TOKEN_RBRACE))
+            parser_consume(parser, TOKEN_COMMA, "expect `,` between enum fields");
     }
-    parserAdvance(parser);
-    return initASTEnumType(fields);
+    parser_advance(parser);
+    return init_ast_enum_type(fields);
 }
 
-static ASTExpr_T* parserParseExpr(parser_T* parser, precedence_T precedence);
+static ASTExpr_T* parse_expr(Parser_T* parser, precedence_T precedence);
 
-static list_T* parserParseExpressionList(parser_T* parser, tokenType_T end)
+static List_T* parse_expression_list(Parser_T* parser, TokenType_T end)
 {
-    list_T* exprs = initList(sizeof(struct AST_EXPRESSION_STRUCT*));
+    List_T* exprs = init_list(sizeof(struct AST_EXPRESSION_STRUCT*));
 
-    unsigned int startLine = parser->tok->line, startPos = parser->tok->pos;
+    unsigned int start_line = parser->tok->line, start_pos = parser->tok->pos;
 
-    while(!tokIs(parser, end))
+    while(!tok_is(parser, end))
     {
-        listPush(exprs, parserParseExpr(parser, LOWEST));
+        list_push(exprs, parse_expr(parser, LOWEST));
         
-        if(!tokIs(parser, end))
-            parserConsume(parser, TOKEN_COMMA, "expect `,` between expressions");
-        else if(tokIs(parser, TOKEN_EOF))
+        if(!tok_is(parser, end))
+            parser_consume(parser, TOKEN_COMMA, "expect `,` between expressions");
+        else if(tok_is(parser, TOKEN_EOF))
         {
-            throwSyntaxError(parser->eh, "unclosed expession list", startLine, startPos);
+            throw_syntax_error(parser->eh, "unclosed expession list", start_line, start_pos);
             exit(1);
         }
     }
@@ -399,140 +397,140 @@ static list_T* parserParseExpressionList(parser_T* parser, tokenType_T end)
 // Expressin PRATT parser      //
 /////////////////////////////////
 
-static ASTExpr_T* parserParseExpr(parser_T* parser, precedence_T precedence)
+static ASTExpr_T* parse_expr(Parser_T* parser, precedence_T precedence)
 {
-    prefixParseFn prefix = getPrefixParseFn(parser->tok->type);
+    prefix_parse_fn prefix = get_prefix_parse_fn(parser->tok->type);
     if(prefix == NULL)
     {
         const char* template = "no prefix parse functio for `%s` found";
         char* msg = calloc(strlen(template) + strlen(parser->tok->value) + 1, sizeof(char));
         sprintf(msg, template, parser->tok->value);
 
-        throwSyntaxError(parser->eh, msg, parser->tok->line, parser->tok->pos);
+        throw_syntax_error(parser->eh, msg, parser->tok->line, parser->tok->pos);
         free(msg);
         exit(1);
     }
-    ASTExpr_T* leftExp = prefix(parser);
+    ASTExpr_T* left_expr = prefix(parser);
 
-    while(!tokIs(parser, TOKEN_SEMICOLON) && precedence < getPrecedence(parser->tok))
+    while(!tok_is(parser, TOKEN_SEMICOLON) && precedence < get_precedence(parser->tok))
     {
-        infixParseFn infix = getInfixParseFn(parser->tok->type);
+        infix_parse_fn infix = get_Infix_parse_fn(parser->tok->type);
         if(infix == NULL)
-            return leftExp;
+            return left_expr;
         
-        leftExp = infix(parser, leftExp);
+        left_expr = infix(parser, left_expr);
     }
 
-    return leftExp;
+    return left_expr;
 }
 
-static ASTExpr_T* parserParseIdentifier(parser_T* parser) 
+static ASTExpr_T* parse_identifier(Parser_T* parser) 
 {
-    ASTIdentifier_T* id = initASTIdentifier(parser->tok->value, NULL);
-    parserConsume(parser, TOKEN_ID, "expect identifier");
+    ASTIdentifier_T* id = init_ast_identifier(parser->tok->value, NULL);
+    parser_consume(parser, TOKEN_ID, "expect identifier");
 
-    if(tokIs(parser, TOKEN_DOT))
+    if(tok_is(parser, TOKEN_DOT))
     {
-        parserAdvance(parser);
-        ASTExpr_T* expr = parserParseIdentifier(parser);
-        id->childId = ((ASTIdentifier_T*) expr->expr);
+        parser_advance(parser);
+        ASTExpr_T* expr = parse_identifier(parser);
+        id->child_id = ((ASTIdentifier_T*) expr->expr);
         free(expr);
     }
 
-    return initASTExpr(NULL, EXPR_IDENTIFIER, id);
+    return init_ast_expr(NULL, EXPR_IDENTIFIER, id);
 }
 
-static ASTExpr_T* parserParseInt(parser_T* parser)
+static ASTExpr_T* parse_int(Parser_T* parser)
 {
-    ASTExpr_T* ast = initASTExpr(primitives[AST_I32], EXPR_INT_LITERAL, initASTInt(atoi(parser->tok->value)));
-    parserConsume(parser, TOKEN_INT, "expect number");
+    ASTExpr_T* ast = init_ast_expr(primitives[AST_I32], EXPR_INT_LITERAL, init_ast_int(atoi(parser->tok->value)));
+    parser_consume(parser, TOKEN_INT, "expect number");
     return ast;
 }
 
-static ASTExpr_T* parserParseFloat(parser_T* parser)
+static ASTExpr_T* parse_float(Parser_T* parser)
 {
-    ASTExpr_T* ast = initASTExpr(primitives[AST_F32], EXPR_FLOAT_LITERAL, initASTFloat(atof(parser->tok->value)));
-    parserConsume(parser, TOKEN_FLOAT, "expect number");
+    ASTExpr_T* ast = init_ast_expr(primitives[AST_F32], EXPR_FLOAT_LITERAL, init_ast_float(atof(parser->tok->value)));
+    parser_consume(parser, TOKEN_FLOAT, "expect number");
     return ast;
 }
 
-static ASTExpr_T* parserParseBool(parser_T* parser)
+static ASTExpr_T* parse_bool(Parser_T* parser)
 {
     bool boolVal;
-    if(tokIs(parser, TOKEN_TRUE))
+    if(tok_is(parser, TOKEN_TRUE))
         boolVal = true;
-    else if(tokIs(parser, TOKEN_FALSE))
+    else if(tok_is(parser, TOKEN_FALSE))
         boolVal = false;
     else {
-        throwSyntaxError(parser->eh, "not a bool value", parser->tok->line, parser->tok->pos);
+        throw_syntax_error(parser->eh, "not a bool value", parser->tok->line, parser->tok->pos);
         exit(1);
     }
 
-    ASTExpr_T* ast = initASTExpr(primitives[AST_BOOL], EXPR_BOOL_LITERAL, initASTBool(boolVal));
-    parserAdvance(parser);
+    ASTExpr_T* ast = init_ast_expr(primitives[AST_BOOL], EXPR_BOOL_LITERAL, init_ast_bool(boolVal));
+    parser_advance(parser);
     return ast;
 }
 
-static ASTExpr_T* parserParseChar(parser_T* parser)
+static ASTExpr_T* parse_char(Parser_T* parser)
 {
-    ASTExpr_T* ast = initASTExpr(primitives[AST_CHAR], EXPR_CHAR_LITERAL, initASTChar(parser->tok->value[0]));
-    parserConsume(parser, TOKEN_CHAR, "expect character");
+    ASTExpr_T* ast = init_ast_expr(primitives[AST_CHAR], EXPR_CHAR_LITERAL, init_ast_char(parser->tok->value[0]));
+    parser_consume(parser, TOKEN_CHAR, "expect character");
     return ast;
 }
 
-static ASTExpr_T* parserParseString(parser_T* parser)
+static ASTExpr_T* parse_string(Parser_T* parser)
 {
-    ASTExpr_T* ast = initASTExpr(initASTType(AST_POINTER, primitives[AST_CHAR], NULL, "", parser->tok->line, parser->tok->pos), EXPR_STRING_LITERAL, initASTString(parser->tok->value));
-    parserConsume(parser, TOKEN_STRING, "expect string");
+    ASTExpr_T* ast = init_ast_expr(init_ast_type(AST_POINTER, primitives[AST_CHAR], NULL, "", parser->tok->line, parser->tok->pos), EXPR_STRING_LITERAL, init_ast_string(parser->tok->value));
+    parser_consume(parser, TOKEN_STRING, "expect string");
     return ast;
 }
 
-static ASTExpr_T* parserParseNil(parser_T* parser)
+static ASTExpr_T* parse_nil(Parser_T* parser)
 {
-    parserConsume(parser, TOKEN_NIL, "expect `nil`");
-    return initASTExpr(initASTType(AST_POINTER, primitives[AST_VOID], NULL, "", parser->tok->line, parser->tok->pos), EXPR_NIL, initASTNil());  // nil is just *void 0
+    parser_consume(parser, TOKEN_NIL, "expect `nil`");
+    return init_ast_expr(init_ast_type(AST_POINTER, primitives[AST_VOID], NULL, "", parser->tok->line, parser->tok->pos), EXPR_NIL, init_ast_nil());  // nil is just *void 0
 }
 
-static ASTExpr_T* parserParseArray(parser_T* parser)
+static ASTExpr_T* parse_array(Parser_T* parser)
 {
-    parserConsume(parser, TOKEN_LBRACKET, "expect `[` for array literal");
-    list_T* indexes = parserParseExpressionList(parser, TOKEN_RBRACKET);
-    parserAdvance(parser);
+    parser_consume(parser, TOKEN_LBRACKET, "expect `[` for array literal");
+    List_T* indexes = parse_expression_list(parser, TOKEN_RBRACKET);
+    parser_advance(parser);
 
-    return initASTExpr(initASTType(AST_ARRAY, NULL, NULL, "", parser->tok->line, parser->tok->pos), EXPR_ARRAY_LITERAL, initASTArray(indexes));
+    return init_ast_expr(init_ast_type(AST_ARRAY, NULL, NULL, "", parser->tok->line, parser->tok->pos), EXPR_ARRAY_LITERAL, init_ast_array(indexes));
 }
 
-static ASTExpr_T* parserParseStruct(parser_T* parser)
+static ASTExpr_T* parse_struct(Parser_T* parser)
 {
-    parserConsume(parser, TOKEN_LBRACE, "expect `{` for struct literal");
-    list_T* fields = initList(sizeof(char*));
-    list_T* exprs = initList(sizeof(struct AST_EXPRESSION_STRUCT*));
+    parser_consume(parser, TOKEN_LBRACE, "expect `{` for struct literal");
+    List_T* fields = init_list(sizeof(char*));
+    List_T* exprs = init_list(sizeof(struct AST_EXPRESSION_STRUCT*));
 
-    unsigned int startLine = parser->tok->line, startPos = parser->tok->pos;
+    unsigned int start_line = parser->tok->line, start_pos = parser->tok->pos;
 
-    while(!tokIs(parser, TOKEN_RBRACE))
+    while(!tok_is(parser, TOKEN_RBRACE))
     {
-        listPush(fields, strdup(parser->tok->value));
-        parserConsume(parser, TOKEN_ID, "expect struct field name");
-        parserConsume(parser, TOKEN_COLON, "expect `:` after struct field");
-        listPush(exprs, parserParseExpr(parser, LOWEST));
+        list_push(fields, strdup(parser->tok->value));
+        parser_consume(parser, TOKEN_ID, "expect struct field name");
+        parser_consume(parser, TOKEN_COLON, "expect `:` after struct field");
+        list_push(exprs, parse_expr(parser, LOWEST));
 
-        if(tokIs(parser, TOKEN_EOF))
+        if(tok_is(parser, TOKEN_EOF))
         {
-            throwSyntaxError(parser->eh, "unclosed struct literal body, expect `}`", startLine, startPos);
+            throw_syntax_error(parser->eh, "unclosed struct literal body, expect `}`", start_line, start_pos);
             exit(1);
         }
-        else if(!tokIs(parser, TOKEN_RBRACE))
-            parserConsume(parser, TOKEN_COMMA, "expect `,` between struct fields");
+        else if(!tok_is(parser, TOKEN_RBRACE))
+            parser_consume(parser, TOKEN_COMMA, "expect `,` between struct fields");
     }
-    parserAdvance(parser);
+    parser_advance(parser);
 
-    return initASTExpr(initASTType(AST_STRUCT, NULL, initASTStructType(initList(sizeof(struct AST_TYPE_STRUCT*)), initList(sizeof(char*))), "", parser->tok->line, parser->tok->pos), EXPR_STRUCT_LITERAL, initASTStruct(exprs, fields));
+    return init_ast_expr(init_ast_type(AST_STRUCT, NULL, init_ast_struct_type(init_list(sizeof(struct AST_TYPE_STRUCT*)), init_list(sizeof(char*))), "", parser->tok->line, parser->tok->pos), EXPR_STRUCT_LITERAL, init_ast_struct(exprs, fields));
 }
 
-static ASTExpr_T* parserParseInfixExpression(parser_T* parser, ASTExpr_T* left)
+static ASTExpr_T* parse_infix_expression(Parser_T* parser, ASTExpr_T* left)
 {
-    precedence_T prec = getPrecedence(parser->tok);
+    precedence_T prec = get_precedence(parser->tok);
     ASTInfixOpType_T op;
 
     switch(parser->tok->type)
@@ -568,81 +566,81 @@ static ASTExpr_T* parserParseInfixExpression(parser_T* parser, ASTExpr_T* left)
             op = OP_LT_EQ;
             break;
         default:
-            throwSyntaxError(parser->eh, "undefined infix expression", parser->tok->line, parser->tok->pos);
+            throw_syntax_error(parser->eh, "undefined infix expression", parser->tok->line, parser->tok->pos);
             exit(1);
             break;
     }
-    parserAdvance(parser);
-    ASTExpr_T* right = parserParseExpr(parser, prec);
+    parser_advance(parser);
+    ASTExpr_T* right = parse_expr(parser, prec);
 
-    return initASTExpr(NULL, EXPR_INFIX, initASTInfix(op, right, left));
+    return init_ast_expr(NULL, EXPR_INFIX, init_ast_infix(op, right, left));
 }
 
-static ASTExpr_T* parserParseCallExpression(parser_T* parser, ASTExpr_T* left)
+static ASTExpr_T* parse_call_expression(Parser_T* parser, ASTExpr_T* left)
 {
     if(left->type != EXPR_IDENTIFIER)
     {
-        throwSyntaxError(parser->eh, "expect method name for call", parser->tok->line, parser->tok->pos);
+        throw_syntax_error(parser->eh, "expect method name for call", parser->tok->line, parser->tok->pos);
         exit(1);
     }
 
-    parserConsume(parser, TOKEN_LPAREN, "epxect `(` for function call");
-    list_T* args = parserParseExpressionList(parser, TOKEN_RPAREN);
-    parserConsume(parser, TOKEN_RPAREN, "expect `)` after function call arguments");    
+    parser_consume(parser, TOKEN_LPAREN, "epxect `(` for function call");
+    List_T* args = parse_expression_list(parser, TOKEN_RPAREN);
+    parser_consume(parser, TOKEN_RPAREN, "expect `)` after function call arguments");    
 
-    ASTExpr_T* ast = initASTExpr(NULL, EXPR_CALL, initASTCall(((ASTIdentifier_T*) left->expr)->callee, args));
-    freeASTExpr(left);  // free the left ast node because we only store the callee
+    ASTExpr_T* ast = init_ast_expr(NULL, EXPR_CALL, init_ast_call(((ASTIdentifier_T*) left->expr)->callee, args));
+    free_ast_expr(left);  // free the left ast node because we only store the callee
     return ast;
 }
 
-static ASTExpr_T* parserParseIndexExpression(parser_T* parser, ASTExpr_T* left)
+static ASTExpr_T* parse_index_expression(Parser_T* parser, ASTExpr_T* left)
 {
-    parserConsume(parser, TOKEN_LBRACKET, "epxect `[` for index expression");
-    ASTExpr_T* index = parserParseExpr(parser, LOWEST);
-    parserConsume(parser, TOKEN_RBRACKET, "expect `]` after array index");
+    parser_consume(parser, TOKEN_LBRACKET, "epxect `[` for index expression");
+    ASTExpr_T* index = parse_expr(parser, LOWEST);
+    parser_consume(parser, TOKEN_RBRACKET, "expect `]` after array index");
 
-    return initASTExpr(NULL, EXPR_INDEX, initASTIndex(left, index));
+    return init_ast_expr(NULL, EXPR_INDEX, init_ast_index(left, index));
 }
 
-static ASTExpr_T* parserParseNot(parser_T* parser)
+static ASTExpr_T* parse_not(Parser_T* parser)
 {
-    parserConsume(parser, TOKEN_BANG, "expect `!` for `not` operator");
-    return initASTExpr(initASTType(AST_BOOL, NULL, NULL, "", parser->tok->line, parser->tok->pos), EXPR_PREFIX, initASTPrefix(OP_NOT, parserParseExpr(parser, LOWEST)));
+    parser_consume(parser, TOKEN_BANG, "expect `!` for `not` operator");
+    return init_ast_expr(init_ast_type(AST_BOOL, NULL, NULL, "", parser->tok->line, parser->tok->pos), EXPR_PREFIX, init_ast_prefix(OP_NOT, parse_expr(parser, LOWEST)));
 }
 
-static ASTExpr_T* parserParseNegate(parser_T* parser)
+static ASTExpr_T* parse_negate(Parser_T* parser)
 {
-    parserConsume(parser, TOKEN_MINUS, "expect `-` for `negate` operator");
-    return initASTExpr(NULL, EXPR_PREFIX, initASTPrefix(OP_NEGATE, parserParseExpr(parser, LOWEST)));
+    parser_consume(parser, TOKEN_MINUS, "expect `-` for `negate` operator");
+    return init_ast_expr(NULL, EXPR_PREFIX, init_ast_prefix(OP_NEGATE, parse_expr(parser, LOWEST)));
 }
 
-static ASTExpr_T* parserParseDeref(parser_T* parser)
+static ASTExpr_T* parse_deref(Parser_T* parser)
 {
-    parserConsume(parser, TOKEN_STAR, "expect `*` to dereference a pointer");
-    return initASTExpr(NULL, EXPR_PREFIX, initASTPrefix(OP_DEREF, parserParseExpr(parser, LOWEST)));
+    parser_consume(parser, TOKEN_STAR, "expect `*` to dereference a pointer");
+    return init_ast_expr(NULL, EXPR_PREFIX, init_ast_prefix(OP_DEREF, parse_expr(parser, LOWEST)));
 }
 
-static ASTExpr_T* parserParseRef(parser_T* parser)
+static ASTExpr_T* parse_ref(Parser_T* parser)
 {
-    parserConsume(parser, TOKEN_REF, "expect `&` to get a pointer");
-    return initASTExpr(NULL, EXPR_PREFIX, initASTPrefix(OP_REF, parserParseExpr(parser, LOWEST)));
+    parser_consume(parser, TOKEN_REF, "expect `&` to get a pointer");
+    return init_ast_expr(NULL, EXPR_PREFIX, init_ast_prefix(OP_REF, parse_expr(parser, LOWEST)));
 }
 
-static ASTExpr_T* parserParseBitwiseNegation(parser_T* parser)
+static ASTExpr_T* parse_bitwise_negation(Parser_T* parser)
 {
-    parserConsume(parser, TOKEN_TILDE, "expect `~` for bitwise negation");
-    return initASTExpr(NULL, EXPR_PREFIX, initASTPrefix(OP_BIT_NEG, parserParseExpr(parser, LOWEST)));
+    parser_consume(parser, TOKEN_TILDE, "expect `~` for bitwise negation");
+    return init_ast_expr(NULL, EXPR_PREFIX, init_ast_prefix(OP_BIT_NEG, parse_expr(parser, LOWEST)));
 }
 
-static ASTExpr_T* parserParseClosure(parser_T* parser)
+static ASTExpr_T* parse_closure(Parser_T* parser)
 {
-    parserConsume(parser, TOKEN_LPAREN, "expect `(` for closure");
-    ASTExpr_T* ast = parserParseExpr(parser, LOWEST);
-    parserConsume(parser, TOKEN_RPAREN, "expect `)` after closure");
+    parser_consume(parser, TOKEN_LPAREN, "expect `(` for closure");
+    ASTExpr_T* ast = parse_expr(parser, LOWEST);
+    parser_consume(parser, TOKEN_RPAREN, "expect `)` after closure");
     return ast;
 }
 
-static ASTExpr_T* parserParsePostfixExpression(parser_T* parser, ASTExpr_T* left)
+static ASTExpr_T* parse_postfix_expression(Parser_T* parser, ASTExpr_T* left)
 {
     ASTPostfixOpType_T op;
 
@@ -657,54 +655,54 @@ static ASTExpr_T* parserParsePostfixExpression(parser_T* parser, ASTExpr_T* left
             break;
 
         default:
-            throwSyntaxError(parser->eh, "expect `++` or `--`", parser->tok->line, parser->tok->pos);
+            throw_syntax_error(parser->eh, "expect `++` or `--`", parser->tok->line, parser->tok->pos);
             exit(1);
     }
-    parserAdvance(parser);
+    parser_advance(parser);
 
-    return initASTExpr(NULL, EXPR_POSTFIX, initASTPostfix(op, left));
+    return init_ast_expr(NULL, EXPR_POSTFIX, init_ast_postfix(op, left));
 }
 
-static ASTExpr_T* parserParseAssignmentOp(ASTExpr_T* left, ASTInfixOpType_T op, ASTExpr_T* right)
+static ASTExpr_T* parse_assignment_op(ASTExpr_T* left, ASTInfixOpType_T op, ASTExpr_T* right)
 {
-    return initASTExpr(NULL, EXPR_INFIX, 
-                initASTInfix(OP_ASSIGN, initASTExpr(
+    return init_ast_expr(NULL, EXPR_INFIX, 
+                init_ast_infix(OP_ASSIGN, init_ast_expr(
                     NULL, EXPR_INFIX, 
-                    initASTInfix(op, right, left)), 
-                    initASTExpr(
+                    init_ast_infix(op, right, left)), 
+                    init_ast_expr(
                         NULL, EXPR_IDENTIFIER, 
-                        initASTIdentifier(((ASTIdentifier_T*) left->expr)->callee, NULL)
+                        init_ast_identifier(((ASTIdentifier_T*) left->expr)->callee, NULL)
                     )
                 )
             );
 }
 
-static ASTExpr_T* parserParseAssignment(parser_T* parser, ASTExpr_T* left)
+static ASTExpr_T* parse_assignment(Parser_T* parser, ASTExpr_T* left)
 {
     if(left->type != EXPR_IDENTIFIER && left->type != EXPR_INDEX)
     {
-        throwSyntaxError(parser->eh, "can only assing a value to a variable", parser->tok->line, parser->tok->pos);
+        throw_syntax_error(parser->eh, "can only assing a value to a variable", parser->tok->line, parser->tok->pos);
         exit(1);
     }
 
-    tokenType_T op = parser->tok->type;
-    parserAdvance(parser);
+    TokenType_T op = parser->tok->type;
+    parser_advance(parser);
     
-    ASTExpr_T* right = parserParseExpr(parser, ASSIGN);
+    ASTExpr_T* right = parse_expr(parser, ASSIGN);
     switch(op)
     {
         case TOKEN_ASSIGN:
-            return initASTExpr(NULL, EXPR_INFIX, initASTInfix(OP_ASSIGN, right, left));
+            return init_ast_expr(NULL, EXPR_INFIX, init_ast_infix(OP_ASSIGN, right, left));
         case TOKEN_ADD:
-            return parserParseAssignmentOp(left, OP_ADD, right);
+            return parse_assignment_op(left, OP_ADD, right);
         case TOKEN_SUB:
-            return parserParseAssignmentOp(left, OP_SUB, right);
+            return parse_assignment_op(left, OP_SUB, right);
         case TOKEN_MULT:
-            return parserParseAssignmentOp(left, OP_MULT, right);
+            return parse_assignment_op(left, OP_MULT, right);
         case TOKEN_DIV:
-            return parserParseAssignmentOp(left, OP_DIV, right);
+            return parse_assignment_op(left, OP_DIV, right);
         default:
-            throwSyntaxError(parser->eh, "unexpected token, expect assignment", parser->tok->line, parser->tok->pos);
+            throw_syntax_error(parser->eh, "unexpected token, expect assignment", parser->tok->line, parser->tok->pos);
             exit(1);
     }
 }
@@ -713,126 +711,126 @@ static ASTExpr_T* parserParseAssignment(parser_T* parser, ASTExpr_T* left)
 // Statements                  //
 /////////////////////////////////
 
-static ASTLoop_T* parserParseLoop(parser_T* parser) // TODO: loops will for now only support while-like syntax; for and foreach come soon
+static ASTLoop_T* parse_loop(Parser_T* parser) // TODO: loops will for now only support while-like syntax; for and foreach come soon
 {
-    parserConsume(parser, TOKEN_LOOP, "expect `loop` keyword");
+    parser_consume(parser, TOKEN_LOOP, "expect `loop` keyword");
 
-    ASTExpr_T* condition = parserParseExpr(parser, LOWEST);
-    ASTCompound_T* body = parserParseCompound(parser);
+    ASTExpr_T* condition = parse_expr(parser, LOWEST);
+    ASTCompound_T* body = parse_compound(parser);
 
-    return initASTLoop(condition, body);
+    return init_ast_loop(condition, body);
 }
 
-static ASTMatch_T* parserParseMatch(parser_T* parser)
+static ASTMatch_T* parse_match(Parser_T* parser)
 {
-    parserConsume(parser, TOKEN_MATCH, "expect `match` keyword");
+    parser_consume(parser, TOKEN_MATCH, "expect `match` keyword");
     
-    ASTExpr_T* condition = parserParseExpr(parser, LOWEST);
-    parserConsume(parser, TOKEN_LBRACE, "expect `{` after match condtion");
+    ASTExpr_T* condition = parse_expr(parser, LOWEST);
+    parser_consume(parser, TOKEN_LBRACE, "expect `{` after match condtion");
 
-    list_T* cases = initList(sizeof(struct AST_EXPRESSION_STRUCT*));
-    list_T* bodys = initList(sizeof(struct AST_COMPOUND_STRUCT*));
-    ASTCompound_T* defaultBody = NULL;
-    while(!tokIs(parser, TOKEN_RBRACE))
+    List_T* cases = init_list(sizeof(struct AST_EXPRESSION_STRUCT*));
+    List_T* bodys = init_list(sizeof(struct AST_COMPOUND_STRUCT*));
+    ASTCompound_T* default_case = NULL;
+    while(!tok_is(parser, TOKEN_RBRACE))
     {   
         switch(parser->tok->type)
         {
             case TOKEN_UNDERSCORE:
-                if(defaultBody == NULL) {
-                    parserConsume(parser, TOKEN_UNDERSCORE, "expect `_` for default case");
-                    parserConsume(parser, TOKEN_ARROW, "expect `=>` after match case");
-                    defaultBody = parserParseCompound(parser);
+                if(default_case == NULL) {
+                    parser_consume(parser, TOKEN_UNDERSCORE, "expect `_` for default case");
+                    parser_consume(parser, TOKEN_ARROW, "expect `=>` after match case");
+                    default_case = parse_compound(parser);
                 } else
                 {
-                    throwRedefinitionError(parser->eh, "redefinition of default match case", parser->tok->line, parser->tok->pos);
+                    throw_redef_error(parser->eh, "redefinition of default match case", parser->tok->line, parser->tok->pos);
                     exit(1);
                 }
                 break;
 
             case TOKEN_EOF:
-                throwSyntaxError(parser->eh, "expect '}' after match statement", parser->tok->line, parser->tok->pos);
+                throw_syntax_error(parser->eh, "expect '}' after match statement", parser->tok->line, parser->tok->pos);
                 exit(1);
                 break;
 
             default:
-                listPush(cases, parserParseExpr(parser, LOWEST));
-                parserConsume(parser, TOKEN_ARROW, "expect `=>` after match case");
-                listPush(bodys, parserParseCompound(parser));
+                list_push(cases, parse_expr(parser, LOWEST));
+                parser_consume(parser, TOKEN_ARROW, "expect `=>` after match case");
+                list_push(bodys, parse_compound(parser));
                 break;
         }
     }
-    parserAdvance(parser);
+    parser_advance(parser);
 
-    return initASTMatch(condition, cases, bodys, defaultBody);
+    return init_ast_match(condition, cases, bodys, default_case);
 }
 
-static ASTIf_T* parserParseIf(parser_T* parser)
+static ASTIf_T* parse_if(Parser_T* parser)
 {
-    parserConsume(parser, TOKEN_IF, "expect `if` keyword");
-    ASTExpr_T* condition = parserParseExpr(parser, LOWEST);
-    ASTCompound_T* ifBody = parserParseCompound(parser);
-    ASTCompound_T* elseBody = NULL;
+    parser_consume(parser, TOKEN_IF, "expect `if` keyword");
+    ASTExpr_T* condition = parse_expr(parser, LOWEST);
+    ASTCompound_T* if_body = parse_compound(parser);
+    ASTCompound_T* else_body = NULL;
 
-    if(tokIs(parser, TOKEN_ELSE)) {
-        parserAdvance(parser);
-        elseBody = parserParseCompound(parser);
+    if(tok_is(parser, TOKEN_ELSE)) {
+        parser_advance(parser);
+        else_body = parse_compound(parser);
     }
     
-    return initASTIf(condition, ifBody, elseBody);
+    return init_ast_if(condition, if_body, else_body);
 }
 
-static ASTReturn_T* parserParseReturn(parser_T* parser)
+static ASTReturn_T* parse_return(Parser_T* parser)
 {
-    parserConsume(parser, TOKEN_RETURN, "expect `ret` keyword");
-    ASTReturn_T* ast = initASTReturn(parserParseExpr(parser, LOWEST));
-    parserConsume(parser, TOKEN_SEMICOLON, "expect `;` after return value");
+    parser_consume(parser, TOKEN_RETURN, "expect `ret` keyword");
+    ASTReturn_T* ast = init_ast_return(parse_expr(parser, LOWEST));
+    parser_consume(parser, TOKEN_SEMICOLON, "expect `;` after return value");
     return ast;
 }
 
-static ASTLocal_T* parserParseLocal(parser_T* parser)
+static ASTLocal_T* parse_local(Parser_T* parser)
 {
-    parserConsume(parser, TOKEN_LET, "expect `let` keyword");
+    parser_consume(parser, TOKEN_LET, "expect `let` keyword");
     bool mutable = false;
-    if(tokIs(parser, TOKEN_MUT))
+    if(tok_is(parser, TOKEN_MUT))
     {
         mutable = true;
-        parserAdvance(parser);
+        parser_advance(parser);
     }
 
     char* name = strdup(parser->tok->value);
-    parserConsume(parser, TOKEN_ID, "expect variable name");
-    parserConsume(parser, TOKEN_COLON, "expect `:` after variable name");
+    parser_consume(parser, TOKEN_ID, "expect variable name");
+    parser_consume(parser, TOKEN_COLON, "expect `:` after variable name");
 
-    ASTType_T* type = parserParseType(parser);
+    ASTType_T* type = parse_type(parser);
 
     ASTExpr_T* value = NULL;
-    if(tokIs(parser, TOKEN_ASSIGN)) {
-        parserAdvance(parser); 
-        value = parserParseExpr(parser, LOWEST);
+    if(tok_is(parser, TOKEN_ASSIGN)) {
+        parser_advance(parser); 
+        value = parse_expr(parser, LOWEST);
     }
     
-    parserConsume(parser, TOKEN_SEMICOLON, "expect `;` after variable definition");
+    parser_consume(parser, TOKEN_SEMICOLON, "expect `;` after variable definition");
 
-    ASTLocal_T* ast = initASTLocal(type, value, name, parser->tok->line, parser->tok->pos);
+    ASTLocal_T* ast = init_ast_local(type, value, name, parser->tok->line, parser->tok->pos);
     ast->isMutable = mutable;
     free(name);
     return ast;
 }
 
-static ASTExprStmt_T* parserParseExpressionStatement(parser_T* parser)
+static ASTExprStmt_T* parse_expression_statement(Parser_T* parser)
 {
-    unsigned int startLine = parser->tok->line, startPos = parser->tok->pos + 1;
+    unsigned int start_line = parser->tok->line, start_pos = parser->tok->pos + 1;
 
-    ASTExprStmt_T* ast = initASTExprStmt(parserParseExpr(parser, LOWEST));
+    ASTExprStmt_T* ast = init_ast_expr_stmt(parse_expr(parser, LOWEST));
 
-    if(!expressionIsExecutable(ast->expr))
-        throwSyntaxError(parser->eh, "can only treat assigning expressions as statements (e.g. =, +=, ++)", startLine, startPos);
+    if(!expr_is_executable(ast->expr))
+        throw_syntax_error(parser->eh, "can only treat assigning expressions as statements (e.g. =, +=, ++)", start_line, start_pos);
 
-    parserConsume(parser, TOKEN_SEMICOLON, "expect `;` after expression");
+    parser_consume(parser, TOKEN_SEMICOLON, "expect `;` after expression");
     return ast;
 }
 
-static ASTStmt_T* parserParseStatement(parser_T* parser)
+static ASTStmt_T* parse_statement(Parser_T* parser)
 {
     void* stmt;
     ASTStmtType_T type;
@@ -840,83 +838,83 @@ static ASTStmt_T* parserParseStatement(parser_T* parser)
     switch(parser->tok->type)
     {
         case TOKEN_LOOP:
-            stmt = parserParseLoop(parser);
+            stmt = parse_loop(parser);
             type = STMT_LOOP;
             break;
         
         case TOKEN_MATCH:
-            stmt = parserParseMatch(parser);
+            stmt = parse_match(parser);
             type = STMT_MATCH;
             break;
 
         case TOKEN_IF:
-            stmt = parserParseIf(parser);
+            stmt = parse_if(parser);
             type = STMT_IF;
             break;
 
         case TOKEN_RETURN:
             type = STMT_RETURN;
-            stmt = parserParseReturn(parser);
+            stmt = parse_return(parser);
             break;
 
         case TOKEN_LET:
             type = STMT_LET;
-            stmt = parserParseLocal(parser);
+            stmt = parse_local(parser);
             break;
 
         case TOKEN_ID:
             type = STMT_EXPRESSION;
-            stmt = parserParseExpressionStatement(parser);
+            stmt = parse_expression_statement(parser);
             break;
         
         default:
-            throwSyntaxError(parser->eh, "expect statement", parser->tok->line, parser->tok->pos);
+            throw_syntax_error(parser->eh, "expect statement", parser->tok->line, parser->tok->pos);
             exit(1);
             break;
     }
 
-    return initASTStmt(type, stmt);
+    return init_ast_stmt(type, stmt);
 }
 
 /////////////////////////////////
 // base structures             //
 /////////////////////////////////
 
-static ASTCompound_T* parserParseCompound(parser_T* parser)
+static ASTCompound_T* parse_compound(Parser_T* parser)
 {
-    list_T* stmts = initList(sizeof(struct AST_STATEMENT_STRUCT*));
+    List_T* stmts = init_list(sizeof(struct AST_STATEMENT_STRUCT*));
 
-    if(tokIs(parser, TOKEN_LBRACE))
+    if(tok_is(parser, TOKEN_LBRACE))
     {
-        parserAdvance(parser);
+        parser_advance(parser);
         
-        while(!tokIs(parser, TOKEN_RBRACE))
+        while(!tok_is(parser, TOKEN_RBRACE))
         {
-            listPush(stmts, parserParseStatement(parser));
+            list_push(stmts, parse_statement(parser));
 
-            if(tokIs(parser, TOKEN_EOF))
+            if(tok_is(parser, TOKEN_EOF))
             {
-                throwSyntaxError(parser->eh, "expect '}' after compound", parser->tok->line, parser->tok->pos);
+                throw_syntax_error(parser->eh, "expect '}' after compound", parser->tok->line, parser->tok->pos);
                 exit(1);
             }
         }
-        parserAdvance(parser);
+        parser_advance(parser);
     } else  // enables to do single statement compounds without braces
     {
-        listPush(stmts, parserParseStatement(parser));
+        list_push(stmts, parse_statement(parser));
     }
 
-    return initASTCompound(stmts);
+    return init_ast_compound(stmts);
 }
 
-static ASTGlobal_T* parserParseGlobal(parser_T* parser)
+static ASTGlobal_T* parse_global(Parser_T* parser)
 {
-    parserConsume(parser, TOKEN_LET, "expect `let` keyword");
+    parser_consume(parser, TOKEN_LET, "expect `let` keyword");
 
     bool mutable = false;
-    if(tokIs(parser, TOKEN_MUT))
+    if(tok_is(parser, TOKEN_MUT))
     {
-        parserAdvance(parser);
+        parser_advance(parser);
         mutable = true;
     }
 
@@ -925,62 +923,62 @@ static ASTGlobal_T* parserParseGlobal(parser_T* parser)
     unsigned int line = parser->tok->line;
     unsigned int pos = parser->tok->pos;
 
-    parserConsume(parser, TOKEN_ID, "expect variable name");
-    parserConsume(parser, TOKEN_COLON, "expect `:` after variable name");
+    parser_consume(parser, TOKEN_ID, "expect variable name");
+    parser_consume(parser, TOKEN_COLON, "expect `:` after variable name");
 
-    ASTType_T* type = parserParseType(parser);
+    ASTType_T* type = parse_type(parser);
 
     ASTExpr_T* value = NULL;
-    if(tokIs(parser, TOKEN_ASSIGN)) {
-        parserAdvance(parser); 
-        value = parserParseExpr(parser, LOWEST);
+    if(tok_is(parser, TOKEN_ASSIGN)) {
+        parser_advance(parser); 
+        value = parse_expr(parser, LOWEST);
     }
     
-    parserConsume(parser, TOKEN_SEMICOLON, "expect `;` after variable definition");
+    parser_consume(parser, TOKEN_SEMICOLON, "expect `;` after variable definition");
 
-    ASTGlobal_T* ast = initASTGlobal(name, type, value, line, pos);
-    ast->isMutable = mutable;
+    ASTGlobal_T* ast = init_ast_global(name, type, value, line, pos);
+    ast->is_mutable = mutable;
     free(name);
     return ast;
 }
 
-static ASTFunction_T* parserParseFunction(parser_T* parser)
+static ASTFunction_T* parse_function(Parser_T* parser)
 {
-    parserConsume(parser, TOKEN_FN, "expect `fn` keyword");
+    parser_consume(parser, TOKEN_FN, "expect `fn` keyword");
     char* name = strdup(parser->tok->value);
 
     unsigned int line = parser->tok->line;
     unsigned int pos = parser->tok->pos;
 
-    parserConsume(parser, TOKEN_ID, "expect function name");
-    parserConsume(parser, TOKEN_LPAREN, "expect `(` after function name");
+    parser_consume(parser, TOKEN_ID, "expect function name");
+    parser_consume(parser, TOKEN_LPAREN, "expect `(` after function name");
 
-    list_T* args = initList(sizeof(struct AST_ARGUMENT_STRUCT*));
-    while(!tokIs(parser, TOKEN_RPAREN))
+    List_T* args = init_list(sizeof(struct AST_ARGUMENT_STRUCT*));
+    while(!tok_is(parser, TOKEN_RPAREN))
     {
         char* argName = strdup(parser->tok->value);
-        parserConsume(parser, TOKEN_ID, "expect argument name");
-        parserConsume(parser, TOKEN_COLON, "expect `:` after argument name");
-        listPush(args, initASTArgument(argName, parserParseType(parser)));
+        parser_consume(parser, TOKEN_ID, "expect argument name");
+        parser_consume(parser, TOKEN_COLON, "expect `:` after argument name");
+        list_push(args, init_ast_argument(argName, parse_type(parser)));
         free(argName);
 
-        if(!tokIs(parser, TOKEN_RPAREN))
-            parserConsume(parser, TOKEN_COMMA, "expect `,` between arguments");
+        if(!tok_is(parser, TOKEN_RPAREN))
+            parser_consume(parser, TOKEN_COMMA, "expect `,` between arguments");
     }
-    parserAdvance(parser);
+    parser_advance(parser);
     
     ASTType_T* returnType = NULL;
-    if(tokIs(parser, TOKEN_COLON)) {
-        parserAdvance(parser);
-        returnType = parserParseType(parser);
+    if(tok_is(parser, TOKEN_COLON)) {
+        parser_advance(parser);
+        returnType = parse_type(parser);
     }
     else {
-        returnType = initASTType(AST_VOID, NULL, NULL, "", parser->tok->line, parser->tok->pos);
+        returnType = init_ast_type(AST_VOID, NULL, NULL, "", parser->tok->line, parser->tok->pos);
     }
 
-    ASTCompound_T* body = parserParseCompound(parser);
+    ASTCompound_T* body = parse_compound(parser);
 
-    ASTFunction_T* ast = initASTFunction(name, returnType, body, args, line, pos);
+    ASTFunction_T* ast = init_ast_function(name, returnType, body, args, line, pos);
     free(name);
     return ast;
 }
@@ -996,13 +994,13 @@ static char* getDirectoryFromRelativePath(char* mainPath)
 #endif
 }
 
-static void parserParseImport(parser_T* parser, ASTProgram_T* programRef)
+static void parse_import(Parser_T* parser, ASTProgram_T* program_ref)
 {
-    parserConsume(parser, TOKEN_IMPORT, "expect `import` keyword");
+    parser_consume(parser, TOKEN_IMPORT, "expect `import` keyword");
     char* relativePath = strdup(parser->tok->value);
-    parserConsume(parser, TOKEN_STRING, "expect filepath to import");
+    parser_consume(parser, TOKEN_STRING, "expect filepath to import");
 
-    char* directory = getDirectoryFromRelativePath(programRef->mainFile);
+    char* directory = getDirectoryFromRelativePath(program_ref->main_file);
     char* importPath = calloc(strlen(directory) + strlen(relativePath) + 2, sizeof(char*));
     sprintf(importPath, "%s/%s", directory, relativePath);
     free(relativePath);
@@ -1013,12 +1011,12 @@ static void parserParseImport(parser_T* parser, ASTProgram_T* programRef)
         const char* template = "could not open file \"%s\": no such file or directory";
         char* message = calloc(strlen(template) + strlen(importPath) + 1, sizeof(char));
         sprintf(message, template, importPath);
-        throwUndefinitionError(parser->eh, message, parser->tok->line, parser->tok->pos);
+        throw_undef_error(parser->eh, message, parser->tok->line, parser->tok->pos);
         free(message);
         exit(1);
     }
 
-    parserConsume(parser, TOKEN_SEMICOLON, "expect `;` after import");
+    parser_consume(parser, TOKEN_SEMICOLON, "expect `;` after import");
 
     for(int i = 0; i < parser->imports->size; i++)  // check if the file is already included, when its included, skip it. 
                                                     // No error gets thrown, because 2 files including each other is valid in Spydr
@@ -1028,38 +1026,38 @@ static void parserParseImport(parser_T* parser, ASTProgram_T* programRef)
             return;
         }
     }
-    listPush(parser->imports, importPath);
+    list_push(parser->imports, importPath);
 
     // if the file is not included, compile it to a new ASTFile_T.
-    srcFile_T* file = readFile(importPath);
-    errorHandler_T* eh = initErrorHandler(file);
-    lexer_T* lexer = initLexer(file, eh);
-    parser_T* _parser = initParser(lexer);
+    SrcFile_T* file = read_file(importPath);
+    ErrorHandler_T* eh = init_errorhandler(file);
+    Lexer_T* lexer = init_lexer(file, eh);
+    Parser_T* _parser = init_parser(lexer);
 
-    ASTFile_T* ast = parserParseFile(_parser, importPath, programRef);
-    listPush(programRef->files, ast);
+    ASTFile_T* ast = parse_file(_parser, importPath, program_ref);
+    list_push(program_ref->files, ast);
 
-    freeParser(_parser);
-    freeLexer(lexer);
-    freeErrorHandler(eh);
-    freeSrcFile(file);
+    free_parser(_parser);
+    free_lexer(lexer);
+    free_errorhandler(eh);
+    free_srcfile(file);
 }
 
-static ASTTypedef_T* parserParseTypedef(parser_T* parser)
+static ASTTypedef_T* parse_typedef(Parser_T* parser)
 {
-    parserConsume(parser, TOKEN_TYPE, "expect `type` keyword");
+    parser_consume(parser, TOKEN_TYPE, "expect `type` keyword");
     char* name = strdup(parser->tok->value);
 
     unsigned int line = parser->tok->line;
     unsigned int pos = parser->tok->pos;
 
-    parserConsume(parser, TOKEN_ID, "expect type name");
+    parser_consume(parser, TOKEN_ID, "expect type name");
 
-    parserConsume(parser, TOKEN_COLON, "expect `:` after typename");
+    parser_consume(parser, TOKEN_COLON, "expect `:` after typename");
 
-    ASTTypedef_T* ast = initASTTypedef(parserParseType(parser), name, line, pos);
+    ASTTypedef_T* ast = init_ast_typedef(parse_type(parser), name, line, pos);
     free(name);
 
-    parserConsume(parser, TOKEN_SEMICOLON, "expect `;` after type defintion");
+    parser_consume(parser, TOKEN_SEMICOLON, "expect `;` after type defintion");
     return ast;
 }

@@ -8,9 +8,9 @@
 #include <string.h>
 #include <stdlib.h>
 
-srcFile_T* readFile(const char* path)
+SrcFile_T* read_file(const char* path)
 {
-    list_T* bufferList = initList(sizeof(char*));
+    List_T* buffer_list = init_list(sizeof(char*));
 
     FILE* fp;
     char* line = NULL;
@@ -26,7 +26,7 @@ srcFile_T* readFile(const char* path)
 
     while((read = getline(&line, &len, fp)) != -1) 
     {
-        listPush(bufferList, strdup(line));
+        list_push(buffer_list, strdup(line));
     }
 
     fclose(fp);
@@ -35,10 +35,10 @@ srcFile_T* readFile(const char* path)
         free(line);
     }
 
-    return initSrcFile(bufferList, path);
+    return init_srcfile(buffer_list, path);
 }
 
-void writeFile(const char* path, char* buffer)
+void write_file(const char* path, char* buffer)
 {
     FILE* fp;
 
