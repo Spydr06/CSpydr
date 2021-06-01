@@ -20,7 +20,7 @@ LLVM_LDFLAGS = `llvm-config --ldflags --libs core executionengine interpreter an
 LLVM_CFLAGS = `llvm-config --cflags`
 LLVM_CPPFLAGS = `llvm-config --cppflags`
 
-CXXFLAGS ?= -DDEBUG -Wall -fPIC
+CXXFLAGS ?= -DDEBUG -Wall -fPIC -O0
 
 # C/C++ source files
 SRCS := $(shell find $(SRC_DIR) -name *.cpp -or -name *.c -or -name *.s)
@@ -46,10 +46,10 @@ INSTALL := install -D
 BLU := \033[0;34m
 GRE := \033[0;32m
 YEL := \033[0;33m
-CLR := \033[0m 
+CLR := \033[0m
 
 # main build process
-$(BUILD_DIR)/$(TARGET_EXEC): $(OBJS) $(BUILD_DIR)/$(TEST_EXEC)
+$(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
 # build main executable but exclude the unit test files
 	@$(ECHO) "[LD ]$(BLU) Linking  $(CLR)$@" 
 	@$(LD) $(LLVM_LDFLAGS) $(filter-out $(BUILD_DIR)/$(TEST_DIR)/$(TEST_FILE).o,$(OBJS)) -o $@ $(LDFLAGS)
@@ -64,10 +64,6 @@ $(BUILD_DIR)/$(TEST_EXEC):
 	@$(LD) $(LLVM_LDFLAGS) $(filter-out $(BUILD_DIR)/$(SRC_DIR)/$(MAIN_FILE).o,$(OBJS)) -o $@ $(LDFLAGS)
 	@$(MKDIR) $(TARGET_DEST)
 	@$(MV) $(BUILD_DIR)/$(TEST_EXEC) $(TARGET_DEST)/$(TEST_EXEC)
-
-# run the unit tests
-	@$(ECHO) "$(YEL)Running Unit Tests...$(CLR)"
-	@$(TARGET_DEST)/$(TEST_EXEC)
 
 # c source
 $(BUILD_DIR)/%.c.o: %.c
@@ -86,6 +82,18 @@ $(BUILD_DIR)/%.s.o: %.s
 	@$(ECHO) "[ASM]$(GRE) Compiling$(CLR)$<"
 	@$(MKDIR) $(dir $@)
 	@$(ASM) $(ASFLAGS) -c $< -o $@
+
+.PHONY: test
+test: $(OBJS) $(BUILD_DIR)/$(TEST_EXEC)
+# run the unit tests
+	@$(ECHO) "$(YEL)Running Unit Tests...$(CLR)"
+	@$(TARGET_DEST)/$(TEST_EXEC)
+
+.PHONY: build
+build: $(OBJS)
+
+.PHONY: link
+link: $(BUILD_DIR)/$(TARGET_EXEC)
 
 .PHONY: install
 install: 

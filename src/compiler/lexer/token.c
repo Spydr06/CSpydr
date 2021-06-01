@@ -34,3 +34,8 @@ char* token_to_str(Token_T* token)
 
     return buffer;
 }
+
+Token_T* dupl_token(Token_T* tok)
+{
+    return init_token(tok->value, tok->line, tok->pos, tok->type);
+}

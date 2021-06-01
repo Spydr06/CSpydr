@@ -32,14 +32,12 @@ typedef enum {
     PREFIX  =  7, // -x, !x
     CALL    =  8, // x(y)
     INDEX   =  9, // x[y]
-    HIGHEST = 10,
-} precedence_T;
+    MEMBER  = 10,
+    HIGHEST = 11,
+} Precedence_T;
 
 Parser_T* init_parser(Lexer_T* lexer);
 void free_parser(Parser_T* parser);
-
-Token_T* parser_advance(Parser_T* parser);
-Token_T* parser_consume(Parser_T* parser, TokenType_T type, const char* msg);
 
 ASTProg_T* parse(Parser_T* parser, const char* mainFile);
 

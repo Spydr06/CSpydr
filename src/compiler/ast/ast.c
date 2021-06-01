@@ -11,7 +11,7 @@ ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok)
 {
     ASTNode_T* node = malloc(sizeof(struct AST_NODE_STRUCT));
     node->kind = kind;
-    node->tok = tok;
+    node->tok = dupl_token(tok);
 
     return node;
 }
@@ -27,7 +27,7 @@ ASTType_T* init_ast_type(ASTTypeKind_T kind, Token_T* tok)
 {
     ASTType_T* type = malloc(sizeof(struct AST_TYPE_STRUCT));
     type->kind = kind;
-    type->tok = tok;
+    type->tok = dupl_token(tok);
 
     type->size = type_byte_size_map[kind];
 
@@ -45,7 +45,7 @@ ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok)
 {
     ASTObj_T* obj = malloc(sizeof(struct AST_OBJ_STRUCT));
     obj->kind = kind;
-    obj->tok = tok;
+    obj->tok = dupl_token(tok);
 
     return obj;
 }
@@ -53,6 +53,9 @@ ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok)
 void free_ast_obj(ASTObj_T* obj)
 {
     free_sf(obj->tok, free_token);
+    
+    free_s(obj->callee);
+    free_sf(obj->body, free_ast_node)
 
     free_s(obj);
 }

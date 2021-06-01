@@ -84,6 +84,8 @@ typedef struct TOKEN_STRUCT {
 Token_T* init_token(char* value, unsigned int line, unsigned int position, TokenType_T type);
 void free_token(Token_T* token);
 
+Token_T* dupl_token(Token_T* tok);  // duplicates a token
+
 char* token_to_str(Token_T* token);
 
 #endif

@@ -430,7 +430,7 @@ static Token_T* lexer_get_symbol(Lexer_T* lexer)
 
         default: {
             const char* template = "unexpected symbol `%c` [id: %d]";
-            char* msg = calloc(strlen(template) + 1, sizeof(char));
+            char* msg = calloc(strlen(template) + 2, sizeof(char));
             sprintf(msg, template, lexer->c, lexer->c);
 
             throw_syntax_error(lexer->eh, msg, lexer->line, lexer->pos);

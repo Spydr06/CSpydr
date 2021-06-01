@@ -15,7 +15,7 @@
     ASTProg_T* prog = parse(parser, msg);                        \
     TEST_ASSERT(prog != NULL);                                   \
     code                                                         \
-    free_ast_prog(prog);                                         \
+    /*FIXME: free_ast_prog(prog);*/                                         \
     free_parser(parser);                                         \
     free_lexer(lexer);                                           \
     free_errorhandler(eh);                                       \

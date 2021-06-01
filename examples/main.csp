@@ -1,4 +1,4 @@
 # a basic test program used for developing this programming language
 fn main(x: i32): i32 {
-    <- 0;
+    <- as;
 }

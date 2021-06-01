@@ -90,7 +90,6 @@ struct AST_NODE_STRUCT
     ASTNodeKind_T kind;
     Token_T* tok;
 
-    union {
         ASTType_T* data_type;
 
         // id
@@ -120,7 +119,9 @@ struct AST_NODE_STRUCT
 
         // loop
         ASTNode_T* body;
-    };
+
+        // return
+        ASTNode_T* return_val;
 };
 
 struct AST_TYPE_STRUCT 
@@ -128,7 +129,6 @@ struct AST_TYPE_STRUCT
     ASTTypeKind_T kind;
     Token_T* tok;
 
-    union {
         ASTType_T* base;
         int size;
 
@@ -137,7 +137,6 @@ struct AST_TYPE_STRUCT
         // functions
         bool is_fn;
         List_T* arg_types;  // list of ASTType_Ts
-    };
 };
 
 struct AST_OBJ_STRUCT 
@@ -145,7 +144,8 @@ struct AST_OBJ_STRUCT
     ASTObjKind_T kind;
     Token_T* tok;
 
-    union {
+        char* callee;
+
         // variables
         bool is_mutable;
         ASTType_T* data_type;
@@ -155,7 +155,6 @@ struct AST_OBJ_STRUCT
         ASTType_T* return_type;
         List_T* args;           // list of ASTObj_Ts
         ASTNode_T* body;
-    };
 };
 
 typedef struct AST_PROG_STRUCT

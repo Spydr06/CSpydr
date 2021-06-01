@@ -13,98 +13,69 @@
 
 #include <unistd.h>
 
+#define SYNTAX_ERROR(parser, msg) throw_syntax_error(parser->eh, msg, parser->tok->line, parser->tok->pos);
+
 /////////////////////////////////
 // expression parsing settings //
 /////////////////////////////////
 
-/*#define NUM_PREFIX_PARSE_FNS 16
-#define NUM_INFIX_PARSE_FNS  19
-#define NUM_PRECEDENCES      19
+static ASTNode_T* parse_id(Parser_T* p);
+static ASTNode_T* parse_int_lit(Parser_T* p);
+static ASTNode_T* parse_float_lit(Parser_T* p);
+static ASTNode_T* parse_char_lit(Parser_T* p);
+static ASTNode_T* parse_bool_lit(Parser_T* p);
+static ASTNode_T* parse_str_lit(Parser_T* p);
+static ASTNode_T* parse_nil_lit(Parser_T* p);
 
-static ASTExpr_T* parse_identifier(Parser_T* parser);
-static ASTExpr_T* parse_float(Parser_T* parser);
-static ASTExpr_T* parse_int(Parser_T* parser);
-static ASTExpr_T* parse_bool(Parser_T* parser);
-static ASTExpr_T* parse_char(Parser_T* parser);
-static ASTExpr_T* parse_string(Parser_T* parser);
-static ASTExpr_T* parse_not(Parser_T* parser);
-static ASTExpr_T* parse_negate(Parser_T* parser);
-static ASTExpr_T* parse_closure(Parser_T* parser);
-static ASTExpr_T* parse_array(Parser_T* parser);
-static ASTExpr_T* parse_deref(Parser_T* parser);
-static ASTExpr_T* parse_ref(Parser_T* parser);
-static ASTExpr_T* parse_nil(Parser_T* parser);
-static ASTExpr_T* parse_struct(Parser_T* parser);
-static ASTExpr_T* parse_bitwise_negation(Parser_T* parser);
+static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } expr_parse_fns[TOKEN_EOF + 1] = {
+    [TOKEN_ID]       = {parse_id, NULL, LOWEST},
+    [TOKEN_INT]      = {parse_int_lit, NULL, LOWEST},
+    [TOKEN_FLOAT]    = {parse_float_lit, NULL, LOWEST},
+    [TOKEN_NIL]      = {parse_nil_lit, NULL, LOWEST},
+    [TOKEN_TRUE]     = {parse_bool_lit, NULL, LOWEST},
+    [TOKEN_FALSE]    = {parse_bool_lit, NULL, LOWEST},
+    [TOKEN_CHAR]     = {parse_char_lit, NULL, LOWEST},
+    [TOKEN_STRING]   = {parse_str_lit, NULL, LOWEST},
+    [TOKEN_BANG]     = {NULL, NULL, LOWEST},
+    [TOKEN_MINUS]    = {NULL, NULL, SUM},
+    [TOKEN_LPAREN]   = {NULL, NULL, CALL}, 
+    [TOKEN_LBRACKET] = {NULL, NULL, INDEX},   
+    [TOKEN_LBRACE]   = {NULL, NULL, LOWEST}, 
+    [TOKEN_STAR]     = {NULL, NULL, PRODUCT},
+    [TOKEN_REF]      = {NULL, NULL, LOWEST},
+    [TOKEN_TILDE]    = {NULL, NULL, LOWEST},
+    [TOKEN_PLUS]     = {NULL, NULL, SUM},    
+    [TOKEN_SLASH]    = {NULL, NULL, PRODUCT},    
+    [TOKEN_EQ]       = {NULL, NULL, EQUALS}, 
+    [TOKEN_NOT_EQ]   = {NULL, NULL, EQUALS},     
+    [TOKEN_GT]       = {NULL, NULL, LTGT}, 
+    [TOKEN_GT_EQ]    = {NULL, NULL, LTGT},    
+    [TOKEN_LT]       = {NULL, NULL, LTGT}, 
+    [TOKEN_LT_EQ]    = {NULL, NULL, LTGT},           
+    [TOKEN_INC]      = {NULL, NULL, POSTFIX},  
+    [TOKEN_DEC]      = {NULL, NULL, POSTFIX},  
+    [TOKEN_ASSIGN]   = {NULL, NULL, ASSIGN},     
+    [TOKEN_ADD]      = {NULL, NULL, ASSIGN},  
+    [TOKEN_SUB]      = {NULL, NULL, ASSIGN},  
+    [TOKEN_DIV]      = {NULL, NULL, ASSIGN},  
+    [TOKEN_MULT]     = {NULL, NULL, ASSIGN},   
+    [TOKEN_DOT]      = {NULL, NULL, MEMBER},  
+}; 
 
-struct {TokenType_T tt; prefix_parse_fn fn;} prefix_parse_fns[NUM_PREFIX_PARSE_FNS] = {
-    {TOKEN_ID, parse_identifier},
-    {TOKEN_INT, parse_int},
-    {TOKEN_FLOAT, parse_float},
-    {TOKEN_NIL, parse_nil},
-    {TOKEN_TRUE, parse_bool},
-    {TOKEN_FALSE, parse_bool},
-    {TOKEN_CHAR, parse_char},
-    {TOKEN_STRING, parse_string},
-    {TOKEN_BANG, parse_not},
-    {TOKEN_MINUS, parse_negate},
-    {TOKEN_LPAREN, parse_closure},
-    {TOKEN_LBRACKET, parse_array},
-    {TOKEN_LBRACE, parse_struct},
-    {TOKEN_STAR, parse_deref},
-    {TOKEN_REF, parse_ref},
-    {TOKEN_TILDE, parse_bitwise_negation},
-};
+static inline prefix_parse_fn get_prefix_parse_fn(TokenType_T tt)
+{
+    return expr_parse_fns[tt].pfn;
+}
 
-static ASTExpr_T* parse_infix_expression(Parser_T* parser, ASTExpr_T* left);
-static ASTExpr_T* parse_call_expression(Parser_T* parser, ASTExpr_T* left);
-static ASTExpr_T* parse_index_expression(Parser_T* parser, ASTExpr_T* left);
-static ASTExpr_T* parse_postfix_expression(Parser_T* parser, ASTExpr_T* left);
-static ASTExpr_T* parse_assignment(Parser_T* parser, ASTExpr_T* left);
+static inline infix_parse_fn get_infix_parse_fn(TokenType_T tt)
+{
+    return expr_parse_fns[tt].ifn;
+}
 
-struct {TokenType_T tt; infix_parse_fn fn;} infix_parse_fns[NUM_INFIX_PARSE_FNS] = {
-    {TOKEN_PLUS, parse_infix_expression},
-    {TOKEN_MINUS, parse_infix_expression},
-    {TOKEN_STAR, parse_infix_expression},
-    {TOKEN_SLASH, parse_infix_expression},
-    {TOKEN_EQ, parse_infix_expression},
-    {TOKEN_NOT_EQ, parse_infix_expression},
-    {TOKEN_GT, parse_infix_expression},
-    {TOKEN_LT, parse_infix_expression},
-    {TOKEN_GT_EQ, parse_infix_expression},
-    {TOKEN_LT_EQ, parse_infix_expression},
-    {TOKEN_LPAREN, parse_call_expression},
-    {TOKEN_LBRACKET, parse_index_expression},
-    {TOKEN_INC, parse_postfix_expression},
-    {TOKEN_DEC, parse_postfix_expression},
-    {TOKEN_ASSIGN, parse_assignment},
-    {TOKEN_ADD, parse_assignment},
-    {TOKEN_MULT, parse_assignment},
-    {TOKEN_SUB, parse_assignment},
-    {TOKEN_DIV, parse_assignment},
-};
-
-struct {TokenType_T tt; precedence_T prec;} precedences[NUM_PRECEDENCES] = {
-    {TOKEN_EQ, EQUALS},
-    {TOKEN_NOT_EQ, EQUALS},
-    {TOKEN_LT, LTGT},
-    {TOKEN_GT, LTGT},
-    {TOKEN_LT_EQ, LTGT},
-    {TOKEN_GT_EQ, LTGT},
-    {TOKEN_PLUS, SUM},
-    {TOKEN_MINUS, SUM},
-    {TOKEN_STAR, PRODUCT},
-    {TOKEN_SLASH, PRODUCT},
-    {TOKEN_LPAREN, CALL},
-    {TOKEN_LBRACKET, INDEX},
-    {TOKEN_INC, POSTFIX},
-    {TOKEN_DEC, POSTFIX},
-    {TOKEN_ASSIGN, ASSIGN},
-    {TOKEN_ADD, ASSIGN},
-    {TOKEN_SUB, ASSIGN},
-    {TOKEN_MULT, ASSIGN},
-    {TOKEN_DIV, ASSIGN},
-};*/
+static inline Precedence_T get_precedence(TokenType_T tt)
+{
+    return expr_parse_fns[tt].prec;
+}
 
 /////////////////////////////////
 // helperfunctions             //
@@ -123,79 +94,305 @@ Parser_T* init_parser(Lexer_T* lexer)
     return parser;
 }
 
-void free_parser(Parser_T* parser)
+void free_parser(Parser_T* p)
 {
-    free_token(parser->tok);
+    free_token(p->tok);
 
-    for(int i = 0; i < parser->imports->size; i++)
-        free((char*) parser->imports->items[i]);
-    free_list(parser->imports);
+    for(int i = 0; i < p->imports->size; i++)
+        free((char*) p->imports->items[i]);
+    free_list(p->imports);
 
-    free(parser);
+    free(p);
 }
 
-Token_T* parser_advance(Parser_T* parser)
+static inline Token_T* parser_advance(Parser_T* p)
 {
-    free_token(parser->tok);
-    parser->tok = lexer_next_token(parser->lexer);
-    return parser->tok;
+    free_token(p->tok);
+    p->tok = lexer_next_token(p->lexer);
+    return p->tok;
 }
 
-bool tok_is(Parser_T* parser, TokenType_T type)
+static inline bool tok_is(Parser_T* p, TokenType_T type)
 {
-    return parser->tok->type == type;
+    return p->tok->type == type;
 }
 
-bool streq(char* s1, char* s2)
+static inline bool streq(char* s1, char* s2)
 {
     return strcmp(s1, s2) == 0;
 }
 
-Token_T* parser_consume(Parser_T* parser, TokenType_T type, const char* msg)
+Token_T* parser_consume(Parser_T* p, TokenType_T type, const char* msg)
 {
-    if(!tok_is(parser, type))
+    if(!tok_is(p, type))
     {
-        throw_syntax_error(parser->eh, msg, parser->tok->line, parser->tok->pos);
+        const char* err_tmp = "unexpected token `%s`, %s";
+        char* err_msg = calloc(strlen(err_tmp) + strlen(p->tok->value) + strlen(msg) + 1, sizeof(char));
+        sprintf(err_msg, err_tmp, p->tok->value, msg);
+        throw_syntax_error(p->eh, err_msg, p->tok->line, p->tok->pos);
+        free(err_msg);
+        exit(1);
     }
 
-    return parser_advance(parser);
+    return parser_advance(p);
 }
 
-ASTProg_T* parse(Parser_T* parser, const char* main_file)
+static ASTObj_T* parse_fn(Parser_T* p);
+
+ASTProg_T* parse(Parser_T* p, const char* main_file)
 {
     ASTProg_T* prog = init_ast_prog(main_file, NULL);
 
-
+    while(!tok_is(p, TOKEN_EOF))
+    {
+        switch(p->tok->type)
+        {
+            case TOKEN_IMPORT:
+                // TODO: handle imports
+                break;
+            case TOKEN_TYPE:
+                // TODO: handle typedefs
+                break;
+            case TOKEN_LET:
+                // TODO: handle globals
+                break;
+            case TOKEN_FN:
+                list_push(prog->objs, parse_fn(p));
+                break;
+            default: {
+                const char* err_tmp = "unexpected token `%s`, expect [import, type, let, fn]";
+                char* err_msg = calloc(strlen(err_tmp) + strlen(p->tok->value) + 1, sizeof(char));
+                sprintf(err_msg, err_tmp, p->tok->value);
+                throw_syntax_error(p->eh, err_msg, p->tok->line, p->tok->pos);
+            }
+        }
+    }
 
     return prog;
 }
+
+static ASTType_T* parse_type(Parser_T* p)
+{
+    ASTType_T* type = get_primitive_type(p->tok->value);
+    if(type)
+    {
+        parser_advance(p);
+        return type;
+    }
+
+    switch(p->tok->type)
+    {
+        case TOKEN_STRUCT:
+            // TODO: handle struct parsing
+            break;
+        case TOKEN_ENUM:
+            // TODO: handle enum parsing
+            break;
+        case TOKEN_STAR:
+            {
+                type = init_ast_type(TY_PTR, p->tok);
+                parser_advance(p);
+                type->base = parse_type(p);
+            }
+
+            break;
+        case TOKEN_LBRACKET:
+            // TODO: handle array parsing
+            break;
+        default:
+            // TODO: handle typedef parsing
+            break;
+    }
+
+    return type;
+}
+
+static List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok)
+{
+    List_T* arg_list = init_list(sizeof(ASTObj_T*));
+
+    while(p->tok->type != end_tok)
+    {
+        ASTObj_T* arg = init_ast_obj(OBJ_FN_ARG, p->tok);
+        arg->callee = strdup(p->tok->value);
+        parser_consume(p, TOKEN_ID, "expect argument name");
+        parser_consume(p, TOKEN_COLON, "expect `:` after argument name");
+
+        arg->data_type = parse_type(p);
+        list_push(arg_list, arg);
+
+        if(p->tok->type != end_tok)
+            parser_consume(p, TOKEN_COMMA, "expect `,` between arguments");
+    }
+
+    return arg_list;
+}
+
+static ASTNode_T* parse_stmt(Parser_T* p);
+static ASTNode_T* parse_expr(Parser_T* p, Precedence_T prec, TokenType_T end_tok);
+
+static ASTObj_T* parse_fn(Parser_T* p)
+{
+    ASTObj_T* fn = init_ast_obj(OBJ_FUNCTION, p->tok);
+    parser_consume(p, TOKEN_FN, "expect `fn` keyword for a function definition");
+
+    fn->callee = strdup(p->tok->value);
+    parser_consume(p, TOKEN_ID, "expect function name");
+
+    parser_consume(p, TOKEN_LPAREN, "expect `(` after function name");
+
+    fn->args = parse_argument_list(p, TOKEN_RPAREN);
+
+    parser_consume(p, TOKEN_RPAREN, "expect `)` after function arguments");
+    parser_consume(p, TOKEN_COLON, "expect `:` after function arguments");
+    
+    fn->return_type = parse_type(p);
+
+    fn->body = parse_stmt(p);
+
+    return fn;
+}
+
+static ASTNode_T* parse_block(Parser_T* p)
+{
+    ASTNode_T* block = init_ast_node(ND_BLOCK, p->tok);
+
+    parser_consume(p, TOKEN_LBRACE, "expect `{` at the beginning of a block statement");
+
+    while(p->tok->type != TOKEN_RBRACE)
+        parse_stmt(p);
+
+    parser_consume(p, TOKEN_RBRACE, "expect `}` at the end of a block statement");
+
+    return block;
+}
+
+static ASTNode_T* parse_return(Parser_T* p)
+{
+    ASTNode_T* ret = init_ast_node(ND_RETURN, p->tok);
+
+    parser_consume(p, TOKEN_RETURN, "expect `ret` or `<-` to return");
+
+    if(!tok_is(p, TOKEN_SEMICOLON))
+        ret->return_val = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after return statement");
+
+    return ret;
+}
+
+static ASTNode_T* parse_stmt(Parser_T* p)
+{
+    switch(p->tok->type)
+    {
+        case TOKEN_LBRACE:
+            return parse_block(p);
+        case TOKEN_RETURN:
+            return parse_return(p);
+        default: {
+            const char* err_tmp = "unexpected token `%s`, expect statement";
+            char* err_msg = calloc(strlen(err_tmp) + strlen(p->tok->value) + 1, sizeof(char));
+            sprintf(err_msg, err_tmp, p->tok->value);
+            throw_syntax_error(p->eh, err_msg, p->tok->line, p->tok->pos);
+        }
+    }
+
+    // satisfy -Wall
+    return NULL;
+}
+
+static ASTNode_T* parse_expr(Parser_T* p, Precedence_T prec, TokenType_T end_tok)
+{
+    prefix_parse_fn prefix = get_prefix_parse_fn(p->tok->type);
+    if(!prefix)
+    {
+        const char* template = "no prefix parse function for token `%s` found";
+        char* msg = calloc(strlen(template) + strlen(p->tok->value) + 1, sizeof(char));
+        sprintf(msg, template, p->tok->value);
+
+        throw_syntax_error(p->eh, msg, p->tok->line, p->tok->pos);
+        free(msg);
+        exit(1);
+    }
+    ASTNode_T* left_expr = prefix(p);
+
+    while(!tok_is(p, end_tok) && prec < get_precedence(p->tok->type))
+    {
+        infix_parse_fn infix = get_infix_parse_fn(p->tok->type);
+        if(!infix)
+            return left_expr;
+        
+        left_expr = infix(p, left_expr);
+    }
+
+    return left_expr;
+}
+
+static ASTNode_T* parse_id(Parser_T* p)
+{
+    ASTNode_T* id = init_ast_node(ND_ID, p->tok);
+    id->callee = id->tok->value;
+    parser_consume(p, TOKEN_ID, "expect an identifier");
+    return id;
+}
+
+static ASTNode_T* parse_int_lit(Parser_T* p)
+{
+    ASTNode_T* int_lit = init_ast_node(ND_INT, p->tok);
+    int_lit->int_val = atoi(p->tok->value);
+    parser_consume(p, TOKEN_INT, "expect integer literal (0, 1, 2, ...)");
+    return int_lit;
+}
+
+static ASTNode_T* parse_float_lit(Parser_T* p)
+{
+    ASTNode_T* float_lit = init_ast_node(ND_FLOAT, p->tok);
+    float_lit->float_val = atof(p->tok->value);
+    parser_consume(p, TOKEN_INT, "expect float literal (0, 1, 2.3, ...)");
+    return float_lit;
+}
+
+static ASTNode_T* parse_bool_lit(Parser_T* p)
+{
+    ASTNode_T* bool_lit = constant_literals[p->tok->type];
+
+    bool_lit->bool_val = p->tok->type == TOKEN_TRUE;
+
+    parser_advance(p);
+
+    if(!bool_lit->data_type)
+        bool_lit->data_type = primitives[TY_BOOL];
+
+    return bool_lit;
+}
+
+static ASTNode_T* parse_nil_lit(Parser_T* p)
+{
+    ASTNode_T* nil_lit = constant_literals[p->tok->type];
+    parser_advance(p);
+
+    if(!nil_lit->data_type)
+        nil_lit->data_type = &(ASTType_T){.kind = TY_PTR, .is_primitive = true, .size = VOID_S, .base = primitives[TY_VOID]};
+
+    return nil_lit;
+}
+
+static ASTNode_T* parse_char_lit(Parser_T* p)
+{
+    ASTNode_T* char_lit = init_ast_node(ND_CHAR, p->tok);
+    char_lit->char_val = p->tok->value[0];
+    parser_consume(p, TOKEN_CHAR, "expect char literal ('a', 'b', ...)");
+    return char_lit;
+}
+
+static ASTNode_T* parse_str_lit(Parser_T* p)
+{
+    ASTNode_T* str_lit = init_ast_node(ND_STR, p->tok);
+    str_lit->str_val = str_lit->tok->value;
+    parser_consume(p, TOKEN_STRING, "expect string literal (\"abc\", \"wxyz\", ...)");
+    return str_lit;
+}
+
 /*
-prefix_parse_fn get_prefix_parse_fn(TokenType_T type)
-{
-    for(int i = 0; i < NUM_PREFIX_PARSE_FNS; i++)
-        if(prefix_parse_fns[i].tt == type)
-            return prefix_parse_fns[i].fn;
-
-    return NULL;
-}
-
-infix_parse_fn get_Infix_parse_fn(TokenType_T type)
-{
-    for(int i = 0; i < NUM_INFIX_PARSE_FNS; i++)
-        if(infix_parse_fns[i].tt == type)
-            return infix_parse_fns[i].fn;
-
-    return NULL;
-}
-
-precedence_T get_precedence(Token_T* token)
-{
-    for(int i = 0; i < NUM_PRECEDENCES; i++)
-        if(precedences[i].tt == token->type)
-            return precedences[i].prec;
-
-    return LOWEST;
-}
 
 bool expr_is_executable(ASTExpr_T* expr)    // checks if the expression can be used as a statement ("executable" means it has to assign something)
 {
