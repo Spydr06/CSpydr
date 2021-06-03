@@ -1,4 +1,6 @@
 # a basic test program used for developing this programming language
+import "examples/string.csp";
+
 type foo_struct: struct {
     foo: i32,
     bar: u64

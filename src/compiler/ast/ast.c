@@ -69,6 +69,8 @@ ASTProg_T* init_ast_prog(const char* main_file_path, const char* target_binary)
     prog->main_file_path = main_file_path;
     prog->target_binary = target_binary;
 
+    prog->imports = init_list(sizeof(char*));
+
     prog->objs = init_list(sizeof(struct AST_OBJ_STRUCT*));
 
     return prog;

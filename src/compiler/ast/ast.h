@@ -202,6 +202,8 @@ typedef struct AST_PROG_STRUCT
     const char* main_file_path;
     const char* target_binary;
 
+    List_T* imports;
+
     List_T* objs;   // list of ASTObj_Ts
 } ASTProg_T;
 
