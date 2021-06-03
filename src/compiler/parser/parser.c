@@ -32,6 +32,7 @@ static ASTNode_T* parse_num_op(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_bool_op(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_assignment(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_postfix(Parser_T* p, ASTNode_T* left);
+static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left);
 
 static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left);
 
@@ -47,7 +48,7 @@ static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } ex
     [TOKEN_BANG]     = {parse_unary, NULL, LOWEST},
     [TOKEN_MINUS]    = {parse_unary, parse_num_op, SUM},
     [TOKEN_LPAREN]   = {NULL, parse_call, CALL}, 
-    [TOKEN_LBRACKET] = {NULL, NULL, INDEX},   
+    [TOKEN_LBRACKET] = {NULL, parse_index, INDEX},   
     [TOKEN_LBRACE]   = {NULL, NULL, LOWEST}, 
     [TOKEN_STAR]     = {parse_unary, parse_num_op, PRODUCT},
     [TOKEN_REF]      = {parse_unary, NULL, LOWEST},
@@ -178,7 +179,7 @@ Token_T* parser_consume(Parser_T* p, TokenType_T type, const char* msg)
 
 static inline bool is_editable(ASTNodeKind_T n)
 {
-    return n == ND_ID || n == ND_MEMBER;
+    return n == ND_ID || n == ND_MEMBER || n == ND_INDEX;
 }
 
 static inline bool is_executable(ASTNodeKind_T n)
@@ -663,6 +664,8 @@ static ASTNode_T* parse_postfix(Parser_T* p, ASTNode_T* left)
     ASTNode_T* postfix = init_ast_node(infix_ops[p->tok->type], p->tok);
     postfix->left = left;
 
+    parser_advance(p);
+
     return postfix;
 }
 
@@ -701,6 +704,28 @@ static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left)
     parser_consume(p, TOKEN_RPAREN, "expect `)` after call arguments");
     
     return call;
+}
+
+static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left)
+{
+    if(!is_editable(left->kind))
+    {
+        const char* err_tmp = "cannot get an index value of `%s`, expect array name or similar";
+        char* err_msg = calloc(strlen(err_tmp) + strlen(left->tok->value) + 1, sizeof(char));
+        sprintf(err_msg, err_tmp, left->tok->value);
+
+        throw_syntax_error(p->eh, err_msg, left->tok->line, left->tok->pos);
+    }
+
+    ASTNode_T* index = init_ast_node(ND_INDEX, p->tok);
+    index->left = left;
+
+    parser_consume(p, TOKEN_LBRACKET, "expect `[` after array name for an index expression");
+
+    index->expr = parse_expr(p, LOWEST, TOKEN_RBRACKET);
+    parser_consume(p, TOKEN_RBRACKET, "expect `]` after array index");
+
+    return index;
 }
 
 /*

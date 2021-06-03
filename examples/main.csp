@@ -4,6 +4,8 @@ fn main(x: i32): i32 {
     
     call(y, x);
 
+    y[4] = 5;
+
     if x {
 
     } else {

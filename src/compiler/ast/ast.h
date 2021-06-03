@@ -48,6 +48,7 @@ typedef enum {
 
     ND_MEMBER,  // x.y
     ND_CALL,    // x(y, z)
+    ND_INDEX,   // x[y]
 
     // statements
     ND_BLOCK,   // {...}
