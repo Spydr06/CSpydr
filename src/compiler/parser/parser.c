@@ -141,6 +141,12 @@ static ASTObj_T* parse_fn(Parser_T* p);
 
 ASTProg_T* parse(Parser_T* p, const char* main_file)
 {
+
+    if(!p->silent)
+    {
+        LOG_OK_F(COLOR_BOLD_GREEN "  Compiling" COLOR_RESET " %s\n", main_file);
+    }
+
     ASTProg_T* prog = init_ast_prog(main_file, NULL);
 
     while(!tok_is(p, TOKEN_EOF))
@@ -280,6 +286,86 @@ static ASTNode_T* parse_return(Parser_T* p)
     return ret;
 }
 
+static ASTNode_T* parse_if(Parser_T* p)
+{
+    ASTNode_T* if_stmt = init_ast_node(ND_IF, p->tok);
+
+    parser_consume(p, TOKEN_IF, "expect `if` keyword for an if statement");
+
+    if_stmt->condition = parse_expr(p, LOWEST, TOKEN_EOF);
+    if_stmt->if_branch = parse_stmt(p);
+
+    if(tok_is(p, TOKEN_ELSE))
+    {
+        parser_advance(p);
+        if_stmt->else_branch = parse_stmt(p);
+    }
+
+    return if_stmt;
+}
+
+static ASTNode_T* parse_loop(Parser_T* p)
+{
+    ASTNode_T* loop = init_ast_node(ND_LOOP, p->tok);
+
+    parser_consume(p, TOKEN_LOOP, "expect `loop` keyword for a loop");
+
+    loop->condition = parse_expr(p, LOWEST, TOKEN_EOF);
+    loop->body = parse_stmt(p);
+
+    return loop;
+}
+
+static ASTNode_T* parse_case(Parser_T* p)
+{
+    ASTNode_T* case_stmt = init_ast_node(ND_CASE, p->tok);
+
+    if(tok_is(p, TOKEN_UNDERSCORE))
+    {
+        parser_advance(p);
+        case_stmt->is_default_case = true;
+    }
+    else
+        case_stmt->condition = parse_expr(p, LOWEST, TOKEN_ARROW);
+
+    parser_consume(p, TOKEN_ARROW, "expect `=>` after case condition");
+    case_stmt->body = parse_stmt(p);
+
+    return case_stmt;
+}
+
+static ASTNode_T* parse_match(Parser_T* p)
+{
+    ASTNode_T* match = init_ast_node(ND_MATCH, p->tok);
+    match->cases = init_list(sizeof(struct AST_NODE_STRUCT*));
+    match->default_case = NULL;
+
+    parser_consume(p, TOKEN_MATCH, "expect `match` keyword to match an expression");
+
+    match->condition = parse_expr(p, LOWEST, TOKEN_LBRACE);
+    
+    parser_consume(p, TOKEN_LBRACE, "expect `{` after match condition");
+
+    while(!tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF))
+    {
+        ASTNode_T* case_stmt = parse_case(p);
+
+        if(case_stmt->is_default_case)
+        {
+            if(match->default_case)
+                throw_redef_error(p->eh, "redefinition of default case `_`.", case_stmt->tok->line, case_stmt->tok->pos + 1);
+
+            match->default_case = case_stmt;
+            continue;
+        }
+
+        list_push(match->cases, case_stmt);
+    }
+
+    parser_consume(p, TOKEN_RBRACE, "expect `}` after match condition");
+    return match;
+}
+
 static ASTNode_T* parse_stmt(Parser_T* p)
 {
     switch(p->tok->type)
@@ -288,6 +374,12 @@ static ASTNode_T* parse_stmt(Parser_T* p)
             return parse_block(p);
         case TOKEN_RETURN:
             return parse_return(p);
+        case TOKEN_IF:
+            return parse_if(p);
+        case TOKEN_LOOP:
+            return parse_loop(p);
+        case TOKEN_MATCH:
+            return parse_match(p);
         default: {
             const char* err_tmp = "unexpected token `%s`, expect statement";
             char* err_msg = calloc(strlen(err_tmp) + strlen(p->tok->value) + 1, sizeof(char));

@@ -146,7 +146,7 @@ void compile_llvm(char* path, char* target)
 
     //TODO:
 
-    free_ast_prog(ast);
+    //FIXME: free_ast_prog(ast);
     free_parser(parser);
     free_lexer(lexer);
     free_errorhandler(eh);

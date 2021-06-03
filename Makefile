@@ -46,7 +46,7 @@ INSTALL := install -D
 BLU := \033[0;34m
 GRE := \033[0;32m
 YEL := \033[0;33m
-CLR := \033[0m
+CLR := \033[0mx
 
 # main build process
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)

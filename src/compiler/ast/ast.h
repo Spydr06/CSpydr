@@ -44,6 +44,7 @@ typedef enum {
     ND_IF,      // if x {}
     ND_LOOP,    // loop x {}
     ND_MATCH,   // match x {}
+    ND_CASE,    // x => {} !!only in match statements!!
     ND_RETURN,  // ret x;
     ND_STMT_EXPR, // "executable" expressions
 
@@ -102,6 +103,8 @@ struct AST_NODE_STRUCT
         char char_val;
         char* str_val;
 
+        bool is_constant;
+
         // op
         ASTNode_T* left;
         ASTNode_T* right;
@@ -110,7 +113,7 @@ struct AST_NODE_STRUCT
         List_T* stmts;  // list of ASTNode_Ts
         List_T* locals; // list of ASTObj_Ts
 
-        // condition for loop, match and if statements
+        // condition for loop, match, case and if statements
         ASTNode_T* condition;
 
         // if
@@ -122,6 +125,13 @@ struct AST_NODE_STRUCT
 
         // return
         ASTNode_T* return_val;
+
+        // match
+        List_T* cases;           // list of ASTNode_Ts
+        ASTNode_T* default_case;
+
+        // case
+        bool is_default_case;
 };
 
 struct AST_TYPE_STRUCT 

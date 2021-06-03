@@ -12,6 +12,8 @@ ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok)
     ASTNode_T* node = malloc(sizeof(struct AST_NODE_STRUCT));
     node->kind = kind;
     node->tok = dupl_token(tok);
+    node->is_default_case = false;
+    node->is_constant = false;
 
     return node;
 }

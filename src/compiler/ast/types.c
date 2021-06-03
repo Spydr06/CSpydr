@@ -4,43 +4,26 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define I8_S   1
-#define I16_S  2
-#define I32_S  4
-#define I64_S  8
-#define U8_S   1
-#define U16_S  2
-#define U32_S  4
-#define U64_S  8
-#define F32_S  4
-#define F64_S  8
-#define F80_S  10
-#define CHAR_S 1
-#define BOOL_S 1
-#define VOID_S 1
-#define PTR_S  8
-#define ENUM_S 4
-
 ASTNode_T* constant_literals[TOKEN_EOF] = { // sets value literals, who are always the same to save memory
-    [TOKEN_TRUE]  = &(ASTNode_T){.kind = ND_BOOL, .bool_val = true},
-    [TOKEN_FALSE] = &(ASTNode_T){.kind = ND_BOOL, .bool_val = false},
-    [TOKEN_NIL]   = &(ASTNode_T){.kind = ND_NIL, .int_val = 0},
+    [TOKEN_TRUE]  = &(ASTNode_T){.kind = ND_BOOL, .bool_val = true,  .is_constant = true},
+    [TOKEN_FALSE] = &(ASTNode_T){.kind = ND_BOOL, .bool_val = false, .is_constant = true},
+    [TOKEN_NIL]   = &(ASTNode_T){.kind = ND_NIL, .int_val = 0,       .is_constant = true},
 };
 
 ASTType_T* primitives[NUM_TYPES] = {    // sets the primitive data types, who are always the same to save memory
-    [TY_I8]  = &(ASTType_T){.kind = TY_I8,  .is_primitive = true, .size = I8_S},
-    [TY_I16] = &(ASTType_T){.kind = TY_I16, .is_primitive = true, .size = I16_S},
-    [TY_I32] = &(ASTType_T){.kind = TY_I32, .is_primitive = true, .size = I32_S},
-    [TY_I64] = &(ASTType_T){.kind = TY_I64, .is_primitive = true, .size = I64_S},
+    [TY_I8]  = &(ASTType_T){.kind = TY_I8,    .is_primitive = true, .size = I8_S},
+    [TY_I16] = &(ASTType_T){.kind = TY_I16,   .is_primitive = true, .size = I16_S},
+    [TY_I32] = &(ASTType_T){.kind = TY_I32,   .is_primitive = true, .size = I32_S},
+    [TY_I64] = &(ASTType_T){.kind = TY_I64,   .is_primitive = true, .size = I64_S},
 
-    [TY_U8]  = &(ASTType_T){.kind = TY_U8,  .is_primitive = true, .size = U8_S},
-    [TY_U16] = &(ASTType_T){.kind = TY_U16, .is_primitive = true, .size = U16_S},
-    [TY_U32] = &(ASTType_T){.kind = TY_U32, .is_primitive = true, .size = U32_S},
-    [TY_U64] = &(ASTType_T){.kind = TY_U64, .is_primitive = true, .size = U64_S},
+    [TY_U8]  = &(ASTType_T){.kind = TY_U8,    .is_primitive = true, .size = U8_S},
+    [TY_U16] = &(ASTType_T){.kind = TY_U16,   .is_primitive = true, .size = U16_S},
+    [TY_U32] = &(ASTType_T){.kind = TY_U32,   .is_primitive = true, .size = U32_S},
+    [TY_U64] = &(ASTType_T){.kind = TY_U64,   .is_primitive = true, .size = U64_S},
 
-    [TY_F32] = &(ASTType_T){.kind = TY_F32, .is_primitive = true, .size = F32_S},
-    [TY_F64] = &(ASTType_T){.kind = TY_F64, .is_primitive = true, .size = F64_S},
-    [TY_F80] = &(ASTType_T){.kind = TY_F80, .is_primitive = true, .size = F80_S},
+    [TY_F32] = &(ASTType_T){.kind = TY_F32,   .is_primitive = true, .size = F32_S},
+    [TY_F64] = &(ASTType_T){.kind = TY_F64,   .is_primitive = true, .size = F64_S},
+    [TY_F80] = &(ASTType_T){.kind = TY_F80,   .is_primitive = true, .size = F80_S},
 
     [TY_VOID] = &(ASTType_T){.kind = TY_VOID, .is_primitive = true, .size = VOID_S},
     [TY_CHAR] = &(ASTType_T){.kind = TY_CHAR, .is_primitive = true, .size = CHAR_S},
@@ -94,9 +77,9 @@ const int type_byte_size_map[NUM_TYPES] = { // a array to find the size in bytes
     [TY_VOID] = VOID_S,
 
     [TY_PTR] = PTR_S,
-    [TY_ARR]   = 0,    // TODO: evaluate further
-    [TY_ENUM]    = ENUM_S,
-    [TY_STRUCT]  = 0
+    [TY_ARR] = 0,    // TODO: evaluate further
+    [TY_ENUM]   = ENUM_S,
+    [TY_STRUCT] = 0
 };
 
 ASTTypeKind_T get_datatype_from_str(char* str)
