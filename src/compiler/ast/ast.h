@@ -99,6 +99,7 @@ typedef enum {
     OBJ_LOCAL,
     OBJ_FUNCTION,
     OBJ_FN_ARG,
+    OBJ_TYPEDEF,
 } ASTObjKind_T;
 
 struct AST_NODE_STRUCT

@@ -1,4 +1,9 @@
 # a basic test program used for developing this programming language
+type foo_struct: struct {
+    foo: i32,
+    bar: u64
+};
+
 fn main(x: i32): i32 {
     let y: i32;
     
@@ -6,11 +11,7 @@ fn main(x: i32): i32 {
 
     y[4] = 5;
 
-    let z: struct {
-        foo: i32,
-        bar: u64
-    };
-
+    let z: foo_struct = {-235, 0xffffffc};
     let e: enum {
         E_OK,
         E_ERR,
@@ -32,3 +33,5 @@ fn main(x: i32): i32 {
         }
     }    
 }
+
+let global: i32 = 45;

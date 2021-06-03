@@ -51,7 +51,7 @@ CLR := \033[0m
 # main build process
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
 # build main executable but exclude the unit test files
-	@$(ECHO) "[LD ]$(BLU) Linking  $(CLR)$@" 
+	@$(ECHO) "[LD ]$(BLU) Linking   $(CLR)$@" 
 	@$(LD) $(LLVM_LDFLAGS) $(filter-out $(BUILD_DIR)/$(TEST_DIR)/$(TEST_FILE).o,$(OBJS)) -o $@ $(LDFLAGS)
 	@$(MKDIR) $(TARGET_DEST)
 	@$(MV) $(BUILD_DIR)/$(TARGET_EXEC) $(TARGET_DEST)/$(TARGET_EXEC)
@@ -60,26 +60,26 @@ $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
 # unit tests
 $(BUILD_DIR)/$(TEST_EXEC):
 # link all files except the main file (duplication of int main();)
-	@$(ECHO) "[LD ]$(BLU) Linking  $(CLR)$@" 
+	@$(ECHO) "[LD ]$(BLU) Linking   $(CLR)$@" 
 	@$(LD) $(LLVM_LDFLAGS) $(filter-out $(BUILD_DIR)/$(SRC_DIR)/$(MAIN_FILE).o,$(OBJS)) -o $@ $(LDFLAGS)
 	@$(MKDIR) $(TARGET_DEST)
 	@$(MV) $(BUILD_DIR)/$(TEST_EXEC) $(TARGET_DEST)/$(TEST_EXEC)
 
 # c source
 $(BUILD_DIR)/%.c.o: %.c
-	@$(ECHO) "[ C ]$(GRE) Compiling$(CLR)$<" 
+	@$(ECHO) "[ C ]$(GRE) Compiling $(CLR)$<" 
 	@$(MKDIR) $(dir $@)
 	@$(CC) $(CXXFLAGS) $(LLVM_CFLAGS) -c $< -o $@
 
 # cpp source
 $(BUILD_DIR)/%.cpp.o: %.cpp
-	@$(ECHO) "[CPP]$(GRE) Compiling$(CLR)$<" 
+	@$(ECHO) "[CPP]$(GRE) Compiling $(CLR)$<" 
 	@$(MKDIR) $(dir $@)
 	@$(CXX) $(CXXFLAGS) $(LLVM_CPPFLAGS) -c $< -o $@
 
 # assembly source
 $(BUILD_DIR)/%.s.o: %.s
-	@$(ECHO) "[ASM]$(GRE) Compiling$(CLR)$<"
+	@$(ECHO) "[ASM]$(GRE) Compiling $(CLR)$<"
 	@$(MKDIR) $(dir $@)
 	@$(ASM) $(ASFLAGS) -c $< -o $@
 

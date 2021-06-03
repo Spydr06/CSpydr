@@ -194,7 +194,9 @@ static inline bool is_executable(ASTNodeKind_T n)
 // Parser                      //
 /////////////////////////////////
 
+static ASTObj_T* parse_typedef(Parser_T* p);
 static ASTObj_T* parse_fn(Parser_T* p);
+static ASTObj_T* parse_global(Parser_T* p);
 
 ASTProg_T* parse(Parser_T* p, const char* main_file)
 {
@@ -214,10 +216,10 @@ ASTProg_T* parse(Parser_T* p, const char* main_file)
                 // TODO: handle imports
                 break;
             case TOKEN_TYPE:
-                // TODO: handle typedefs
+                list_push(prog->objs, parse_typedef(p));
                 break;
             case TOKEN_LET:
-                // TODO: handle globals
+                list_push(prog->objs, parse_global(p));
                 break;
             case TOKEN_FN:
                 list_push(prog->objs, parse_fn(p));
@@ -326,6 +328,21 @@ static ASTType_T* parse_type(Parser_T* p)
     return type;
 }
 
+static ASTObj_T* parse_typedef(Parser_T* p)
+{
+    ASTObj_T* tydef = init_ast_obj(OBJ_TYPEDEF, p->tok);
+    parser_consume(p, TOKEN_TYPE, "expect `type` keyword for typedef");
+    
+    tydef->callee = strdup(p->tok->value);
+    parser_consume(p, TOKEN_ID, "expect type name");
+    parser_consume(p, TOKEN_COLON, "expect `:` after type name");
+
+    tydef->data_type = parse_type(p);
+
+    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after typedef type");
+    return tydef;
+}
+
 static List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok)
 {
     List_T* arg_list = init_list(sizeof(ASTObj_T*));
@@ -369,6 +386,30 @@ static ASTObj_T* parse_fn(Parser_T* p)
     fn->body = parse_stmt(p);
 
     return fn;
+}
+
+static ASTObj_T* parse_global(Parser_T* p)
+{
+    ASTObj_T* global = init_ast_obj(OBJ_GLOBAL, p->tok);
+    parser_consume(p, TOKEN_LET, "expect `let` keyword for variable definition");
+    
+    global->callee = strdup(p->tok->value);
+    parser_consume(p, TOKEN_ID, "expect variable name");
+    parser_consume(p, TOKEN_COLON, "expect `:` after variable name");
+
+    global->data_type = parse_type(p);
+
+    if(tok_is(p, TOKEN_ASSIGN))
+    {
+        parser_advance(p);
+        global->value = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+        if(!global->value->is_constant)
+            throw_syntax_error(p->eh, "assigned value unknown at compile-time", global->value->tok->line, global->value->tok->pos);
+    }
+    
+    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after variable declaration");
+
+    return global;
 }
 
 /////////////////////////////////
@@ -614,6 +655,7 @@ static ASTNode_T* parse_int_lit(Parser_T* p)
 {
     ASTNode_T* int_lit = init_ast_node(ND_INT, p->tok);
     int_lit->int_val = atoi(p->tok->value);
+    int_lit->is_constant = true;
     parser_consume(p, TOKEN_INT, "expect integer literal (0, 1, 2, ...)");
     return int_lit;
 }
@@ -655,6 +697,7 @@ static ASTNode_T* parse_char_lit(Parser_T* p)
 {
     ASTNode_T* char_lit = init_ast_node(ND_CHAR, p->tok);
     char_lit->char_val = p->tok->value[0];
+    char_lit->is_constant = true;
     parser_consume(p, TOKEN_CHAR, "expect char literal ('a', 'b', ...)");
     return char_lit;
 }
@@ -663,6 +706,7 @@ static ASTNode_T* parse_str_lit(Parser_T* p)
 {
     ASTNode_T* str_lit = init_ast_node(ND_STR, p->tok);
     str_lit->str_val = str_lit->tok->value;
+    str_lit->is_constant = true;
     parser_consume(p, TOKEN_STRING, "expect string literal (\"abc\", \"wxyz\", ...)");
     return str_lit;
 }
@@ -671,7 +715,7 @@ static ASTNode_T* parse_array_lit(Parser_T* p)
 {
     ASTNode_T* arr_lit = init_ast_node(ND_ARRAY, p->tok);
     parser_consume(p, TOKEN_LBRACKET, "expect `[` for array literal");
-
+    arr_lit->is_constant = true;
     arr_lit->args = parse_expr_list(p, TOKEN_RBRACKET);
     parser_consume(p, TOKEN_RBRACKET, "expect `]` after array literal");
 
@@ -682,7 +726,7 @@ static ASTNode_T* parse_struct_lit(Parser_T* p)
 {
     ASTNode_T* struct_lit = init_ast_node(ND_STRUCT, p->tok);
     parser_consume(p, TOKEN_LBRACE, "expect `{` for struct literal");
-
+    struct_lit->is_constant = true;
     struct_lit->args = parse_expr_list(p, TOKEN_RBRACE);
     parser_consume(p, TOKEN_RBRACE, "expect `}` after struct literal");
 
