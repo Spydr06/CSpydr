@@ -88,7 +88,7 @@ void throw_error(ErrorHandler_T* handler, ErrorMessage_T* message)
 void throw_syntax_error(ErrorHandler_T* handler, const char* message, unsigned int line_number, unsigned int character)
 {
     const char* template = COLOR_BOLD_WHITE "%s:%d:%d " COLOR_RESET "=>" COLOR_BOLD_RED " [syntax]" COLOR_RESET 
-                           " %s\n %*d | %s %*s | " COLOR_BOLD_BLUE "%*shere\n";
+                           " %s\n %*d | %s %*s | " COLOR_BOLD_BLUE "%*shere\n" COLOR_RESET;
     char* line_code = get_line(handler->file, line_number);
     const char* pointer = "^~";
 
@@ -98,13 +98,12 @@ void throw_syntax_error(ErrorHandler_T* handler, const char* message, unsigned i
 
     ErrorMessage_T* error = init_errormessage(ERR_SYNTAX_ERROR, line_number, true, value); //generate the error struct
     throw_error(handler, error); //submit the error
-    free(value);
 }
 
 void throw_redef_error(ErrorHandler_T* handler, const char* message, unsigned int line_number, unsigned int character)
 {
     const char* template = COLOR_BOLD_WHITE "%s:%d:%d " COLOR_RESET "=>" COLOR_BOLD_RED " [redef]" COLOR_RESET 
-                           " %s\n %*d | %s %*s | " COLOR_BOLD_BLUE "%*shere\n";
+                           " %s\n %*d | %s %*s | " COLOR_BOLD_BLUE "%*shere\n" COLOR_RESET;
     char* line_code = get_line(handler->file, line_number);
     const char* pointer = "^~";
 
@@ -114,13 +113,12 @@ void throw_redef_error(ErrorHandler_T* handler, const char* message, unsigned in
 
     ErrorMessage_T* error = init_errormessage(ERR_REDEFINITION, line_number, false, value); //generate the error struct
     throw_error(handler, error); //submit the error
-    free(value);
 }
 
 void throw_undef_error(ErrorHandler_T* handler, const char* message, unsigned int line_number, unsigned int character)
 {
     const char* template = COLOR_BOLD_WHITE "%s:%d:%d " COLOR_RESET "=>" COLOR_BOLD_RED " [undef]" COLOR_RESET 
-                           " %s\n %*d | %s %*s | " COLOR_BOLD_BLUE "%*shere\n";
+                           " %s\n %*d | %s %*s | " COLOR_BOLD_BLUE "%*shere\n" COLOR_RESET;
     char* line_code = get_line(handler->file, line_number);
     const char* pointer = "^~";
 
@@ -130,5 +128,4 @@ void throw_undef_error(ErrorHandler_T* handler, const char* message, unsigned in
 
     ErrorMessage_T* error = init_errormessage(ERR_UNDEFINED, line_number, true, value); //generate the error struct
     throw_error(handler, error); //submit the error
-    free(value);
 }
