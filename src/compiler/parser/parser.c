@@ -27,6 +27,14 @@ static ASTNode_T* parse_bool_lit(Parser_T* p);
 static ASTNode_T* parse_str_lit(Parser_T* p);
 static ASTNode_T* parse_nil_lit(Parser_T* p);
 
+static ASTNode_T* parse_unary(Parser_T* p);
+static ASTNode_T* parse_num_op(Parser_T* p, ASTNode_T* left);
+static ASTNode_T* parse_bool_op(Parser_T* p, ASTNode_T* left);
+static ASTNode_T* parse_assignment(Parser_T* p, ASTNode_T* left);
+static ASTNode_T* parse_postfix(Parser_T* p, ASTNode_T* left);
+
+static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left);
+
 static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } expr_parse_fns[TOKEN_EOF + 1] = {
     [TOKEN_ID]       = {parse_id, NULL, LOWEST},
     [TOKEN_INT]      = {parse_int_lit, NULL, LOWEST},
@@ -36,31 +44,62 @@ static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } ex
     [TOKEN_FALSE]    = {parse_bool_lit, NULL, LOWEST},
     [TOKEN_CHAR]     = {parse_char_lit, NULL, LOWEST},
     [TOKEN_STRING]   = {parse_str_lit, NULL, LOWEST},
-    [TOKEN_BANG]     = {NULL, NULL, LOWEST},
-    [TOKEN_MINUS]    = {NULL, NULL, SUM},
-    [TOKEN_LPAREN]   = {NULL, NULL, CALL}, 
+    [TOKEN_BANG]     = {parse_unary, NULL, LOWEST},
+    [TOKEN_MINUS]    = {parse_unary, parse_num_op, SUM},
+    [TOKEN_LPAREN]   = {NULL, parse_call, CALL}, 
     [TOKEN_LBRACKET] = {NULL, NULL, INDEX},   
     [TOKEN_LBRACE]   = {NULL, NULL, LOWEST}, 
-    [TOKEN_STAR]     = {NULL, NULL, PRODUCT},
-    [TOKEN_REF]      = {NULL, NULL, LOWEST},
-    [TOKEN_TILDE]    = {NULL, NULL, LOWEST},
-    [TOKEN_PLUS]     = {NULL, NULL, SUM},    
-    [TOKEN_SLASH]    = {NULL, NULL, PRODUCT},    
-    [TOKEN_EQ]       = {NULL, NULL, EQUALS}, 
-    [TOKEN_NOT_EQ]   = {NULL, NULL, EQUALS},     
-    [TOKEN_GT]       = {NULL, NULL, LTGT}, 
-    [TOKEN_GT_EQ]    = {NULL, NULL, LTGT},    
-    [TOKEN_LT]       = {NULL, NULL, LTGT}, 
-    [TOKEN_LT_EQ]    = {NULL, NULL, LTGT},           
-    [TOKEN_INC]      = {NULL, NULL, POSTFIX},  
-    [TOKEN_DEC]      = {NULL, NULL, POSTFIX},  
-    [TOKEN_ASSIGN]   = {NULL, NULL, ASSIGN},     
-    [TOKEN_ADD]      = {NULL, NULL, ASSIGN},  
-    [TOKEN_SUB]      = {NULL, NULL, ASSIGN},  
-    [TOKEN_DIV]      = {NULL, NULL, ASSIGN},  
-    [TOKEN_MULT]     = {NULL, NULL, ASSIGN},   
-    [TOKEN_DOT]      = {NULL, NULL, MEMBER},  
+    [TOKEN_STAR]     = {parse_unary, parse_num_op, PRODUCT},
+    [TOKEN_REF]      = {parse_unary, NULL, LOWEST},
+    [TOKEN_TILDE]    = {parse_unary, NULL, LOWEST},
+    [TOKEN_PLUS]     = {NULL, parse_num_op, SUM},    
+    [TOKEN_SLASH]    = {NULL, parse_num_op, PRODUCT},    
+    [TOKEN_EQ]       = {NULL, parse_bool_op, EQUALS}, 
+    [TOKEN_NOT_EQ]   = {NULL, parse_bool_op, EQUALS},     
+    [TOKEN_GT]       = {NULL, parse_bool_op, LTGT}, 
+    [TOKEN_GT_EQ]    = {NULL, parse_bool_op, LTGT},    
+    [TOKEN_LT]       = {NULL, parse_bool_op, LTGT}, 
+    [TOKEN_LT_EQ]    = {NULL, parse_bool_op, LTGT},           
+    [TOKEN_INC]      = {NULL, parse_postfix, POSTFIX},  
+    [TOKEN_DEC]      = {NULL, parse_postfix, POSTFIX},  
+    [TOKEN_ASSIGN]   = {NULL, parse_assignment, ASSIGN},     
+    [TOKEN_ADD]      = {NULL, parse_assignment, ASSIGN},  
+    [TOKEN_SUB]      = {NULL, parse_assignment, ASSIGN},  
+    [TOKEN_DIV]      = {NULL, parse_assignment, ASSIGN},  
+    [TOKEN_MULT]     = {NULL, parse_assignment, ASSIGN},   
+    [TOKEN_DOT]      = {NULL, parse_assignment, MEMBER},  
 }; 
+
+static ASTNodeKind_T unary_ops[TOKEN_EOF + 1] = {
+    [TOKEN_MINUS] = ND_NEG,
+    [TOKEN_BANG]  = ND_NOT,
+    [TOKEN_TILDE] = ND_BIT_NEG,
+    [TOKEN_REF]   = ND_REF,
+    [TOKEN_STAR]  = ND_DEREF
+};
+
+static ASTNodeKind_T infix_ops[TOKEN_EOF + 1] = {
+    [TOKEN_MINUS] = ND_SUB,
+    [TOKEN_PLUS]  = ND_ADD,
+    [TOKEN_STAR]  = ND_MUL,
+    [TOKEN_SLASH] = ND_DIV,
+
+    [TOKEN_EQ]     = ND_EQ,
+    [TOKEN_NOT_EQ] = ND_NE,
+    [TOKEN_GT]     = ND_GT,
+    [TOKEN_GT_EQ]  = ND_GE,
+    [TOKEN_LT]     = ND_LT,
+    [TOKEN_LT_EQ]  = ND_LE,
+
+    [TOKEN_ASSIGN] = ND_ASSIGN,
+    [TOKEN_ADD]    = ND_ADD,    // is still an assignment!
+    [TOKEN_SUB]    = ND_SUB,    // is still an assignment!
+    [TOKEN_MULT]   = ND_MUL,    // is still an assignment!
+    [TOKEN_DIV]    = ND_DIV,    // is still an assignment!
+
+    [TOKEN_INC] = ND_INC,   // technically postfix operators, but get treated like infix ops internally
+    [TOKEN_DEC] = ND_DEC    // technically postfix operators, but get treated like infix ops internally
+};
 
 static inline prefix_parse_fn get_prefix_parse_fn(TokenType_T tt)
 {
@@ -90,7 +129,7 @@ Parser_T* init_parser(Lexer_T* lexer)
     parser->imports = init_list(sizeof(char*));
 
     parser->silent = false;
-
+    parser->current_block = NULL;
     return parser;
 }
 
@@ -136,6 +175,20 @@ Token_T* parser_consume(Parser_T* p, TokenType_T type, const char* msg)
 
     return parser_advance(p);
 }
+
+static inline bool is_editable(ASTNodeKind_T n)
+{
+    return n == ND_ID || n == ND_MEMBER;
+}
+
+static inline bool is_executable(ASTNodeKind_T n)
+{
+    return n == ND_CALL || n == ND_ASSIGN || n == ND_INC || n == ND_DEC;
+}
+
+/////////////////////////////////
+// Parser                      //
+/////////////////////////////////
 
 static ASTObj_T* parse_fn(Parser_T* p);
 
@@ -259,14 +312,22 @@ static ASTObj_T* parse_fn(Parser_T* p)
     return fn;
 }
 
+/////////////////////////////////
+// Statement Parser            //
+/////////////////////////////////
+
 static ASTNode_T* parse_block(Parser_T* p)
 {
     ASTNode_T* block = init_ast_node(ND_BLOCK, p->tok);
+    block->locals = init_list(sizeof(struct AST_OBJ_STRUCT*));
 
     parser_consume(p, TOKEN_LBRACE, "expect `{` at the beginning of a block statement");
 
+    ASTNode_T* prev_block = p->current_block;
+    p->current_block = block;
     while(p->tok->type != TOKEN_RBRACE)
         parse_stmt(p);
+    p->current_block = prev_block;
 
     parser_consume(p, TOKEN_RBRACE, "expect `}` at the end of a block statement");
 
@@ -366,8 +427,47 @@ static ASTNode_T* parse_match(Parser_T* p)
     return match;
 }
 
+static ASTNode_T* parse_expr_stmt(Parser_T* p)
+{
+    ASTNode_T* stmt = init_ast_node(ND_EXPR_STMT, p->tok);
+    stmt->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+
+    if(!is_executable(stmt->expr->kind))
+    {
+        const char* err_tmp = "cannot treat `%s` as a statement, expect function call, assignment or similar";
+        char* err_msg = calloc(strlen(err_tmp) + strlen(stmt->expr->tok->value) + 1, sizeof(char));
+        sprintf(err_msg, err_tmp, stmt->expr->tok->value);
+
+        throw_syntax_error(p->eh, err_msg, stmt->expr->tok->line, stmt->expr->tok->pos + 1);
+    }
+
+    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after expression statement");
+
+    return stmt;
+}
+
+static void parse_local(Parser_T* p)
+{
+    ASTObj_T* local = init_ast_obj(OBJ_LOCAL, p->tok);
+    parser_consume(p, TOKEN_LET, "expect `let` keyword for variable definition");
+    
+    local->callee = strdup(p->tok->value);
+    parser_consume(p, TOKEN_ID, "expect variable name");
+    parser_consume(p, TOKEN_COLON, "expect `:` after variable name");
+
+    local->data_type = parse_type(p);
+    
+    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after variable declaration");
+
+    if(!p->current_block || p->current_block->kind != ND_BLOCK)
+        throw_syntax_error(p->eh, "cannot define a local variable outside a block statement", local->tok->line, local->tok->pos);
+    list_push(p->current_block->locals, local);
+}
+
 static ASTNode_T* parse_stmt(Parser_T* p)
 {
+repeat:
+
     switch(p->tok->type)
     {
         case TOKEN_LBRACE:
@@ -380,24 +480,27 @@ static ASTNode_T* parse_stmt(Parser_T* p)
             return parse_loop(p);
         case TOKEN_MATCH:
             return parse_match(p);
-        default: {
-            const char* err_tmp = "unexpected token `%s`, expect statement";
-            char* err_msg = calloc(strlen(err_tmp) + strlen(p->tok->value) + 1, sizeof(char));
-            sprintf(err_msg, err_tmp, p->tok->value);
-            throw_syntax_error(p->eh, err_msg, p->tok->line, p->tok->pos);
-        }
+        case TOKEN_LET:
+            parse_local(p);
+            goto repeat;    // I know, gotos are bad, but in this case it's the most simple solution
+        default:
+            return parse_expr_stmt(p);
     }
 
     // satisfy -Wall
     return NULL;
 }
 
+/////////////////////////////////
+// Expressin PRATT parser      //
+/////////////////////////////////
+
 static ASTNode_T* parse_expr(Parser_T* p, Precedence_T prec, TokenType_T end_tok)
 {
     prefix_parse_fn prefix = get_prefix_parse_fn(p->tok->type);
     if(!prefix)
     {
-        const char* template = "no prefix parse function for token `%s` found";
+        const char* template = "unexpected token `%s`, expect expression";
         char* msg = calloc(strlen(template) + strlen(p->tok->value) + 1, sizeof(char));
         sprintf(msg, template, p->tok->value);
 
@@ -484,6 +587,122 @@ static ASTNode_T* parse_str_lit(Parser_T* p)
     return str_lit;
 }
 
+static ASTNode_T* parse_unary(Parser_T* p)
+{
+    ASTNode_T* unary = init_ast_node(unary_ops[p->tok->type], p->tok);
+    parser_advance(p);
+
+    unary->right = parse_expr(p, LOWEST, TOKEN_EOF);
+    return unary;
+}
+
+static ASTNode_T* parse_num_op(Parser_T* p, ASTNode_T* left)
+{
+    ASTNode_T* infix = init_ast_node(infix_ops[p->tok->type], p->tok);
+    parser_advance(p);
+
+    infix->left = left;
+    infix->right = parse_expr(p, expr_parse_fns[infix->tok->type].prec, TOKEN_EOF);
+
+    return infix;
+}
+
+static ASTNode_T* parse_bool_op(Parser_T* p, ASTNode_T* left)
+{
+    ASTNode_T* infix = init_ast_node(infix_ops[p->tok->type], p->tok);
+    parser_advance(p);
+
+    infix->left = left;
+    infix->right = parse_expr(p, expr_parse_fns[infix->tok->type].prec, TOKEN_EOF);
+
+    infix->data_type = primitives[TY_BOOL]; // set the data type, since == != > >= < <= will always result in booleans
+
+    return infix;
+}
+
+static ASTNode_T* generate_assignment_op_rval(Parser_T* p, ASTNode_T* left, TokenType_T op)
+{
+    ASTNode_T* rval = init_ast_node(infix_ops[op], p->tok);
+    rval->left = left;
+    rval->right = parse_expr(p, expr_parse_fns[op].prec, TOKEN_EOF);
+
+    return rval;
+}
+
+static ASTNode_T* parse_assignment(Parser_T* p, ASTNode_T* left)
+{
+    if(!is_editable(left->kind))
+    {
+        const char* err_tmp = "cannot assign a value to `%s`, expect variable or similar";
+        char* err_msg = calloc(strlen(err_tmp) + strlen(left->tok->value) + 1, sizeof(char));
+        sprintf(err_msg, err_tmp, left->tok->value);
+
+        throw_syntax_error(p->eh, err_msg, left->tok->line, left->tok->pos);
+    }
+    ASTNode_T* assign = init_ast_node(infix_ops[p->tok->type], p->tok);
+    assign->left = left;
+
+    switch(p->tok->type)
+    {
+        case TOKEN_ASSIGN:
+            parser_advance(p);
+            assign->right = parse_expr(p, expr_parse_fns[p->tok->type].prec, TOKEN_EOF);
+            return assign;
+        default:
+            parser_advance(p);
+            assign->right = generate_assignment_op_rval(p, left, p->tok->type);
+            return assign;
+    }
+
+    // satisfy -Wall
+    return NULL;
+}
+
+static ASTNode_T* parse_postfix(Parser_T* p, ASTNode_T* left)
+{
+    ASTNode_T* postfix = init_ast_node(infix_ops[p->tok->type], p->tok);
+    postfix->left = left;
+
+    return postfix;
+}
+
+static List_T* parse_expr_list(Parser_T* p, TokenType_T end_tok)
+{
+    List_T* list = init_list(sizeof(struct AST_NODE_STRUCT*));
+
+    while (!tok_is(p, end_tok) && !tok_is(p, TOKEN_EOF)) 
+    {
+        list_push(list, parse_expr(p, LOWEST, TOKEN_COMMA));
+
+        if(!tok_is(p, end_tok))
+            parser_consume(p, TOKEN_COMMA, "expect `,` between call arguments");
+    }
+
+    return list;
+}
+
+static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left)
+{
+    if(!is_editable(left->kind))
+    {
+        const char* err_tmp = "cannot call `%s`, expect function name or similar";
+        char* err_msg = calloc(strlen(err_tmp) + strlen(left->tok->value) + 1, sizeof(char));
+        sprintf(err_msg, err_tmp, left->tok->value);
+
+        throw_syntax_error(p->eh, err_msg, left->tok->line, left->tok->pos);
+    }
+
+    ASTNode_T* call = init_ast_node(ND_CALL, p->tok);
+    call->expr = left;  // the expression to call
+
+    parser_consume(p, TOKEN_LPAREN, "expect `(` after callee");
+
+    call->args = parse_expr_list(p, TOKEN_RPAREN);
+    parser_consume(p, TOKEN_RPAREN, "expect `)` after call arguments");
+    
+    return call;
+}
+
 /*
 
 bool expr_is_executable(ASTExpr_T* expr)    // checks if the expression can be used as a statement ("executable" means it has to assign something)
@@ -496,9 +715,7 @@ bool expr_is_executable(ASTExpr_T* expr)    // checks if the expression can be u
     return ((ASTInfix_T*) expr->expr)->op == OP_ASSIGN;
 }
 
-/////////////////////////////////
-// Parser                      //
-/////////////////////////////////
+
 
 static ASTFile_T* parse_file(Parser_T* parser, const char* file_path, ASTProgram_T* program_ref);
 

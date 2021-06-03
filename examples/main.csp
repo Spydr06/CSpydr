@@ -1,5 +1,9 @@
 # a basic test program used for developing this programming language
 fn main(x: i32): i32 {
+    let y: i32;
+    
+    call(y, x);
+
     if x {
 
     } else {
@@ -11,16 +15,12 @@ fn main(x: i32): i32 {
     }
 
     match x {
-        4 => {
+        3 => {
 
         }
 
         _ => {
 
-        }
-
-        _ => {
-            
         }
     }    
 }

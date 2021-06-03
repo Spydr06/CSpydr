@@ -17,6 +17,7 @@ struct PARSER_STRUCT
     ASTProg_T* root_ref;
     Token_T* tok;
     List_T* imports;
+    ASTNode_T* current_block;
 
     bool silent;
 };

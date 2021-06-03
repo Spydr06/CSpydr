@@ -14,6 +14,7 @@ ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok)
     node->tok = dupl_token(tok);
     node->is_default_case = false;
     node->is_constant = false;
+    node->locals = NULL;
 
     return node;
 }

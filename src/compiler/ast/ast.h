@@ -31,6 +31,8 @@ typedef enum {
     ND_NEG,     // unary -
     ND_BIT_NEG, // unary ~
     ND_NOT,     // unary !
+    ND_REF,     // unary &
+    ND_DEREF,   // unary *
 
     ND_EQ,      // ==
     ND_NE,      // !=
@@ -39,6 +41,14 @@ typedef enum {
     ND_LT,      // <
     ND_LE,      // <=
 
+    ND_INC,     // ++
+    ND_DEC,     // --
+
+    ND_ASSIGN,  // x = y
+
+    ND_MEMBER,  // x.y
+    ND_CALL,    // x(y, z)
+
     // statements
     ND_BLOCK,   // {...}
     ND_IF,      // if x {}
@@ -46,7 +56,7 @@ typedef enum {
     ND_MATCH,   // match x {}
     ND_CASE,    // x => {} !!only in match statements!!
     ND_RETURN,  // ret x;
-    ND_STMT_EXPR, // "executable" expressions
+    ND_EXPR_STMT, // "executable" expressions
 
 } ASTNodeKind_T;
 
@@ -132,6 +142,12 @@ struct AST_NODE_STRUCT
 
         // case
         bool is_default_case;
+
+        // expression statement
+        ASTNode_T* expr;
+
+        // calls
+        List_T* args;   // list of ASTNode_Ts
 };
 
 struct AST_TYPE_STRUCT 
