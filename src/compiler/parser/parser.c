@@ -27,6 +27,9 @@ static ASTNode_T* parse_bool_lit(Parser_T* p);
 static ASTNode_T* parse_str_lit(Parser_T* p);
 static ASTNode_T* parse_nil_lit(Parser_T* p);
 
+static ASTNode_T* parse_array_lit(Parser_T* p);
+static ASTNode_T* parse_struct_lit(Parser_T* p);
+
 static ASTNode_T* parse_unary(Parser_T* p);
 static ASTNode_T* parse_num_op(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_bool_op(Parser_T* p, ASTNode_T* left);
@@ -48,8 +51,8 @@ static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } ex
     [TOKEN_BANG]     = {parse_unary, NULL, LOWEST},
     [TOKEN_MINUS]    = {parse_unary, parse_num_op, SUM},
     [TOKEN_LPAREN]   = {NULL, parse_call, CALL}, 
-    [TOKEN_LBRACKET] = {NULL, parse_index, INDEX},   
-    [TOKEN_LBRACE]   = {NULL, NULL, LOWEST}, 
+    [TOKEN_LBRACKET] = {parse_array_lit, parse_index, INDEX},   
+    [TOKEN_LBRACE]   = {parse_struct_lit, NULL, LOWEST}, 
     [TOKEN_STAR]     = {parse_unary, parse_num_op, PRODUCT},
     [TOKEN_REF]      = {parse_unary, NULL, LOWEST},
     [TOKEN_TILDE]    = {parse_unary, NULL, LOWEST},
@@ -231,6 +234,58 @@ ASTProg_T* parse(Parser_T* p, const char* main_file)
     return prog;
 }
 
+static ASTNode_T* parse_expr(Parser_T* p, Precedence_T prec, TokenType_T end_tok);
+static ASTType_T* parse_type(Parser_T* p);
+
+static ASTType_T* parse_struct_type(Parser_T* p)
+{
+    ASTType_T* struct_type = init_ast_type(TY_STRUCT, p->tok);
+    parser_consume(p, TOKEN_STRUCT, "expect `struct` keyword for struct type");
+    parser_consume(p, TOKEN_LBRACE, "expect `{` after struct keyword");
+    struct_type->members = init_list(sizeof(struct AST_NODE_STRUCT*));
+
+    while(!tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF))
+    {
+        ASTNode_T* member = init_ast_node(ND_STRUCT_MEMBER, p->tok);
+        member->callee = member->tok->value;
+        parser_consume(p, TOKEN_ID, "expect struct member name");
+        parser_consume(p, TOKEN_COLON, "expect `:` after struct member name");
+        member->data_type = parse_type(p);
+
+        list_push(struct_type->members, member);
+
+        if(!tok_is(p, TOKEN_RBRACE))
+            parser_consume(p, TOKEN_COMMA, "expect `,` between struct members");
+    }
+
+    parser_consume(p, TOKEN_RBRACE, "expect `}` after struct members");
+    return struct_type;
+}
+
+static ASTType_T* parse_enum_type(Parser_T* p)
+{
+    ASTType_T* enum_type = init_ast_type(TY_ENUM, p->tok);
+    parser_consume(p, TOKEN_ENUM, "expect `enum` keyword for enum type");
+    parser_consume(p, TOKEN_LBRACE, "expect `{` after enum keyword");
+    enum_type->members = init_list(sizeof(struct AST_NODE_STRUCT*));
+
+    for(int i = 0; !tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF); i++)
+    {
+        ASTNode_T* member = init_ast_node(ND_ENUM_MEMBER, p->tok);
+        member->callee = member->tok->value;
+        member->int_val = i;
+        parser_consume(p, TOKEN_ID, "expect enum member name");
+
+        list_push(enum_type->members, member);
+
+        if(!tok_is(p, TOKEN_RBRACE))
+            parser_consume(p, TOKEN_COMMA, "expect `,` between enum members");
+    }
+
+    parser_consume(p, TOKEN_RBRACE, "expect `}` after enum members");
+    return enum_type;
+}
+
 static ASTType_T* parse_type(Parser_T* p)
 {
     ASTType_T* type = get_primitive_type(p->tok->value);
@@ -243,24 +298,28 @@ static ASTType_T* parse_type(Parser_T* p)
     switch(p->tok->type)
     {
         case TOKEN_STRUCT:
-            // TODO: handle struct parsing
+            type = parse_struct_type(p);
             break;
         case TOKEN_ENUM:
-            // TODO: handle enum parsing
+            type = parse_enum_type(p);
             break;
         case TOKEN_STAR:
-            {
-                type = init_ast_type(TY_PTR, p->tok);
-                parser_advance(p);
-                type->base = parse_type(p);
-            }
-
+            type = init_ast_type(TY_PTR, p->tok);
+            parser_advance(p);
+            type->base = parse_type(p);
             break;
         case TOKEN_LBRACKET:
-            // TODO: handle array parsing
+            type = init_ast_type(TY_ARR, p->tok);
+            parser_advance(p);
+            if(!tok_is(p, TOKEN_RBRACKET))
+                type->num_indices = parse_expr(p, LOWEST, TOKEN_RBRACKET);
+            parser_consume(p, TOKEN_RBRACKET, "expect `]` after array type");
+            type->base = parse_type(p);
             break;
         default:
-            // TODO: handle typedef parsing
+            type = init_ast_type(TY_UNDEF, p->tok);
+            type->callee = type->tok->value;
+            parser_consume(p, TOKEN_ID, "expect type or typedef");
             break;
     }
 
@@ -289,7 +348,6 @@ static List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok)
 }
 
 static ASTNode_T* parse_stmt(Parser_T* p);
-static ASTNode_T* parse_expr(Parser_T* p, Precedence_T prec, TokenType_T end_tok);
 
 static ASTObj_T* parse_fn(Parser_T* p)
 {
@@ -457,6 +515,12 @@ static void parse_local(Parser_T* p)
     parser_consume(p, TOKEN_COLON, "expect `:` after variable name");
 
     local->data_type = parse_type(p);
+
+    if(tok_is(p, TOKEN_ASSIGN))
+    {
+        parser_advance(p);
+        local->value = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+    }
     
     parser_consume(p, TOKEN_SEMICOLON, "expect `;` after variable declaration");
 
@@ -523,6 +587,21 @@ static ASTNode_T* parse_expr(Parser_T* p, Precedence_T prec, TokenType_T end_tok
     return left_expr;
 }
 
+static List_T* parse_expr_list(Parser_T* p, TokenType_T end_tok)
+{
+    List_T* list = init_list(sizeof(struct AST_NODE_STRUCT*));
+
+    while (!tok_is(p, end_tok) && !tok_is(p, TOKEN_EOF)) 
+    {
+        list_push(list, parse_expr(p, LOWEST, TOKEN_COMMA));
+
+        if(!tok_is(p, end_tok))
+            parser_consume(p, TOKEN_COMMA, "expect `,` between call arguments");
+    }
+
+    return list;
+}
+
 static ASTNode_T* parse_id(Parser_T* p)
 {
     ASTNode_T* id = init_ast_node(ND_ID, p->tok);
@@ -586,6 +665,28 @@ static ASTNode_T* parse_str_lit(Parser_T* p)
     str_lit->str_val = str_lit->tok->value;
     parser_consume(p, TOKEN_STRING, "expect string literal (\"abc\", \"wxyz\", ...)");
     return str_lit;
+}
+
+static ASTNode_T* parse_array_lit(Parser_T* p)
+{
+    ASTNode_T* arr_lit = init_ast_node(ND_ARRAY, p->tok);
+    parser_consume(p, TOKEN_LBRACKET, "expect `[` for array literal");
+
+    arr_lit->args = parse_expr_list(p, TOKEN_RBRACKET);
+    parser_consume(p, TOKEN_RBRACKET, "expect `]` after array literal");
+
+    return arr_lit;
+}
+
+static ASTNode_T* parse_struct_lit(Parser_T* p)
+{
+    ASTNode_T* struct_lit = init_ast_node(ND_STRUCT, p->tok);
+    parser_consume(p, TOKEN_LBRACE, "expect `{` for struct literal");
+
+    struct_lit->args = parse_expr_list(p, TOKEN_RBRACE);
+    parser_consume(p, TOKEN_RBRACE, "expect `}` after struct literal");
+
+    return struct_lit;
 }
 
 static ASTNode_T* parse_unary(Parser_T* p)
@@ -667,21 +768,6 @@ static ASTNode_T* parse_postfix(Parser_T* p, ASTNode_T* left)
     parser_advance(p);
 
     return postfix;
-}
-
-static List_T* parse_expr_list(Parser_T* p, TokenType_T end_tok)
-{
-    List_T* list = init_list(sizeof(struct AST_NODE_STRUCT*));
-
-    while (!tok_is(p, end_tok) && !tok_is(p, TOKEN_EOF)) 
-    {
-        list_push(list, parse_expr(p, LOWEST, TOKEN_COMMA));
-
-        if(!tok_is(p, end_tok))
-            parser_consume(p, TOKEN_COMMA, "expect `,` between call arguments");
-    }
-
-    return list;
 }
 
 static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left)

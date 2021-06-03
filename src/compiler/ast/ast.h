@@ -21,6 +21,9 @@ typedef enum {
     ND_STR,     // "..."
     ND_NIL,     // nil
 
+    ND_ARRAY,   // [2, 4, ...]
+    ND_STRUCT,  // {3, 4, ...}
+
     // operators
     ND_ADD,     // +
     ND_SUB,     // -
@@ -59,6 +62,9 @@ typedef enum {
     ND_RETURN,  // ret x;
     ND_EXPR_STMT, // "executable" expressions
 
+    ND_ENUM_MEMBER,     // enum members
+    ND_STRUCT_MEMBER,  // struct members
+
 } ASTNodeKind_T;
 
 typedef enum {
@@ -93,8 +99,6 @@ typedef enum {
     OBJ_LOCAL,
     OBJ_FUNCTION,
     OBJ_FN_ARG,
-    OBJ_STRUCT_MEMBER,
-    OBJ_ENUM_MEMBER
 } ASTObjKind_T;
 
 struct AST_NODE_STRUCT
@@ -147,7 +151,7 @@ struct AST_NODE_STRUCT
         // expression statement
         ASTNode_T* expr;
 
-        // calls
+        // calls, array literals
         List_T* args;   // list of ASTNode_Ts
 };
 
@@ -159,11 +163,19 @@ struct AST_TYPE_STRUCT
         ASTType_T* base;
         int size;
 
+        char* callee;
+
         bool is_primitive;
 
         // functions
         bool is_fn;
         List_T* arg_types;  // list of ASTType_Ts
+
+        // arrays
+        ASTNode_T* num_indices;
+
+        // enums, structs
+        List_T* members;    // list of ASTNode_Ts
 };
 
 struct AST_OBJ_STRUCT 
