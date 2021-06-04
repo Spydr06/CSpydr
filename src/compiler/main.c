@@ -24,6 +24,7 @@
 #include "parser/parser.h"
 #include "error/errorHandler.h"
 #include "platform/platform_bindings.h"
+#include "codegen/llvm/llvm_codegen.h"
 
 // default texts, which get shown if you enter help, info or version flags
 // links to me, the creator of CSpydr
@@ -144,7 +145,10 @@ void compile_llvm(char* path, char* target)
     Parser_T* parser = init_parser(lexer);
     ASTProg_T* ast = parse(parser, path);
 
-    //TODO:
+    LLVMCodegenData_T* cg = init_llvm_cg(ast, target);
+    cg->print_ll = true;
+    llvm_gen_code(cg);
+    free_llvm_cg(cg);
 
     //FIXME: free_ast_prog(ast);
     free_parser(parser);

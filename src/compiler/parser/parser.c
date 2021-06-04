@@ -212,7 +212,7 @@ ASTProg_T* parse(Parser_T* p, const char* main_file)
 {
     if(!p->silent)
     {
-        LOG_OK_F(COLOR_BOLD_GREEN "  Compiling" COLOR_RESET " %s\n", main_file);
+        LOG_OK_F(COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s\n", main_file);
     }
 
     ASTProg_T* prog = init_ast_prog(main_file, NULL);
@@ -409,9 +409,13 @@ static ASTObj_T* parse_fn(Parser_T* p)
     fn->args = parse_argument_list(p, TOKEN_RPAREN);
 
     parser_consume(p, TOKEN_RPAREN, "expect `)` after function arguments");
-    parser_consume(p, TOKEN_COLON, "expect `:` after function arguments");
-    
-    fn->return_type = parse_type(p);
+
+    if(tok_is(p, TOKEN_COLON))
+    {
+        parser_advance(p);
+        fn->return_type = parse_type(p);
+    } else
+        fn->return_type = primitives[TY_VOID];
 
     fn->body = parse_stmt(p);
 
@@ -450,13 +454,14 @@ static ASTNode_T* parse_block(Parser_T* p)
 {
     ASTNode_T* block = init_ast_node(ND_BLOCK, p->tok);
     block->locals = init_list(sizeof(struct AST_OBJ_STRUCT*));
+    block->stmts = init_list(sizeof(struct AST_NODE_STRUCT*));
 
     parser_consume(p, TOKEN_LBRACE, "expect `{` at the beginning of a block statement");
 
     ASTNode_T* prev_block = p->current_block;
     p->current_block = block;
     while(p->tok->type != TOKEN_RBRACE)
-        parse_stmt(p);
+        list_push(block->stmts, parse_stmt(p));
     p->current_block = prev_block;
 
     parser_consume(p, TOKEN_RBRACE, "expect `}` at the end of a block statement");
