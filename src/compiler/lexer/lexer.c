@@ -74,12 +74,11 @@ static Token_T* lexer_get_id(Lexer_T* lexer);
 static Token_T* lexer_get_number(Lexer_T* lexer);
 static Token_T* lexer_get_symbol(Lexer_T* lexer);
 
-Lexer_T* init_lexer(SrcFile_T* src, ErrorHandler_T* eh) 
+Lexer_T* init_lexer(SrcFile_T* src) 
 {
     Lexer_T* lexer = calloc(1, sizeof(struct LEXER_STRUCT));
 
     lexer->file = src;
-    lexer->eh = eh;
 
     lexer->pos = 0;
     lexer->line = 0;
@@ -128,7 +127,7 @@ Token_T* lexer_consume(Lexer_T* lexer, Token_T* token)
 
 Token_T* lexer_consume_type(Lexer_T* lexer, TokenType_T type)
 {
-    return lexer_consume(lexer, init_token((char[]){lexer->c, '\0'}, lexer->line, lexer->pos, type));
+    return lexer_consume(lexer, init_token((char[]){lexer->c, '\0'}, lexer->line, lexer->pos, type, lexer->file));
 }
 
 Token_T* lexer_next_token(Lexer_T* lexer)
@@ -166,7 +165,7 @@ static void lexer_skip_multiline_comment(Lexer_T* lexer)
     {
         if(lexer->c == '\0')
         {    //end of file
-            throw_syntax_error(lexer->eh, "unterminated multiline comment", start_line, start_pos);
+            throw_error(ERR_SYNTAX_ERROR,  &(Token_T){.line = start_line, .pos = start_pos, .source = lexer->file}, "unterminated multiline comment");
             return;
         }
         lexer_advance(lexer);
@@ -223,7 +222,7 @@ static Token_T* lexer_get_id(Lexer_T* lexer)
         lexer_advance(lexer);
     }
 
-    Token_T* token = init_token(buffer, lexer->line, lexer->pos, lexer_get_id_type(buffer));
+    Token_T* token = init_token(buffer, lexer->line, lexer->pos - 1, lexer_get_id_type(buffer), lexer->file);
 
     free(buffer);
     return token;
@@ -254,7 +253,7 @@ static Token_T* lexer_get_hexadecimal(Lexer_T* lexer)
     buffer = realloc(buffer, (strlen("%ld") + 1) * sizeof(char));
     sprintf(buffer, "%ld", decimal);
 
-    Token_T* token = init_token(buffer, lexer->line, lexer->pos, TOKEN_INT);
+    Token_T* token = init_token(buffer, lexer->line, lexer->pos, TOKEN_INT, lexer->file);
     free(buffer);
     return token;
 }
@@ -284,7 +283,7 @@ static Token_T* lexer_get_binary(Lexer_T* lexer)
     buffer = realloc(buffer, (strlen("%ld") + 1) * sizeof(char));
     sprintf(buffer, "%ld", decimal);
 
-    Token_T* token = init_token(buffer, lexer->line, lexer->pos, TOKEN_INT);
+    Token_T* token = init_token(buffer, lexer->line, lexer->pos, TOKEN_INT, lexer->file);
     free(buffer);
     return token;
 }
@@ -309,18 +308,18 @@ static Token_T* lexer_get_decimal(Lexer_T* lexer)
         {   
             if(lexer_peek(lexer, 1) == '.')
             {
-                Token_T* token = init_token(buffer, lexer->line, lexer->pos, type);
+                Token_T* token = init_token(buffer, lexer->line, lexer->pos, type, lexer->file);
                 free(buffer);
                 return token;
             }
 
             if(type == TOKEN_FLOAT)
             {
-                Token_T* token = init_token(buffer, lexer->line, lexer->pos, type);
+                Token_T* token = init_token(buffer, lexer->line, lexer->pos, type, lexer->file);
 
                 free(buffer);
                 
-                throw_syntax_error(lexer->eh, "multiple `.` found in number", lexer->line, lexer->pos);
+                throw_error(ERR_SYNTAX_ERROR,  &(Token_T){.line = lexer->line, .pos = lexer->pos, .source = lexer->file}, "multiple `.` found in number literal");
                 return token;
             }
 
@@ -329,7 +328,7 @@ static Token_T* lexer_get_decimal(Lexer_T* lexer)
         lexer_advance(lexer);
     }
 
-    Token_T* token = init_token(buffer, lexer->line, lexer->pos, type);
+    Token_T* token = init_token(buffer, lexer->line, lexer->pos, type, lexer->file);
 
     free(buffer);
     return token;
@@ -369,13 +368,13 @@ static Token_T* lexer_get_str(Lexer_T* lexer)
         if(lexer->c == '\0')
         {
             free(buffer);
-            throw_syntax_error(lexer->eh, "unterminated string literal", start_line, start_pos);
-            return init_token("EOF", start_line, lexer->pos, TOKEN_EOF);
+            throw_error(ERR_SYNTAX_ERROR,  &(Token_T){.line = start_line, .pos = start_pos, .source = lexer->file}, "unterminated string literal");
+            return init_token("EOF", start_line, lexer->pos, TOKEN_EOF, lexer->file);
         }
     }
     lexer_advance(lexer);
 
-    Token_T* token = init_token(buffer, lexer->line, lexer->pos, TOKEN_STRING);
+    Token_T* token = init_token(buffer, lexer->line, lexer->pos, TOKEN_STRING, lexer->file);
 
     free(buffer);
     return token;
@@ -387,19 +386,19 @@ static Token_T* lexer_get_char(Lexer_T* lexer)
 
     if(lexer->c == '\'')
     {
-        throw_syntax_error(lexer->eh, "empty char literal", lexer->line, lexer->pos);
-        return init_token("EOF", lexer->line, lexer->pos, TOKEN_EOF);
+        throw_error(ERR_SYNTAX_ERROR,  &(Token_T){.line = lexer->line, .pos = lexer->pos, .source = lexer->file}, "empty char literal");
+        return init_token("EOF", lexer->line, lexer->pos, TOKEN_EOF, lexer->file);
     }
 
-    Token_T* token = init_token((char[]){lexer->c, 0}, lexer->line, lexer->pos, TOKEN_CHAR);
+    Token_T* token = init_token((char[]){lexer->c, 0}, lexer->line, lexer->pos, TOKEN_CHAR, lexer->file);
     lexer_advance(lexer);
 
     if(lexer->c != '\'')
     {
-        throw_syntax_error(lexer->eh, "unterminated char, expect `'`", lexer->line, lexer->pos);
+        throw_error(ERR_SYNTAX_ERROR,  &(Token_T){.line = lexer->line, .pos = lexer->pos, .source = lexer->file}, "unterminated char literal, expect `'`");
         free_token(token);
 
-        return init_token("EOF", lexer->line, lexer->pos, TOKEN_EOF); 
+        return init_token("EOF", lexer->line, lexer->pos, TOKEN_EOF, lexer->file); 
     }
     lexer_advance(lexer);
 
@@ -412,9 +411,9 @@ static Token_T* lexer_get_symbol(Lexer_T* lexer)
     {
         const char* s = symbols[i].symbol;
         if(strlen(s) == 1 && lexer->c == s[0])
-            return lexer_consume(lexer, init_token((char*) s, lexer->line, lexer->pos, symbols[i].type));
+            return lexer_consume(lexer, init_token((char*) s, lexer->line, lexer->pos, symbols[i].type, lexer->file));
         if(strlen(s) == 2 && lexer->c == s[0] && lexer_peek(lexer, 1) == s[1])
-            return lexer_consume(lexer, lexer_consume(lexer, init_token((char*) s, lexer->line, lexer->pos, symbols[i].type)));
+            return lexer_consume(lexer, lexer_consume(lexer, init_token((char*) s, lexer->line, lexer->pos, symbols[i].type, lexer->file)));
     }
 
     switch(lexer->c) {
@@ -426,15 +425,12 @@ static Token_T* lexer_get_symbol(Lexer_T* lexer)
             return lexer_get_char(lexer);
         
         case '\0':
-            return init_token("EOF", lexer->line, lexer->pos, TOKEN_EOF);
+            return init_token("EOF", lexer->line, lexer->pos, TOKEN_EOF, lexer->file);
 
         default: {
-            const char* template = "unexpected symbol `%c` [id: %d]";
-            char* msg = calloc(strlen(template) + 2, sizeof(char));
-            sprintf(msg, template, lexer->c, lexer->c);
-
-            throw_syntax_error(lexer->eh, msg, lexer->line, lexer->pos);
-            return init_token("EOF", lexer->line, lexer->pos, TOKEN_EOF);
+            throw_error(ERR_SYNTAX_ERROR, &(Token_T){.line = lexer->line, .pos = lexer->pos, .source = lexer->file}, "unexpected symbol `%c` [id: %d]", lexer->c, lexer->c);
         }
     }
+    // satisfy -Wall
+    return NULL;
 }

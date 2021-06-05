@@ -1,6 +1,8 @@
 #ifndef CSPYDR_TOKEN_H
 #define CSPYDR_TOKEN_H
 
+#include "../io/file.h"
+
 typedef enum TOKEN_TYPE {
     TOKEN_ID,           // names, types, etc.
 
@@ -79,9 +81,11 @@ typedef struct TOKEN_STRUCT {
     unsigned int line;
     unsigned int pos;
     TokenType_T type;
+
+    SrcFile_T* source;
 } Token_T;
 
-Token_T* init_token(char* value, unsigned int line, unsigned int position, TokenType_T type);
+Token_T* init_token(char* value, unsigned int line, unsigned int position, TokenType_T type, SrcFile_T* source);
 void free_token(Token_T* token);
 
 Token_T* dupl_token(Token_T* tok);  // duplicates a token

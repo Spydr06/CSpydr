@@ -3,12 +3,10 @@
 
 #include "../list.h"
 #include "../ast/ast.h"
-#include "../error/errorHandler.h"
+#include "../error/error.h"
 
 typedef struct PREPROCESSOR_STRUCT
 {
-    ErrorHandler_T* eh;
-
     List_T* vars;
     List_T* fns;
     List_T* tdefs;
@@ -16,9 +14,9 @@ typedef struct PREPROCESSOR_STRUCT
     int num_errors_found;
 } Preprocessor_T;
 
-Preprocessor_T* init_preprocessor(ErrorHandler_T* eh);
+Preprocessor_T* init_preprocessor(void);
 void            free_preprocessor(Preprocessor_T* pp);
 
-void preprocess(ErrorHandler_T* eh, ASTProg_T* ast);
+void preprocess(ASTProg_T* ast);
 
 #endif

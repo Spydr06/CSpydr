@@ -10,10 +10,7 @@ void test_lexer_symbols(void)
     SrcFile_T* file = get_file(1, "{}()[];:,+-*/ =! != == >= <=");
     TEST_ASSERT(file != NULL);
 
-    ErrorHandler_T* eh = init_errorhandler();
-    TEST_ASSERT(eh != NULL);
-
-    Lexer_T* lexer = init_lexer(file, eh);
+    Lexer_T* lexer = init_lexer(file);
     TEST_ASSERT(lexer != NULL);
 
 #define NUM_TOKENS 19
@@ -40,10 +37,7 @@ void test_lexer_strings(void)
     SrcFile_T* file = get_file(4, "\"hello\"\n", "\"\n", "world\n", "\"\n");
     TEST_ASSERT(file != NULL);
 
-    ErrorHandler_T* eh = init_errorhandler();
-    TEST_ASSERT(eh != NULL);
-
-    Lexer_T* lexer = init_lexer(file, eh);
+    Lexer_T* lexer = init_lexer(file);
     TEST_ASSERT(lexer != NULL);
 
 #define NUM_TOKENS 2
@@ -68,10 +62,7 @@ void test_lexer_numbers(void)
     SrcFile_T* file = get_file(1, "23 2.5 0b0101 0xff 100_000_000");
     TEST_ASSERT(file != NULL);
 
-    ErrorHandler_T* eh = init_errorhandler();
-    TEST_ASSERT(eh != NULL);
-
-    Lexer_T* lexer = init_lexer(file, eh);
+    Lexer_T* lexer = init_lexer(file);
     TEST_ASSERT(lexer != NULL);
 
 #define NUM_TOKENS 5
@@ -96,10 +87,7 @@ void test_lexer_ids(void)
     SrcFile_T* file = get_file(2, "hello wor\n", "ld");
     TEST_ASSERT(file != NULL);
 
-    ErrorHandler_T* eh = init_errorhandler();
-    TEST_ASSERT(eh != NULL);
-
-    Lexer_T* lexer = init_lexer(file, eh);
+    Lexer_T* lexer = init_lexer(file);
     TEST_ASSERT(lexer != NULL);
 
 #define NUM_TOKENS 3
@@ -124,10 +112,7 @@ void test_lexer_keywords(void)
     SrcFile_T* file = get_file(1, "true false nil let fn loop if else ret match type struct enum import");
     TEST_ASSERT(file != NULL);
 
-    ErrorHandler_T* eh = init_errorhandler();
-    TEST_ASSERT(eh != NULL);
-
-    Lexer_T* lexer = init_lexer(file, eh);
+    Lexer_T* lexer = init_lexer(file);
     TEST_ASSERT(lexer != NULL);
 
 #define NUM_TOKENS 14

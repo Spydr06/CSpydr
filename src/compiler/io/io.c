@@ -7,7 +7,6 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <unistd.h>
 
 SrcFile_T* read_file(const char* path)

@@ -25,7 +25,6 @@
 #include "lexer/lexer.h"
 #include "parser/parser.h"
 #include "parser/preprocessor.h"
-#include "error/errorHandler.h"
 #include "platform/platform_bindings.h"
 #include "codegen/llvm/llvm_codegen.h"
 
@@ -143,29 +142,25 @@ void compile_llvm(char* path, char* target)
 {
     SrcFile_T* main_file = read_file(path);
 
-    ErrorHandler_T* eh = init_errorhandler(main_file);
-
-    ASTProg_T* ast = parse_file(eh, init_list(sizeof(char*)), main_file);
+    ASTProg_T* ast = parse_file(init_list(sizeof(char*)), main_file, false);
     List_T* imports = ast->imports;
 
     for(size_t i = 0; i < imports->size; i++)
     {
         SrcFile_T* import_file = read_file(imports->items[i]);
-        eh->file = import_file;
 
-        ASTProg_T* import_ast = parse_file(eh, imports, import_file);
+        ASTProg_T* import_ast = parse_file(imports, import_file, false);
         merge_ast_progs(ast, import_ast);
 
         free_srcfile(import_file);
     }
 
-    preprocess(eh, ast);
+    preprocess(ast);
 
     LLVMCodegenData_T* cg = init_llvm_cg(ast, target);
     cg->print_ll = true;
     llvm_gen_code(cg);
     free_llvm_cg(cg);
 
-    free_errorhandler(eh);
     free_srcfile(main_file);
 }

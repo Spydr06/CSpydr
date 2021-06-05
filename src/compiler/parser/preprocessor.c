@@ -6,13 +6,12 @@
 #include <stdio.h>
 #include <string.h>
 
-Preprocessor_T* init_preprocessor(ErrorHandler_T* eh)
+Preprocessor_T* init_preprocessor(void)
 {
     Preprocessor_T* pp = malloc(sizeof(struct PREPROCESSOR_STRUCT));
     pp->fns = init_list(sizeof(struct AST_OBJ_STRUCT*));
     pp->vars = init_list(sizeof(struct AST_OBJ_STRUCT*));
     pp->tdefs = init_list(sizeof(struct AST_OBJ_STRUCT*));
-    pp->eh = eh;
     pp->num_errors_found = 0;
 
     return pp;
@@ -31,9 +30,9 @@ static void register_fn(Preprocessor_T* pp, ASTObj_T* fn);
 static void register_var(Preprocessor_T* pp, ASTObj_T* gl);
 static void register_tdef(Preprocessor_T* pp, ASTObj_T* ty);
 
-void preprocess(ErrorHandler_T* eh, ASTProg_T* ast)
+void preprocess(ASTProg_T* ast)
 {
-    Preprocessor_T* pp = init_preprocessor(eh);
+    Preprocessor_T* pp = init_preprocessor();
 
     for(size_t i = 0; i < ast->objs->size; i++)
     {
@@ -93,11 +92,7 @@ static void register_fn(Preprocessor_T* pp, ASTObj_T* fn)
     ASTObj_T* found = find_fn(pp, fn->callee);
     if(found) 
     {
-        const char* err_tmp = "redefinition of function \"%s\", first defined in" COLOR_BOLD_WHITE " %s:[%ld:%ld]" COLOR_RESET;
-        char* err_msg = calloc(strlen(err_tmp) + strlen(fn->callee) + strlen("TODO") + 1, sizeof(char));
-        sprintf(err_msg, err_tmp, fn->callee, "TODO", found->tok->line, found->tok->pos);
-
-        throw_redef_error(pp->eh, err_msg, fn->tok->line, fn->tok->pos);
+        throw_error(ERR_REDEFINITION, fn->tok, "redefinition of function \"%s\", first defined in" COLOR_BOLD_WHITE " %s:[%ld:%ld]" COLOR_RESET, fn->callee, "TODO", found->tok->line, found->tok->pos);
         pp->num_errors_found++;
     }
 
@@ -109,11 +104,7 @@ static void register_var(Preprocessor_T* pp, ASTObj_T* var)
     ASTObj_T* found = find_var(pp, var->callee);
     if(found)
     {
-        const char* err_tmp = "redefinition of variable \"%s\", first defined in" COLOR_BOLD_WHITE " %s:[%ld:%ld]" COLOR_RESET;
-        char* err_msg = calloc(strlen(err_tmp) + strlen(var->callee) + strlen("TODO") + 1, sizeof(char));
-        sprintf(err_msg, err_tmp, var->callee, "TODO", found->tok->line, found->tok->pos);
-
-        throw_redef_error(pp->eh, err_msg, var->tok->line, var->tok->pos);
+        throw_error(ERR_REDEFINITION, var->tok, "redefinition of variable \"%s\", first defined in" COLOR_BOLD_WHITE " %s:[%ld:%ld]" COLOR_RESET, var->callee, "TODO", found->tok->line, found->tok->pos);
         pp->num_errors_found++;
     }
 
@@ -124,22 +115,14 @@ static void register_tdef(Preprocessor_T* pp, ASTObj_T* ty)
 {
     if(get_primitive_type(ty->callee))
     {
-        const char* err_tmp = "redefinition of type \"%s\", cannot overwrite a primitive";
-        char* err_msg = calloc(strlen(err_tmp) + strlen(ty->callee) + strlen("TODO") + 1, sizeof(char));
-        sprintf(err_msg, err_tmp, ty->callee);
-
-        throw_redef_error(pp->eh, err_msg, ty->tok->line, ty->tok->pos);
+        throw_error(ERR_REDEFINITION, ty->tok, "redefinition of type \"%s\", cannot overwrite a primitive", ty->callee);
         pp->num_errors_found++;
     }
 
     ASTObj_T* found = find_tdef(pp, ty->callee);
     if(found)
     {
-        const char* err_tmp = "redefinition of type \"%s\", first defined in" COLOR_BOLD_WHITE " %s:[%ld:%ld]" COLOR_RESET;
-        char* err_msg = calloc(strlen(err_tmp) + strlen(ty->callee) + strlen("TODO") + 1, sizeof(char));
-        sprintf(err_msg, err_tmp, ty->callee, "TODO", found->tok->line, found->tok->pos);
-
-        throw_redef_error(pp->eh, err_msg, ty->tok->line, ty->tok->pos);
+        throw_error(ERR_REDEFINITION, ty->tok, "redefinition of type \"%s\", first defined in" COLOR_BOLD_WHITE " %s:[%ld:%ld]" COLOR_RESET, ty->callee, "TODO", found->tok->line, found->tok->pos);
         pp->num_errors_found++;
     }
     

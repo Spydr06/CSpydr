@@ -133,11 +133,9 @@ Parser_T* init_parser(Lexer_T* lexer)
 {
     Parser_T* parser = calloc(1, sizeof(struct PARSER_STRUCT));
     parser->lexer = lexer;
-    parser->eh = parser->lexer->eh;
     parser->tok = lexer_next_token(parser->lexer);
     parser->imports = init_list(sizeof(char*));
 
-    parser->silent = false;
     parser->current_block = NULL;
     return parser;
 }
@@ -173,14 +171,7 @@ static inline bool streq(char* s1, char* s2)
 Token_T* parser_consume(Parser_T* p, TokenType_T type, const char* msg)
 {
     if(!tok_is(p, type))
-    {
-        const char* err_tmp = "unexpected token `%s`, %s";
-        char* err_msg = calloc(strlen(err_tmp) + strlen(p->tok->value) + strlen(msg) + 1, sizeof(char));
-        sprintf(err_msg, err_tmp, p->tok->value, msg);
-        throw_syntax_error(p->eh, err_msg, p->tok->line, p->tok->pos);
-        free(err_msg);
-        exit(1);
-    }
+        throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, %s", msg);
 
     return parser_advance(p);
 }
@@ -212,12 +203,12 @@ static ASTObj_T* parse_typedef(Parser_T* p);
 static ASTObj_T* parse_fn(Parser_T* p);
 static ASTObj_T* parse_global(Parser_T* p);
 
-ASTProg_T* parse_file(ErrorHandler_T* eh, List_T* imports, SrcFile_T* src)
+ASTProg_T* parse_file(List_T* imports, SrcFile_T* src, bool is_silent)
 {
-    Lexer_T* lex = init_lexer(src, eh);
+    Lexer_T* lex = init_lexer(src);
     Parser_T* p = init_parser(lex);
 
-    if(!p->silent)
+    if(is_silent)
     {
         LOG_OK_F(COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s\n", src->path);
     }
@@ -240,12 +231,8 @@ ASTProg_T* parse_file(ErrorHandler_T* eh, List_T* imports, SrcFile_T* src)
             case TOKEN_FN:
                 list_push(prog->objs, parse_fn(p));
                 break;
-            default: {
-                const char* err_tmp = "unexpected token `%s`, expect [import, type, let, fn]";
-                char* err_msg = calloc(strlen(err_tmp) + strlen(p->tok->value) + 1, sizeof(char));
-                sprintf(err_msg, err_tmp, p->tok->value);
-                throw_syntax_error(p->eh, err_msg, p->tok->line, p->tok->pos);
-            }
+            default:
+                throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect [import, type, let, fn]", p->tok->value);
         }
     }
 
@@ -268,11 +255,7 @@ static char* get_full_import_path(Parser_T* p, char* origin, Token_T* import_fil
 
     if(!file_exists(full_import_path))
     {
-        const char* err_tmp = "Error reading imported file \"%s\", no such file or directory";
-        char* err_msg = calloc(strlen(err_tmp) + strlen(import_file->value) + 1, sizeof(char));
-        sprintf(err_msg, err_tmp, import_file->value);
-
-        throw_syntax_error(p->eh, err_msg, p->tok->line, p->tok->pos);
+        throw_error(ERR_SYNTAX_ERROR, p->tok, "Error reading imported file \"%s\", no such file or directory", import_file->value);
     }
 
     return full_import_path;
@@ -463,7 +446,7 @@ static ASTObj_T* parse_global(Parser_T* p)
         parser_advance(p);
         global->value = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
         if(!global->value->is_constant)
-            throw_syntax_error(p->eh, "assigned value unknown at compile-time", global->value->tok->line, global->value->tok->pos);
+            throw_error(ERR_UNDEFINED, p->tok, "assigned value unknown at compile-time");
     }
     
     parser_consume(p, TOKEN_SEMICOLON, "expect `;` after variable declaration");
@@ -574,7 +557,7 @@ static ASTNode_T* parse_match(Parser_T* p)
         if(case_stmt->is_default_case)
         {
             if(match->default_case)
-                throw_redef_error(p->eh, "redefinition of default case `_`.", case_stmt->tok->line, case_stmt->tok->pos + 1);
+                throw_error(ERR_REDEFINITION, p->tok, "redefinition of default case `_`.");
 
             match->default_case = case_stmt;
             continue;
@@ -593,13 +576,7 @@ static ASTNode_T* parse_expr_stmt(Parser_T* p)
     stmt->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
 
     if(!is_executable(stmt->expr->kind))
-    {
-        const char* err_tmp = "cannot treat `%s` as a statement, expect function call, assignment or similar";
-        char* err_msg = calloc(strlen(err_tmp) + strlen(stmt->expr->tok->value) + 1, sizeof(char));
-        sprintf(err_msg, err_tmp, stmt->expr->tok->value);
-
-        throw_syntax_error(p->eh, err_msg, stmt->expr->tok->line, stmt->expr->tok->pos + 1);
-    }
+        throw_error(ERR_SYNTAX_ERROR, stmt->expr->tok, "cannot treat `%s` as a statement, expect function call, assignment or similar", stmt->expr->tok->value);
 
     parser_consume(p, TOKEN_SEMICOLON, "expect `;` after expression statement");
 
@@ -626,7 +603,7 @@ static void parse_local(Parser_T* p)
     parser_consume(p, TOKEN_SEMICOLON, "expect `;` after variable declaration");
 
     if(!p->current_block || p->current_block->kind != ND_BLOCK)
-        throw_syntax_error(p->eh, "cannot define a local variable outside a block statement", local->tok->line, local->tok->pos);
+        throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot define a local variable outside a block statement");
     list_push(p->current_block->locals, local);
 }
 
@@ -664,16 +641,10 @@ repeat:
 static ASTNode_T* parse_expr(Parser_T* p, Precedence_T prec, TokenType_T end_tok)
 {
     prefix_parse_fn prefix = get_prefix_parse_fn(p->tok->type);
-    if(!prefix)
-    {
-        const char* template = "unexpected token `%s`, expect expression";
-        char* msg = calloc(strlen(template) + strlen(p->tok->value) + 1, sizeof(char));
-        sprintf(msg, template, p->tok->value);
 
-        throw_syntax_error(p->eh, msg, p->tok->line, p->tok->pos);
-        free(msg);
-        exit(1);
-    }
+    if(!prefix)
+        throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect expression", p->tok->value);
+
     ASTNode_T* left_expr = prefix(p);
 
     while(!tok_is(p, end_tok) && prec < get_precedence(p->tok->type))
@@ -838,13 +809,8 @@ static ASTNode_T* generate_assignment_op_rval(Parser_T* p, ASTNode_T* left, Toke
 static ASTNode_T* parse_assignment(Parser_T* p, ASTNode_T* left)
 {
     if(!is_editable(left->kind))
-    {
-        const char* err_tmp = "cannot assign a value to `%s`, expect variable or similar";
-        char* err_msg = calloc(strlen(err_tmp) + strlen(left->tok->value) + 1, sizeof(char));
-        sprintf(err_msg, err_tmp, left->tok->value);
+        throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot assign a value to `%s`, expect variable or similar", left->tok->value);
 
-        throw_syntax_error(p->eh, err_msg, left->tok->line, left->tok->pos);
-    }
     ASTNode_T* assign = init_ast_node(ND_ASSIGN, p->tok);
     assign->left = left;
 
@@ -877,13 +843,7 @@ static ASTNode_T* parse_postfix(Parser_T* p, ASTNode_T* left)
 static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left)
 {
     if(!is_editable(left->kind))
-    {
-        const char* err_tmp = "cannot call `%s`, expect function name or similar";
-        char* err_msg = calloc(strlen(err_tmp) + strlen(left->tok->value) + 1, sizeof(char));
-        sprintf(err_msg, err_tmp, left->tok->value);
-
-        throw_syntax_error(p->eh, err_msg, left->tok->line, left->tok->pos);
-    }
+        throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot call `%s`, expect function name or similar", left->tok->value);
 
     ASTNode_T* call = init_ast_node(ND_CALL, p->tok);
     call->expr = left;  // the expression to call
@@ -899,13 +859,7 @@ static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left)
 static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left)
 {
     if(!is_editable(left->kind))
-    {
-        const char* err_tmp = "cannot get an index value of `%s`, expect array name or similar";
-        char* err_msg = calloc(strlen(err_tmp) + strlen(left->tok->value) + 1, sizeof(char));
-        sprintf(err_msg, err_tmp, left->tok->value);
-
-        throw_syntax_error(p->eh, err_msg, left->tok->line, left->tok->pos);
-    }
+        throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot get an index value of `%s`, expect array name or similar", left->tok->value);
 
     ASTNode_T* index = init_ast_node(ND_INDEX, p->tok);
     index->left = left;
@@ -921,13 +875,7 @@ static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left)
 static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left)
 {
     if(!is_editable(left->kind))
-    {
-        const char* err_tmp = "cannot get a member of `%s`, expect struct name or similar";
-        char* err_msg = calloc(strlen(err_tmp) + strlen(left->tok->value) + 1, sizeof(char));
-        sprintf(err_msg, err_tmp, left->tok->value);
-
-        throw_syntax_error(p->eh, err_msg, left->tok->line, left->tok->pos);
-    }
+        throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot get a member of `%s`, expect struct name or similar", left->tok->value);
 
     ASTNode_T* member = init_ast_node(ND_MEMBER, p->tok);
     member->left = left;
@@ -936,13 +884,7 @@ static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left)
     member->right = parse_expr(p, expr_parse_fns[TOKEN_DOT].prec, TOKEN_EOF);
 
     if(member->right->kind != ND_ID)
-    {
-        const char* err_tmp = "cannot get %s as a member of `%s`, expect member name";
-        char* err_msg = calloc(strlen(err_tmp) + strlen(member->right->tok->value) + strlen(left->tok->value) + 1, sizeof(char));
-        sprintf(err_msg, err_tmp, member->right->tok->value);
-
-        throw_syntax_error(p->eh, err_msg, member->right->tok->line, member->right->tok->pos);
-    }
+        throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot get %s as a member of `%s`, expect member name", member->right->tok->value);
 
     return member;
 }

@@ -6,7 +6,7 @@
 #include <string.h>
 #include <stdio.h>
 
-Token_T* init_token(char* value, unsigned int line, unsigned int pos, TokenType_T type)
+Token_T* init_token(char* value, unsigned int line, unsigned int pos, TokenType_T type, SrcFile_T* source)
 {
     Token_T* token = calloc(1, sizeof(struct TOKEN_STRUCT));
 
@@ -15,6 +15,7 @@ Token_T* init_token(char* value, unsigned int line, unsigned int pos, TokenType_
     token->type = type;
 
     token->value = strdup(value);
+    token->source = source;
 
     return token;
 }
@@ -37,5 +38,5 @@ char* token_to_str(Token_T* token)
 
 Token_T* dupl_token(Token_T* tok)
 {
-    return init_token(tok->value, tok->line, tok->pos, tok->type);
+    return init_token(tok->value, tok->line, tok->pos, tok->type, tok->source);
 }
