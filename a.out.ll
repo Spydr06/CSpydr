@@ -1,8 +1,6 @@
-; ModuleID = "examples/main.csp"
+; ModuleID = 'examples/main.csp'
 source_filename = "examples/main.csp"
 target triple = "x86_64-pc-linux-gnu"
-
-@global = external global i32
 
 define i32 @main(i32 %argc, i8 addrspace(1)* addrspace(8)* %argv) {
 entry:

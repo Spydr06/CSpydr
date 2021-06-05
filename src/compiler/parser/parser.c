@@ -37,6 +37,7 @@ static ASTNode_T* parse_bool_op(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_assignment(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_postfix(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left);
+static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left);
 
 static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left);
 
@@ -72,7 +73,7 @@ static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } ex
     [TOKEN_SUB]      = {NULL, parse_assignment, ASSIGN},  
     [TOKEN_DIV]      = {NULL, parse_assignment, ASSIGN},  
     [TOKEN_MULT]     = {NULL, parse_assignment, ASSIGN},   
-    [TOKEN_DOT]      = {NULL, parse_assignment, MEMBER},  
+    [TOKEN_DOT]      = {NULL, parse_member, MEMBER},  
 }; 
 
 static ASTNodeKind_T unary_ops[TOKEN_EOF + 1] = {
@@ -101,6 +102,8 @@ static ASTNodeKind_T infix_ops[TOKEN_EOF + 1] = {
     [TOKEN_SUB]    = ND_SUB,    // is still an assignment!
     [TOKEN_MULT]   = ND_MUL,    // is still an assignment!
     [TOKEN_DIV]    = ND_DIV,    // is still an assignment!
+
+    [TOKEN_DOT]    = ND_MEMBER,
 
     [TOKEN_INC] = ND_INC,   // technically postfix operators, but get treated like infix ops internally
     [TOKEN_DEC] = ND_DEC    // technically postfix operators, but get treated like infix ops internally
@@ -208,14 +211,17 @@ static ASTObj_T* parse_typedef(Parser_T* p);
 static ASTObj_T* parse_fn(Parser_T* p);
 static ASTObj_T* parse_global(Parser_T* p);
 
-ASTProg_T* parse(Parser_T* p, const char* main_file)
+ASTProg_T* parse_file(ErrorHandler_T* eh, List_T* imports, SrcFile_T* src)
 {
+    Lexer_T* lex = init_lexer(src, eh);
+    Parser_T* p = init_parser(lex);
+
     if(!p->silent)
     {
-        LOG_OK_F(COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s\n", main_file);
+        LOG_OK_F(COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s\n", src->path);
     }
 
-    ASTProg_T* prog = init_ast_prog(main_file, NULL);
+    ASTProg_T* prog = init_ast_prog(src->path, NULL, imports);
 
     while(!tok_is(p, TOKEN_EOF))
     {
@@ -241,6 +247,9 @@ ASTProg_T* parse(Parser_T* p, const char* main_file)
             }
         }
     }
+
+    free_parser(p);
+    free_lexer(lex);
 
     return prog;
 }
@@ -820,7 +829,7 @@ static ASTNode_T* parse_assignment(Parser_T* p, ASTNode_T* left)
 
         throw_syntax_error(p->eh, err_msg, left->tok->line, left->tok->pos);
     }
-    ASTNode_T* assign = init_ast_node(infix_ops[p->tok->type], p->tok);
+    ASTNode_T* assign = init_ast_node(ND_ASSIGN, p->tok);
     assign->left = left;
 
     switch(p->tok->type)
@@ -891,4 +900,33 @@ static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left)
     parser_consume(p, TOKEN_RBRACKET, "expect `]` after array index");
 
     return index;
+}
+
+static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left)
+{
+    if(!is_editable(left->kind))
+    {
+        const char* err_tmp = "cannot get a member of `%s`, expect struct name or similar";
+        char* err_msg = calloc(strlen(err_tmp) + strlen(left->tok->value) + 1, sizeof(char));
+        sprintf(err_msg, err_tmp, left->tok->value);
+
+        throw_syntax_error(p->eh, err_msg, left->tok->line, left->tok->pos);
+    }
+
+    ASTNode_T* member = init_ast_node(ND_MEMBER, p->tok);
+    member->left = left;
+
+    parser_consume(p, TOKEN_DOT, "expect `.` for a member expression");
+    member->right = parse_expr(p, expr_parse_fns[TOKEN_DOT].prec, TOKEN_EOF);
+
+    if(member->right->kind != ND_ID)
+    {
+        const char* err_tmp = "cannot get %s as a member of `%s`, expect member name";
+        char* err_msg = calloc(strlen(err_tmp) + strlen(member->right->tok->value) + strlen(left->tok->value) + 1, sizeof(char));
+        sprintf(err_msg, err_tmp, member->right->tok->value);
+
+        throw_syntax_error(p->eh, err_msg, member->right->tok->line, member->right->tok->pos);
+    }
+
+    return member;
 }

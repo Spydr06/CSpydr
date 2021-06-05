@@ -16,12 +16,15 @@
 
 // compiler includes
 #include "ast/ast.h"
+#include "io/file.h"
 #include "io/flags.h"
 #include "io/io.h"
 #include "io/log.h"
+#include "list.h"
 #include "version.h"
 #include "lexer/lexer.h"
 #include "parser/parser.h"
+#include "parser/preprocessor.h"
 #include "error/errorHandler.h"
 #include "platform/platform_bindings.h"
 #include "codegen/llvm/llvm_codegen.h"
@@ -138,21 +141,31 @@ int main(int argc, char* argv[])
 // sets up and runs the compilation pipeline using LLVM
 void compile_llvm(char* path, char* target)
 {
-    SrcFile_T* file = read_file(path);
+    SrcFile_T* main_file = read_file(path);
 
-    ErrorHandler_T* eh = init_errorhandler(file);
-    Lexer_T* lexer = init_lexer(file, eh);
-    Parser_T* parser = init_parser(lexer);
-    ASTProg_T* ast = parse(parser, path);
+    ErrorHandler_T* eh = init_errorhandler(main_file);
+
+    ASTProg_T* ast = parse_file(eh, init_list(sizeof(char*)), main_file);
+    List_T* imports = ast->imports;
+
+    for(size_t i = 0; i < imports->size; i++)
+    {
+        SrcFile_T* import_file = read_file(imports->items[i]);
+        eh->file = import_file;
+
+        ASTProg_T* ast = parse_file(eh, imports, import_file);
+        // TODO: merge ASTProg_Ts together
+
+        free_srcfile(import_file);
+    }
+
+    preprocess(eh, ast);
 
     LLVMCodegenData_T* cg = init_llvm_cg(ast, target);
     cg->print_ll = true;
     llvm_gen_code(cg);
     free_llvm_cg(cg);
 
-    //FIXME: free_ast_prog(ast);
-    free_parser(parser);
-    free_lexer(lexer);
     free_errorhandler(eh);
-    free_srcfile(file);
+    free_srcfile(main_file);
 }

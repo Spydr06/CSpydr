@@ -63,13 +63,13 @@ void free_ast_obj(ASTObj_T* obj)
     free_s(obj);
 }
 
-ASTProg_T* init_ast_prog(const char* main_file_path, const char* target_binary)
+ASTProg_T* init_ast_prog(const char* main_file_path, const char* target_binary, List_T* imports)
 {
     ASTProg_T* prog = malloc(sizeof(struct AST_PROG_STRUCT));
     prog->main_file_path = main_file_path;
     prog->target_binary = target_binary;
 
-    prog->imports = init_list(sizeof(char*));
+    prog->imports = imports;
 
     prog->objs = init_list(sizeof(struct AST_OBJ_STRUCT*));
 

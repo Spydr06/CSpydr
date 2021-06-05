@@ -48,13 +48,6 @@ const struct StrTypeIdx str_type_map[NUM_TYPES] = { // a lookup-chart to find th
     {"void", TY_VOID},
     {"char", TY_CHAR},
     {"bool", TY_BOOL},
-    
-    //non-primitives (still useful)
-    {"struct", TY_STRUCT},
-    {"enum", TY_ENUM},
-    {"*", TY_PTR},
-    {"[", TY_ARR},
-    {NULL, TY_UNDEF}
 };
 
 const int type_byte_size_map[NUM_TYPES] = { // a array to find the size in bytes of primitive data types
