@@ -9,7 +9,7 @@ TEST_DIR ?= ./tests
 BUILD_DIR ?= ./build
 
 # install directory
-INSTALL_DIR ?= /bin
+INSTALL_DIR ?= /usr/bin
 
 # main/test files
 MAIN_FILE = main.c

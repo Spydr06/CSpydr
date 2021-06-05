@@ -57,7 +57,7 @@ cspydr run hello-world.csp
 
 Scripting in CSpydr is easy on linux. To make a file runnable by CSpydr, add following comment to the first line of the main source file:
 ```bash
-#!/bin/cspydr run
+#!/usr/bin/cspydr run
 ```
 Then make the file executable:
 ```bash
