@@ -159,17 +159,19 @@ static void check_main_fn(Preprocessor_T* pp)
         pp->num_errors_found++;
     }
 
-    ASTObj_T* arg1 = (ASTObj_T*)main_fn->args->items[0];
-    if(arg1->data_type->kind != TY_I32)
-    {
-        throw_error(ERR_MISC, arg1->data_type->tok, "argument 1 of function \"main\" has to be of type `i32`");
-        pp->num_errors_found++;
-    }
+    if(main_fn->args->size == 2) {
+        ASTObj_T* arg1 = (ASTObj_T*)main_fn->args->items[0];
+        if(arg1->data_type->kind != TY_I32)
+        {
+            throw_error(ERR_MISC, arg1->data_type->tok, "argument 1 of function \"main\" has to be of type `i32`");
+            pp->num_errors_found++;
+        }
 
-    ASTObj_T* arg2 = (ASTObj_T*)main_fn->args->items[1];
-    if(arg2->data_type->kind != TY_PTR || arg2->data_type->base->kind != TY_PTR || arg2->data_type->base->base->kind != TY_CHAR)
-    {
-        throw_error(ERR_MISC, arg2->data_type->tok, "argument 2 of function \"main\" has to be of type `**char`");
-        pp->num_errors_found++;
+        ASTObj_T* arg2 = (ASTObj_T*)main_fn->args->items[1];
+        if(arg2->data_type->kind != TY_PTR || arg2->data_type->base->kind != TY_PTR || arg2->data_type->base->base->kind != TY_CHAR)
+        {
+            throw_error(ERR_MISC, arg2->data_type->tok, "argument 2 of function \"main\" has to be of type `**char`");
+            pp->num_errors_found++;
+        }
     }
 }
