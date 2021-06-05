@@ -10,3 +10,8 @@ entry:
   store i8 addrspace(1)* addrspace(8)* %argv, i8 addrspace(1)* addrspace(8)** %1, align 8
   ret i32 %argc
 }
+
+define i32 @test() {
+entry:
+  ret i32 3
+}

@@ -1,7 +1,10 @@
 #ifndef CSPYDR_PLATFORM_BINDINGS_H
 #define CSPYDR_PLATFORM_BINDINGS_H
 
+#include <stdbool.h>
+
 extern char* get_absolute_path(char* relative_path);
+extern char* get_path_from_file(char* file_path);
 
 #if defined(__linux__) || defined(__linux)
     #include "linux/linux_platform.h"

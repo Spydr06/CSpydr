@@ -27,6 +27,7 @@ static ASTNode_T* parse_char_lit(Parser_T* p);
 static ASTNode_T* parse_bool_lit(Parser_T* p);
 static ASTNode_T* parse_str_lit(Parser_T* p);
 static ASTNode_T* parse_nil_lit(Parser_T* p);
+static ASTNode_T* parse_closure(Parser_T* p);
 
 static ASTNode_T* parse_array_lit(Parser_T* p);
 static ASTNode_T* parse_struct_lit(Parser_T* p);
@@ -52,7 +53,7 @@ static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } ex
     [TOKEN_STRING]   = {parse_str_lit, NULL, LOWEST},
     [TOKEN_BANG]     = {parse_unary, NULL, LOWEST},
     [TOKEN_MINUS]    = {parse_unary, parse_num_op, SUM},
-    [TOKEN_LPAREN]   = {NULL, parse_call, CALL}, 
+    [TOKEN_LPAREN]   = {parse_closure, parse_call, CALL}, 
     [TOKEN_LBRACKET] = {parse_array_lit, parse_index, INDEX},   
     [TOKEN_LBRACE]   = {parse_struct_lit, NULL, LOWEST}, 
     [TOKEN_STAR]     = {parse_unary, parse_num_op, PRODUCT},
@@ -254,19 +255,34 @@ ASTProg_T* parse_file(ErrorHandler_T* eh, List_T* imports, SrcFile_T* src)
     return prog;
 }
 
+static char* get_full_import_path(Parser_T* p, char* origin, Token_T* import_file)
+{
+    // first get the full directory of the origin
+    char* abs_path = get_absolute_path(origin);
+    char* full_path = get_path_from_file(abs_path);
+
+    // construct the imported file onto it
+    const char* template = "%s" DIRECTORY_DELIMS "%s";
+    char* full_import_path = calloc(strlen(template) + strlen(full_path) + strlen(import_file->value) + 1, sizeof(char));
+    sprintf(full_import_path, template, full_path, import_file->value);
+
+    if(!file_exists(full_import_path))
+    {
+        const char* err_tmp = "Error reading imported file \"%s\", no such file or directory";
+        char* err_msg = calloc(strlen(err_tmp) + strlen(import_file->value) + 1, sizeof(char));
+        sprintf(err_msg, err_tmp, import_file->value);
+
+        throw_syntax_error(p->eh, err_msg, p->tok->line, p->tok->pos);
+    }
+
+    return full_import_path;
+}
+
 static void parse_import(Parser_T* p, ASTProg_T* prog)
 {
     parser_consume(p, TOKEN_IMPORT, "expect `import` keyword to import a file");
     
-    // TODO:, FIXME: make main file-location based, not compiler execution-location based
-    char* path = get_absolute_path(strdup(p->tok->value));
-    if(!path)
-    {
-        const char* err_tmp = "Error finding file \"%s\" to import.";
-        char* err_msg = calloc(strlen(err_tmp) + strlen(p->tok->value) + 1, sizeof(char));
-        sprintf(err_msg, err_tmp, p->tok->value);
-        throw_syntax_error(p->eh, err_msg, p->tok->line, p->tok->pos);
-    }
+    char* path = get_full_import_path(p, (char*) prog->main_file_path, p->tok);
 
     if(!is_already_imported(prog, path))
         list_push(prog->imports, strdup(path));
@@ -929,4 +945,13 @@ static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left)
     }
 
     return member;
+}
+
+static ASTNode_T* parse_closure(Parser_T* p)
+{
+    parser_consume(p, TOKEN_LPAREN, "expect `(` for closure");
+    ASTNode_T* expr = parse_expr(p, LOWEST, TOKEN_RPAREN);
+    parser_consume(p, TOKEN_RPAREN, "expect `)` after closure");
+
+    return expr;
 }

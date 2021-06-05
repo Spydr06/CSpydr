@@ -219,4 +219,6 @@ void      free_ast_obj(ASTObj_T* obj);
 ASTProg_T* init_ast_prog(const char* main_file_path, const char* target_binary, List_T* imports);
 void       free_ast_prog(ASTProg_T* prog);
 
+void merge_ast_progs(ASTProg_T* dest, ASTProg_T* src);
+
 #endif

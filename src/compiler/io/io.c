@@ -7,6 +7,8 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <unistd.h>
 
 SrcFile_T* read_file(const char* path)
 {
@@ -78,4 +80,24 @@ char* sh(const char* cmd)
     pclose(fp);
 
     return output;
+}
+
+bool file_exists(char* file)
+{
+    return access(file, F_OK) != -1;
+}
+
+bool file_is_readable(char* file)
+{
+    return access(file, R_OK);
+}
+
+bool file_is_writable(char* file)
+{
+    return access(file, W_OK);
+}
+
+bool file_is_executable(char* file)
+{
+    return access(file, X_OK);
 }

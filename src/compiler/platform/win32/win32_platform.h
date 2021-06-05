@@ -12,6 +12,7 @@
 #define DIRECTORY_DELIMS "\\" 
 
 char* get_absolute_path(char* relative_path);
+char* get_path_from_file(char* file_path);
 
 #endif
 #endif

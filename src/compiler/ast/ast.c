@@ -84,3 +84,9 @@ void free_ast_prog(ASTProg_T* prog)
 
     free_s(prog);
 }
+
+void merge_ast_progs(ASTProg_T* dest, ASTProg_T* src)
+{
+    for(size_t i = 0; i < src->objs->size; i++)
+        list_push(dest->objs, src->objs->items[i]);
+}

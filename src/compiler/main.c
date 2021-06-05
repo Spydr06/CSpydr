@@ -153,8 +153,8 @@ void compile_llvm(char* path, char* target)
         SrcFile_T* import_file = read_file(imports->items[i]);
         eh->file = import_file;
 
-        ASTProg_T* ast = parse_file(eh, imports, import_file);
-        // TODO: merge ASTProg_Ts together
+        ASTProg_T* import_ast = parse_file(eh, imports, import_file);
+        merge_ast_progs(ast, import_ast);
 
         free_srcfile(import_file);
     }

@@ -4,8 +4,15 @@
 #include "../list.h"
 #include "file.h"
 
+#include <stdbool.h>
+
 SrcFile_T* read_file(const char* path);
 void write_file(const char* path, char* buffer);
 char* sh(const char* cmd);
+
+bool file_exists(char* file);
+bool file_is_readable(char* file);
+bool file_is_writable(char* file);
+bool file_is_executable(char* file);
 
 #endif
