@@ -51,7 +51,7 @@ Running this program is as easy as entering the following command:
 cspydr run hello-world.csp
 ```
 
-*I will write a proper documentation in the future.*
+*(I will write a proper documentation in the future!)*
 
 ## Scripting
 
