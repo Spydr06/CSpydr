@@ -51,25 +51,26 @@ void llvm_gen_code(LLVMCodegenData_T* cg)
     bool is_invalid = LLVMVerifyModule(cg->llvm_module, LLVMAbortProcessAction, &error);
     LLVMDisposeMessage(error);
 
-    if(!is_invalid)
+    if(is_invalid)
     {
-        char* out_data = LLVMPrintModuleToString(cg->llvm_module);
-
-        if(cg->print_ll)
-            LOG_INFO_F("%s\n", out_data);
-
-        const char* ll_tmp = "%s.ll";
-        char* target_ll = calloc(strlen(ll_tmp) + strlen(cg->target_bin) + 1, sizeof(char));
-        sprintf(target_ll, ll_tmp, cg->target_bin);
-
-        write_file(target_ll, out_data);
-        LLVMDisposeMessage(out_data);
-
-        free(target_ll);
-        return;
+        LOG_ERROR("Failed generating llvm-bytecode");
+        return;   
     }
 
-    LOG_ERROR("Failed generating llvm-bytecode");
+    char* out_data = LLVMPrintModuleToString(cg->llvm_module);
+
+    if(cg->print_ll)
+        LOG_INFO_F("%s\n", out_data);
+
+    const char* ll_tmp = "%s.ll";
+    char* target_ll = calloc(strlen(ll_tmp) + strlen(cg->target_bin) + 1, sizeof(char));
+    sprintf(target_ll, ll_tmp, cg->target_bin);
+
+    write_file(target_ll, out_data);
+    LLVMDisposeMessage(out_data);
+
+    free(target_ll);
+    return;
 }
 
 static LLVMTypeRef llvm_gen_type(LLVMCodegenData_T* cg, ASTType_T* ty)

@@ -2,7 +2,7 @@
     THE CSPYDR PROGRAMMING LANGUAGE COMPILER
     This is the main file and entry point to the compiler.
 
-    This compiler and all components of CSpydr, except LLVM, are licensed under the GNU General Public License v3.0.
+    This compiler and all components of CSpydr, except external dependencies (LLVM, acutest, ...), are licensed under the GNU General Public License v3.0.
 
     Creator:
         https://github.com/spydr06
@@ -17,7 +17,6 @@
 // compiler includes
 #include "ast/ast.h"
 #include "io/file.h"
-#include "io/flags.h"
 #include "io/io.h"
 #include "io/log.h"
 #include "list.h"
@@ -30,9 +29,12 @@
 
 // default texts, which get shown if you enter help, info or version flags
 // links to me, the creator of CSpydr
-// please be nice and don't change them
+// please be nice and don't change them without any reason. You may add yourself to the credits, if you changed something
 #define CSPYDR_GIT_REPOSITORY "https://github.com/spydr06/cspydr.git"
 #define CSPYDR_GIT_DEVELOPER "https://github.com/spydr06"
+
+const char* usage_text = COLOR_BOLD_WHITE "Usage:" COLOR_RESET " cspydr [run, build, debug] <input file> [<flags>]\n"
+                         "       cspydr [--help, --info, --version]\n";
 
 // this text gets shown if -i or --info is used
 const char* info_text = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE COMPILER **\n" COLOR_RESET
@@ -52,17 +54,19 @@ const char* info_text = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE CO
                        "Type -h or --help for help page.\n";
 
 // this text gets shown if -h or --help is used
-const char* help_text = COLOR_BOLD_WHITE "usage:" COLOR_RESET " cspydr [options] source files [options]\n"
-                       COLOR_BOLD_WHITE "options:\n" COLOR_RESET
-                       "  -h, --help\t\tdisplays this help text and quits.\n"
-                       "  -v, --version\t\tdisplays the version of CSpydr and quits.\n"
-                       "  -i, --info\t\tdisplays information text and quits.\n"
-                       "  -o, --output [file]\tset the target output file (default: " DEFAULT_OUTPUT_FILE ")\n"
-                       "  -t, --transpile\tsets the compile type to transpile to c++,\n"
-                       "                   \tthen compile (default: compile to LLVM IR)\n"
-                       "  -d, --debug\t\tenable debug output.\n"
+const char* help_text = "%s"
+                       COLOR_BOLD_WHITE "Actions:\n" COLOR_RESET
+                       "  build    Builds a cspydr program to a binary to execute.\n"
+                       "  run      Builds, then runs a cspydr program directly.\n"
+                       "  debug    Runs a cspydr program with special debug tools. [!!NOT IMPLEMENTED YET!!]\n"
+                       COLOR_BOLD_WHITE "Options:\n" COLOR_RESET
+                       "  -h, --help\t\tDisplays this help text and quits.\n"
+                       "  -v, --version\t\tDisplays the version of CSpydr and quits.\n"
+                       "  -i, --info\t\tDisplays information text and quits.\n"
+                       "  -o, --output [file]\tSets the target output file (default: " DEFAULT_OUTPUT_FILE ")\n"
+                       "  -p, --print-llvm\tPrints the generated LLVM bitcode\n"
                        "\n"
-                       "If you are unsure, what CSpydr is, please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n";
+                       "If you are unsure, what CSpydr is (or how to use it), please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n";
 
 // this text gets shown if -v or --version is used
 const char* version_text = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE COMPILER **\n" COLOR_RESET
@@ -71,74 +75,112 @@ const char* version_text = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE
                           "\n"
                           "For more information type -i.\n";
 
+typedef enum ACTION_ENUM
+{
+    AC_BUILD,
+    AC_RUN,
+    AC_DEBUG,
+    AC_UNDEF
+} Action_T;
+
+static const struct { char* as_str; Action_T ac; } action_table[AC_UNDEF] = {
+    {"build", AC_BUILD},
+    {"run",   AC_RUN},
+    {"debug", AC_DEBUG},
+};
+
 // declaration of the functions used below
 extern const char* get_cspydr_version();
 extern const char* get_cspydr_build();
-extern void compile_llvm(char* path, char* target);
+void compile_llvm(char* path, char* target, Action_T action, bool print_llvm);
+
+static inline bool streq(char* a, char* b)
+{
+    return strcmp(a, b) == 0;
+}
+
+static void evaluate_info_flags(char* argv)
+{
+    if(streq(argv, "-h") || streq(argv, "--help"))
+        printf(help_text, usage_text);
+    else if(streq(argv, "-i") || streq(argv, "--info"))
+        printf(info_text, get_cspydr_version(), get_cspydr_build());
+    else if(streq(argv, "-v") || streq(argv, "--version"))
+        printf(version_text, get_cspydr_version(), get_cspydr_build());
+    else
+        LOG_ERROR_F("unknown or wrong used flag \"%s\", type \"cspydr --help\" to get help.", argv);
+
+    exit(1);
+}
 
 // entry point
 int main(int argc, char* argv[])
 {
-    // declare the input/output files
-    char* inputFile = NULL;
-    char* outputFile = DEFAULT_OUTPUT_FILE;
-
-    // dispatch all given flags
-    FlagDispatcher_T* dispatcher = dispatch_flags(argc, argv);
-    for(int i = 0; i < dispatcher->flags->size; i++)
+    if(argc == 1)
     {
-        Flag_T* currentFlag = dispatcher->flags->items[i];
+        LOG_ERROR_F("Error: Too few arguments given.\n" COLOR_RESET "%s", usage_text);
+        exit(1);
+    }
 
-        switch(currentFlag->type)
+    // if there are 2 args, check for --help, --info or --version flags
+    if(argc == 2)
+        evaluate_info_flags(argv[1]);
+
+    // get the action to perform
+    Action_T action = AC_UNDEF;
+    for(int i = 0; i < AC_UNDEF; i++)
+        if(streq(argv[1], action_table[i].as_str))
+            action = action_table[i].ac;
+    if(action == AC_UNDEF)
+    {
+        LOG_ERROR_F("Unknown action \"%s\", expect [build, run, debug]\n", argv[1]);
+    }
+
+    // declare the input/output files
+    char* output_file = DEFAULT_OUTPUT_FILE;
+    char* input_file = argv[2];
+    if(!file_exists(input_file))
+    {
+        LOG_ERROR_F("Error opening file \"%s\": No such file or directory\n", input_file);
+        exit(1);
+    }
+
+    // remove the first three flags form argc/argv
+    argc -= 3;
+    argv += 3;
+
+    bool print_llvm = false;
+
+    // get all the other flags
+    for(int i = 0; i < argc; i++)
+    {
+        char* arg = argv[i];
+
+        if(streq(arg, "-o") || streq(arg, "--output"))
         {
-            case FLAG_HELP:
-                printf("%s", help_text);
-                return 0;
-            case FLAG_VERSION:
-                printf(version_text, get_cspydr_version(), get_cspydr_version());
-                return 0;
-            case FLAG_OUTPUT:
-                outputFile = calloc(strlen(currentFlag->value) + 1, sizeof(char));
-                strcpy(outputFile, currentFlag->value);
-                break;
-            case FLAG_INPUT:
-                inputFile = calloc(strlen(currentFlag->value) + 1, sizeof(char));
-                strcpy(inputFile, currentFlag->value);
-                break;
-            case FLAG_DEBUG:
-                //TODO: create a global debugging flag
-                break;
-            case FLAG_INFO:
-                printf(info_text, get_cspydr_version(), get_cspydr_build());
-                return 0;
-            default:
-                LOG_ERROR_F("Unknown flag '%d'. Type -h for help.\n", currentFlag->type);
-                break;
+            if(!argv[++i])
+            {
+                LOG_ERROR("Expect target file path after -o/--output.\n");
+                exit(1);
+            }
+            output_file = argv[i];
+        }
+        else if(streq(arg, "-p") || streq(arg, "--print-llvm"))
+            print_llvm = true;
+        else
+        {
+            LOG_ERROR_F("Unknown flag \"%s\", type \"cspydr --help\" to get help.\n", argv[i]);
+            exit(1);
         }
     }
 
-    free_flagdispatcher(dispatcher);
-
-    // check if an input file was given
-    if(inputFile == NULL)
-    {
-        LOG_ERROR("Must define input file. Type -h for help.\n");
-        return 0;
-    }
-
-    compile_llvm(inputFile, outputFile);
-
-    free(inputFile);
-
-    if(strcmp(outputFile, DEFAULT_OUTPUT_FILE) != 0) {
-        free(outputFile);
-    }
+    compile_llvm(input_file, output_file, action, print_llvm);
 
     return 0;
 }
 
 // sets up and runs the compilation pipeline using LLVM
-void compile_llvm(char* path, char* target)
+void compile_llvm(char* path, char* target, Action_T action, bool print_llvm)
 {
     SrcFile_T* main_file = read_file(path);
 
@@ -158,7 +200,7 @@ void compile_llvm(char* path, char* target)
     preprocess(ast);
 
     LLVMCodegenData_T* cg = init_llvm_cg(ast, target);
-    cg->print_ll = true;
+    cg->print_ll = print_llvm;
     llvm_gen_code(cg);
     free_llvm_cg(cg);
 
