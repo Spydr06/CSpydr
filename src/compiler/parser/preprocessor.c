@@ -26,9 +26,15 @@ void free_preprocessor(Preprocessor_T* pp)
     free(pp);
 }
 
+static ASTObj_T* find_fn(Preprocessor_T* pp, char* callee);
+static ASTObj_T* find_var(Preprocessor_T* pp, char* callee);
+static ASTObj_T* find_tdef(Preprocessor_T* pp, char* callee);
+
 static void register_fn(Preprocessor_T* pp, ASTObj_T* fn);
 static void register_var(Preprocessor_T* pp, ASTObj_T* gl);
 static void register_tdef(Preprocessor_T* pp, ASTObj_T* ty);
+
+static void check_main_fn(Preprocessor_T* pp);
 
 void preprocess(ASTProg_T* ast)
 {
@@ -52,6 +58,9 @@ void preprocess(ASTProg_T* ast)
                 break;
         }
     }
+    // TODO: evaluate macros here, when they get added
+
+    check_main_fn(pp);
 
     if(pp->num_errors_found > 0)
     {
@@ -127,4 +136,40 @@ static void register_tdef(Preprocessor_T* pp, ASTObj_T* ty)
     }
     
     list_push(pp->tdefs, ty);
+}
+
+static void check_main_fn(Preprocessor_T* pp)
+{
+    ASTObj_T* main_fn = find_fn(pp, "main");
+    if(!main_fn)
+    {
+        LOG_ERROR("Missing entry point: could not find function \"main\".\n");
+        pp->num_errors_found++;
+    }
+
+    if(main_fn->args->size != 0 && main_fn->args->size != 2)
+    {
+        throw_error(ERR_MISC, main_fn->tok, "arong number of arguments for function \"main\", expect [0, 2]");
+        pp->num_errors_found++;
+    }
+
+    if(main_fn->return_type->kind != TY_I32)
+    {
+        throw_error(ERR_MISC, main_fn->return_type->tok, "function \"main\" has to return type `i32`");
+        pp->num_errors_found++;
+    }
+
+    ASTObj_T* arg1 = (ASTObj_T*)main_fn->args->items[0];
+    if(arg1->data_type->kind != TY_I32)
+    {
+        throw_error(ERR_MISC, arg1->data_type->tok, "argument 1 of function \"main\" has to be of type `i32`");
+        pp->num_errors_found++;
+    }
+
+    ASTObj_T* arg2 = (ASTObj_T*)main_fn->args->items[1];
+    if(arg2->data_type->kind != TY_PTR || arg2->data_type->base->kind != TY_PTR || arg2->data_type->base->base->kind != TY_CHAR)
+    {
+        throw_error(ERR_MISC, arg2->data_type->tok, "argument 2 of function \"main\" has to be of type `**char`");
+        pp->num_errors_found++;
+    }
 }

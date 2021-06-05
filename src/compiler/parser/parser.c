@@ -208,7 +208,7 @@ ASTProg_T* parse_file(List_T* imports, SrcFile_T* src, bool is_silent)
     Lexer_T* lex = init_lexer(src);
     Parser_T* p = init_parser(lex);
 
-    if(is_silent)
+    if(!is_silent)
     {
         LOG_OK_F(COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s\n", src->path);
     }

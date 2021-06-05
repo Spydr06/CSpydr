@@ -5,7 +5,7 @@
 #define PARSER_TEST_FUNC(name, src, msg, code) void name(void) {         \
     SrcFile_T* file = get_file(1, src);                                  \
     TEST_ASSERT(file != NULL);                                           \
-    ASTProg_T* prog = parse_file(init_list(sizeof(char*)), file, false); \
+    ASTProg_T* prog = parse_file(init_list(sizeof(char*)), file, true);  \
     TEST_ASSERT(prog != NULL);                                           \
     code                                                                 \
     /*FIXME: free_ast_prog(prog);*/                                      \
