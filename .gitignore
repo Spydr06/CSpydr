@@ -54,6 +54,10 @@ obj/
 build/
 .xcode/
 
+# llvm files
+*.bc
+*.ll
+
 # Kernel Module Compile Results
 *.mod*
 *.cmd
