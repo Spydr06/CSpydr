@@ -11,21 +11,16 @@
 */
 
 // std includes
-#include <stdio.h>
 #include <string.h>
 
 // compiler includes
-#include "ast/ast.h"
-#include "io/file.h"
 #include "io/io.h"
 #include "io/log.h"
-#include "list.h"
 #include "version.h"
-#include "lexer/lexer.h"
 #include "parser/parser.h"
 #include "parser/preprocessor.h"
-#include "platform/platform_bindings.h"
 #include "codegen/llvm/llvm_codegen.h"
+#include "platform/platform_bindings.h"
 
 // default texts, which get shown if you enter help, info or version flags
 // links to me, the creator of CSpydr
@@ -83,7 +78,7 @@ typedef enum ACTION_ENUM
     AC_UNDEF
 } Action_T;
 
-static const struct { char* as_str; Action_T ac; } action_table[AC_UNDEF] = {
+const struct { char* as_str; Action_T ac; } action_table[AC_UNDEF] = {
     {"build", AC_BUILD},
     {"run",   AC_RUN},
     {"debug", AC_DEBUG},
@@ -199,9 +194,26 @@ void compile_llvm(char* path, char* target, Action_T action, bool print_llvm)
 
     preprocess(ast);
 
-    LLVMCodegenData_T* cg = init_llvm_cg(ast, target);
+    LLVMCodegenData_T* cg = init_llvm_cg(ast);
     cg->print_ll = print_llvm;
     llvm_gen_code(cg);
+
+    switch(action)
+    {
+        case AC_BUILD:
+            llvm_emit_code(cg, target);
+            break;
+        case AC_RUN:
+            llvm_run_code(cg);
+            break;
+        case AC_DEBUG:
+            // TODO:
+            break;
+        default:
+            LOG_ERROR_F("Unrecognized action of type [%d], exit\n", action);
+            exit(1);
+    }
+
     free_llvm_cg(cg);
 
     free_srcfile(main_file);
