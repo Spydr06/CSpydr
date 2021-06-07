@@ -49,6 +49,7 @@ ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok)
     ASTObj_T* obj = malloc(sizeof(struct AST_OBJ_STRUCT));
     obj->kind = kind;
     obj->tok = dupl_token(tok);
+    obj->is_extern = false;
 
     return obj;
 }

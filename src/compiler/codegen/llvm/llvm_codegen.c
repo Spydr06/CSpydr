@@ -71,7 +71,6 @@ void llvm_gen_code(LLVMCodegenData_T* cg)
 static void llvm_optimize_module(LLVMCodegenData_T* cg)
 {
     LLVMPassManagerRef pass = LLVMCreatePassManager();
-    LLVMAddConstantPropagationPass(pass);
     LLVMAddInstructionCombiningPass(pass);
     LLVMAddMemCpyOptPass(pass);
     LLVMAddGVNPass(pass);
@@ -152,8 +151,6 @@ static LLVMTypeRef llvm_gen_type(LLVMCodegenData_T* cg, ASTType_T* ty)
             return LLVMFloatType();
         case TY_F64:
             return LLVMDoubleType();
-        case TY_F80:
-            // TODO:
             return NULL;
         case TY_BOOL:
             return LLVMInt1Type();

@@ -32,7 +32,8 @@ typedef enum {
     INDEX   =  9, // x[y]
     MEMBER  = 10, // x.y
     CLOSURE = 11, // (x + y) * z
-    HIGHEST = 12,
+    CAST    = 12, // x:i32
+    HIGHEST = 13,
 } Precedence_T;
 
 Parser_T* init_parser(Lexer_T* lexer);

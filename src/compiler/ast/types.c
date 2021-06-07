@@ -23,7 +23,6 @@ ASTType_T* primitives[NUM_TYPES] = {    // sets the primitive data types, who ar
 
     [TY_F32] = &(ASTType_T){.kind = TY_F32,   .is_primitive = true, .size = F32_S},
     [TY_F64] = &(ASTType_T){.kind = TY_F64,   .is_primitive = true, .size = F64_S},
-    [TY_F80] = &(ASTType_T){.kind = TY_F80,   .is_primitive = true, .size = F80_S},
 
     [TY_VOID] = &(ASTType_T){.kind = TY_VOID, .is_primitive = true, .size = VOID_S},
     [TY_CHAR] = &(ASTType_T){.kind = TY_CHAR, .is_primitive = true, .size = CHAR_S},
@@ -43,7 +42,6 @@ const struct StrTypeIdx str_type_map[NUM_TYPES] = { // a lookup-chart to find th
 
     {"f32", TY_F32},
     {"f64", TY_F64},
-    {"f80", TY_F80},
 
     {"void", TY_VOID},
     {"char", TY_CHAR},
@@ -63,7 +61,6 @@ const int type_byte_size_map[NUM_TYPES] = { // a array to find the size in bytes
 
     [TY_F32] = F32_S,
     [TY_F64] = F64_S,
-    [TY_F80] = F80_S,
 
     [TY_CHAR] = CHAR_S,
     [TY_BOOL] = BOOL_S,

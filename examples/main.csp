@@ -1,9 +1,10 @@
 # a basic test program used for developing this programming language
 
 import "test.csp";
+extern fn puts(str: *char);
 
 fn main(argc: i32, argv: **char): i32 {
-    s.f[3] += 4;
+    let argc_u: u32 = argc:u32;
 
     <- argc;
 }

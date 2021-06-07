@@ -15,7 +15,6 @@
 #define U64_S  8
 #define F32_S  4
 #define F64_S  8
-#define F80_S  10
 #define CHAR_S 1
 #define BOOL_S 1
 #define VOID_S 1
@@ -27,11 +26,14 @@ struct StrTypeIdx {
     char* t;
     ASTTypeKind_T dt;
 };
-
 extern const struct StrTypeIdx str_type_map[NUM_TYPES];
+
 extern ASTType_T* primitives[NUM_TYPES];
+
 extern const int type_byte_size_map[NUM_TYPES];
 extern ASTNode_T* constant_literals[TOKEN_EOF];
+
+extern const bool type_cast_map[NUM_TYPES][NUM_TYPES];
 
 ASTType_T* get_primitive_type(char* type);
 

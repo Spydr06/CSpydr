@@ -52,6 +52,7 @@ typedef enum {
     ND_MEMBER,  // x.y
     ND_CALL,    // x(y, z)
     ND_INDEX,   // x[y]
+    ND_CAST,    // x:i32
 
     // statements
     ND_BLOCK,   // {...}
@@ -80,7 +81,6 @@ typedef enum {
 
     TY_F32,
     TY_F64,
-    TY_F80,
 
     TY_BOOL,
     TY_VOID,
@@ -161,22 +161,22 @@ struct AST_TYPE_STRUCT
     ASTTypeKind_T kind;
     Token_T* tok;
 
-        ASTType_T* base;
-        int size;
+    ASTType_T* base;
+    int size;
 
-        char* callee;
+    char* callee;
 
-        bool is_primitive;
+    bool is_primitive;
 
-        // functions
-        bool is_fn;
-        List_T* arg_types;  // list of ASTType_Ts
+    // functions
+    bool is_fn;
+    List_T* arg_types;  // list of ASTType_Ts
 
-        // arrays
-        ASTNode_T* num_indices;
+    // arrays
+    ASTNode_T* num_indices;
 
-        // enums, structs
-        List_T* members;    // list of ASTNode_Ts
+    // enums, structs
+    List_T* members;    // list of ASTNode_Ts
 };
 
 struct AST_OBJ_STRUCT 
@@ -184,17 +184,18 @@ struct AST_OBJ_STRUCT
     ASTObjKind_T kind;
     Token_T* tok;
 
-        char* callee;
+    char* callee;
+    bool is_extern;
 
-        // variables
-        bool is_mutable;
-        ASTType_T* data_type;
-        ASTNode_T* value;
+    // variables
+    bool is_mutable;
+    ASTType_T* data_type;
+    ASTNode_T* value;
 
-        // functions
-        ASTType_T* return_type;
-        List_T* args;           // list of ASTObj_Ts
-        ASTNode_T* body;
+    // functions
+    ASTType_T* return_type;
+    List_T* args;           // list of ASTObj_Ts
+    ASTNode_T* body;
 };
 
 typedef struct AST_PROG_STRUCT

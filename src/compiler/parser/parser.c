@@ -41,6 +41,7 @@ static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left);
 
 static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left);
+static ASTNode_T* parse_cast(Parser_T* p, ASTNode_T* left);
 
 static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } expr_parse_fns[TOKEN_EOF + 1] = {
     [TOKEN_ID]       = {parse_id, NULL, LOWEST},
@@ -74,7 +75,8 @@ static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } ex
     [TOKEN_SUB]      = {NULL, parse_assignment, ASSIGN},  
     [TOKEN_DIV]      = {NULL, parse_assignment, ASSIGN},  
     [TOKEN_MULT]     = {NULL, parse_assignment, ASSIGN},   
-    [TOKEN_DOT]      = {NULL, parse_member, MEMBER},  
+    [TOKEN_DOT]      = {NULL, parse_member, MEMBER},
+    [TOKEN_COLON]    = {NULL, parse_cast, CAST}
 }; 
 
 static ASTNodeKind_T unary_ops[TOKEN_EOF + 1] = {
@@ -202,6 +204,7 @@ static void parse_import(Parser_T* p, ASTProg_T* prog);
 static ASTObj_T* parse_typedef(Parser_T* p);
 static ASTObj_T* parse_fn(Parser_T* p);
 static ASTObj_T* parse_global(Parser_T* p);
+static ASTObj_T* parse_extern(Parser_T* p);
 
 ASTProg_T* parse_file(List_T* imports, SrcFile_T* src, bool is_silent)
 {
@@ -230,6 +233,9 @@ ASTProg_T* parse_file(List_T* imports, SrcFile_T* src, bool is_silent)
                 break;
             case TOKEN_FN:
                 list_push(prog->objs, parse_fn(p));
+                break;
+            case TOKEN_EXTERN:  
+                list_push(prog->objs, parse_extern(p));
                 break;
             default:
                 throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect [import, type, let, fn]", p->tok->value);
@@ -381,6 +387,39 @@ static ASTObj_T* parse_typedef(Parser_T* p)
     return tydef;
 }
 
+static ASTObj_T* parse_fn_def(Parser_T* p);
+
+static ASTObj_T* parse_extern(Parser_T* p)
+{
+    parser_advance(p);
+
+    switch(p->tok->type)
+    {
+        case TOKEN_LET:
+        {
+            ASTObj_T* ext_var = parse_global(p);
+            ext_var->is_extern = true;
+
+            if(ext_var->value)
+                throw_error(ERR_SYNTAX_WARNING, ext_var->value->tok, "cannot set a value to an extern variable");
+            return ext_var;
+        }
+        case TOKEN_FN:
+        {
+            ASTObj_T* ext_fn = parse_fn_def(p);
+            parser_consume(p, TOKEN_SEMICOLON, "expect `;` after extern function declaration");
+
+            return ext_fn;
+        }
+        default:
+            throw_error(ERR_SYNTAX_ERROR, p->tok, "expect function or variable declaration");
+            break;
+    }
+
+    // satisfy -Wall
+    return NULL;
+}
+
 static List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok)
 {
     List_T* arg_list = init_list(sizeof(ASTObj_T*));
@@ -404,7 +443,7 @@ static List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok)
 
 static ASTNode_T* parse_stmt(Parser_T* p);
 
-static ASTObj_T* parse_fn(Parser_T* p)
+static ASTObj_T* parse_fn_def(Parser_T* p)
 {
     ASTObj_T* fn = init_ast_obj(OBJ_FUNCTION, p->tok);
     parser_consume(p, TOKEN_FN, "expect `fn` keyword for a function definition");
@@ -424,6 +463,13 @@ static ASTObj_T* parse_fn(Parser_T* p)
         fn->return_type = parse_type(p);
     } else
         fn->return_type = primitives[TY_VOID];
+
+    return fn;
+}
+
+static ASTObj_T* parse_fn(Parser_T* p)
+{
+    ASTObj_T* fn = parse_fn_def(p);
 
     fn->body = parse_stmt(p);
 
@@ -896,4 +942,14 @@ static ASTNode_T* parse_closure(Parser_T* p)
     parser_consume(p, TOKEN_RPAREN, "expect `)` after closure");
 
     return expr;
+}
+
+static ASTNode_T* parse_cast(Parser_T* p, ASTNode_T* left)
+{   
+    ASTNode_T* cast = init_ast_node(ND_CAST, p->tok);
+    parser_consume(p, TOKEN_COLON, "expect `:` after expression for type cast");
+    cast->left = left;
+    cast->data_type = parse_type(p);
+
+    return cast;
 }
