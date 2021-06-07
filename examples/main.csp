@@ -3,8 +3,12 @@
 import "test.csp";
 extern fn puts(str: *char);
 
+fn add(x: i32, y: i32): i32 {
+    <- x + y;
+}
+
 fn main(argc: i32, argv: **char): i32 {
     let argc_u: u32 = argc:u32;
 
-    <- argc;
+    <- add(1, add(2, 5 * add(2, 2)));
 }

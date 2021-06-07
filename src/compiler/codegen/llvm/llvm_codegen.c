@@ -29,6 +29,7 @@ LLVMCodegenData_T* init_llvm_cg(ASTProg_T* ast)
     cg->current_fn_ast = NULL;
     cg->vars = init_list(sizeof(LLVMValueRef));
     cg->main_fn = NULL;
+    cg->fns = init_list(sizeof(LLVMValueRef));
 
     LLVMEnablePrettyStackTrace();
 
@@ -41,10 +42,14 @@ void free_llvm_cg(LLVMCodegenData_T* cg)
     LLVMDisposeBuilder(cg->llvm_builder);
 
     free_list(cg->vars);
+    free_list(cg->fns);
     free(cg);
 }
 
+static LLVMValueRef find_fn(LLVMCodegenData_T* cg, char* callee);
+
 static LLVMValueRef llvm_gen_obj(LLVMCodegenData_T* cg, ASTObj_T* obj);
+static void llvm_gen_fn_body(LLVMCodegenData_T* cg, ASTObj_T* fn);
 
 void llvm_gen_code(LLVMCodegenData_T* cg)
 {
@@ -59,6 +64,17 @@ void llvm_gen_code(LLVMCodegenData_T* cg)
 
     for(int i = 0; i < cg->ast->objs->size; i++)
         llvm_gen_obj(cg, cg->ast->objs->items[i]);
+
+    for(int i = 0; i < cg->ast->objs->size; i++)
+    {
+        ASTObj_T* obj = cg->ast->objs->items[i];
+        if(obj->kind == OBJ_FUNCTION)
+        {
+            cg->current_fn_ast = obj;
+            cg->current_fn = find_fn(cg, obj->callee);
+            llvm_gen_fn_body(cg, obj);
+        }
+    }
 
     char* error = NULL;
     bool is_invalid = LLVMVerifyModule(cg->llvm_module, LLVMAbortProcessAction, &error);
@@ -228,14 +244,19 @@ static LLVMValueRef llvm_gen_fn(LLVMCodegenData_T* cg, ASTObj_T* obj)
 
     cg->current_fn = fn;
     cg->current_fn_ast = obj;
-    llvm_gen_stmt(cg, obj->body);
-
-    LLVMVerifyFunction(cg->current_fn, LLVMPrintMessageAction);
+    list_push(cg->fns, fn);
 
     if(strcmp(obj->callee, "main") == 0)
         cg->main_fn = obj;
 
     return fn;
+}
+
+static void llvm_gen_fn_body(LLVMCodegenData_T* cg, ASTObj_T* fn)
+{
+    llvm_gen_stmt(cg, fn->body);
+
+    LLVMVerifyFunction(cg->current_fn, LLVMPrintMessageAction);
 }
 
 static void llvm_gen_local(LLVMCodegenData_T* cg, ASTObj_T* local)
@@ -315,6 +336,55 @@ static LLVMValueRef find_id(LLVMCodegenData_T* cg, char* callee)
     return NULL;
 }
 
+static LLVMValueRef find_fn(LLVMCodegenData_T* cg, char* callee)
+{
+    for(size_t i = 0; i < cg->fns->size; i++)
+        if(strcmp(LLVMGetValueName((LLVMValueRef)cg->fns->items[i]), callee) == 0)
+            return cg->fns->items[i];
+    return NULL;
+}
+
+static LLVMValueRef llvm_gen_call(LLVMCodegenData_T* cg, ASTNode_T* call)
+{
+    LLVMValueRef fn = find_fn(cg, call->expr->callee);
+    size_t argc = call->args->size;
+    LLVMValueRef* args = calloc(argc, sizeof(LLVMValueRef));
+
+    for(int i = 0; i < argc; i++)
+        args[i] = llvm_gen_expr(cg, call->args->items[i]);
+    
+    return LLVMBuildCall(cg->llvm_builder, fn, args, (unsigned) argc, "");
+}
+
+static LLVMValueRef llvm_gen_op(LLVMCodegenData_T* cg, ASTNode_T* op)
+{
+    LLVMValueRef left =  llvm_gen_expr(cg, op->left);
+    LLVMValueRef right = llvm_gen_expr(cg, op->right);
+
+    switch(op->kind)
+    {
+        case ND_ADD:
+            return LLVMBuildBinOp(cg->llvm_builder, LLVMAdd, left, right, "add");
+        case ND_SUB:
+            return LLVMBuildBinOp(cg->llvm_builder, LLVMSub, left, right, "sub");
+        case ND_MUL:
+            return LLVMBuildBinOp(cg->llvm_builder, LLVMMul, left, right, "mul");
+        case ND_DIV:
+            return LLVMBuildBinOp(cg->llvm_builder, LLVMFDiv, left, right, "fdiv");
+        default:
+            throw_error(ERR_UNDEFINED, op->tok, "undefined op type %d", op->kind);
+    }
+
+    return NULL;
+}
+
+static LLVMValueRef llvm_gen_cmp(LLVMCodegenData_T* cg, ASTNode_T* op)
+{
+    //TODO:
+
+    return NULL;
+}
+
 static LLVMValueRef llvm_gen_expr(LLVMCodegenData_T* cg, ASTNode_T* node)
 {
     switch(node->kind) {
@@ -328,6 +398,27 @@ static LLVMValueRef llvm_gen_expr(LLVMCodegenData_T* cg, ASTNode_T* node)
             return LLVMConstInt(LLVMInt1Type(), node->bool_val, false);
         case ND_ID:
             return find_id(cg, node->callee);
+        case ND_CALL:
+            return llvm_gen_call(cg, node);
+        case ND_ADD:
+        case ND_SUB:
+        case ND_MUL:
+        case ND_DIV:
+            return llvm_gen_op(cg, node);
+        case ND_NEG:
+            return LLVMBuildNeg(cg->llvm_builder, llvm_gen_expr(cg, node->left), "neg");
+        case ND_NOT:
+            return LLVMBuildNot(cg->llvm_builder, llvm_gen_expr(cg, node->left), "not");
+        case ND_BIT_NEG:
+            //TODO:
+            return NULL;
+        case ND_EQ:
+        case ND_NE:
+        case ND_GT:
+        case ND_GE:
+        case ND_LT:
+        case ND_LE:
+            return llvm_gen_cmp(cg, node);
         default:
             return NULL;
     }

@@ -888,7 +888,7 @@ static ASTNode_T* parse_postfix(Parser_T* p, ASTNode_T* left)
 
 static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left)
 {
-    if(!is_editable(left->kind))
+    if(left->kind != ND_ID)
         throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot call `%s`, expect function name or similar", left->tok->value);
 
     ASTNode_T* call = init_ast_node(ND_CALL, p->tok);

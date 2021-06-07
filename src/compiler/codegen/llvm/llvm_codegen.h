@@ -23,6 +23,7 @@ typedef struct LLVM_CODEGEN_DATA_STRUCT
     ASTObj_T* main_fn;
 
     List_T* vars;
+    List_T* fns;
 } LLVMCodegenData_T;
 
 LLVMCodegenData_T* init_llvm_cg(ASTProg_T* ast);
