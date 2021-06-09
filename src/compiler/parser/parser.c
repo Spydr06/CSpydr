@@ -408,6 +408,7 @@ static ASTObj_T* parse_extern(Parser_T* p)
         {
             ASTObj_T* ext_fn = parse_fn_def(p);
             parser_consume(p, TOKEN_SEMICOLON, "expect `;` after extern function declaration");
+            ext_fn->is_extern = true;
 
             return ext_fn;
         }

@@ -1,6 +1,4 @@
 # a basic test program used for developing this programming language
-
-import "test.csp";
 extern fn puts(str: *char);
 
 fn add(x: i32, y: i32): i32 {
@@ -10,5 +8,5 @@ fn add(x: i32, y: i32): i32 {
 fn main(argc: i32, argv: **char): i32 {
     let argc_u: u32 = argc:u32;
 
-    <- add(1, add(2, 5 * add(2, 2)));
+    <- add(4, 6 * 2);
 }

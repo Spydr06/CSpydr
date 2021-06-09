@@ -3,6 +3,7 @@
 #include "../../io/log.h"
 #include "../../ast/types.h"
 #include "../../error/error.h"
+#include "llvm_casts.h"
 
 #include <llvm-c/Core.h>
 #include <llvm-c/Analysis.h>
@@ -156,7 +157,7 @@ void llvm_run_code(LLVMCodegenData_T *cg)
     LOG_INFO_F("\"%s\" terminated with exit code %d.\n", cg->ast->main_file_path, exit_code);
 }
 
-static LLVMTypeRef llvm_gen_type(LLVMCodegenData_T* cg, ASTType_T* ty)
+LLVMTypeRef llvm_gen_type(LLVMCodegenData_T* cg, ASTType_T* ty)
 {
     switch(ty->kind)
     {
@@ -226,7 +227,7 @@ static LLVMValueRef llvm_gen_global(LLVMCodegenData_T* cg, ASTObj_T* ast)
 }
 
 static void llvm_gen_stmt(LLVMCodegenData_T* cg, ASTNode_T* stmt);
-static LLVMValueRef llvm_gen_expr(LLVMCodegenData_T* cg, ASTNode_T* stmt);
+LLVMValueRef llvm_gen_expr(LLVMCodegenData_T* cg, ASTNode_T* stmt);
 
 static LLVMValueRef llvm_gen_fn(LLVMCodegenData_T* cg, ASTObj_T* obj)
 {
@@ -385,7 +386,16 @@ static LLVMValueRef llvm_gen_cmp(LLVMCodegenData_T* cg, ASTNode_T* op)
     return NULL;
 }
 
-static LLVMValueRef llvm_gen_expr(LLVMCodegenData_T* cg, ASTNode_T* node)
+static LLVMValueRef llvm_gen_cast(LLVMCodegenData_T* cg, ASTNode_T* cast)
+{
+    LLVMCastFn cast_fn = llvm_cast_map[cast->left->data_type->kind][cast->data_type->kind];
+    if(!cast_fn)
+        throw_error(ERR_ILLEGAL_TYPE_CAST, cast->tok, "no cast function for casting from `%s` to `%s` found", cast->left->data_type->tok->value, cast->data_type->tok->value);
+    
+    return cast_fn(cg, cast);
+}
+
+LLVMValueRef llvm_gen_expr(LLVMCodegenData_T* cg, ASTNode_T* node)
 {
     switch(node->kind) {
         case ND_INT:
@@ -419,6 +429,8 @@ static LLVMValueRef llvm_gen_expr(LLVMCodegenData_T* cg, ASTNode_T* node)
         case ND_LT:
         case ND_LE:
             return llvm_gen_cmp(cg, node);
+        case ND_CAST:
+            return llvm_gen_cast(cg, node);
         default:
             return NULL;
     }

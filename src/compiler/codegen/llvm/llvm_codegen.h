@@ -34,4 +34,7 @@ void llvm_gen_code(LLVMCodegenData_T* cg);
 void llvm_emit_code(LLVMCodegenData_T* cg, const char* target);
 void llvm_run_code(LLVMCodegenData_T* cg);
 
+LLVMTypeRef llvm_gen_type(LLVMCodegenData_T* cg, ASTType_T* ty);
+LLVMValueRef llvm_gen_expr(LLVMCodegenData_T* cg, ASTNode_T* stmt);
+
 #endif

@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#define MAX(a, b) (a > b ? a : b)
+#define MIN(a, b) (a < b ? a : b)
+
 Preprocessor_T* init_preprocessor(void)
 {
     Preprocessor_T* pp = malloc(sizeof(struct PREPROCESSOR_STRUCT));
@@ -35,6 +38,8 @@ static void register_var(Preprocessor_T* pp, ASTObj_T* gl);
 static void register_tdef(Preprocessor_T* pp, ASTObj_T* ty);
 
 static void check_main_fn(Preprocessor_T* pp);
+static void optimize_stmt(Preprocessor_T* pp, ASTNode_T* stmt);
+static void optimize_local(Preprocessor_T* pp, ASTNode_T* local);
 
 void preprocess(ASTProg_T* ast)
 {
@@ -61,6 +66,38 @@ void preprocess(ASTProg_T* ast)
     // TODO: evaluate macros here, when they get added
 
     check_main_fn(pp);
+
+    for(size_t i = 0; i < ast->objs->size; i++)
+    {
+        ASTObj_T* fn = ast->objs->items[i];
+        if(fn->kind != OBJ_FUNCTION || fn->is_extern)
+            continue;
+        
+        if(fn->body->kind != ND_BLOCK)
+        {
+            throw_error(ERR_MISC, fn->body->tok, "unexpected statement of type `%d`, expect block", fn->body->kind);
+            pp->num_errors_found++;
+            continue;
+        }
+        bool has_return = false;
+
+        for(size_t i = 0; i < fn->body->locals->size; i++)
+            optimize_local(pp, fn->body->locals->items[i]);
+
+        for(size_t i = 0; i < fn->body->stmts->size; i++)
+        {
+            ASTNode_T* stmt = fn->body->stmts->items[i];
+            optimize_stmt(pp, stmt);
+            if(stmt->kind == ND_RETURN)
+                has_return = true;
+        }
+
+        if(!has_return && fn->return_type->kind != TY_VOID)
+        {
+            throw_error(ERR_SYNTAX_WARNING, fn->return_type->tok, "function \"%s\" with non-void return type does not return a value");
+            pp->num_errors_found++;
+        }
+    }
 
     if(pp->num_errors_found > 0)
     {
@@ -145,12 +182,14 @@ static void check_main_fn(Preprocessor_T* pp)
     {
         LOG_ERROR("Missing entry point: could not find function \"main\".\n");
         pp->num_errors_found++;
+        return;
     }
 
     if(main_fn->args->size != 0 && main_fn->args->size != 2)
     {
         throw_error(ERR_MISC, main_fn->tok, "arong number of arguments for function \"main\", expect [0, 2]");
         pp->num_errors_found++;
+        return;
     }
 
     if(main_fn->return_type->kind != TY_I32)
@@ -173,5 +212,31 @@ static void check_main_fn(Preprocessor_T* pp)
             throw_error(ERR_MISC, arg2->data_type->tok, "argument 2 of function \"main\" has to be of type `**char`");
             pp->num_errors_found++;
         }
+    }
+}
+
+static void optimize_local(Preprocessor_T* pp, ASTNode_T* local)
+{
+
+}
+
+static void optimize_stmt(Preprocessor_T* pp, ASTNode_T* stmt)
+{
+    switch(stmt->kind)
+    {
+        case ND_BLOCK:
+            break;
+        case ND_EXPR_STMT:
+            break;
+        case ND_RETURN:
+            break;
+        case ND_IF:
+            break;
+        case ND_MATCH:
+            break;
+        case ND_LOOP:
+            break;  
+        default:
+            break;
     }
 }
