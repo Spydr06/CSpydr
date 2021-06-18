@@ -273,7 +273,7 @@ void transpile_c(char* path, char* target, Action_T action, bool print_c)
     c_gen_code(cg, target);
 
     if(action == AC_RUN)
-        run_c_code(cg);
+        run_c_code(cg, target);
     
     free_c_cg(cg);
     free_srcfile(main_file);
