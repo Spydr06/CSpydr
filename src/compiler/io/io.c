@@ -39,6 +39,17 @@ SrcFile_T* read_file(const char* path)
     return init_srcfile(buffer_list, path);
 }
 
+FILE *open_file(char *path)
+{
+    if (!path || strcmp(path, "-") == 0)
+        return stdout;
+
+    FILE *out = fopen(path, "w");
+    if (!out)
+        LOG_ERROR_F("[Error] Cannot open output file: %s: %s", path, strerror(errno));
+    return out;
+}
+
 void write_file(const char* path, char* buffer)
 {
     FILE* fp;

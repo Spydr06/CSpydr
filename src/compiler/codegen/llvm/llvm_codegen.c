@@ -228,6 +228,8 @@ static LLVMValueRef llvm_gen_global(LLVMCodegenData_T* cg, ASTObj_T* ast)
 
 static void llvm_gen_stmt(LLVMCodegenData_T* cg, ASTNode_T* stmt);
 LLVMValueRef llvm_gen_expr(LLVMCodegenData_T* cg, ASTNode_T* stmt);
+static LLVMBasicBlockRef llvm_begin_label(LLVMCodegenData_T* cg, char* name);
+static void llvm_end_label(LLVMCodegenData_T* cg, LLVMBasicBlockRef prev_block);
 
 static LLVMValueRef llvm_gen_fn(LLVMCodegenData_T* cg, ASTObj_T* obj)
 {
@@ -255,7 +257,9 @@ static LLVMValueRef llvm_gen_fn(LLVMCodegenData_T* cg, ASTObj_T* obj)
 
 static void llvm_gen_fn_body(LLVMCodegenData_T* cg, ASTObj_T* fn)
 {
+    LLVMBasicBlockRef prev_block = llvm_begin_label(cg, "entry");
     llvm_gen_stmt(cg, fn->body);
+    llvm_end_label(cg, prev_block);
 
     LLVMVerifyFunction(cg->current_fn, LLVMPrintMessageAction);
 }
@@ -265,10 +269,10 @@ static void llvm_gen_local(LLVMCodegenData_T* cg, ASTObj_T* local)
    //TODO:
 }
 
-static void llvm_gen_block(LLVMCodegenData_T* cg, ASTNode_T* node, char* name)
+static LLVMBasicBlockRef llvm_begin_label(LLVMCodegenData_T* cg, char* name)
 {
     LLVMBasicBlockRef prev_block = cg->current_block;
-    
+
     LLVMBasicBlockRef block = LLVMAppendBasicBlock(cg->current_fn, name);
     LLVMPositionBuilderAtEnd(cg->llvm_builder, block);
 
@@ -288,20 +292,33 @@ static void llvm_gen_block(LLVMCodegenData_T* cg, ASTNode_T* node, char* name)
             list_push(cg->vars, arg_values[i]);
         }
     }
-    for(size_t i = 0; i < node->locals->size; i++)
-        llvm_gen_local(cg, node->locals->items[i]);
 
-    if(cg->current_fn_ast->return_type == primitives[TY_VOID])
-        LLVMBuildRetVoid(cg->llvm_builder);
+    return prev_block;
+}
 
-    for(size_t i = 0; i < node->stmts->size; i++)
-        llvm_gen_stmt(cg, node->stmts->items[i]);
-
-    for(size_t i = 0; i < argc + node->locals->size; i++)
+static void llvm_end_label(LLVMCodegenData_T* cg, LLVMBasicBlockRef prev_block)
+{
+    size_t argc = cg->current_fn_ast->args->size;
+    for(size_t i = 0; i < argc; i++)
         cg->vars->size--;
 
     LLVMPositionBuilderAtEnd(cg->llvm_builder, prev_block);
     cg->current_block = prev_block;
+}
+
+static void llvm_gen_block(LLVMCodegenData_T* cg, ASTNode_T* node)
+{   
+    for(size_t i = 0; i < node->locals->size; i++)
+        llvm_gen_local(cg, node->locals->items[i]);
+
+    for(size_t i = 0; i < node->stmts->size; i++)
+        llvm_gen_stmt(cg, node->stmts->items[i]);
+
+    if(cg->current_fn_ast->return_type == primitives[TY_VOID])
+        LLVMBuildRetVoid(cg->llvm_builder);
+    
+    for(size_t i = 0; i < node->locals->size; i++)
+        cg->vars->size--;
 }
 
 static void llvm_gen_return(LLVMCodegenData_T* cg, ASTNode_T* node)
@@ -314,15 +331,45 @@ static void llvm_gen_return(LLVMCodegenData_T* cg, ASTNode_T* node)
         LLVMBuildRetVoid(cg->llvm_builder);
 }
 
+static void llvm_gen_if(LLVMCodegenData_T* cg, ASTNode_T* node)
+{
+    LLVMBasicBlockRef true_block = LLVMAppendBasicBlock(cg->current_fn, "if.then");
+    LLVMBasicBlockRef false_block = node->else_branch ? LLVMAppendBasicBlock(cg->current_fn, "if.else") : LLVMAppendBasicBlock(cg->current_fn, "if.else");
+
+    LLVMValueRef cond = llvm_gen_expr(cg, node->condition);
+    LLVMBuildCondBr(cg->llvm_builder, cond, true_block, false_block); 
+
+    LLVMPositionBuilderAtEnd(cg->llvm_builder, true_block);
+    llvm_gen_stmt(cg, node->if_branch);
+
+    if(node->else_branch)
+    {
+        LLVMBuildBr(cg->llvm_builder, true_block);
+        LLVMPositionBuilderAtEnd(cg->llvm_builder, false_block);
+        llvm_gen_stmt(cg, node->else_branch);
+    }
+}
+
+static void llvm_gen_loop(LLVMCodegenData_T* cg, ASTNode_T* node)
+{
+
+}
+
 static void llvm_gen_stmt(LLVMCodegenData_T* cg, ASTNode_T* node)
 {
     switch(node->kind)
     {
         case ND_BLOCK:
-            llvm_gen_block(cg, node, "entry");
+            llvm_gen_block(cg, node);
             break;
         case ND_RETURN:
             llvm_gen_return(cg, node);
+            break;
+        case ND_IF:
+            llvm_gen_if(cg, node);
+            break;
+        case ND_LOOP:
+            llvm_gen_loop(cg, node);
             break;
         default:
             break;
@@ -391,7 +438,7 @@ static LLVMValueRef llvm_gen_cast(LLVMCodegenData_T* cg, ASTNode_T* cast)
     LLVMCastFn cast_fn = llvm_cast_map[cast->left->data_type->kind][cast->data_type->kind];
     if(!cast_fn)
         throw_error(ERR_ILLEGAL_TYPE_CAST, cast->tok, "no cast function for casting from `%s` to `%s` found", cast->left->data_type->tok->value, cast->data_type->tok->value);
-    
+        
     return cast_fn(cg, cast);
 }
 

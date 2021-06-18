@@ -1,12 +1,5 @@
 # a basic test program used for developing this programming language
-extern fn puts(str: *char);
-
-fn add(x: i32, y: i32): i32 {
-    <- x + y;
-}
 
 fn main(argc: i32, argv: **char): i32 {
-    let argc_u: u32 = argc:u32;
-
-    <- add(4, 6 * 2);
+    <- 0;
 }

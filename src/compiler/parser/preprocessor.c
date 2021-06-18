@@ -94,7 +94,7 @@ void preprocess(ASTProg_T* ast)
 
         if(!has_return && fn->return_type->kind != TY_VOID)
         {
-            throw_error(ERR_SYNTAX_WARNING, fn->return_type->tok, "function \"%s\" with non-void return type does not return a value");
+            throw_error(ERR_SYNTAX_WARNING, fn->tok, "function \"%s\" with non-void return type does not return a value", fn->callee);
             pp->num_errors_found++;
         }
     }

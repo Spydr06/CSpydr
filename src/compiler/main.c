@@ -20,6 +20,7 @@
 #include "parser/parser.h"
 #include "parser/preprocessor.h"
 #include "codegen/llvm/llvm_codegen.h"
+#include "codegen/transpiler/c_codegen.h"
 #include "platform/platform_bindings.h"
 
 // default texts, which get shown if you enter help, info or version flags
@@ -55,11 +56,14 @@ const char* help_text = "%s"
                        "  run      Builds, then runs a cspydr program directly.\n"
                        "  debug    Runs a cspydr program with special debug tools. [!!NOT IMPLEMENTED YET!!]\n"
                        COLOR_BOLD_WHITE "Options:\n" COLOR_RESET
-                       "  -h, --help\t\tDisplays this help text and quits.\n"
-                       "  -v, --version\t\tDisplays the version of CSpydr and quits.\n"
-                       "  -i, --info\t\tDisplays information text and quits.\n"
-                       "  -o, --output [file]\tSets the target output file (default: " DEFAULT_OUTPUT_FILE ")\n"
-                       "  -p, --print-llvm\tPrints the generated LLVM bitcode\n"
+                       "  -h, --help          Displays this help text and quits.\n"
+                       "  -v, --version       Displays the version of CSpydr and quits.\n"
+                       "  -i, --info          Displays information text and quits.\n"
+                       "  -o, --output [file] Sets the target output file (default: " DEFAULT_OUTPUT_FILE ")\n"
+                       "  -t, --transpile     Instructs the compiler to compile to C source code\n"
+                       "  -l, --llvm          Instructs the compiler to compile to LLVM BitCode (default)\n"
+                       "      --print-llvm    Prints the generated LLVM bitcode\n"
+                       "      --print-c       Prints the generated C code\n"
                        "\n"
                        "If you are unsure, what CSpydr is (or how to use it), please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n";
 
@@ -78,6 +82,12 @@ typedef enum ACTION_ENUM
     AC_UNDEF
 } Action_T;
 
+typedef enum COMPILE_TYPE_ENUM
+{
+    CT_LLVM,
+    CT_TRANSPILE
+} CompileType_T;
+
 const struct { char* as_str; Action_T ac; } action_table[AC_UNDEF] = {
     {"build", AC_BUILD},
     {"run",   AC_RUN},
@@ -88,6 +98,7 @@ const struct { char* as_str; Action_T ac; } action_table[AC_UNDEF] = {
 extern const char* get_cspydr_version();
 extern const char* get_cspydr_build();
 void compile_llvm(char* path, char* target, Action_T action, bool print_llvm);
+void transpile_c(char* path, char* target, Action_T action, bool print_c);
 
 static inline bool streq(char* a, char* b)
 {
@@ -113,7 +124,7 @@ int main(int argc, char* argv[])
 {
     if(argc == 1)
     {
-        LOG_ERROR_F("Error: Too few arguments given.\n" COLOR_RESET "%s", usage_text);
+        LOG_ERROR_F("[Error] Too few arguments given.\n" COLOR_RESET "%s", usage_text);
         exit(1);
     }
 
@@ -123,12 +134,13 @@ int main(int argc, char* argv[])
 
     // get the action to perform
     Action_T action = AC_UNDEF;
+    CompileType_T ct = CT_LLVM;
     for(int i = 0; i < AC_UNDEF; i++)
         if(streq(argv[1], action_table[i].as_str))
             action = action_table[i].ac;
     if(action == AC_UNDEF)
     {
-        LOG_ERROR_F("Unknown action \"%s\", expect [build, run, debug]\n", argv[1]);
+        LOG_ERROR_F("[Error] Unknown action \"%s\", expect [build, run, debug]\n", argv[1]);
     }
 
     // declare the input/output files
@@ -136,7 +148,7 @@ int main(int argc, char* argv[])
     char* input_file = argv[2];
     if(!file_exists(input_file))
     {
-        LOG_ERROR_F("Error opening file \"%s\": No such file or directory\n", input_file);
+        LOG_ERROR_F("[Error] Error opening file \"%s\": No such file or directory\n", input_file);
         exit(1);
     }
 
@@ -145,6 +157,7 @@ int main(int argc, char* argv[])
     argv += 3;
 
     bool print_llvm = false;
+    bool print_c = false;
 
     // get all the other flags
     for(int i = 0; i < argc; i++)
@@ -155,21 +168,38 @@ int main(int argc, char* argv[])
         {
             if(!argv[++i])
             {
-                LOG_ERROR("Expect target file path after -o/--output.\n");
+                LOG_ERROR("[Error] Expect target file path after -o/--output.\n");
                 exit(1);
             }
             output_file = argv[i];
         }
-        else if(streq(arg, "-p") || streq(arg, "--print-llvm"))
+        else if(streq(arg, "--print-llvm"))
             print_llvm = true;
+        else if(streq(arg, "--print-c"))
+            print_c = true;
+        else if(streq(arg, "-t") || streq(arg, "--transpile"))
+            ct = CT_TRANSPILE;
+        else if(streq(arg, "-l") || streq(arg, "--llvm"))
+            ct = CT_LLVM;
         else
         {
-            LOG_ERROR_F("Unknown flag \"%s\", type \"cspydr --help\" to get help.\n", argv[i]);
+            LOG_ERROR_F("[Error] Unknown flag \"%s\", type \"cspydr --help\" to get help.\n", argv[i]);
             exit(1);
         }
     }
 
-    compile_llvm(input_file, output_file, action, print_llvm);
+    switch(ct)
+    {
+        case CT_LLVM:
+            compile_llvm(input_file, output_file, action, print_llvm);
+            break;
+        case CT_TRANSPILE:
+            transpile_c(input_file, output_file, action, print_c);
+            break;
+        default:
+            LOG_ERROR_F("[Error] Unknown compile type %d!\n", ct);
+            return 1;
+    }
 
     return 0;
 }
@@ -216,5 +246,35 @@ void compile_llvm(char* path, char* target, Action_T action, bool print_llvm)
 
     free_llvm_cg(cg);
 
+    free_srcfile(main_file);
+}
+
+void transpile_c(char* path, char* target, Action_T action, bool print_c)
+{
+    SrcFile_T* main_file = read_file(path);
+
+    ASTProg_T* ast = parse_file(init_list(sizeof(char*)), main_file, false);
+    List_T* imports = ast->imports;
+
+    for(size_t i = 0; i < imports->size; i++)
+    {
+        SrcFile_T* import_file = read_file(imports->items[i]);
+
+        ASTProg_T* import_ast = parse_file(imports, import_file, false);
+        merge_ast_progs(ast, import_ast);
+
+        free_srcfile(import_file);
+    }
+
+    preprocess(ast);
+
+    CCodegenData_T* cg = init_c_cg(ast);
+    cg->print_c = print_c;
+    c_gen_code(cg, target);
+
+    if(action == AC_RUN)
+        run_c_code(cg);
+    
+    free_c_cg(cg);
     free_srcfile(main_file);
 }
