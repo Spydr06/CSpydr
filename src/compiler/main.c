@@ -59,11 +59,12 @@ const char* help_text = "%s"
                        "  -h, --help          Displays this help text and quits.\n"
                        "  -v, --version       Displays the version of CSpydr and quits.\n"
                        "  -i, --info          Displays information text and quits.\n"
-                       "  -o, --output [file] Sets the target output file (default: " DEFAULT_OUTPUT_FILE ")\n"
-                       "  -t, --transpile     Instructs the compiler to compile to C source code\n"
-                       "  -l, --llvm          Instructs the compiler to compile to LLVM BitCode (default)\n"
-                       "      --print-llvm    Prints the generated LLVM bitcode\n"
-                       "      --print-c       Prints the generated C code\n"
+                       "  -o, --output [file] Sets the target output file (default: " DEFAULT_OUTPUT_FILE ").\n"
+                       "  -t, --transpile     Instructs the compiler to compile to C source code.\n"
+                       "  -l, --llvm          Instructs the compiler to compile to LLVM BitCode (default).\n"
+                       "      --print-llvm    Prints the generated LLVM bitcode.\n"
+                       "      --print-c       Prints the generated C code.\n"
+                       "      --silent        Disables all command line output except error messages.\n"
                        "\n"
                        "If you are unsure, what CSpydr is (or how to use it), please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n";
 
@@ -97,8 +98,8 @@ const struct { char* as_str; Action_T ac; } action_table[AC_UNDEF] = {
 // declaration of the functions used below
 extern const char* get_cspydr_version();
 extern const char* get_cspydr_build();
-void compile_llvm(char* path, char* target, Action_T action, bool print_llvm);
-void transpile_c(char* path, char* target, Action_T action, bool print_c);
+void compile_llvm(char* path, char* target, Action_T action, bool print_llvm, bool silent);
+void transpile_c(char* path, char* target, Action_T action, bool print_c, bool silent);
 
 static inline bool streq(char* a, char* b)
 {
@@ -158,6 +159,7 @@ int main(int argc, char* argv[])
 
     bool print_llvm = false;
     bool print_c = false;
+    bool silent = false;
 
     // get all the other flags
     for(int i = 0; i < argc; i++)
@@ -181,6 +183,8 @@ int main(int argc, char* argv[])
             ct = CT_TRANSPILE;
         else if(streq(arg, "-l") || streq(arg, "--llvm"))
             ct = CT_LLVM;
+        else if(streq(arg, "--silent"))
+            silent = true;
         else
         {
             LOG_ERROR_F("[Error] Unknown flag \"%s\", type \"cspydr --help\" to get help.\n", argv[i]);
@@ -191,10 +195,10 @@ int main(int argc, char* argv[])
     switch(ct)
     {
         case CT_LLVM:
-            compile_llvm(input_file, output_file, action, print_llvm);
+            compile_llvm(input_file, output_file, action, print_llvm, silent);
             break;
         case CT_TRANSPILE:
-            transpile_c(input_file, output_file, action, print_c);
+            transpile_c(input_file, output_file, action, print_c, silent);
             break;
         default:
             LOG_ERROR_F("[Error] Unknown compile type %d!\n", ct);
@@ -205,18 +209,18 @@ int main(int argc, char* argv[])
 }
 
 // sets up and runs the compilation pipeline using LLVM
-void compile_llvm(char* path, char* target, Action_T action, bool print_llvm)
+void compile_llvm(char* path, char* target, Action_T action, bool print_llvm, bool silent)
 {
     SrcFile_T* main_file = read_file(path);
 
-    ASTProg_T* ast = parse_file(init_list(sizeof(char*)), main_file, false);
+    ASTProg_T* ast = parse_file(init_list(sizeof(char*)), main_file, silent);
     List_T* imports = ast->imports;
 
     for(size_t i = 0; i < imports->size; i++)
     {
         SrcFile_T* import_file = read_file(imports->items[i]);
 
-        ASTProg_T* import_ast = parse_file(imports, import_file, false);
+        ASTProg_T* import_ast = parse_file(imports, import_file, silent);
         merge_ast_progs(ast, import_ast);
 
         free_srcfile(import_file);
@@ -226,6 +230,7 @@ void compile_llvm(char* path, char* target, Action_T action, bool print_llvm)
 
     LLVMCodegenData_T* cg = init_llvm_cg(ast);
     cg->print_ll = print_llvm;
+    cg->silent = silent;
     llvm_gen_code(cg);
 
     switch(action)
@@ -249,18 +254,18 @@ void compile_llvm(char* path, char* target, Action_T action, bool print_llvm)
     free_srcfile(main_file);
 }
 
-void transpile_c(char* path, char* target, Action_T action, bool print_c)
+void transpile_c(char* path, char* target, Action_T action, bool print_c, bool silent)
 {
     SrcFile_T* main_file = read_file(path);
 
-    ASTProg_T* ast = parse_file(init_list(sizeof(char*)), main_file, false);
+    ASTProg_T* ast = parse_file(init_list(sizeof(char*)), main_file, silent);
     List_T* imports = ast->imports;
 
     for(size_t i = 0; i < imports->size; i++)
     {
         SrcFile_T* import_file = read_file(imports->items[i]);
 
-        ASTProg_T* import_ast = parse_file(imports, import_file, false);
+        ASTProg_T* import_ast = parse_file(imports, import_file, silent);
         merge_ast_progs(ast, import_ast);
 
         free_srcfile(import_file);
@@ -270,6 +275,7 @@ void transpile_c(char* path, char* target, Action_T action, bool print_c)
 
     CCodegenData_T* cg = init_c_cg(ast);
     cg->print_c = print_c;
+    cg->silent = silent;
     c_gen_code(cg, target);
 
     if(action == AC_RUN)

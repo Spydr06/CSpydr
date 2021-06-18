@@ -121,7 +121,8 @@ void llvm_run_code(LLVMCodegenData_T *cg)
 {
     llvm_optimize_module(cg);
 
-    LOG_OK(COLOR_BOLD_BLUE "  Executing " COLOR_RESET " LLVM-IR using MC-JIT\n");
+    if(!cg->silent)
+        LOG_OK(COLOR_BOLD_BLUE "  Executing " COLOR_RESET " LLVM-IR using MC-JIT\n");
 
     LLVMExecutionEngineRef llvm_engine;
 
@@ -154,7 +155,8 @@ void llvm_run_code(LLVMCodegenData_T *cg)
 
         free(argv);
     }
-    LOG_INFO_F("\"%s\" terminated with exit code %d.\n", cg->ast->main_file_path, exit_code);
+    if(!cg->silent)
+        LOG_INFO_F("\"%s\" terminated with exit code %d.\n", cg->ast->main_file_path, exit_code);
 }
 
 LLVMTypeRef llvm_gen_type(LLVMCodegenData_T* cg, ASTType_T* ty)
