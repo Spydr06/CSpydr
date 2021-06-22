@@ -1,5 +1,10 @@
-# a basic test program used for developing this programming language
+# a basic test program used for developing this programming language 
+
+let x: i32 = 0;
+let y: *char = "4";
 
 fn main(argc: i32, argv: **char): i32 {
+    let local: i32 = 0;
+
     <- 0;
 }

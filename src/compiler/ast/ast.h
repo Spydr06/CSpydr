@@ -11,6 +11,7 @@ typedef struct AST_TYPE_STRUCT ASTType_T;
 typedef struct AST_OBJ_STRUCT ASTObj_T;
 
 typedef enum {
+    ND_NOOP,
     ND_ID,
 
     // literals

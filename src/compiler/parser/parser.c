@@ -630,21 +630,29 @@ static ASTNode_T* parse_expr_stmt(Parser_T* p)
     return stmt;
 }
 
-static void parse_local(Parser_T* p)
+static ASTNode_T* parse_local(Parser_T* p)
 {
     ASTObj_T* local = init_ast_obj(OBJ_LOCAL, p->tok);
     parser_consume(p, TOKEN_LET, "expect `let` keyword for variable definition");
     
     local->callee = strdup(p->tok->value);
+    ASTNode_T* id = init_ast_node(ND_ID, p->tok);
+    id->callee = strdup(p->tok->value);
+
     parser_consume(p, TOKEN_ID, "expect variable name");
     parser_consume(p, TOKEN_COLON, "expect `:` after variable name");
 
     local->data_type = parse_type(p);
+    
+    ASTNode_T* value = init_ast_node(ND_NOOP, p->tok);
 
     if(tok_is(p, TOKEN_ASSIGN))
     {
+        ASTNode_T* assignment = init_ast_node(ND_ASSIGN, p->tok);
         parser_advance(p);
-        local->value = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+        assignment->left = id; 
+        assignment->right = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+        value = assignment;
     }
     
     parser_consume(p, TOKEN_SEMICOLON, "expect `;` after variable declaration");
@@ -652,11 +660,11 @@ static void parse_local(Parser_T* p)
     if(!p->current_block || p->current_block->kind != ND_BLOCK)
         throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot define a local variable outside a block statement");
     list_push(p->current_block->locals, local);
+    return value;
 }
 
 static ASTNode_T* parse_stmt(Parser_T* p)
 {
-repeat:
 
     switch(p->tok->type)
     {
@@ -671,8 +679,14 @@ repeat:
         case TOKEN_MATCH:
             return parse_match(p);
         case TOKEN_LET:
-            parse_local(p);
-            goto repeat;    // I know, gotos are bad, but in this case it's the most simple solution
+            {
+                ASTNode_T* assignment = parse_local(p);
+                if(assignment->kind == ND_NOOP)
+                    return assignment;
+                ASTNode_T* stmt = init_ast_node(ND_EXPR_STMT, assignment->tok);
+                stmt->expr = assignment;
+                return stmt;
+            }
         default:
             return parse_expr_stmt(p);
     }
