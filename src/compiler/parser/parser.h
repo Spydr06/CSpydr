@@ -4,6 +4,7 @@
 #include "../lexer/lexer.h"
 #include "../error/error.h"
 #include "../ast/ast.h"
+#include "../lexer/preprocess.h"
 
 typedef struct PARSER_STRUCT Parser_T;
 
@@ -12,7 +13,8 @@ typedef ASTNode_T* (*infix_parse_fn)(Parser_T* parser, ASTNode_T* left);
 
 struct PARSER_STRUCT
 {
-    Lexer_T* lexer;
+    List_T* tokens;
+    size_t token_i;
     ASTProg_T* root_ref;
     Token_T* tok;
     List_T* imports;
@@ -36,7 +38,7 @@ typedef enum {
     HIGHEST = 13,
 } Precedence_T;
 
-Parser_T* init_parser(Lexer_T* lexer);
+Parser_T* init_parser(List_T* tokens);
 void free_parser(Parser_T* parser);
 
 //ASTProg_T* parse(Parser_T* parser, const char* mainFile);

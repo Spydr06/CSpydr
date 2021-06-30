@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define NUM_KEYWORDS 16
+#define NUM_KEYWORDS 17
 
 const struct { const char* str; TokenType_T type; } keywords[NUM_KEYWORDS] = {
     {"true", TOKEN_TRUE},
@@ -26,7 +26,8 @@ const struct { const char* str; TokenType_T type; } keywords[NUM_KEYWORDS] = {
     {"enum", TOKEN_ENUM},
     {"import", TOKEN_IMPORT},
     {"mut", TOKEN_MUT},
-    {"extern", TOKEN_EXTERN}
+    {"extern", TOKEN_EXTERN},
+    {"macro", TOKEN_MACRO}
 };
 
 const struct { const char* symbol; TokenType_T type; } symbols[] = {
@@ -43,6 +44,8 @@ const struct { const char* symbol; TokenType_T type; } symbols[] = {
     {"&&", TOKEN_AND},
     {"&", TOKEN_REF},
     {"||", TOKEN_OR},
+    {"|:", TOKEN_MACRO_BEGIN},
+    {":|", TOKEN_MACRO_END},
     {"==", TOKEN_EQ},
     {"=>", TOKEN_ARROW},
     {"=", TOKEN_ASSIGN},
@@ -223,7 +226,14 @@ static Token_T* lexer_get_id(Lexer_T* lexer)
         lexer_advance(lexer);
     }
 
-    Token_T* token = init_token(buffer, lexer->line, lexer->pos - 1, lexer_get_id_type(buffer), lexer->file);
+    bool is_macro = false;
+    if(lexer->c == '!')
+    {
+        lexer_advance(lexer);
+        is_macro = true;
+    }
+
+    Token_T* token = init_token(buffer, lexer->line, lexer->pos - 1, is_macro ? TOKEN_MACRO_CALL : lexer_get_id_type(buffer), lexer->file);
 
     free(buffer);
     return token;

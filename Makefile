@@ -105,6 +105,7 @@ install:
 clean: 
 	rm -rf $(BUILD_DIR)
 	rm -rf $(TARGET_DEST)
+	rm -rf a.out.c
 
 # reset the whole dev-environment
 .PHONY: reset

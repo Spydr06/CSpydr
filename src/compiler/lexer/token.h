@@ -5,6 +5,7 @@
 
 typedef enum TOKEN_TYPE {
     TOKEN_ID,           // names, types, etc.
+    TOKEN_MACRO_CALL,    // foo!, bar!()
 
     TOKEN_INT,          // 0, 3, 5, etc.
     TOKEN_FLOAT,        // 4.2, 3.14, etc.
@@ -38,8 +39,12 @@ typedef enum TOKEN_TYPE {
     TOKEN_ARROW,        // =>
     TOKEN_AND,          // &&
     TOKEN_OR,           // ||
+    TOKEN_BIT_OR,       // |
     TOKEN_REF,          // &
     TOKEN_TILDE,        // ~
+
+    TOKEN_MACRO_BEGIN,  // |:
+    TOKEN_MACRO_END,    // :|
 
     TOKEN_INC,          // ++
     TOKEN_DEC,          // --
@@ -72,6 +77,7 @@ typedef enum TOKEN_TYPE {
     TOKEN_IMPORT,       // import
     TOKEN_MUT,          // mut
     TOKEN_EXTERN,       // extern
+    TOKEN_MACRO,        // macro
 
     TOKEN_ERROR,        // error handling token
     TOKEN_EOF,          // end of file

@@ -131,11 +131,12 @@ static inline Precedence_T get_precedence(TokenType_T tt)
 // helperfunctions             //
 /////////////////////////////////
 
-Parser_T* init_parser(Lexer_T* lexer)
+Parser_T* init_parser(List_T* tokens)
 {
     Parser_T* parser = calloc(1, sizeof(struct PARSER_STRUCT));
-    parser->lexer = lexer;
-    parser->tok = lexer_next_token(parser->lexer);
+    parser->tokens = tokens;
+    parser->tok = tokens->items[0];
+    parser->token_i = 0;
     parser->imports = init_list(sizeof(char*));
 
     parser->current_block = NULL;
@@ -156,7 +157,7 @@ void free_parser(Parser_T* p)
 static inline Token_T* parser_advance(Parser_T* p)
 {
     free_token(p->tok);
-    p->tok = lexer_next_token(p->lexer);
+    p->tok = p->tokens->items[++p->token_i];
     return p->tok;
 }
 
@@ -209,7 +210,8 @@ static ASTObj_T* parse_extern(Parser_T* p);
 ASTProg_T* parse_file(List_T* imports, SrcFile_T* src, bool is_silent)
 {
     Lexer_T* lex = init_lexer(src);
-    Parser_T* p = init_parser(lex);
+    List_T* tokens = lex_and_preprocess_tokens(lex);
+    Parser_T* p = init_parser(tokens);
 
     if(!is_silent)
     {
