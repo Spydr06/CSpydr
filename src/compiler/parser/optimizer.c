@@ -1,4 +1,4 @@
-#include "preprocessor.h"
+#include "optimizer.h"
 
 #include "../io/log.h"
 #include "../ast/types.h"
@@ -9,9 +9,9 @@
 #define MAX(a, b) (a > b ? a : b)
 #define MIN(a, b) (a < b ? a : b)
 
-Preprocessor_T* init_preprocessor(void)
+Optimizer_T* init_optimizer(void)
 {
-    Preprocessor_T* pp = malloc(sizeof(struct PREPROCESSOR_STRUCT));
+    Optimizer_T* pp = malloc(sizeof(struct OPTIMIZER_STRUCT));
     pp->fns = init_list(sizeof(struct AST_OBJ_STRUCT*));
     pp->vars = init_list(sizeof(struct AST_OBJ_STRUCT*));
     pp->tdefs = init_list(sizeof(struct AST_OBJ_STRUCT*));
@@ -20,7 +20,7 @@ Preprocessor_T* init_preprocessor(void)
     return pp;
 }
 
-void free_preprocessor(Preprocessor_T* pp)
+void free_optimizer(Optimizer_T* pp)
 {
     free_list(pp->fns);
     free_list(pp->vars);
@@ -29,21 +29,21 @@ void free_preprocessor(Preprocessor_T* pp)
     free(pp);
 }
 
-static ASTObj_T* find_fn(Preprocessor_T* pp, char* callee);
-static ASTObj_T* find_var(Preprocessor_T* pp, char* callee);
-static ASTObj_T* find_tdef(Preprocessor_T* pp, char* callee);
+static ASTObj_T* find_fn(Optimizer_T* pp, char* callee);
+static ASTObj_T* find_var(Optimizer_T* pp, char* callee);
+static ASTObj_T* find_tdef(Optimizer_T* pp, char* callee);
 
-static void register_fn(Preprocessor_T* pp, ASTObj_T* fn);
-static void register_var(Preprocessor_T* pp, ASTObj_T* gl);
-static void register_tdef(Preprocessor_T* pp, ASTObj_T* ty);
+static void register_fn(Optimizer_T* pp, ASTObj_T* fn);
+static void register_var(Optimizer_T* pp, ASTObj_T* gl);
+static void register_tdef(Optimizer_T* pp, ASTObj_T* ty);
 
-static void check_main_fn(Preprocessor_T* pp);
-static void optimize_stmt(Preprocessor_T* pp, ASTNode_T* stmt);
-static void optimize_local(Preprocessor_T* pp, ASTNode_T* local);
+static void check_main_fn(Optimizer_T* pp);
+static void optimize_stmt(Optimizer_T* pp, ASTNode_T* stmt);
+static void optimize_local(Optimizer_T* pp, ASTNode_T* local);
 
-void preprocess(ASTProg_T* ast)
+void optimize(ASTProg_T* ast)
 {
-    Preprocessor_T* pp = init_preprocessor();
+    Optimizer_T* pp = init_optimizer();
 
     for(size_t i = 0; i < ast->objs->size; i++)
     {
@@ -102,14 +102,14 @@ void preprocess(ASTProg_T* ast)
     if(pp->num_errors_found > 0)
     {
         LOG_ERROR_F("Encountered %d error%s during compilation\n", pp->num_errors_found, pp->num_errors_found == 1 ? "" : "s");
-        free_preprocessor(pp);
+        free_optimizer(pp);
         exit(1);
     }
 
-    free_preprocessor(pp);
+    free_optimizer(pp);
 }
 
-static ASTObj_T* find_fn(Preprocessor_T* pp, char* callee)
+static ASTObj_T* find_fn(Optimizer_T* pp, char* callee)
 {
     for(size_t i = 0; i < pp->fns->size; i++)
         if(strcmp(((ASTObj_T*)pp->fns->items[i])->callee, callee) == 0)
@@ -117,7 +117,7 @@ static ASTObj_T* find_fn(Preprocessor_T* pp, char* callee)
     return NULL;
 }
 
-static ASTObj_T* find_var(Preprocessor_T* pp, char* callee)
+static ASTObj_T* find_var(Optimizer_T* pp, char* callee)
 {
     for(size_t i = 0; i < pp->vars->size; i++)
         if(strcmp(((ASTObj_T*)pp->vars->items[i])->callee, callee) == 0)
@@ -125,7 +125,7 @@ static ASTObj_T* find_var(Preprocessor_T* pp, char* callee)
     return NULL;
 }
 
-static ASTObj_T* find_tdef(Preprocessor_T* pp, char* callee)
+static ASTObj_T* find_tdef(Optimizer_T* pp, char* callee)
 {
     for(size_t i = 0; i < pp->tdefs->size; i++)
         if(strcmp(((ASTObj_T*)pp->tdefs->items[i])->callee, callee) == 0)
@@ -133,7 +133,7 @@ static ASTObj_T* find_tdef(Preprocessor_T* pp, char* callee)
     return NULL;
 }
 
-static void register_fn(Preprocessor_T* pp, ASTObj_T* fn)
+static void register_fn(Optimizer_T* pp, ASTObj_T* fn)
 {
     ASTObj_T* found = find_fn(pp, fn->callee);
     if(found) 
@@ -145,7 +145,7 @@ static void register_fn(Preprocessor_T* pp, ASTObj_T* fn)
     list_push(pp->fns, fn);
 }
 
-static void register_var(Preprocessor_T* pp, ASTObj_T* var)
+static void register_var(Optimizer_T* pp, ASTObj_T* var)
 {
     ASTObj_T* found = find_var(pp, var->callee);
     if(found)
@@ -157,7 +157,7 @@ static void register_var(Preprocessor_T* pp, ASTObj_T* var)
     list_push(pp->vars, var);
 }
 
-static void register_tdef(Preprocessor_T* pp, ASTObj_T* ty)
+static void register_tdef(Optimizer_T* pp, ASTObj_T* ty)
 {
     if(get_primitive_type(ty->callee))
     {
@@ -175,7 +175,7 @@ static void register_tdef(Preprocessor_T* pp, ASTObj_T* ty)
     list_push(pp->tdefs, ty);
 }
 
-static void check_main_fn(Preprocessor_T* pp)
+static void check_main_fn(Optimizer_T* pp)
 {
     ASTObj_T* main_fn = find_fn(pp, "main");
     if(!main_fn)
@@ -215,12 +215,12 @@ static void check_main_fn(Preprocessor_T* pp)
     }
 }
 
-static void optimize_local(Preprocessor_T* pp, ASTNode_T* local)
+static void optimize_local(Optimizer_T* pp, ASTNode_T* local)
 {
 
 }
 
-static void optimize_stmt(Preprocessor_T* pp, ASTNode_T* stmt)
+static void optimize_stmt(Optimizer_T* pp, ASTNode_T* stmt)
 {
     switch(stmt->kind)
     {

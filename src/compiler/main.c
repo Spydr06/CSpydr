@@ -14,11 +14,12 @@
 #include <string.h>
 
 // compiler includes
+#include "ast/ast.h"
 #include "io/io.h"
 #include "io/log.h"
 #include "version.h"
 #include "parser/parser.h"
-#include "parser/preprocessor.h"
+#include "parser/optimizer.h"
 #include "codegen/llvm/llvm_codegen.h"
 #include "codegen/transpiler/c_codegen.h"
 #include "platform/platform_bindings.h"
@@ -98,6 +99,9 @@ const struct { char* as_str; Action_T ac; } action_table[AC_UNDEF] = {
 // declaration of the functions used below
 extern const char* get_cspydr_version();
 extern const char* get_cspydr_build();
+
+extern void optimize(ASTProg_T* ast);
+
 void compile_llvm(char* path, char* target, Action_T action, bool print_llvm, bool silent);
 void transpile_c(char* path, char* target, Action_T action, bool print_c, bool silent);
 
@@ -226,7 +230,7 @@ void compile_llvm(char* path, char* target, Action_T action, bool print_llvm, bo
         free_srcfile(import_file);
     }
 
-    preprocess(ast);
+    optimize(ast);
 
     LLVMCodegenData_T* cg = init_llvm_cg(ast);
     cg->print_ll = print_llvm;
@@ -271,7 +275,7 @@ void transpile_c(char* path, char* target, Action_T action, bool print_c, bool s
         free_srcfile(import_file);
     }
 
-    preprocess(ast);
+    optimize(ast);
 
     CCodegenData_T* cg = init_c_cg(ast);
     cg->print_c = print_c;

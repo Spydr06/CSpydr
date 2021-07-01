@@ -5,18 +5,18 @@
 #include "../ast/ast.h"
 #include "../error/error.h"
 
-typedef struct PREPROCESSOR_STRUCT
+typedef struct OPTIMIZER_STRUCT
 {
     List_T* vars;
     List_T* fns;
     List_T* tdefs;
 
     int num_errors_found;
-} Preprocessor_T;
+} Optimizer_T;
 
-Preprocessor_T* init_preprocessor(void);
-void            free_preprocessor(Preprocessor_T* pp);
+Optimizer_T* init_optimizer(void);
+void         free_optimizer(Optimizer_T* pp);
 
-void preprocess(ASTProg_T* ast);
+void optimize(ASTProg_T* ast);
 
 #endif
