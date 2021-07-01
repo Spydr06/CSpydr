@@ -1,5 +1,19 @@
 # a basic test program used for developing this programming language 
 
+import "string.csp";
+
+type test_enum: enum {
+    TEST_OK,
+    TEST_ERROR,
+    TEST_FAIL
+};
+
+type test_struct: struct {
+    status: test_enum,
+    success: bool,
+    child: *test_struct,
+};
+
 macro default_i32() |: 0 :|
 
 let x: i32 = 0;

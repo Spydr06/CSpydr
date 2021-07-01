@@ -83,6 +83,9 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
         LOG_OK(COLOR_BOLD_BLUE "  Generating" COLOR_RESET " C code using " COLOR_BOLD_WHITE CC COLOR_RESET "\n");
 
     println(cg, "#include <stdlib.h>");
+    println(cg, "#include <stdbool.h>");
+    println(cg, "#include <string.h>");
+
     for(size_t i = 0; i < cg->ast->objs->size; i++)
         c_gen_obj_decl(cg, cg->ast->objs->items[i]);
     
@@ -99,10 +102,11 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
 
 static void run_compiler(CCodegenData_T* cg, const char* target_bin)
 {
+    char* homedir = get_home_directory();
 
-    static char* compiler_cmd_tmp = CC " " CC_FLAGS " %s.c -o %s";
-    char* compiler_cmd = calloc(strlen(compiler_cmd_tmp) + strlen(target_bin) * 2 + 1, sizeof(char));
-    sprintf(compiler_cmd, compiler_cmd_tmp, target_bin, target_bin);
+    static char* compiler_cmd_tmp = CC " " CC_FLAGS " %s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.c -o %s";
+    char* compiler_cmd = calloc(strlen(compiler_cmd_tmp) + strlen(homedir) + strlen(target_bin) * 2 + 1, sizeof(char));
+    sprintf(compiler_cmd, compiler_cmd_tmp, homedir, target_bin, target_bin);
 
     char* feedback = sh(compiler_cmd);
     if(!cg->silent)
@@ -113,9 +117,17 @@ static void run_compiler(CCodegenData_T* cg, const char* target_bin)
 
 static void write_code(CCodegenData_T* cg, const char* target_bin)
 {
-    const char* file_tmp = "%s.c";
-    char* c_file_path = calloc(strlen(file_tmp) + strlen(target_bin) + 1, sizeof(char));
-    sprintf(c_file_path, file_tmp, target_bin);
+    char* homedir = get_home_directory();
+
+    const char* mkdir_tmp = "mkdir -p %s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS;
+    char* mkdir_cmd = calloc(strlen(homedir) + strlen(mkdir_tmp) + 1, sizeof(char));
+    sprintf(mkdir_cmd, mkdir_tmp, homedir);
+
+    sh(mkdir_cmd);
+
+    const char* file_tmp = "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.c";
+    char* c_file_path = calloc(strlen(homedir) + strlen(file_tmp) + strlen(target_bin) + 1, sizeof(char));
+    sprintf(c_file_path, file_tmp, homedir, target_bin);
 
     fclose(cg->code_buffer);
 
@@ -124,6 +136,7 @@ static void write_code(CCodegenData_T* cg, const char* target_bin)
     fclose(out);
 
     free(c_file_path);
+    free(mkdir_cmd);
 }
 
 void run_c_code(CCodegenData_T* cg, const char* bin)
@@ -153,7 +166,7 @@ void run_c_code(CCodegenData_T* cg, const char* bin)
 static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node);
 static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node);
 
-static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty)
+static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
 {
     if(primitive_to_c_type[ty->kind])
         print(cg, "%s", primitive_to_c_type[ty->kind]);
@@ -161,11 +174,11 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty)
         switch(ty->kind)
         {
             case TY_PTR:
-                c_gen_type(cg, ty->base);
+                c_gen_type(cg, ty->base, struct_name);
                 print(cg, "*");
                 break;
             case TY_ARR:
-                c_gen_type(cg, ty->base);
+                c_gen_type(cg, ty->base, struct_name);
                 if(ty->num_indices)
                 {
                     print(cg, "[");
@@ -174,6 +187,30 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty)
                 }
                 else
                     print(cg, "[]");
+                break;
+            case TY_ENUM:
+                print(cg, "enum {");
+
+                for(size_t i = 0; i < ty->members->size; i++)
+                    print(cg, "%s=%ld,", ((ASTNode_T*) ty->members->items[i])->callee, ((ASTNode_T*) ty->members->items[i])->int_val);
+
+                print(cg, "}");
+                break;
+            case TY_STRUCT:
+                println(cg, "struct %s {", struct_name);
+
+                for(size_t i = 0; i < ty->members->size; i++)
+                {
+                    c_gen_type(cg, ((ASTNode_T*) ty->members->items[i])->data_type, struct_name);
+                    println(cg, " %s;", ((ASTNode_T*) ty->members->items[i])->callee); 
+                }
+
+                print(cg, "}");
+                break;
+            case TY_UNDEF:
+                if(struct_name && strcmp(ty->callee, struct_name) == 0)
+                    print(cg, "struct ");
+                print(cg, ty->callee);
                 break;
             default:
                 throw_error(ERR_MISC, ty->tok, "Types with kind %d are currently not supported.", ty->kind);
@@ -186,7 +223,7 @@ static void c_gen_fn_arg_list(CCodegenData_T* cg, List_T* args)
     for(size_t i = 0; i < args->size; i++)
     {
         ASTObj_T* arg = args->items[i];
-        c_gen_type(cg, arg->data_type);
+        c_gen_type(cg, arg->data_type, "");
         print(cg, " %s%s", arg->callee, i < args->size - 1 ? "," : "");
     }
 }
@@ -196,7 +233,7 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
     switch(obj->kind)
     {
         case OBJ_GLOBAL:
-            c_gen_type(cg, obj->data_type);
+            c_gen_type(cg, obj->data_type, "");
             print(cg, " %s", obj->callee);
             if(obj->value)
             {
@@ -206,11 +243,16 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
             println(cg, ";");
             break;
         case OBJ_FUNCTION:
-            c_gen_type(cg, obj->return_type);
+            c_gen_type(cg, obj->return_type, "");
             print(cg, " %s(", obj->callee);
             if(obj->args)
                 c_gen_fn_arg_list(cg, obj->args);
             println(cg, ");");
+            break;
+        case OBJ_TYPEDEF:
+            print(cg, "typedef ");
+            c_gen_type(cg, obj->data_type, obj->callee);
+            println(cg, " %s;", obj->callee);
             break;
         default:
             break;
@@ -222,7 +264,7 @@ static void c_gen_obj(CCodegenData_T* cg, ASTObj_T* obj)
     switch(obj->kind)
     {
         case OBJ_FUNCTION:
-            c_gen_type(cg, obj->return_type);
+            c_gen_type(cg, obj->return_type, "");
             print(cg, " %s(", obj->callee);
             if(obj->args)
                 c_gen_fn_arg_list(cg, obj->args);
@@ -251,6 +293,9 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
         case ND_CHAR:
             print(cg, "'%c'", node->char_val);
             break;
+        case ND_NIL:
+            print(cg, "NULL");
+            break;
         case ND_STR:
             print(cg, "\"%s\"", node->str_val);
             break;
@@ -258,7 +303,8 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, "%s", node->callee);
             break;
         case ND_CALL:
-            print(cg, "%s(", node->callee);
+            c_gen_expr(cg, node->expr);
+            print(cg, "(");
             for(int i = 0; i < node->args->size; i++)
             {
                 c_gen_expr(cg, node->args->items[i]);
@@ -291,6 +337,17 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             c_gen_expr(cg, node->left);
             print(cg, node->tok->value);
             break;
+        case ND_MEMBER:
+            c_gen_expr(cg, node->left);
+            print(cg, "->");    // TODO: switch automatically between `.` and `->`
+            c_gen_expr(cg, node->right);
+            break;
+        case ND_INDEX:
+            c_gen_expr(cg, node->left);
+            print(cg, "[");
+            c_gen_expr(cg, node->expr);
+            print(cg, "]");
+            break;
         default:
             throw_error(ERR_MISC, node->tok, "Expressions of type %d are currently not supported", node->kind);
     }
@@ -298,7 +355,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
 
 static void c_gen_local(CCodegenData_T* cg, ASTObj_T* obj)
 {
-    c_gen_type(cg, obj->data_type);
+    c_gen_type(cg, obj->data_type, "");
     println(cg, " %s;", obj->callee);
 }
 
@@ -339,7 +396,26 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
             break;
         case ND_EXPR_STMT:
             c_gen_expr(cg, node->expr);
-            println(cg, ";\n");
+            println(cg, ";");
+            break;
+        case ND_MATCH:  // Using the default switch statement is not ideal here, I should be using a custom statement-like function
+            print(cg, "switch(");
+            c_gen_expr(cg, node->condition);
+            println(cg, ") {");
+
+            for(size_t i = 0; i < node->cases->size; i++)
+                c_gen_stmt(cg, node->cases->items[i]);
+
+            println(cg, "}");
+            break;
+        case ND_CASE:
+            print(cg, "case ");
+            c_gen_expr(cg, node->condition);
+            println(cg, ":");
+
+            c_gen_stmt(cg, node->body);
+
+            println(cg, "break;");
             break;
         case ND_NOOP:
             break;

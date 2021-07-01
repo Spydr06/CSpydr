@@ -46,7 +46,10 @@ FILE *open_file(char *path)
 
     FILE *out = fopen(path, "w");
     if (!out)
-        LOG_ERROR_F("[Error] Cannot open output file: %s: %s", path, strerror(errno));
+    {   
+        LOG_ERROR_F("[Error] IO: could not open file: %s: %s\n", path, strerror(errno));
+        exit(1);
+    }
     return out;
 }
 

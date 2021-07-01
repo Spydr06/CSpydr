@@ -10,6 +10,11 @@
 // the characters between directories e.g.: /home/usr/...
 #define DIRECTORY_DELIMS "/"
 
+#define CACHE_DIR ".cache/cspydr"
+char* get_home_directory();
+
+
+
 char* get_absolute_path(char* relative_path);
 char* get_path_from_file(char* file_path);
 
