@@ -2,6 +2,41 @@
 
 CSpydr is a low-level, static typed, compiled programming language inspired by Rust and C building ontop of LLVM. 
 
+## Current Status
+A list of all the features, that are/will be implemented.
+
+##### Compiler features:
+- [ ] LLVM compiler
+- [ ] Assembly compiler
+- [x] C transpiler
+- [x] lexing symbols
+- [x] parsing an AST
+- [x] validating the code (happens during parsing)
+- [ ] type evaluator
+- [ ] type validator
+- [x] function validation
+- [x] CLI and error handling
+- [ ] memory management -> under construction
+
+##### Language features:
+- [x] functions
+- [x] function arguments 
+- [x] global/local variables
+- [x] structs/enums
+- [x] typedefs
+- [x] control statements
+- [x] expressions
+- [x] arrays
+- [x] file imports
+- [x] `extern` functions and globals
+- [ ] `sizeof` keyword (currently called through the C interface)
+- [ ] std (standard library) -> under construction
+- [ ] "smart" `loop` (automatic evaluation like while, for or foreach-type loops)
+- [ ] macros (only inside of a file working)
+- [ ] namespaces
+- [ ] public/private functions, globals, types and struct members
+- [ ] functions inside of structs
+
 ## Installation
 
 Currently, CSpydr is only available for Linux. Once a first major release is in sight I will create an [AUR](https://aur.archlinux.org/) repository for [Arch Linux](https://archlinux.org/) and port it over to [Windows](https://www.microsoft.com/windows), but at the moment Installation is done via [*make*](https://www.gnu.org/software/make/) using [*gcc*](https://gcc.gnu.org/). You also need [*LLVM*](https://llvm.org/docs/GettingStarted.html) to compile CSpydr.
