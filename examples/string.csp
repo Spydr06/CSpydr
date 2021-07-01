@@ -1,13 +1,20 @@
-# a implementation of a dynamic string type
+# a implementation of a string type
 
+# --- the str_s struct and str typedef ---
 type str_s: struct {
-    alloc: u64,
-    len:   u64,
-    data:  *char
+    data:  *char,
+    len: u64,
+    alloc: u64
 };
 type str: *str_s;
+# ----------------------------------------
 
-fn create_str(string: *char): str {
+# --- a default `nil` type for strings ---
+let str_nil: str = &{"\0", 0, 1}: str_s;
+# ----------------------------------------
+
+# the initializer function
+fn init_str(string: *char): str {
     let s: str = malloc(sizeof(str_s));
 
     if string != nil {
@@ -29,11 +36,12 @@ fn create_str(string: *char): str {
 }
 
 fn free_str(s: str) {
+    s = s;
     free(s.data);
     free(s);
 }
 
-fn get_string(s: str): *char {
+fn str_lit(s: str): *char {
     <- s.data;
 }
 
@@ -41,34 +49,17 @@ fn str_len(s: str): u64 {
     <- s.len;
 }
 
-fn get_str_alloc(s: str): u64 {
-    <- s.alloc;
+fn str_eq(a: str, b: str): bool {
+    <- strcmp(str_lit(a), str_lit(b)) == 0;  
 }
 
-fn reallocate_str(s: str): *char {
-    s.alloc = s.alloc * 2;
-    
-    let newdata: *char = malloc(s.alloc);
-    memcpy(newdata, s.data, s.len);
-    if s.data != nil {
-        free(s.data);
-    }
-    s.data = newdata;
-    <- newdata;
+fn str_append(s: str, c: char) {
+    s.alloc++;
+    s.data = realloc(s.data, s.alloc);
+
+    s.data[s.len++] = c;
 }
 
-fn str_has_space(s: str): bool {
-    <- s.alloc - (s.len + 1) > 0;
-}
-
-fn add_str(s: str, c: char) {
-    let data: *char;
-    if str_has_space(s) {
-        data = s.data;
-    }
-    else {
-        data = reallocate_str(s);
-    }
-    data[s.len++] = c;
-    data[s.len] = 0;
+fn str_cpy(s: str): str {
+    <- init_str(s.data);
 }

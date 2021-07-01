@@ -2,34 +2,12 @@
 
 import "string.csp";
 
-type test_enum: enum {
-    TEST_OK,
-    TEST_ERROR,
-    TEST_FAIL
-};
-
-type test_struct: struct {
-    status: test_enum,
-    success: bool,
-    child: *test_struct,
-};
-
-macro default_i32() |: 0 :|
-
-let x: i32 = 0;
-let y: *char = "4";
-
 fn main(argc: i32, argv: **char): i32 {
-    let local: i32 = default_i32!;
+    let string: str = init_str("Hello World");
+    str_append(string, '!');
 
-    match local {
-        0 => {
+    printf("str: %s\n", str_lit(string));
 
-        }
-        _ => {
-            
-        }
-    }
-
+    free_str(string);
     <- 0;
 }

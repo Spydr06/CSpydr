@@ -271,8 +271,6 @@ void transpile_c(char* path, char* target, Action_T action, bool print_c, bool s
 
         ASTProg_T* import_ast = parse_file(imports, import_file, silent);
         merge_ast_progs(ast, import_ast);
-
-        free_srcfile(import_file);
     }
 
     optimize(ast);

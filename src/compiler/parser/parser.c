@@ -494,8 +494,8 @@ static ASTObj_T* parse_global(Parser_T* p)
     {
         parser_advance(p);
         global->value = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
-        if(!global->value->is_constant)
-            throw_error(ERR_UNDEFINED, p->tok, "assigned value unknown at compile-time");
+        /*if(!global->value->is_constant)
+            throw_error(ERR_UNDEFINED, p->tok, "assigned value unknown at compile-time");*/
     }
     
     parser_consume(p, TOKEN_SEMICOLON, "expect `;` after variable declaration");
@@ -967,6 +967,7 @@ static ASTNode_T* parse_cast(Parser_T* p, ASTNode_T* left)
     parser_consume(p, TOKEN_COLON, "expect `:` after expression for type cast");
     cast->left = left;
     cast->data_type = parse_type(p);
+    cast->is_constant = left->is_constant;
 
     return cast;
 }

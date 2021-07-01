@@ -85,6 +85,7 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
     println(cg, "#include <stdlib.h>");
     println(cg, "#include <stdbool.h>");
     println(cg, "#include <string.h>");
+    println(cg, "#include <stdio.h>");
 
     for(size_t i = 0; i < cg->ast->objs->size; i++)
         c_gen_obj_decl(cg, cg->ast->objs->items[i]);
@@ -326,6 +327,8 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, node->tok->value);
             c_gen_expr(cg, node->right);
             break;
+        case ND_REF:
+        case ND_DEREF:
         case ND_NEG:
         case ND_BIT_NEG:
         case ND_NOT:
@@ -347,6 +350,34 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, "[");
             c_gen_expr(cg, node->expr);
             print(cg, "]");
+            break;
+        case ND_ARRAY:
+            print(cg, "{");
+
+            for(size_t i = 0; i < node->args->size; i++)
+            {
+                c_gen_expr(cg, node->args->items[i]);
+                print(cg, ",");
+            }
+
+            print(cg, "}");
+            break;
+        case ND_STRUCT:
+            print(cg, "{");
+
+            for(size_t i = 0; i < node->args->size; i++)
+            {
+                c_gen_expr(cg, node->args->items[i]);
+                print(cg, ",");
+            }
+
+            print(cg, "}");
+            break;
+        case ND_CAST:
+            print(cg, "(");
+            c_gen_type(cg, node->data_type, "");
+            print(cg, ")");
+            c_gen_expr(cg, node->left);
             break;
         default:
             throw_error(ERR_MISC, node->tok, "Expressions of type %d are currently not supported", node->kind);
