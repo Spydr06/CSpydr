@@ -1,4 +1,4 @@
-# a implementation of a string type
+# An implementation of a string type
 
 # --- the str_s struct and str typedef ---
 type str_s: struct {

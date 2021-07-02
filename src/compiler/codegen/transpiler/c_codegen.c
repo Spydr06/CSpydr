@@ -51,6 +51,7 @@ CCodegenData_T* init_c_cg(ASTProg_T* ast)
 
 void free_c_cg(CCodegenData_T* cg)
 {
+    free(cg->buf);
     free(cg);
 }
 
@@ -112,6 +113,7 @@ static void run_compiler(CCodegenData_T* cg, const char* target_bin)
     char* feedback = sh(compiler_cmd);
     if(!cg->silent)
         LOG_INFO_F("%s", feedback);
+    free(feedback);
 
     free(compiler_cmd);
 }
@@ -124,7 +126,7 @@ static void write_code(CCodegenData_T* cg, const char* target_bin)
     char* mkdir_cmd = calloc(strlen(homedir) + strlen(mkdir_tmp) + 1, sizeof(char));
     sprintf(mkdir_cmd, mkdir_tmp, homedir);
 
-    sh(mkdir_cmd);
+    free(sh(mkdir_cmd));
 
     const char* file_tmp = "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.c";
     char* c_file_path = calloc(strlen(homedir) + strlen(file_tmp) + strlen(target_bin) + 1, sizeof(char));
@@ -161,6 +163,7 @@ void run_c_code(CCodegenData_T* cg, const char* bin)
     }
 #endif
 
+    free(feedback);
     free(cmd);
 }
 

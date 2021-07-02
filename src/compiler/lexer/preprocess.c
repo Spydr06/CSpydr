@@ -64,7 +64,7 @@ static Macro_T* parse_macro_def(Preprocessor_T* pp)
     next = lexer_next_token(pp->lex);
     if(next->type == TOKEN_LPAREN)
     {
-        free(next);
+        free_token(next);
 
         // TODO: parse arguments
         /*for(next = lexer_next_token(pp->lex); next->type != TOKEN_EOF && next->type != TOKEN_RPAREN; next = lexer_next_token(pp->lex))

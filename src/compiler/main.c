@@ -15,6 +15,7 @@
 
 // compiler includes
 #include "ast/ast.h"
+#include "io/file.h"
 #include "io/io.h"
 #include "io/log.h"
 #include "version.h"
@@ -256,20 +257,23 @@ void compile_llvm(char* path, char* target, Action_T action, bool print_llvm, bo
     free_llvm_cg(cg);
 
     free_srcfile(main_file);
+    free_ast_prog(ast);
 }
 
 void transpile_c(char* path, char* target, Action_T action, bool print_c, bool silent)
 {
-    SrcFile_T* main_file = read_file(path);
+    List_T* files = init_list(sizeof(SrcFile_T*));
 
-    ASTProg_T* ast = parse_file(init_list(sizeof(char*)), main_file, silent);
+    list_push(files, read_file(path));
+
+    ASTProg_T* ast = parse_file(init_list(sizeof(char*)), files->items[0], silent);
     List_T* imports = ast->imports;
 
     for(size_t i = 0; i < imports->size; i++)
     {
-        SrcFile_T* import_file = read_file(imports->items[i]);
+        list_push(files, read_file(imports->items[i]));
 
-        ASTProg_T* import_ast = parse_file(imports, import_file, silent);
+        ASTProg_T* import_ast = parse_file(imports, files->items[i + 1], silent);
         merge_ast_progs(ast, import_ast);
     }
 
@@ -284,5 +288,9 @@ void transpile_c(char* path, char* target, Action_T action, bool print_c, bool s
         run_c_code(cg, target);
     
     free_c_cg(cg);
-    free_srcfile(main_file);
+    free_ast_prog(ast);
+
+    for(size_t i = 0; i < files->size; i++)
+        free_srcfile(files->items[i]);
+    free_list(files);
 }

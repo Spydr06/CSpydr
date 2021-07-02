@@ -246,6 +246,7 @@ ASTProg_T* parse_file(List_T* imports, SrcFile_T* src, bool is_silent)
 
     free_parser(p);
     free_lexer(lex);
+    free_list(tokens);
 
     return prog;
 }
@@ -266,6 +267,8 @@ static char* get_full_import_path(Parser_T* p, char* origin, Token_T* import_fil
         throw_error(ERR_SYNTAX_ERROR, p->tok, "Error reading imported file \"%s\", no such file or directory", import_file->value);
     }
 
+    free(abs_path);
+
     return full_import_path;
 }
 
@@ -280,6 +283,8 @@ static void parse_import(Parser_T* p, ASTProg_T* prog)
 
     parser_consume(p, TOKEN_STRING, "expect \"<import file>\" after import keyword");
     parser_consume(p, TOKEN_SEMICOLON, "expect `;` after import");
+
+    free(path);
 }
 
 static ASTNode_T* parse_expr(Parser_T* p, Precedence_T prec, TokenType_T end_tok);
