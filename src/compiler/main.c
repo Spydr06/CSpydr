@@ -25,8 +25,6 @@
 #include "codegen/transpiler/c_codegen.h"
 #include "platform/platform_bindings.h"
 
-#include <c-vector/vec.h>
-
 // default texts, which get shown if you enter help, info or version flags
 // links to me, the creator of CSpydr
 // please be nice and don't change them without any reason. You may add yourself to the credits, if you changed something
