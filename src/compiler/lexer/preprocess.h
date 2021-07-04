@@ -8,7 +8,7 @@ typedef struct PREPROCESSOR_STRUCT
 {
     Lexer_T* lex;
 
-    List_T* output_tokens;
+    List_T* tokens;
     List_T* macros;
     List_T* imports;
 } Preprocessor_T;

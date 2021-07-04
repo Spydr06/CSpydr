@@ -17,7 +17,6 @@ struct PARSER_STRUCT
     size_t token_i;
     ASTProg_T* root_ref;
     Token_T* tok;
-    List_T* imports;
     ASTNode_T* current_block;
 };
 
@@ -41,7 +40,6 @@ typedef enum {
 Parser_T* init_parser(List_T* tokens);
 void free_parser(Parser_T* parser);
 
-//ASTProg_T* parse(Parser_T* parser, const char* mainFile);
-ASTProg_T* parse_file(List_T* imports, SrcFile_T* src, bool is_silent);
+ASTProg_T* parse(SrcFile_T* src, bool is_silent);
 
 #endif

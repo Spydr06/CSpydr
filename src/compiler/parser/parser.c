@@ -137,7 +137,6 @@ Parser_T* init_parser(List_T* tokens)
     parser->tokens = tokens;
     parser->tok = tokens->items[0];
     parser->token_i = 0;
-    parser->imports = init_list(sizeof(char*));
 
     parser->current_block = NULL;
     return parser;
@@ -146,10 +145,6 @@ Parser_T* init_parser(List_T* tokens)
 void free_parser(Parser_T* p)
 {
     free_token(p->tok);
-
-    for(int i = 0; i < p->imports->size; i++)
-        free((char*) p->imports->items[i]);
-    free_list(p->imports);
 
     free(p);
 }
@@ -207,7 +202,7 @@ static ASTObj_T* parse_fn(Parser_T* p);
 static ASTObj_T* parse_global(Parser_T* p);
 static ASTObj_T* parse_extern(Parser_T* p);
 
-ASTProg_T* parse_file(List_T* imports, SrcFile_T* src, bool is_silent)
+ASTProg_T* parse(SrcFile_T* src, bool is_silent)
 {
     Lexer_T* lex = init_lexer(src);
     List_T* tokens = lex_and_preprocess_tokens(lex);
@@ -218,15 +213,12 @@ ASTProg_T* parse_file(List_T* imports, SrcFile_T* src, bool is_silent)
         LOG_OK_F(COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s\n", src->path);
     }
 
-    ASTProg_T* prog = init_ast_prog(src->path, NULL, imports);
+    ASTProg_T* prog = init_ast_prog(src->path, NULL, NULL);
 
     while(!tok_is(p, TOKEN_EOF))
     {
         switch(p->tok->type)
         {
-            case TOKEN_IMPORT:
-                parse_import(p, prog);
-                break;
             case TOKEN_TYPE:
                 list_push(prog->objs, parse_typedef(p));
                 break;
@@ -246,45 +238,8 @@ ASTProg_T* parse_file(List_T* imports, SrcFile_T* src, bool is_silent)
 
     free_parser(p);
     free_lexer(lex);
-    free_list(tokens);
 
     return prog;
-}
-
-static char* get_full_import_path(Parser_T* p, char* origin, Token_T* import_file)
-{
-    // first get the full directory of the origin
-    char* abs_path = get_absolute_path(origin);
-    char* full_path = get_path_from_file(abs_path);
-
-    // construct the imported file onto it
-    const char* template = "%s" DIRECTORY_DELIMS "%s";
-    char* full_import_path = calloc(strlen(template) + strlen(full_path) + strlen(import_file->value) + 1, sizeof(char));
-    sprintf(full_import_path, template, full_path, import_file->value);
-
-    if(!file_exists(full_import_path))
-    {
-        throw_error(ERR_SYNTAX_ERROR, p->tok, "Error reading imported file \"%s\", no such file or directory", import_file->value);
-    }
-
-    free(abs_path);
-
-    return full_import_path;
-}
-
-static void parse_import(Parser_T* p, ASTProg_T* prog)
-{
-    parser_consume(p, TOKEN_IMPORT, "expect `import` keyword to import a file");
-    
-    char* path = get_full_import_path(p, (char*) prog->main_file_path, p->tok);
-
-    if(!is_already_imported(prog, path))
-        list_push(prog->imports, strdup(path));
-
-    parser_consume(p, TOKEN_STRING, "expect \"<import file>\" after import keyword");
-    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after import");
-
-    free(path);
 }
 
 static ASTNode_T* parse_expr(Parser_T* p, Precedence_T prec, TokenType_T end_tok);

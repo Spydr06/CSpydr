@@ -92,6 +92,8 @@ typedef struct TOKEN_STRUCT {
     SrcFile_T* source;
 } Token_T;
 
+typedef Token_T** TokVec_T;
+
 Token_T* init_token(char* value, unsigned int line, unsigned int position, TokenType_T type, SrcFile_T* source);
 void free_token(Token_T* token);
 

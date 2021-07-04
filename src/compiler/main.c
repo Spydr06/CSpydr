@@ -218,18 +218,7 @@ void compile_llvm(char* path, char* target, Action_T action, bool print_llvm, bo
 {
     SrcFile_T* main_file = read_file(path);
 
-    ASTProg_T* ast = parse_file(init_list(sizeof(char*)), main_file, silent);
-    List_T* imports = ast->imports;
-
-    for(size_t i = 0; i < imports->size; i++)
-    {
-        SrcFile_T* import_file = read_file(imports->items[i]);
-
-        ASTProg_T* import_ast = parse_file(imports, import_file, silent);
-        merge_ast_progs(ast, import_ast);
-
-        free_srcfile(import_file);
-    }
+    ASTProg_T* ast = parse(main_file, silent);
 
     optimize(ast);
 
@@ -262,20 +251,9 @@ void compile_llvm(char* path, char* target, Action_T action, bool print_llvm, bo
 
 void transpile_c(char* path, char* target, Action_T action, bool print_c, bool silent)
 {
-    List_T* files = init_list(sizeof(SrcFile_T*));
+    SrcFile_T* main_file = read_file(path);
 
-    list_push(files, read_file(path));
-
-    ASTProg_T* ast = parse_file(init_list(sizeof(char*)), files->items[0], silent);
-    List_T* imports = ast->imports;
-
-    /*for(size_t i = 0; i < imports->size; i++)
-    {
-        list_push(files, read_file(imports->items[i]));
-
-        ASTProg_T* import_ast = parse_file(imports, files->items[i + 1], silent);
-        merge_ast_progs(ast, import_ast);
-    }*/
+    ASTProg_T* ast = parse(main_file, silent);
 
     optimize(ast);
 
@@ -287,10 +265,7 @@ void transpile_c(char* path, char* target, Action_T action, bool print_c, bool s
     if(action == AC_RUN)
         run_c_code(cg, target);
     
+    free_srcfile(main_file);
     free_c_cg(cg);
     free_ast_prog(ast);
-
-    for(size_t i = 0; i < files->size; i++)
-        free_srcfile(files->items[i]);
-    free_list(files);
 }
