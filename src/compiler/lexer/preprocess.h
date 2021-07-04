@@ -10,6 +10,7 @@ typedef struct PREPROCESSOR_STRUCT
 
     List_T* output_tokens;
     List_T* macros;
+    List_T* imports;
 } Preprocessor_T;
 
 List_T* lex_and_preprocess_tokens(Lexer_T* lex);

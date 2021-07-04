@@ -13,6 +13,8 @@ type str: *str_s;
 let str_nil: str = &{"\0", 0, 1}: str_s;
 # ----------------------------------------
 
+macro message() |: init_str("Hello World") :|
+
 # the initializer function
 fn init_str(string: *char): str {
     let s: str = malloc(sizeof(str_s));

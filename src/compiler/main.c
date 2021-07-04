@@ -269,13 +269,13 @@ void transpile_c(char* path, char* target, Action_T action, bool print_c, bool s
     ASTProg_T* ast = parse_file(init_list(sizeof(char*)), files->items[0], silent);
     List_T* imports = ast->imports;
 
-    for(size_t i = 0; i < imports->size; i++)
+    /*for(size_t i = 0; i < imports->size; i++)
     {
         list_push(files, read_file(imports->items[i]));
 
         ASTProg_T* import_ast = parse_file(imports, files->items[i + 1], silent);
         merge_ast_progs(ast, import_ast);
-    }
+    }*/
 
     optimize(ast);
 
