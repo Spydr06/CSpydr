@@ -8,6 +8,8 @@ SRC_DIR ?= ./src/compiler
 TEST_DIR ?= ./tests
 BUILD_DIR ?= ./build
 
+LIB_DIR ?= ./lib
+
 # install directory
 INSTALL_DIR ?= /usr/bin
 
@@ -15,16 +17,18 @@ INSTALL_DIR ?= /usr/bin
 MAIN_FILE = main.c
 TEST_FILE = unit_tests.c
 
+# C/C++/Assembly source files
+SRCS := $(shell find $(SRC_DIR) -name *.cpp -or -name *.c -or -name *.s)
+SRCS += $(shell find $(TEST_DIR) -name *.cpp -or -name *.c -or -name *.s) 
+# add the library path
+SRCS += $(shell find $(LIB_DIR) -name *.cpp -or -name *.c -or -name *.s)
+
 # Compiler/Linker flags
 LLVM_LDFLAGS = `llvm-config --ldflags --libs core executionengine interpreter analysis native bitwriter --system-libs`
 LLVM_CFLAGS = `llvm-config --cflags`
 LLVM_CPPFLAGS = `llvm-config --cppflags`
 
-CXXFLAGS ?= -DDEBUG -Wall -fPIC -O0
-
-# C/C++ source files
-SRCS := $(shell find $(SRC_DIR) -name *.cpp -or -name *.c -or -name *.s)
-SRCS += $(shell find $(TEST_DIR) -name *.cpp -or -name *.c -or -name *.s) 
+CXXFLAGS ?= -DDEBUG -Wall -fPIC -O0 -I$(LIB_DIR)
 
 # Object files
 OBJS :=   $(SRCS:%=$(BUILD_DIR)/%.o)

@@ -1,4 +1,4 @@
-#include "lib/acutest.h"
+#include <acutest/include/acutest.h>
 
 #include "../src/compiler/lexer/lexer.h"
 #include "../src/compiler/parser/parser.h"
