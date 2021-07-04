@@ -1,0 +1,3 @@
+
+# rename u64 to usize for more clear code
+type usize: u64;

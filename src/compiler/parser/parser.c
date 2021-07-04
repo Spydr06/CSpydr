@@ -184,19 +184,10 @@ static inline bool is_executable(ASTNodeKind_T n)
     return n == ND_CALL || n == ND_ASSIGN || n == ND_INC || n == ND_DEC;
 }
 
-static bool is_already_imported(ASTProg_T* prog, char* path)
-{
-    for(int i = 0; i < prog->imports->size; i++)
-        if(streq(prog->imports->items[i], path))
-            return true;
-    return false;
-}
-
 /////////////////////////////////
 // Parser                      //
 /////////////////////////////////
 
-static void parse_import(Parser_T* p, ASTProg_T* prog);
 static ASTObj_T* parse_typedef(Parser_T* p);
 static ASTObj_T* parse_fn(Parser_T* p);
 static ASTObj_T* parse_global(Parser_T* p);
@@ -219,6 +210,13 @@ ASTProg_T* parse(SrcFile_T* src, bool is_silent)
     {
         switch(p->tok->type)
         {
+            case TOKEN_IMPORT:
+                parser_advance(p);
+                //parser_consume(p, TOKEN_STRING, "expect file to import as string");
+                //parser_consume(p, TOKEN_SEMICOLON, "expect `;` after import statement");
+                parser_advance(p);
+                parser_advance(p);
+                break;
             case TOKEN_TYPE:
                 list_push(prog->objs, parse_typedef(p));
                 break;

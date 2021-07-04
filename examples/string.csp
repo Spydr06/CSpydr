@@ -1,10 +1,12 @@
 # An implementation of a string type
 
+import "types.csp";
+
 # --- the str_s struct and str typedef ---
 type str_s: struct {
     data:  *char,
-    len: u64,
-    alloc: u64
+    len: usize,
+    alloc: usize
 };
 type str: *str_s;
 # ----------------------------------------
@@ -20,7 +22,7 @@ fn init_str(string: *char): str {
     let s: str = malloc(sizeof(str_s));
 
     if string != nil {
-        let len: u64 = strlen(string);
+        let len: usize = strlen(string);
         s.alloc = len + 1;
         s.data = malloc(s.alloc);
         memcpy(s.data, string, len);
@@ -47,7 +49,7 @@ fn str_lit(s: str): *char {
     <- s.data;
 }
 
-fn str_len(s: str): u64 {
+fn str_len(s: str): usize {
     <- s.len;
 }
 

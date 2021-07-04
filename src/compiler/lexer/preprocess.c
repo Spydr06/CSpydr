@@ -50,7 +50,7 @@ static Import_T* init_import(Token_T* tok)
 
 static void free_import(Import_T* imp)
 {
-    free_token(imp->tok);
+    //free_token(imp->tok);
     free(imp->import_path);
     free(imp);
 }
@@ -166,27 +166,27 @@ static Import_T* find_import(Preprocessor_T* pp, Import_T* imp)
     return NULL;
 }
 
-static void parse_import_def(Preprocessor_T* pp)
+static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
 {
     // parse the import struct from the source code
-    Token_T* next = lexer_next_token(pp->lex);
+    (*i)++;
+
+    Token_T* next = token_list->items[(*i)++];
     if(next->type != TOKEN_STRING)
         throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `\"<import file>\"` as a string", next->value);
     
     Import_T* imp = init_import(next);
 
-    next = lexer_next_token(pp->lex);
+    next = token_list->items[(*i)++];
     if(next->type != TOKEN_SEMICOLON)
         throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `;` after import file", next->value);
-    free_token(next);
 
     // generate the full path to the import
-    imp->import_path = get_full_import_path((char*) pp->lex->file->path, imp->tok);
+    imp->import_path = get_full_import_path((char*) imp->tok->source->path, imp->tok);
 
     // check if the file was already included
     if(find_import(pp, imp))
     {   
-        printf("Path %s is used already\n", imp->import_path);
         // file is already included
         free_import(imp);
         return;
@@ -200,7 +200,7 @@ static void parse_import_def(Preprocessor_T* pp)
 
     // add the tokens
     for(Token_T* tok = lexer_next_token(import_lexer); tok->type != TOKEN_EOF; tok = lexer_next_token(import_lexer))  
-        list_push(pp->tokens, tok);
+        push_tok(pp, tok);
 
     free_lexer(import_lexer);
     // TODO: free_srcfile(import_file);
@@ -211,23 +211,29 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex)
     Preprocessor_T* pp = init_preprocessor(lex);
 
     /**************************************
-    * Stage 1: lex and import all files   *
+    * Stage 0: lex the main file          *
     **************************************/
 
     Token_T* tok;
     for(tok = lexer_next_token(lex); tok->type != TOKEN_EOF; tok = lexer_next_token(lex))
+        list_push(pp->tokens, tok);
+    Token_T* eof = tok;
+
+    /**************************************
+    * Stage 1: lex and import all files   *
+    **************************************/
+
+    for(size_t i = 0; i < pp->tokens->size; i++)
     {
-        switch(tok->type)
+        tok = pp->tokens->items[i];
+        if(tok->type == TOKEN_IMPORT)
         {
-            case TOKEN_IMPORT:
-                free(tok);
-                parse_import_def(pp);
-                break;
-            default:
-                push_tok(pp, tok);
+            parse_import_def(pp, pp->tokens, &i);
+            continue;
         }
     }
-    push_tok(pp, tok); // push the EOF token
+
+    push_tok(pp, eof);
 
     /***************************************
     * Stage 2: parse macro definitions     *
@@ -260,7 +266,7 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex)
             Macro_T* macro = find_macro(pp, tok->value);
             //free_token(tok);
             if(!macro)
-                throw_error(ERR_UNDEFINED, tok, "unedefined macro `%s`");
+                throw_error(ERR_UNDEFINED, tok, "unedefined macro `%s`", tok->value);
             
             for(size_t i = 0; i < macro->replacing_tokens->size; i++)
                 list_push(token_stage_3, macro->replacing_tokens->items[i]);

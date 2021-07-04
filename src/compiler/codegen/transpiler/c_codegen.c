@@ -78,6 +78,11 @@ static void run_compiler(CCodegenData_T* cg,  const char* target_bin);
 static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj);
 static void c_gen_obj(CCodegenData_T* cg, ASTObj_T* obj);
 
+static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node);
+static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node);
+
+static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name);
+
 void c_gen_code(CCodegenData_T* cg, const char* target)
 {
     if(!cg->silent)
@@ -87,6 +92,20 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
     println(cg, "#include <stdbool.h>");
     println(cg, "#include <string.h>");
     println(cg, "#include <stdio.h>");
+
+    for(size_t i = 0; i < cg->ast->objs->size; i++)
+    {
+        ASTObj_T* obj = cg->ast->objs->items[i];
+        if(obj->kind == OBJ_TYPEDEF)
+        {
+            print(cg, "typedef ");
+            if(obj->data_type->kind == TY_STRUCT)
+                print(cg, "struct %s", obj->callee);
+            else
+                c_gen_type(cg, obj->data_type, obj->callee);
+            println(cg, " %s;", obj->callee);
+        }
+    }
 
     for(size_t i = 0; i < cg->ast->objs->size; i++)
         c_gen_obj_decl(cg, cg->ast->objs->items[i]);
@@ -153,22 +172,11 @@ void run_c_code(CCodegenData_T* cg, const char* bin)
 
     char* feedback = sh(cmd);
     if(!cg->silent)
-        LOG_OK_F("%s", feedback);
-    
-#ifdef __linux
-    if(!cg->silent)
-    {
-        int exit_code = atoi(sh("echo $?"));
-        LOG_INFO_F("\"%s\" terminated with exit code %d.\n", cg->ast->main_file_path ,exit_code);
-    }
-#endif
+        LOG_INFO_F("%s", feedback);
 
     free(feedback);
     free(cmd);
 }
-
-static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node);
-static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node);
 
 static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
 {
@@ -254,9 +262,10 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
             println(cg, ");");
             break;
         case OBJ_TYPEDEF:
-            print(cg, "typedef ");
+            if(obj->data_type->kind != TY_STRUCT)
+                break;
             c_gen_type(cg, obj->data_type, obj->callee);
-            println(cg, " %s;", obj->callee);
+            println(cg, ";");
             break;
         default:
             break;
