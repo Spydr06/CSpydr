@@ -8,8 +8,7 @@
 #include <stdio.h>
 
 #include "../io/io.h"
-
-#include <c-vector/vec.h>
+#include "../io/log.h"
 
 typedef struct MACRO_STRUCT
 {
@@ -197,6 +196,8 @@ static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
     // get the tokens from the file
     SrcFile_T* import_file = read_file(imp->import_path);
     Lexer_T* import_lexer = init_lexer(import_file);
+
+    LOG_OK_F(COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s\n", imp->tok->value);
 
     // add the tokens
     for(Token_T* tok = lexer_next_token(import_lexer); tok->type != TOKEN_EOF; tok = lexer_next_token(import_lexer))  

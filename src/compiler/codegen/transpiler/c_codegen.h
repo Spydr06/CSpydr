@@ -5,6 +5,12 @@
 
 #include <stdio.h>
 
+#define DEFAULT_CC "gcc"
+#define DEFAULT_CC_FLAGS "-O3 -Wall -fPIC"
+
+extern char* cc;
+extern char* cc_flags;
+
 typedef struct C_CODEGEN_DATA_STRUCT
 {
     ASTProg_T* ast;

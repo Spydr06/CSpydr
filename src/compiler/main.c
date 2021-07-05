@@ -58,15 +58,17 @@ const char* help_text = "%s"
                        "  run      Builds, then runs a cspydr program directly.\n"
                        "  debug    Runs a cspydr program with special debug tools. [!!NOT IMPLEMENTED YET!!]\n"
                        COLOR_BOLD_WHITE "Options:\n" COLOR_RESET
-                       "  -h, --help          Displays this help text and quits.\n"
-                       "  -v, --version       Displays the version of CSpydr and quits.\n"
-                       "  -i, --info          Displays information text and quits.\n"
-                       "  -o, --output [file] Sets the target output file (default: " DEFAULT_OUTPUT_FILE ").\n"
-                       "  -t, --transpile     Instructs the compiler to compile to C source code.\n"
-                       "  -l, --llvm          Instructs the compiler to compile to LLVM BitCode (default).\n"
-                       "      --print-llvm    Prints the generated LLVM ByteCode.\n"
-                       "      --print-c       Prints the generated C code.\n"
-                       "      --silent        Disables all command line output except error messages.\n"
+                       "  -h, --help             Displays this help text and quits.\n"
+                       "  -v, --version          Displays the version of CSpydr and quits.\n"
+                       "  -i, --info             Displays information text and quits.\n"
+                       "  -o, --output [file]    Sets the target output file (default: " DEFAULT_OUTPUT_FILE ").\n"
+                       "  -t, --transpile        Instructs the compiler to compile to C source code.\n"
+                       "  -l, --llvm             Instructs the compiler to compile to LLVM BitCode (default).\n"
+                       "      --print-llvm       Prints the generated LLVM ByteCode.\n"
+                       "      --print-c          Prints the generated C code.\n"
+                       "      --silent           Disables all command line output except error messages.\n"
+                       "      --cc [compiler]    Sets the C compiler being used after transpiling (default: " DEFAULT_CC ")\n"
+                       "      --cc-flags [flags] Sets the C compiler flags, must be last argument (default: " DEFAULT_CC_FLAGS ")\n"
                        "\n"
                        "If you are unsure, what CSpydr is (or how to use it), please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n";
 
@@ -190,6 +192,27 @@ int main(int argc, char* argv[])
             ct = CT_LLVM;
         else if(streq(arg, "--silent"))
             silent = true;
+        else if(streq(arg, "--cc"))
+        {
+            if(!argv[++i])
+            {
+                LOG_ERROR("[Error] Expect C compiler name after --cc.\n");
+                exit(1);
+            }
+            cc = argv[i];
+        }
+        else if(streq(arg, "--cc-flags"))
+        {
+            char* flags = calloc(1, sizeof(char));
+            for(i++; i < argc; i++)
+            {
+                flags = realloc(flags, (strlen(flags) + strlen(argv[i]) + 2) * sizeof(char));
+                strcat(flags, argv[i]);
+                strcat(flags, " ");
+            }
+            cc_flags = flags;
+            break;
+        }
         else
         {
             LOG_ERROR_F("[Error] Unknown flag \"%s\", type \"cspydr --help\" to get help.\n", argv[i]);
@@ -209,6 +232,9 @@ int main(int argc, char* argv[])
             LOG_ERROR_F("[Error] Unknown compile type %d!\n", ct);
             return 1;
     }
+
+    if(!streq(cc_flags, DEFAULT_CC_FLAGS))
+        free(cc_flags);
 
     return 0;
 }

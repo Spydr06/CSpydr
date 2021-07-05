@@ -32,7 +32,7 @@ A list of all the features, that are/will be implemented.
 - [ ] `sizeof` keyword (currently called through the C interface)
 - [ ] std (standard library) -> under construction
 - [ ] "smart" `loop` (automatic evaluation like while, for or foreach-type loops)
-- [x] macros
+- [x] macros (without arguments)
 - [ ] namespaces
 - [ ] public/private functions, globals, types and struct members
 - [ ] functions inside of structs

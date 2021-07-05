@@ -12,8 +12,8 @@
 
 #include "../../platform/platform_bindings.h"
 
-#define CC "gcc"
-#define CC_FLAGS "-O3 -Wall -fPIC"
+char* cc = DEFAULT_CC;
+char* cc_flags = DEFAULT_CC_FLAGS;
 
 #define DEFAULT_IMPORTS "#include <stdbool.h>\n" \
                         "#include <stdlib.h>"
@@ -86,7 +86,7 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name);
 void c_gen_code(CCodegenData_T* cg, const char* target)
 {
     if(!cg->silent)
-        LOG_OK(COLOR_BOLD_BLUE "  Generating" COLOR_RESET " C code using " COLOR_BOLD_WHITE CC COLOR_RESET "\n");
+        LOG_OK_F(COLOR_BOLD_BLUE "  Generating" COLOR_RESET " C code using " COLOR_BOLD_WHITE "%s" COLOR_RESET "\n", cc);
 
     println(cg, "#include <stdlib.h>");
     println(cg, "#include <stdbool.h>");
@@ -125,9 +125,9 @@ static void run_compiler(CCodegenData_T* cg, const char* target_bin)
 {
     char* homedir = get_home_directory();
 
-    static char* compiler_cmd_tmp = CC " " CC_FLAGS " %s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.c -o %s";
-    char* compiler_cmd = calloc(strlen(compiler_cmd_tmp) + strlen(homedir) + strlen(target_bin) * 2 + 1, sizeof(char));
-    sprintf(compiler_cmd, compiler_cmd_tmp, homedir, target_bin, target_bin);
+    static char* compiler_cmd_tmp = "%s %s %s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.c -o %s";
+    char* compiler_cmd = calloc(strlen(cc)+ strlen(cc_flags) + strlen(compiler_cmd_tmp) + strlen(homedir) + strlen(target_bin) * 2 + 1, sizeof(char));
+    sprintf(compiler_cmd, compiler_cmd_tmp, cc, cc_flags, homedir, target_bin, target_bin);
 
     char* feedback = sh(compiler_cmd);
     if(!cg->silent)
