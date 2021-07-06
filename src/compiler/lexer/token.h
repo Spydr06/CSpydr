@@ -75,9 +75,11 @@ typedef enum TOKEN_TYPE {
     TOKEN_STRUCT,       // struct
     TOKEN_ENUM,         // enum
     TOKEN_IMPORT,       // import
-    TOKEN_MUT,          // mut
     TOKEN_EXTERN,       // extern
     TOKEN_MACRO,        // macro
+    TOKEN_CONST,        // const
+    TOKEN_SIZEOF,       // sizeof
+    TOKEN_TYPEOF,       // typeof
 
     TOKEN_ERROR,        // error handling token
     TOKEN_EOF,          // end of file

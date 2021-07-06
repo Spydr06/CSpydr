@@ -194,7 +194,8 @@ static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
     list_push(pp->imports, imp);
 
     // get the tokens from the file
-    SrcFile_T* import_file = read_file(imp->import_path);
+    SrcFile_T* import_file = read_file(strdup(imp->import_path));
+    import_file->short_path = strdup(imp->tok->value);
     Lexer_T* import_lexer = init_lexer(import_file);
 
     LOG_OK_F(COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s\n", imp->tok->value);
@@ -204,12 +205,13 @@ static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
         push_tok(pp, tok);
 
     free_lexer(import_lexer);
-    // TODO: free_srcfile(import_file);
+    list_push(pp->files, import_file);
 }
 
-List_T* lex_and_preprocess_tokens(Lexer_T* lex)
+List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files)
 {
     Preprocessor_T* pp = init_preprocessor(lex);
+    pp->files = files;
 
     /**************************************
     * Stage 0: lex the main file          *

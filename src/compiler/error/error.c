@@ -33,6 +33,8 @@ void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
     char* src_line = get_line(tok->source, tok->line);
     const char* err_ty_str = error_types[ty].as_str; 
 
+    char* source_file_path = tok->source->short_path ? tok->source->short_path : (char*) tok->source->path;
+
     unsigned int line = tok->line;
     unsigned int character = tok->pos;
 
@@ -40,7 +42,7 @@ void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
     va_start(arg_list, format);
 
     // print the error
-    fprintf(OUTPUT_FILE_STREAM, err_tmp1, tok->source->path, line, character, err_ty_str);
+    fprintf(OUTPUT_FILE_STREAM, err_tmp1, source_file_path, line, character, err_ty_str);
     vfprintf(OUTPUT_FILE_STREAM, format, arg_list);
     fprintf(OUTPUT_FILE_STREAM, err_tmp2, LINE_NUMBER_SPACES, line, src_line, LINE_NUMBER_SPACES, "", character, "");
 

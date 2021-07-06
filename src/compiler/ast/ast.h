@@ -55,6 +55,9 @@ typedef enum {
     ND_INDEX,   // x[y]
     ND_CAST,    // x:i32
 
+    ND_SIZEOF,  // typeof x
+    ND_TYPEOF,  // sizeof x
+
     // statements
     ND_BLOCK,   // {...}
     ND_IF,      // if x {}

@@ -40,6 +40,6 @@ typedef enum {
 Parser_T* init_parser(List_T* tokens);
 void free_parser(Parser_T* parser);
 
-ASTProg_T* parse(SrcFile_T* src, bool is_silent);
+ASTProg_T* parse(List_T* files, bool is_silent);
 
 #endif

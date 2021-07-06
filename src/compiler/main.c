@@ -18,6 +18,7 @@
 #include "io/file.h"
 #include "io/io.h"
 #include "io/log.h"
+#include "list.h"
 #include "version.h"
 #include "parser/parser.h"
 #include "parser/optimizer.h"
@@ -242,9 +243,10 @@ int main(int argc, char* argv[])
 // sets up and runs the compilation pipeline using LLVM
 void compile_llvm(char* path, char* target, Action_T action, bool print_llvm, bool silent)
 {
-    SrcFile_T* main_file = read_file(path);
+    List_T* files = init_list(sizeof(struct SRC_FILE_STRUCT*));
+    list_push(files, read_file(path));
 
-    ASTProg_T* ast = parse(main_file, silent);
+    ASTProg_T* ast = parse(files, silent);
 
     optimize(ast);
 
@@ -271,15 +273,17 @@ void compile_llvm(char* path, char* target, Action_T action, bool print_llvm, bo
 
     free_llvm_cg(cg);
 
-    free_srcfile(main_file);
+    for(size_t i = 0; i < files->size; i++)
+        free_srcfile(files->items[i]);
     free_ast_prog(ast);
 }
 
 void transpile_c(char* path, char* target, Action_T action, bool print_c, bool silent)
 {
-    SrcFile_T* main_file = read_file(path);
+    List_T* files = init_list(sizeof(struct SRC_FILE_STRUCT*));
+    list_push(files, read_file(path));
 
-    ASTProg_T* ast = parse(main_file, silent);
+    ASTProg_T* ast = parse(files, silent);
 
     optimize(ast);
 
@@ -291,7 +295,8 @@ void transpile_c(char* path, char* target, Action_T action, bool print_c, bool s
     if(action == AC_RUN)
         run_c_code(cg, target);
     
-    free_srcfile(main_file);
+    for(size_t i = 0; i < files->size; i++)
+        free_srcfile(files->items[i]);
     free_c_cg(cg);
     free_ast_prog(ast);
 }

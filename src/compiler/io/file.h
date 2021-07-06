@@ -9,6 +9,7 @@ typedef struct SRC_FILE_STRUCT
     unsigned int num_lines;
 
     const char* path;
+    char* short_path;
 } SrcFile_T;
 
 SrcFile_T* init_srcfile(List_T* lines, const char* path);

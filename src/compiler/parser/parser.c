@@ -32,6 +32,9 @@ static ASTNode_T* parse_closure(Parser_T* p);
 static ASTNode_T* parse_array_lit(Parser_T* p);
 static ASTNode_T* parse_struct_lit(Parser_T* p);
 
+static ASTNode_T* parse_sizeof(Parser_T* p);
+static ASTNode_T* parse_typeof(Parser_T* p);
+
 static ASTNode_T* parse_unary(Parser_T* p);
 static ASTNode_T* parse_num_op(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_bool_op(Parser_T* p, ASTNode_T* left);
@@ -76,7 +79,9 @@ static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } ex
     [TOKEN_DIV]      = {NULL, parse_assignment, ASSIGN},  
     [TOKEN_MULT]     = {NULL, parse_assignment, ASSIGN},   
     [TOKEN_DOT]      = {NULL, parse_member, MEMBER},
-    [TOKEN_COLON]    = {NULL, parse_cast, CAST}
+    [TOKEN_COLON]    = {NULL, parse_cast, CAST},
+    [TOKEN_SIZEOF]   = {parse_sizeof, NULL, LOWEST},
+    [TOKEN_TYPEOF]   = {parse_typeof, NULL, LOWEST}
 }; 
 
 static ASTNodeKind_T unary_ops[TOKEN_EOF + 1] = {
@@ -176,12 +181,12 @@ Token_T* parser_consume(Parser_T* p, TokenType_T type, const char* msg)
 
 static inline bool is_editable(ASTNodeKind_T n)
 {
-    return n == ND_ID || n == ND_MEMBER || n == ND_INDEX;
+    return n == ND_ID || n == ND_MEMBER || n == ND_INDEX || n == ND_CAST || n == ND_CALL;
 }
 
 static inline bool is_executable(ASTNodeKind_T n)
 {
-    return n == ND_CALL || n == ND_ASSIGN || n == ND_INC || n == ND_DEC;
+    return n == ND_CALL || n == ND_ASSIGN || n == ND_INC || n == ND_DEC || n == ND_CAST;
 }
 
 /////////////////////////////////
@@ -193,18 +198,19 @@ static ASTObj_T* parse_fn(Parser_T* p);
 static ASTObj_T* parse_global(Parser_T* p);
 static ASTObj_T* parse_extern(Parser_T* p);
 
-ASTProg_T* parse(SrcFile_T* src, bool is_silent)
+ASTProg_T* parse(List_T* files, bool is_silent)
 {
-    Lexer_T* lex = init_lexer(src);
-    List_T* tokens = lex_and_preprocess_tokens(lex);
+    SrcFile_T* main_file = files->items[0];
+    Lexer_T* lex = init_lexer(main_file);
+    List_T* tokens = lex_and_preprocess_tokens(lex, files);
     Parser_T* p = init_parser(tokens);
 
     if(!is_silent)
     {
-        LOG_OK_F(COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s\n", src->path);
+        LOG_OK_F(COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s\n", main_file->path);
     }
 
-    ASTProg_T* prog = init_ast_prog(src->path, NULL, NULL);
+    ASTProg_T* prog = init_ast_prog(main_file->path, NULL, NULL);
 
     while(!tok_is(p, TOKEN_EOF))
     {
@@ -928,4 +934,36 @@ static ASTNode_T* parse_cast(Parser_T* p, ASTNode_T* left)
     cast->is_constant = left->is_constant;
 
     return cast;
+}
+
+static ASTNode_T* parse_sizeof(Parser_T* p)
+{
+    ASTNode_T* size_of = init_ast_node(ND_SIZEOF, p->tok);
+    parser_consume(p, TOKEN_SIZEOF, "expect `sizeof` keyword");
+
+    size_of->is_constant = true;
+    // detect weather sizeof is called from an type, variable or array
+    if(tok_is(p, TOKEN_STAR) || tok_is(p, TOKEN_LBRACKET) || tok_is(p, TOKEN_STRUCT) || tok_is(p, TOKEN_ENUM))
+        size_of->data_type = parse_type(p);
+    else
+        // we still don't know if a typedef was passed. We simply parse it as an expression and evaluate it later in the optimizer
+        size_of->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+    
+    return size_of;
+}
+
+static ASTNode_T* parse_typeof(Parser_T* p)
+{
+    ASTNode_T* type_of = init_ast_node(ND_TYPEOF, p->tok);
+    parser_consume(p, TOKEN_SIZEOF, "expect `sizeof` keyword");
+
+    type_of->is_constant = true;
+    // detect weather sizeof is called from an type, variable or array
+    if(tok_is(p, TOKEN_STAR) || tok_is(p, TOKEN_LBRACKET) || tok_is(p, TOKEN_STRUCT) || tok_is(p, TOKEN_ENUM))
+        type_of->data_type = parse_type(p);
+    else
+        // we still don't know if a typedef was passed. We simply parse it as an expression and evaluate it later in the optimizer
+        type_of->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+    
+    return type_of;
 }

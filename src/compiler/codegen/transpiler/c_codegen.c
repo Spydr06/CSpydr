@@ -321,8 +321,9 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             for(int i = 0; i < node->args->size; i++)
             {
                 c_gen_expr(cg, node->args->items[i]);
-                print(cg, i < node->args->size - 1 ? "," : ")");
+                print(cg, i < node->args->size - 1 ? "," : "");
             }
+            print(cg, ")");
             break;
         case ND_ASSIGN:
         case ND_ADD:
@@ -387,9 +388,19 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             break;
         case ND_CAST:
             print(cg, "(");
+            print(cg, "(");
             c_gen_type(cg, node->data_type, "");
             print(cg, ")");
             c_gen_expr(cg, node->left);
+            print(cg, ")");
+            break;
+        case ND_SIZEOF:
+            print(cg, "sizeof(");
+            if(node->data_type)
+                c_gen_type(cg, node->data_type, "");
+            else
+                c_gen_expr(cg, node->expr);
+            print(cg, ")");
             break;
         default:
             throw_error(ERR_MISC, node->tok, "Expressions of type %d are currently not supported", node->kind);

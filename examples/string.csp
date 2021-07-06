@@ -4,7 +4,7 @@ import "types.csp";
 
 # --- the str_s struct and str typedef ---
 type str_s: struct {
-    data:  *char,
+    data: *char,
     len: usize,
     alloc: usize
 };
@@ -17,7 +17,7 @@ let str_nil: str = &{"\0", 0, 1}: str_s;
 
 # the initializer function
 fn init_str(string: *char): str {
-    let s: str = malloc(sizeof(str_s));
+    let s: str = malloc(sizeof str_s);
 
     if string != nil {
         let len: usize = strlen(string);

@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define NUM_KEYWORDS 17
+#define NUM_KEYWORDS 19
 
 const struct { const char* str; TokenType_T type; } keywords[NUM_KEYWORDS] = {
     {"true", TOKEN_TRUE},
@@ -25,9 +25,11 @@ const struct { const char* str; TokenType_T type; } keywords[NUM_KEYWORDS] = {
     {"struct", TOKEN_STRUCT},
     {"enum", TOKEN_ENUM},
     {"import", TOKEN_IMPORT},
-    {"mut", TOKEN_MUT},
+    {"const", TOKEN_CONST},
     {"extern", TOKEN_EXTERN},
-    {"macro", TOKEN_MACRO}
+    {"macro", TOKEN_MACRO},
+    {"sizeof", TOKEN_SIZEOF},
+    {"typeof", TOKEN_TYPEOF},
 };
 
 const struct { const char* symbol; TokenType_T type; } symbols[] = {
