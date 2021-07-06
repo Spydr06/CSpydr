@@ -43,7 +43,7 @@ Currently, CSpydr is only available for Linux. Once a first major release is in 
 Finally, enter these commands:
 
 ```bash
-git clone https://github.com/spydr06/cspydr.git
+git clone https://github.com/spydr06/cspydr.git --recursive
 cd ./cspydr
 ```
 ```bash
