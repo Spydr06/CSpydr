@@ -34,11 +34,13 @@ void test_file_generation(void)
 }
 
 #include "test_lexer.tt"
+#include "test_preprocessor.tt"
 #include "test_parser.tt"
 
 TEST_LIST = {
    {"file generation", test_file_generation},
-   LEXER_TESTS,     // all lexer tests included from "test_lexer.tt"
-   PARSER_TESTS,    // all parser tests included from "test_parser.tt"
-   {NULL, NULL}     // end of the tests
+   LEXER_TESTS,         // all lexer tests included from "test_lexer.tt"
+   PREPROCESSOR_TESTS,   // all preprocessor tests included from "test_preprocessor.tt"
+   PARSER_TESTS,        // all parser tests included from "test_parser.tt"
+   {NULL, NULL}         // end of the tests
 };
