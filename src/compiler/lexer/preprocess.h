@@ -12,8 +12,10 @@ typedef struct PREPROCESSOR_STRUCT
     List_T* tokens;
     List_T* macros;
     List_T* imports;
+
+    bool is_silent;
 } Preprocessor_T;
 
-List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files);
+List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent);
 
 #endif

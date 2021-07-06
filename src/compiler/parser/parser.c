@@ -202,7 +202,7 @@ ASTProg_T* parse(List_T* files, bool is_silent)
 {
     SrcFile_T* main_file = files->items[0];
     Lexer_T* lex = init_lexer(main_file);
-    List_T* tokens = lex_and_preprocess_tokens(lex, files);
+    List_T* tokens = lex_and_preprocess_tokens(lex, files, is_silent);
     Parser_T* p = init_parser(tokens);
 
     if(!is_silent)

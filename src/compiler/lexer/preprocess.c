@@ -62,6 +62,8 @@ static Preprocessor_T* init_preprocessor(Lexer_T* lex)
     pp->imports = init_list(sizeof(struct IMPORT_STRUCT*));
 
     pp->tokens = init_list(sizeof(struct TOKEN_STRUCT*));
+    
+    pp->is_silent = false;
 
     return pp;
 }
@@ -173,10 +175,9 @@ static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
     Token_T* next = token_list->items[(*i)++];
     if(next->type != TOKEN_STRING)
         throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `\"<import file>\"` as a string", next->value);
-    
     Import_T* imp = init_import(next);
 
-    next = token_list->items[(*i)++];
+    next = token_list->items[(*i)];
     if(next->type != TOKEN_SEMICOLON)
         throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `;` after import file", next->value);
 
@@ -197,8 +198,8 @@ static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
     SrcFile_T* import_file = read_file(strdup(imp->import_path));
     import_file->short_path = strdup(imp->tok->value);
     Lexer_T* import_lexer = init_lexer(import_file);
-
-    LOG_OK_F(COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s\n", imp->tok->value);
+    if(!pp->is_silent)
+        LOG_OK_F(COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s\n", imp->tok->value);
 
     // add the tokens
     for(Token_T* tok = lexer_next_token(import_lexer); tok->type != TOKEN_EOF; tok = lexer_next_token(import_lexer))  
@@ -208,10 +209,11 @@ static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
     list_push(pp->files, import_file);
 }
 
-List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files)
+List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
 {
     Preprocessor_T* pp = init_preprocessor(lex);
     pp->files = files;
+    pp->is_silent = is_silent;
 
     /**************************************
     * Stage 0: lex the main file          *
@@ -232,7 +234,6 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files)
         if(tok->type == TOKEN_IMPORT)
         {
             parse_import_def(pp, pp->tokens, &i);
-            continue;
         }
     }
 

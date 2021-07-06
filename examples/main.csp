@@ -1,7 +1,6 @@
 # a basic test program used for developing this programming language 
 
 import "vec.csp";
-import "test.csp";
 import "string.csp";
 
 macro message() |: init_str("Hello World") :|
