@@ -34,7 +34,6 @@ ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok)
     node->int_val = 0;
     node->float_val = 0;
     node->bool_val = false;
-    node->char_val = 0;
 
     node->is_constant = false;
     node->is_default_case = false;

@@ -12,7 +12,7 @@ type str: *str_s;
 # ----------------------------------------
 
 # --- a default `nil` type for strings ---
-let str_nil: str = &{"\0", 0, 1}: str_s;
+let str_nil: str = &{"\0", 0, 0}: str_s;
 # ----------------------------------------
 
 # the initializer function
@@ -29,7 +29,7 @@ fn init_str(string: *char): str {
     else {
         s.alloc = 1;
         s.data = malloc(s.alloc);
-        s.data[0] = 0;
+        s.data[0] = '\0';
 
         s.len = 0;
     }

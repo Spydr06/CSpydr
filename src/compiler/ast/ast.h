@@ -120,8 +120,7 @@ struct AST_NODE_STRUCT
         int int_val;
         float float_val;
         bool bool_val;
-        char char_val;
-        char* str_val;
+        char* str_val;  // also used for chars
 
         bool is_constant;
 

@@ -403,7 +403,15 @@ static Token_T* lexer_get_char(Lexer_T* lexer)
         return init_token("EOF", lexer->line, lexer->pos, TOKEN_EOF, lexer->file);
     }
 
-    Token_T* token = init_token((char[]){lexer->c, 0}, lexer->line, lexer->pos, TOKEN_CHAR, lexer->file);
+    char* data = (char[]){lexer->c, '\0'};
+
+    if(lexer->c == '\\')
+    {
+        lexer_advance(lexer);
+        data = (char[]){'\\', lexer->c, '\0'};
+    }
+
+    Token_T* token = init_token(data, lexer->line, lexer->pos, TOKEN_CHAR, lexer->file);
     lexer_advance(lexer);
 
     if(lexer->c != '\'')

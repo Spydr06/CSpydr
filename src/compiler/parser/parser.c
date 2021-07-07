@@ -751,10 +751,29 @@ static ASTNode_T* parse_nil_lit(Parser_T* p)
     return nil_lit;
 }
 
+const char backslash_chars[] = {
+    ['0'] = '\0',
+    ['a'] = '\a',
+    ['b'] = '\b',
+    ['f'] = '\f',
+    ['n'] = '\n',
+    ['t'] = '\t',
+    ['r'] = '\r',
+    ['v'] = '\v',
+    ['"'] = '\"',
+    ['?'] = '\?',
+    ['\\'] = '\\',
+    ['\''] = '\'',
+};
+
 static ASTNode_T* parse_char_lit(Parser_T* p)
 {
     ASTNode_T* char_lit = init_ast_node(ND_CHAR, p->tok);
-    char_lit->char_val = p->tok->value[0];
+
+    if(strlen(p->tok->value) > 1)
+        char_lit->str_val = strdup((char[]){'\\', p->tok->value[1], '\0'});
+    else 
+        char_lit->str_val = strdup((char[]){p->tok->value[0], '\0'});
     char_lit->is_constant = true;
     parser_consume(p, TOKEN_CHAR, "expect char literal ('a', 'b', ...)");
     return char_lit;

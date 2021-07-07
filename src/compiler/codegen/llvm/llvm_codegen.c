@@ -451,8 +451,8 @@ LLVMValueRef llvm_gen_expr(LLVMCodegenData_T* cg, ASTNode_T* node)
             return LLVMConstInt(LLVMInt32Type(), node->int_val, false);
         case ND_FLOAT:
             return LLVMConstReal(LLVMFloatType(), node->float_val);
-        case ND_CHAR:
-            return LLVMConstInt(LLVMInt8Type(), (int8_t) node->char_val, false);
+       /* case ND_CHAR:
+            return LLVMConstInt(LLVMInt8Type(), (int8_t) node->char_val, false);*/
         case ND_BOOL:
             return LLVMConstInt(LLVMInt1Type(), node->bool_val, false);
         case ND_ID:
