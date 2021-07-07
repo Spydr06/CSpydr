@@ -11,9 +11,9 @@
 #define DIRECTORY_DELIMS "/"
 
 #define CACHE_DIR ".cache/cspydr"
+#define STD_DIR "/usr/share/cspydr/std"
+
 char* get_home_directory();
-
-
 
 char* get_absolute_path(char* relative_path);
 char* get_path_from_file(char* file_path);

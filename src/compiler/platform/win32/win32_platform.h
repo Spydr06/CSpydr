@@ -12,6 +12,8 @@
 #define DIRECTORY_DELIMS "\\" 
 
 #define CACHE_DIR ".cache\\cspydr"
+#define STD_DIR "%%appdata%%\\cspydr\\std"
+
 char* get_home_directory();
 
 char* get_absolute_path(char* relative_path);

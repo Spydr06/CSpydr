@@ -12,6 +12,8 @@ LIB_DIR ?= ./lib
 
 # install directory
 INSTALL_DIR ?= /usr/bin
+INSTALL_STD_DIR ?= /usr/share/cspydr/
+STD_DIR ?= ./src/std
 
 # main/test files
 MAIN_FILE = main.c
@@ -45,6 +47,8 @@ MKDIR := mkdir -p
 MV := mv
 ECHO := echo -e
 INSTALL := install -D
+CP := cp -r
+RM := rm -r
 
 # echo color codes
 BLU := \033[0;34m
@@ -100,9 +104,13 @@ build: $(OBJS)
 link: $(BUILD_DIR)/$(TARGET_EXEC)
 
 .PHONY: install
-install: 
+install: $(STD_FILES)
 	@$(INSTALL) $(TARGET_DEST)/$(TARGET_EXEC) $(INSTALL_DIR)/$(TARGET_EXEC) 
 	@$(ECHO) "Installed at $(INSTALL_DIR)/$(TARGET_EXEC)"
+	@$(RM) $(INSTALL_STD_DIR)
+	@$(MKDIR) $(INSTALL_STD_DIR)
+	@$(CP) $(STD_DIR) $(INSTALL_STD_DIR)
+	@$(ECHO) "Installed std at $(INSTALL_STD_DIR)"
 
 # delete the build tree
 .PHONY: clean

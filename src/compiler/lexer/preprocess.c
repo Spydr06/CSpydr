@@ -148,7 +148,17 @@ static char* get_full_import_path(char* origin, Token_T* import_file)
 
     if(!file_exists(full_import_path))
     {
-        throw_error(ERR_SYNTAX_ERROR, import_file, "Error reading imported file \"%s\", no such file or directory", import_file->value);
+        free(full_import_path);
+        free(abs_path);
+        // if the file does not exist locally, search for it in the STD path
+
+        const char* std_tmp = STD_DIR DIRECTORY_DELIMS "%s";
+        char* std_path = calloc(strlen(std_tmp) + strlen(import_file->value) + 1, sizeof(char));
+        sprintf(std_path, std_tmp, import_file->value);
+        
+        if(!file_exists(std_path))
+            throw_error(ERR_SYNTAX_ERROR, import_file, "Error reading imported file \"%s\", no such file or directory", import_file->value);
+        return std_path;
     }
 
     free(abs_path);
