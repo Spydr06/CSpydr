@@ -37,6 +37,7 @@ A list of all the features, that are/will be implemented.
 - [ ] public/private functions, globals, types and struct members
 - [ ] functions inside of structs
 - [x] lambda expressions (not asynchronous)
+- [ ] generics in functions and structs
 
 ## Installation
 
