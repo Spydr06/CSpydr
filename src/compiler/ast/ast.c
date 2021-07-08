@@ -203,6 +203,7 @@ ASTProg_T* init_ast_prog(const char* main_file_path, const char* target_binary, 
     prog->imports = imports;
 
     prog->objs = init_list(sizeof(struct AST_OBJ_STRUCT*));
+    prog->lambda_literals = init_list(sizeof(struct AST_NODE_STRUCT*));
 
     return prog;
 }

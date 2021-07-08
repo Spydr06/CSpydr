@@ -48,6 +48,7 @@ const struct { const char* symbol; TokenType_T type; } symbols[] = {
     {"||", TOKEN_OR},
     {"|:", TOKEN_MACRO_BEGIN},
     {":|", TOKEN_MACRO_END},
+    {"|", TOKEN_BIT_OR},
     {"==", TOKEN_EQ},
     {"=>", TOKEN_ARROW},
     {"=", TOKEN_ASSIGN},

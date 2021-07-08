@@ -83,6 +83,8 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node);
 
 static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name);
 
+static void c_gen_lambda_fn(CCodegenData_T* cg, ASTNode_T* lambda);
+
 void c_gen_code(CCodegenData_T* cg, const char* target)
 {
     if(!cg->silent)
@@ -109,6 +111,9 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
 
     for(size_t i = 0; i < cg->ast->objs->size; i++)
         c_gen_obj_decl(cg, cg->ast->objs->items[i]);
+
+    for(size_t i = 0; i < cg->ast->lambda_literals->size; i++)
+        c_gen_lambda_fn(cg, cg->ast->lambda_literals->items[i]);
     
     for(size_t i = 0; i < cg->ast->objs->size; i++)
         c_gen_obj(cg, cg->ast->objs->items[i]);
@@ -185,6 +190,16 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
     else
         switch(ty->kind)
         {
+            case TY_LAMBDA:
+                c_gen_type(cg, ty->base, "");
+                print(cg, " (*%s)(", struct_name);
+                for(size_t i = 0; i < ty->arg_types->size; i++)
+                {
+                    c_gen_type(cg, ty->arg_types->items[i], "");
+                    print(cg, i == ty->arg_types->size - 1 ? "" : ",");
+                }
+                print(cg, ")");
+                break;
             case TY_PTR:
                 c_gen_type(cg, ty->base, struct_name);
                 print(cg, "*");
@@ -235,8 +250,14 @@ static void c_gen_fn_arg_list(CCodegenData_T* cg, List_T* args)
     for(size_t i = 0; i < args->size; i++)
     {
         ASTObj_T* arg = args->items[i];
-        c_gen_type(cg, arg->data_type, "");
-        print(cg, " %s%s", arg->callee, i < args->size - 1 ? "," : "");
+        if(arg->data_type->kind == TY_LAMBDA)
+            c_gen_type(cg, arg->data_type, arg->callee);
+        else
+        {   
+            c_gen_type(cg, arg->data_type, "");
+            print(cg, " %s", arg->callee);
+        }
+        print(cg, "%s", i < args->size - 1 ? "," : "");
     }
 }
 
@@ -402,6 +423,9 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
                 c_gen_expr(cg, node->expr);
             print(cg, ")");
             break;
+        case ND_LAMBDA:
+            print(cg, node->callee);
+            break;
         default:
             throw_error(ERR_MISC, node->tok, "Expressions of type %d are currently not supported", node->kind);
     }
@@ -476,4 +500,16 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
         default:
             break;
     }
+}
+
+static void c_gen_lambda_fn(CCodegenData_T* cg, ASTNode_T* lambda)
+{
+    c_gen_type(cg, lambda->data_type, "");
+    print(cg, " %s(", lambda->callee);
+
+    c_gen_fn_arg_list(cg, lambda->args);
+
+    println(cg, "){");
+    c_gen_stmt(cg, lambda->body);
+    println(cg, "}");
 }

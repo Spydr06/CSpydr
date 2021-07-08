@@ -32,6 +32,8 @@ static ASTNode_T* parse_closure(Parser_T* p);
 static ASTNode_T* parse_array_lit(Parser_T* p);
 static ASTNode_T* parse_struct_lit(Parser_T* p);
 
+static ASTNode_T* parse_lambda_lit(Parser_T* p);
+
 static ASTNode_T* parse_sizeof(Parser_T* p);
 static ASTNode_T* parse_typeof(Parser_T* p);
 
@@ -81,7 +83,8 @@ static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } ex
     [TOKEN_DOT]      = {NULL, parse_member, MEMBER},
     [TOKEN_COLON]    = {NULL, parse_cast, CAST},
     [TOKEN_SIZEOF]   = {parse_sizeof, NULL, LOWEST},
-    [TOKEN_TYPEOF]   = {parse_typeof, NULL, LOWEST}
+    [TOKEN_TYPEOF]   = {parse_typeof, NULL, LOWEST},
+    [TOKEN_BIT_OR]   = {parse_lambda_lit, NULL, LOWEST},
 }; 
 
 static ASTNodeKind_T unary_ops[TOKEN_EOF + 1] = {
@@ -142,6 +145,7 @@ Parser_T* init_parser(List_T* tokens)
     parser->tokens = tokens;
     parser->tok = tokens->items[0];
     parser->token_i = 0;
+    parser->cur_lambda_id = 0;
 
     parser->current_block = NULL;
     return parser;
@@ -174,7 +178,7 @@ static inline bool streq(char* s1, char* s2)
 Token_T* parser_consume(Parser_T* p, TokenType_T type, const char* msg)
 {
     if(!tok_is(p, type))
-        throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, %s", msg);
+        throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, %s", p->tok->value,  msg);
 
     return parser_advance(p);
 }
@@ -211,6 +215,7 @@ ASTProg_T* parse(List_T* files, bool is_silent)
     }
 
     ASTProg_T* prog = init_ast_prog(main_file->path, NULL, NULL);
+    p->root_ref = prog;
 
     while(!tok_is(p, TOKEN_EOF))
     {
@@ -298,6 +303,32 @@ static ASTType_T* parse_enum_type(Parser_T* p)
     return enum_type;
 }
 
+static ASTType_T* parse_lambda_type(Parser_T* p)
+{
+    ASTType_T* lambda = init_ast_type(TY_LAMBDA, p->tok);
+
+    parser_consume(p, TOKEN_FN, "expect `fn` keyword for lambda type");
+    parser_consume(p, TOKEN_LT, "expect `<` before lambda return type");
+
+    lambda->base = parse_type(p);
+
+    parser_consume(p, TOKEN_GT, "expect `>` after lambda return type");
+    parser_consume(p, TOKEN_LPAREN, "expect `(` before lambda argument types");
+
+    lambda->arg_types = init_list(sizeof(struct AST_TYPE_STRUCT*));
+    while(!tok_is(p, TOKEN_RPAREN) && !tok_is(p, TOKEN_EOF))
+    {
+        list_push(lambda->arg_types, parse_type(p));
+
+        if(!tok_is(p, TOKEN_RPAREN))
+            parser_consume(p, TOKEN_COMMA, "expect `,` between lambda argument types");
+    }
+
+    parser_consume(p, TOKEN_RPAREN, "expect `)` after lambda argument types");
+
+    return lambda;
+}
+
 static ASTType_T* parse_type(Parser_T* p)
 {
     ASTType_T* type = get_primitive_type(p->tok->value);
@@ -309,6 +340,9 @@ static ASTType_T* parse_type(Parser_T* p)
 
     switch(p->tok->type)
     {
+        case TOKEN_FN:
+            type = parse_lambda_type(p);
+            break;
         case TOKEN_STRUCT:
             type = parse_struct_type(p);
             break;
@@ -751,21 +785,6 @@ static ASTNode_T* parse_nil_lit(Parser_T* p)
     return nil_lit;
 }
 
-const char backslash_chars[] = {
-    ['0'] = '\0',
-    ['a'] = '\a',
-    ['b'] = '\b',
-    ['f'] = '\f',
-    ['n'] = '\n',
-    ['t'] = '\t',
-    ['r'] = '\r',
-    ['v'] = '\v',
-    ['"'] = '\"',
-    ['?'] = '\?',
-    ['\\'] = '\\',
-    ['\''] = '\'',
-};
-
 static ASTNode_T* parse_char_lit(Parser_T* p)
 {
     ASTNode_T* char_lit = init_ast_node(ND_CHAR, p->tok);
@@ -808,6 +827,44 @@ static ASTNode_T* parse_struct_lit(Parser_T* p)
     parser_consume(p, TOKEN_RBRACE, "expect `}` after struct literal");
 
     return struct_lit;
+}
+
+static ASTNode_T* parse_lambda_lit(Parser_T* p)
+{
+    ASTNode_T* lambda_lit = init_ast_node(ND_LAMBDA, p->tok);
+    parser_consume(p, TOKEN_BIT_OR, "expect `|` for lambda expression");
+
+    lambda_lit->args = init_list(sizeof(struct AST_OBJ_STRUCT*));
+    while(!tok_is(p, TOKEN_BIT_OR) && !tok_is(p, TOKEN_EOF))
+    {
+        // parse a lambda arguments
+        ASTObj_T* arg = init_ast_obj(OBJ_FN_ARG, p->tok);
+        arg->callee = strdup(p->tok->value);
+        parser_consume(p, TOKEN_ID, "expect argument name");
+        parser_consume(p, TOKEN_COLON, "expect `:` after lambda argument");
+
+        arg->data_type = parse_type(p);
+        list_push(lambda_lit->args, arg);
+
+        if(!tok_is(p, TOKEN_BIT_OR))
+            parser_consume(p, TOKEN_COMMA, "expect `,` between lambda arguments");
+    }
+    parser_consume(p, TOKEN_BIT_OR, "expect `|` after lambda args");
+
+    lambda_lit->data_type = parse_type(p);
+    parser_consume(p, TOKEN_ARROW, "expect `=>` after lambda return type");
+
+    lambda_lit->body = parse_stmt(p);
+
+    const char* callee_tmp = "__csp_lambda_lit_%ld__";
+    char* callee = calloc(strlen(callee_tmp) + 1, sizeof(char));
+    sprintf(callee, callee_tmp, p->cur_lambda_id++);
+
+    lambda_lit->callee = callee;
+
+    list_push(p->root_ref->lambda_literals, lambda_lit);
+
+    return lambda_lit;
 }
 
 static ASTNode_T* parse_unary(Parser_T* p)

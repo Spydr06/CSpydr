@@ -13,5 +13,11 @@ fn main(argc: i32, argv: **char): i32 {
 
     free_str(string);
 
+    lambda_test(|x: i32, y: i32| i32 => ret x + y;);
+
     <- 0;
+}
+
+fn lambda_test(lambda: fn<i32>(i32, i32)) {
+    printf("lambda: %d\n", lambda(3, 4));
 }

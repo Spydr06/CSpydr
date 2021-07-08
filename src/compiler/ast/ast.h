@@ -67,6 +67,8 @@ typedef enum {
     ND_RETURN,  // ret x;
     ND_EXPR_STMT, // "executable" expressions
 
+    ND_LAMBDA,
+
     ND_ENUM_MEMBER,     // enum members
     ND_STRUCT_MEMBER,  // struct members
 
@@ -94,6 +96,8 @@ typedef enum {
     TY_ARR,
     TY_STRUCT,
     TY_ENUM,
+
+    TY_LAMBDA,
 
     TY_UNDEF
 } ASTTypeKind_T;
@@ -207,6 +211,7 @@ typedef struct AST_PROG_STRUCT
     const char* target_binary;
 
     List_T* imports;
+    List_T* lambda_literals;
 
     List_T* objs;   // list of ASTObj_Ts
 } ASTProg_T;

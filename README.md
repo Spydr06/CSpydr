@@ -36,7 +36,8 @@ A list of all the features, that are/will be implemented.
 - [ ] namespaces
 - [ ] public/private functions, globals, types and struct members
 - [ ] functions inside of structs
-- [ ] lambda expressions
+- [x] lambda expressions (not asynchronous)
+
 ## Installation
 
 Currently, CSpydr is only available for Linux. Once a first major release is in sight I will create an [AUR](https://aur.archlinux.org/) repository for [Arch Linux](https://archlinux.org/) and port it over to [Windows](https://www.microsoft.com/windows), but at the moment Installation is done via [*make*](https://www.gnu.org/software/make/) using [*gcc*](https://gcc.gnu.org/). You also need [*LLVM*](https://llvm.org/docs/GettingStarted.html) to compile CSpydr.
