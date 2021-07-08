@@ -29,7 +29,7 @@ A list of all the features, that are/will be implemented.
 - [x] arrays
 - [x] file imports
 - [x] `extern` functions and globals
-- [ ] `sizeof` keyword (currently called through the C interface)
+- [x] `sizeof` keyword (currently called through the C interface)
 - [ ] std (standard library) -> under construction
 - [ ] "smart" `loop` (automatic evaluation like while, for or foreach-type loops)
 - [x] macros (without arguments)
