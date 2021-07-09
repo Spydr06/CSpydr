@@ -2,7 +2,7 @@
     THE CSPYDR PROGRAMMING LANGUAGE COMPILER
     This is the main file and entry point to the compiler.
 
-    This compiler and all components of CSpydr, except external dependencies (LLVM, acutest, ...), are licensed under the GNU General Public License v3.0.
+    This compiler and all components of CSpydr, except external dependencies (LLVM, acutest, ...), are licensed under the MIT license.
 
     Creator:
         https://github.com/spydr06
@@ -40,11 +40,10 @@ const char* info_text = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE CO
                        COLOR_BOLD_WHITE "Version:" COLOR_RESET " %s\n"
                        COLOR_BOLD_WHITE "Build:" COLOR_RESET " %s\n"
                        "\n"
-                       "Copyright (C) 2021 Spydr06\n"
-                       "CSpydr is distributed under the GNU General Public License (v3)\n"
+                       "Copyright (c) 2021 Spydr06\n"
+                       "CSpydr is distributed under the MIT license\n"
                        "This is free software; see the source for copying conditions;\n"
-                       "you may redistribute it under the terms of the GNU GPL version 3\n"
-                       "or (at your option) a later version.\n"
+                       "you may redistribute it under the terms of the MIT license\n"
                        "This program has absolutely no warranty.\n"
                        "\n"
                        COLOR_BOLD_WHITE "    repository: " COLOR_RESET CSPYDR_GIT_REPOSITORY "\n"
