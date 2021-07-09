@@ -82,19 +82,30 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node);
 static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node);
 
 static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name);
-
 static void c_gen_lambda_fn(CCodegenData_T* cg, ASTNode_T* lambda);
+static void c_gen_array_brackets(CCodegenData_T* cg, ASTType_T* ty);
 
 void c_gen_code(CCodegenData_T* cg, const char* target)
 {
     if(!cg->silent)
         LOG_OK_F(COLOR_BOLD_BLUE "  Generating" COLOR_RESET " C code using " COLOR_BOLD_WHITE "%s" COLOR_RESET "\n", cc);
 
+    /*
+     * C code generation is split into many parts.
+     * This is necessary, because, different to C,
+     * the order of functions, typedefs, global
+     * variables, etc. does not matter in CSpydr.
+     * Therefore we have to "sort" all the different
+     * Sections of a program and emit them seperately.
+     */
+
+    // import files from the C std (temporary)
     println(cg, "#include <stdlib.h>");
     println(cg, "#include <stdbool.h>");
     println(cg, "#include <string.h>");
     println(cg, "#include <stdio.h>");
 
+    // generate typedefs
     for(size_t i = 0; i < cg->ast->objs->size; i++)
     {
         ASTObj_T* obj = cg->ast->objs->items[i];
@@ -109,12 +120,15 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
         }
     }
 
+    // declare all objects first
     for(size_t i = 0; i < cg->ast->objs->size; i++)
         c_gen_obj_decl(cg, cg->ast->objs->items[i]);
 
+    // emit all lambda templates
     for(size_t i = 0; i < cg->ast->lambda_literals->size; i++)
         c_gen_lambda_fn(cg, cg->ast->lambda_literals->items[i]);
     
+    // finally, emit every function containing the *actual* code
     for(size_t i = 0; i < cg->ast->objs->size; i++)
         c_gen_obj(cg, cg->ast->objs->items[i]);
 
@@ -185,6 +199,7 @@ void run_c_code(CCodegenData_T* cg, const char* bin)
 
 static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
 {
+
     if(primitive_to_c_type[ty->kind])
         print(cg, "%s", primitive_to_c_type[ty->kind]);
     else
@@ -206,14 +221,14 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
                 break;
             case TY_ARR:
                 c_gen_type(cg, ty->base, struct_name);
-                if(ty->num_indices)
+                /*if(ty->num_indices)
                 {
                     print(cg, "[");
                     c_gen_expr(cg, ty->num_indices);
                     print(cg, "]");
                 }
                 else
-                    print(cg, "[]");
+                    print(cg, "[]");*/
                 break;
             case TY_ENUM:
                 print(cg, "enum {");
@@ -228,8 +243,12 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
 
                 for(size_t i = 0; i < ty->members->size; i++)
                 {
-                    c_gen_type(cg, ((ASTNode_T*) ty->members->items[i])->data_type, struct_name);
-                    println(cg, " %s;", ((ASTNode_T*) ty->members->items[i])->callee); 
+                    ASTNode_T* member = ty->members->items[i];
+                    c_gen_type(cg, member->data_type, struct_name);
+                    print(cg, " %s", member->callee); 
+                    if(member->data_type->kind == TY_ARR)
+                        c_gen_array_brackets(cg, member->data_type);
+                    println(cg, ";");
                 }
 
                 print(cg, "}");
@@ -245,6 +264,17 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
         }
 }
 
+static void c_gen_array_brackets(CCodegenData_T* cg, ASTType_T* ty)
+{
+    print(cg, "[");
+    if(ty->num_indices)
+        c_gen_expr(cg, ty->num_indices);
+    print(cg, "]");
+
+    if(ty->base && ty->base->kind == TY_ARR)
+        c_gen_array_brackets(cg, ty->base);
+}
+
 static void c_gen_fn_arg_list(CCodegenData_T* cg, List_T* args)
 {
     for(size_t i = 0; i < args->size; i++)
@@ -257,6 +287,10 @@ static void c_gen_fn_arg_list(CCodegenData_T* cg, List_T* args)
             c_gen_type(cg, arg->data_type, "");
             print(cg, " %s", arg->callee);
         }
+
+        if(arg->data_type->kind == TY_ARR)
+            c_gen_array_brackets(cg, arg->data_type);
+
         print(cg, "%s", i < args->size - 1 ? "," : "");
     }
 }
@@ -268,6 +302,8 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
         case OBJ_GLOBAL:
             c_gen_type(cg, obj->data_type, "");
             print(cg, " %s", obj->callee);
+            if(obj->data_type->kind == TY_ARR)
+                c_gen_array_brackets(cg, obj->data_type);
             if(obj->value)
             {
                 print(cg, "=");
@@ -286,6 +322,8 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
             if(obj->data_type->kind != TY_STRUCT)
                 break;
             c_gen_type(cg, obj->data_type, obj->callee);
+            if(obj->data_type->kind == TY_ARR)
+                c_gen_array_brackets(cg, obj->data_type);
             println(cg, ";");
             break;
         default:
@@ -434,7 +472,10 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
 static void c_gen_local(CCodegenData_T* cg, ASTObj_T* obj)
 {
     c_gen_type(cg, obj->data_type, "");
-    println(cg, " %s;", obj->callee);
+    print(cg, " %s", obj->callee);
+    if(obj->data_type->kind == TY_ARR)
+                c_gen_array_brackets(cg, obj->data_type);
+    println(cg, ";"); 
 }
 
 static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)

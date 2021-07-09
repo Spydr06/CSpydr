@@ -19,6 +19,8 @@ fn main(argc: i32, argv: **char): i32 {
     <- 0;
 }
 
+let test_arr: []i32 = [4, 5];
+
 fn lambda_test(lambda: fn<i32>(i32, i32)) {
-    printf("lambda: %d\n", lambda(3, 4));
+    printf("lambda: %d\n", lambda(test_arr[1], test_arr[0]));
 }
