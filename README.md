@@ -31,7 +31,7 @@ A list of all the features, that are/will be implemented.
 - [x] `extern` functions and globals
 - [x] `sizeof` keyword (currently called through the C interface)
 - [ ] std (standard library) -> under construction
-- [ ] "smart" `loop` (automatic evaluation like while, for or foreach-type loops)
+- [x] different loop types: `for`, `while` and `loop`
 - [x] macros (without arguments)
 - [ ] namespaces
 - [ ] public/private functions, globals, types and struct members
