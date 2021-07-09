@@ -80,6 +80,8 @@ typedef enum TOKEN_TYPE {
     TOKEN_CONST,        // const
     TOKEN_SIZEOF,       // sizeof
     TOKEN_TYPEOF,       // typeof
+    TOKEN_WHILE,        // while
+    TOKEN_FOR,          // for
 
     TOKEN_ERROR,        // error handling token
     TOKEN_EOF,          // end of file

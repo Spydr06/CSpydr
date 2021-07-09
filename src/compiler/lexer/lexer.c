@@ -8,15 +8,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define NUM_KEYWORDS 19
-
-const struct { const char* str; TokenType_T type; } keywords[NUM_KEYWORDS] = {
+const struct { const char* str; TokenType_T type; } keywords[] = {
     {"true", TOKEN_TRUE},
     {"false", TOKEN_FALSE},
     {"nil", TOKEN_NIL},
     {"let", TOKEN_LET},
     {"fn", TOKEN_FN},
     {"loop", TOKEN_LOOP},
+    {"while", TOKEN_WHILE},
+    {"for", TOKEN_FOR},
     {"if", TOKEN_IF},
     {"else", TOKEN_ELSE},
     {"ret", TOKEN_RETURN},
@@ -30,6 +30,7 @@ const struct { const char* str; TokenType_T type; } keywords[NUM_KEYWORDS] = {
     {"macro", TOKEN_MACRO},
     {"sizeof", TOKEN_SIZEOF},
     {"typeof", TOKEN_TYPEOF},
+    {NULL, TOKEN_EOF}   // end of array indicator
 };
 
 const struct { const char* symbol; TokenType_T type; } symbols[] = {
@@ -211,7 +212,7 @@ static void lexer_skip_comment(Lexer_T* lexer)
 static TokenType_T lexer_get_id_type(char* id)
 {
     TokenType_T type = TOKEN_ID;
-    for(int i = 0; i < NUM_KEYWORDS; i++)
+    for(int i = 0; keywords[i].str != NULL; i++)
         if(strcmp(keywords[i].str, id) == 0)
             type = keywords[i].type;
 

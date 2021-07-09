@@ -559,12 +559,59 @@ static ASTNode_T* parse_loop(Parser_T* p)
 {
     ASTNode_T* loop = init_ast_node(ND_LOOP, p->tok);
 
-    parser_consume(p, TOKEN_LOOP, "expect `loop` keyword for a loop");
+    parser_consume(p, TOKEN_LOOP, "expect `loop` keyword for a endless loop");
 
-    loop->condition = parse_expr(p, LOWEST, TOKEN_EOF);
     loop->body = parse_stmt(p);
 
     return loop;
+}
+
+static ASTNode_T* parse_while(Parser_T* p)
+{
+    ASTNode_T* loop = init_ast_node(ND_WHILE, p->tok);
+
+    parser_consume(p, TOKEN_WHILE, "expect `while` for a while loop statement");
+
+    loop->condition = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+    loop->body = parse_stmt(p);
+
+    return loop;
+}
+
+static ASTNode_T* parse_for(Parser_T* p)
+{
+    ASTNode_T* loop = init_ast_node(ND_FOR, p->tok);
+
+    parser_consume(p, TOKEN_FOR, "expect `for` for a for loop statement");
+
+    size_t num_locals = p->current_block->locals->size;
+    if(!tok_is(p, TOKEN_SEMICOLON))
+    {
+        ASTNode_T* init_stmt = parse_stmt(p);
+        if(init_stmt->kind != ND_EXPR_STMT)
+            throw_error(ERR_SYNTAX_ERROR, init_stmt->tok, "can only have expression-like statements in for-loop initializer");
+        if(p->current_block->locals->size != num_locals)
+        {
+            // the before statement was a local definition, which is allowed
+            p->current_block->locals->size = num_locals;
+            loop->counter_var = p->current_block->locals->items[num_locals];
+        }
+        loop->init_stmt = init_stmt;
+    } 
+    else
+        parser_advance(p);
+    
+    if(!tok_is(p, TOKEN_SEMICOLON))
+        loop->condition = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+    parser_advance(p);
+
+    if(!tok_is(p, TOKEN_SEMICOLON))
+        loop->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+    parser_advance(p);
+
+    loop->body = parse_stmt(p);
+
+    return loop; 
 }
 
 static ASTNode_T* parse_case(Parser_T* p)
@@ -676,6 +723,10 @@ static ASTNode_T* parse_stmt(Parser_T* p)
             return parse_if(p);
         case TOKEN_LOOP:
             return parse_loop(p);
+        case TOKEN_FOR:
+            return parse_for(p);
+        case TOKEN_WHILE:
+            return parse_while(p);
         case TOKEN_MATCH:
             return parse_match(p);
         case TOKEN_LET:

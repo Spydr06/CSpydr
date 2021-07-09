@@ -467,9 +467,36 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
             }
             break;
         case ND_LOOP:
+            print(cg, "while(1)");
+            c_gen_stmt(cg, node->body);
+            break;
+        case ND_WHILE:
             print(cg, "while(");
             c_gen_expr(cg, node->condition);
-            print(cg, ") ");
+            print(cg, ")");
+            c_gen_stmt(cg, node->body);
+            break;
+        case ND_FOR:
+            print(cg, "for(");
+            if(node->init_stmt) 
+            {    
+                if(node->counter_var)
+                {
+                    c_gen_type(cg, node->counter_var->data_type, "");
+                    print(cg, " ");
+                }
+                c_gen_stmt(cg, node->init_stmt);
+            } 
+            else
+                print(cg, ";");
+
+            if(node->condition)
+                c_gen_expr(cg, node->condition);
+            print(cg, ";");
+            if(node->expr)
+                c_gen_expr(cg, node->expr);
+            print(cg, ")");
+
             c_gen_stmt(cg, node->body);
             break;
         case ND_EXPR_STMT:

@@ -61,7 +61,9 @@ typedef enum {
     // statements
     ND_BLOCK,   // {...}
     ND_IF,      // if x {}
-    ND_LOOP,    // loop x {}
+    ND_LOOP,    // loop {}
+    ND_WHILE,   // while x {}
+    ND_FOR,     // for let i: i32 = 0; i < x; i++ {}
     ND_MATCH,   // match x {}
     ND_CASE,    // x => {} !!only in match statements!!
     ND_RETURN,  // ret x;
@@ -145,6 +147,8 @@ struct AST_NODE_STRUCT
 
         // loop
         ASTNode_T* body;
+        ASTObj_T* counter_var;
+        ASTNode_T* init_stmt;
 
         // return
         ASTNode_T* return_val;
