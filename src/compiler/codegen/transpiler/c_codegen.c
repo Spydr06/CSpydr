@@ -84,6 +84,7 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node);
 static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name);
 static void c_gen_lambda_fn(CCodegenData_T* cg, ASTNode_T* lambda);
 static void c_gen_array_brackets(CCodegenData_T* cg, ASTType_T* ty);
+static void c_gen_tuple_struct(CCodegenData_T* cg, ASTType_T* tuple);
 
 void c_gen_code(CCodegenData_T* cg, const char* target)
 {
@@ -119,6 +120,10 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
             println(cg, " %s;", obj->callee);
         }
     }
+
+    // declare all tuple structs
+    for(size_t i = 0; i < cg->ast->tuple_structs->size; i++)
+        c_gen_tuple_struct(cg, cg->ast->tuple_structs->items[i]);
 
     // declare all objects first
     for(size_t i = 0; i < cg->ast->objs->size; i++)
@@ -253,6 +258,9 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
 
                 print(cg, "}");
                 break;
+            case TY_TUPLE:
+                print(cg, "struct %s", ty->callee);
+                break;
             case TY_UNDEF:
                 if(struct_name && strcmp(ty->callee, struct_name) == 0)
                     print(cg, "struct ");
@@ -262,6 +270,17 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
                 throw_error(ERR_MISC, ty->tok, "Types with kind %d are currently not supported.", ty->kind);
                 break;
         }
+}
+
+static void c_gen_tuple_struct(CCodegenData_T* cg, ASTType_T* tuple)
+{
+    print(cg, "struct %s{", tuple->callee);
+    for(size_t i = 0; i < tuple->arg_types->size; i++)
+    {
+        c_gen_type(cg, tuple->arg_types->items[i], "");
+        print(cg, " _%ld; ", i);
+    }
+    println(cg, "};");
 }
 
 static void c_gen_array_brackets(CCodegenData_T* cg, ASTType_T* ty)

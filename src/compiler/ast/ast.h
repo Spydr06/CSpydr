@@ -102,6 +102,7 @@ typedef enum {
     TY_ENUM,
 
     TY_LAMBDA,
+    TY_TUPLE,
 
     TY_UNDEF
 } ASTTypeKind_T;
@@ -218,6 +219,7 @@ typedef struct AST_PROG_STRUCT
 
     List_T* imports;
     List_T* lambda_literals;
+    List_T* tuple_structs;
 
     List_T* objs;   // list of ASTObj_Ts
 } ASTProg_T;

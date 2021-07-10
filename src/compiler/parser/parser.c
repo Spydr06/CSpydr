@@ -146,8 +146,10 @@ Parser_T* init_parser(List_T* tokens)
     parser->tok = tokens->items[0];
     parser->token_i = 0;
     parser->cur_lambda_id = 0;
+    parser->cur_tuple_id = 0;
 
-    parser->current_block = NULL;
+    parser->cur_block = NULL;
+    parser->cur_fn = NULL;
     return parser;
 }
 
@@ -191,6 +193,52 @@ static inline bool is_editable(ASTNodeKind_T n)
 static inline bool is_executable(ASTNodeKind_T n)
 {
     return n == ND_CALL || n == ND_ASSIGN || n == ND_INC || n == ND_DEC || n == ND_CAST;
+}
+
+static bool check_type(ASTType_T* a, ASTType_T* b)
+{
+    if(a->kind != b->kind)
+        return false;
+    
+    if(a->callee != NULL && b->callee != NULL && strcmp(a->callee, b->callee) != 0)
+        return false;
+    
+    if((a->callee == NULL && b->callee != NULL) || (a->callee != NULL && b->callee == NULL))
+        return false;
+    
+    if(a->is_primitive != b->is_primitive)
+        return false;
+    
+    if((a->base == NULL && b->base != NULL) || (a->base != NULL && b->base == NULL))
+        return false;
+
+    if(a->base && b->base)
+        return check_type(a->base, b->base);
+
+    return true;
+}
+
+static ASTType_T* get_compatible_tuple(Parser_T* p, ASTType_T* tuple)
+{
+    for(size_t i = 0; i < p->root_ref->tuple_structs->size; i++)
+    {
+        ASTType_T* to_check = p->root_ref->tuple_structs->items[i];
+        if(to_check->arg_types->size != tuple->arg_types->size)
+            continue;
+        
+        bool types_compatible = true;
+        for(size_t j = 0; j < to_check->arg_types->size; j++)
+        {
+            if(!check_type(to_check->arg_types->items[i], tuple->arg_types->items[i]))
+            {
+                types_compatible = false;
+                break;
+            }
+        }
+        if(types_compatible)
+            return to_check;
+    }
+    return NULL;
 }
 
 /////////////////////////////////
@@ -333,40 +381,70 @@ static ASTType_T* parse_type(Parser_T* p)
 {
     ASTType_T* type = get_primitive_type(p->tok->value);
     if(type)
-    {
         parser_advance(p);
-        return type;
-    }
+    else
+        switch(p->tok->type)
+        {
+            case TOKEN_FN:
+                type = parse_lambda_type(p);
+                break;
+            case TOKEN_STRUCT:
+                type = parse_struct_type(p);
+                break;
+            case TOKEN_ENUM:
+                type = parse_enum_type(p);
+                break;
+            case TOKEN_STAR:
+                type = init_ast_type(TY_PTR, p->tok);
+                parser_advance(p);
+                type->base = parse_type(p);
+                break;
+            case TOKEN_LBRACKET:
+                type = init_ast_type(TY_TUPLE, p->tok);
+                parser_advance(p);
+                type->arg_types = init_list(sizeof(struct AST_TYPE_STRUCT*));
 
-    switch(p->tok->type)
+                while(!tok_is(p, TOKEN_RBRACKET) && !tok_is(p, TOKEN_EOF))
+                {
+                    list_push(type->arg_types, parse_type(p));
+                    if(!tok_is(p, TOKEN_RBRACKET))
+                        parser_consume(p, TOKEN_COMMA, "expect `,` between tuple argument types");
+                }
+                parser_consume(p, TOKEN_RBRACKET, "expect `]` after tuple argument types");
+
+                ASTType_T* existing_tuple = get_compatible_tuple(p, type);
+                if(existing_tuple)
+                    type->callee = strdup(existing_tuple->callee);
+                else
+                {
+                    const char* tuple_tmp = "__csp_tuple_%ld__";
+                    type->callee = calloc(strlen(tuple_tmp) + 1, sizeof(char));
+                    sprintf(type->callee, tuple_tmp, p->cur_tuple_id++);
+                
+                    list_push(p->root_ref->tuple_structs, type);
+                }
+
+                break;
+            default:
+                type = init_ast_type(TY_UNDEF, p->tok);
+                type->callee = type->tok->value;
+                parser_consume(p, TOKEN_ID, "expect type or typedef");
+                break;
+        }
+
+parse_array_ty:
+    if(tok_is(p, TOKEN_LBRACKET))
     {
-        case TOKEN_FN:
-            type = parse_lambda_type(p);
-            break;
-        case TOKEN_STRUCT:
-            type = parse_struct_type(p);
-            break;
-        case TOKEN_ENUM:
-            type = parse_enum_type(p);
-            break;
-        case TOKEN_STAR:
-            type = init_ast_type(TY_PTR, p->tok);
-            parser_advance(p);
-            type->base = parse_type(p);
-            break;
-        case TOKEN_LBRACKET:
-            type = init_ast_type(TY_ARR, p->tok);
-            parser_advance(p);
-            if(!tok_is(p, TOKEN_RBRACKET))
-                type->num_indices = parse_expr(p, LOWEST, TOKEN_RBRACKET);
-            parser_consume(p, TOKEN_RBRACKET, "expect `]` after array type");
-            type->base = parse_type(p);
-            break;
-        default:
-            type = init_ast_type(TY_UNDEF, p->tok);
-            type->callee = type->tok->value;
-            parser_consume(p, TOKEN_ID, "expect type or typedef");
-            break;
+        ASTType_T* arr_type = init_ast_type(TY_ARR, p->tok);
+        parser_advance(p);
+        if(!tok_is(p, TOKEN_RBRACKET))
+            arr_type->num_indices = parse_expr(p, LOWEST, TOKEN_RBRACKET);
+        parser_consume(p, TOKEN_RBRACKET, "expect `]` after array type");
+        arr_type->base = type;
+        type = arr_type;
+
+        // repeat for arrays of arrays
+        goto parse_array_ty;
     }
 
     return type;
@@ -472,6 +550,7 @@ static ASTObj_T* parse_fn(Parser_T* p)
 {
     ASTObj_T* fn = parse_fn_def(p);
 
+    p->cur_fn = fn;
     fn->body = parse_stmt(p);
 
     return fn;
@@ -513,11 +592,11 @@ static ASTNode_T* parse_block(Parser_T* p)
 
     parser_consume(p, TOKEN_LBRACE, "expect `{` at the beginning of a block statement");
 
-    ASTNode_T* prev_block = p->current_block;
-    p->current_block = block;
+    ASTNode_T* prev_block = p->cur_block;
+    p->cur_block = block;
     while(p->tok->type != TOKEN_RBRACE)
         list_push(block->stmts, parse_stmt(p));
-    p->current_block = prev_block;
+    p->cur_block = prev_block;
 
     parser_consume(p, TOKEN_RBRACE, "expect `}` at the end of a block statement");
 
@@ -531,7 +610,15 @@ static ASTNode_T* parse_return(Parser_T* p)
     parser_consume(p, TOKEN_RETURN, "expect `ret` or `<-` to return");
 
     if(!tok_is(p, TOKEN_SEMICOLON))
-        ret->return_val = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+    {
+        if(p->cur_fn->return_type->kind == TY_VOID)
+            throw_error(ERR_TYPE_CAST_WARN, ret->tok, "cannot return a value from a function with type `void`, expect `;`");
+
+        ASTNode_T* cast = init_ast_node(ND_CAST, p->tok);
+        cast->left = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+        cast->data_type = p->cur_fn->return_type;
+        ret->return_val = cast;
+    }
     parser_consume(p, TOKEN_SEMICOLON, "expect `;` after return statement");
 
     return ret;
@@ -584,17 +671,17 @@ static ASTNode_T* parse_for(Parser_T* p)
 
     parser_consume(p, TOKEN_FOR, "expect `for` for a for loop statement");
 
-    size_t num_locals = p->current_block->locals->size;
+    size_t num_locals = p->cur_block->locals->size;
     if(!tok_is(p, TOKEN_SEMICOLON))
     {
         ASTNode_T* init_stmt = parse_stmt(p);
         if(init_stmt->kind != ND_EXPR_STMT)
             throw_error(ERR_SYNTAX_ERROR, init_stmt->tok, "can only have expression-like statements in for-loop initializer");
-        if(p->current_block->locals->size != num_locals)
+        if(p->cur_block->locals->size != num_locals)
         {
             // the before statement was a local definition, which is allowed
-            p->current_block->locals->size = num_locals;
-            loop->counter_var = p->current_block->locals->items[num_locals];
+            p->cur_block->locals->size = num_locals;
+            loop->counter_var = p->cur_block->locals->items[num_locals];
         }
         loop->init_stmt = init_stmt;
     } 
@@ -704,9 +791,9 @@ static ASTNode_T* parse_local(Parser_T* p)
     
     parser_consume(p, TOKEN_SEMICOLON, "expect `;` after variable declaration");
 
-    if(!p->current_block || p->current_block->kind != ND_BLOCK)
+    if(!p->cur_block || p->cur_block->kind != ND_BLOCK)
         throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot define a local variable outside a block statement");
-    list_push(p->current_block->locals, local);
+    list_push(p->cur_block->locals, local);
     return value;
 }
 

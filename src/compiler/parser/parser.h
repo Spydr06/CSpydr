@@ -17,9 +17,11 @@ struct PARSER_STRUCT
     size_t token_i;
     ASTProg_T* root_ref;
     Token_T* tok;
-    ASTNode_T* current_block;
+    ASTNode_T* cur_block;
+    ASTObj_T* cur_fn;
 
     size_t cur_lambda_id;
+    size_t cur_tuple_id;
 };
 
 typedef enum {
