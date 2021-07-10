@@ -30,6 +30,8 @@ const struct { const char* str; TokenType_T type; } keywords[] = {
     {"macro", TOKEN_MACRO},
     {"sizeof", TOKEN_SIZEOF},
     {"typeof", TOKEN_TYPEOF},
+    {"break", TOKEN_BREAK},
+    {"continue", TOKEN_CONTINUE},
     {NULL, TOKEN_EOF}   // end of array indicator
 };
 

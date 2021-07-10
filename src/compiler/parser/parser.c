@@ -710,6 +710,24 @@ static ASTNode_T* parse_local(Parser_T* p)
     return value;
 }
 
+static ASTNode_T* parse_break(Parser_T* p)
+{
+    ASTNode_T* break_stmt = init_ast_node(ND_BREAK, p->tok);
+    parser_consume(p, TOKEN_BREAK, "expect `break` keyword");
+    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after break statement");
+
+    return break_stmt;
+}
+
+static ASTNode_T* parse_continue(Parser_T* p)
+{
+    ASTNode_T* continue_stmt = init_ast_node(ND_CONTINUE, p->tok);
+    parser_consume(p, TOKEN_CONTINUE, "expect `continue` keyword");
+    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after break statement");
+
+    return continue_stmt;
+}
+
 static ASTNode_T* parse_stmt(Parser_T* p)
 {
 
@@ -737,6 +755,16 @@ static ASTNode_T* parse_stmt(Parser_T* p)
                 ASTNode_T* stmt = init_ast_node(ND_EXPR_STMT, assignment->tok);
                 stmt->expr = assignment;
                 return stmt;
+            }
+        case TOKEN_BREAK:
+            return parse_break(p);
+        case TOKEN_CONTINUE:
+            return parse_continue(p);
+        case TOKEN_SEMICOLON:   // skip random semicolons in the code
+            {
+                ASTNode_T* noop = init_ast_node(ND_NOOP, p->tok);
+                parser_advance(p);
+                return noop;
             }
         default:
             return parse_expr_stmt(p);

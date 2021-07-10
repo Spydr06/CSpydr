@@ -82,6 +82,8 @@ typedef enum TOKEN_TYPE {
     TOKEN_TYPEOF,       // typeof
     TOKEN_WHILE,        // while
     TOKEN_FOR,          // for
+    TOKEN_CONTINUE,     // continue
+    TOKEN_BREAK,        // break
 
     TOKEN_ERROR,        // error handling token
     TOKEN_EOF,          // end of file

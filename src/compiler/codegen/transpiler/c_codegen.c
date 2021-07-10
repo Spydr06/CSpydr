@@ -563,6 +563,12 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
 
             println(cg, "break;");
             break;
+        case ND_BREAK:
+            println(cg, "break;");
+            break;
+        case ND_CONTINUE: 
+            println(cg, "continue;");
+            break;
         case ND_NOOP:
             break;
         default:
