@@ -91,21 +91,6 @@ cspydr run hello-world.csp
 
 *(I will write a proper documentation in the future!)*
 
-## Scripting
-
-Scripting in CSpydr is easy on linux. To make a file runnable by CSpydr, add following comment to the first line of the main source file:
-```bash
-#!/usr/bin/cspydr run
-```
-Then make the file executable:
-```bash
-chmod +x <your script>
-```
-Finally, you can just launch it like any other script.
-```bash
-./<your script>
-```
-
 ## Editor support
 
 CSpydr currently only supports Visual Studio Code, since thats the code editor I personally use for developing. I will add support for other editors later on.
