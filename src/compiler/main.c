@@ -32,6 +32,8 @@
 #define CSPYDR_GIT_REPOSITORY "https://github.com/spydr06/cspydr.git"
 #define CSPYDR_GIT_DEVELOPER "https://github.com/spydr06"
 
+#define DEFAULT_COMPILE_TYPE CT_TRANSPILE
+
 const char* usage_text = COLOR_BOLD_WHITE "Usage:" COLOR_RESET " cspydr [run, build, debug] <input file> [<flags>]\n"
                          "       cspydr [--help, --info, --version]\n";
 
@@ -142,7 +144,7 @@ int main(int argc, char* argv[])
 
     // get the action to perform
     Action_T action = AC_UNDEF;
-    CompileType_T ct = CT_LLVM;
+    CompileType_T ct = DEFAULT_COMPILE_TYPE;
     for(int i = 0; i < AC_UNDEF; i++)
         if(streq(argv[1], action_table[i].as_str))
             action = action_table[i].ac;
