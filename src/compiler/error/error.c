@@ -17,6 +17,7 @@ static struct { const char* as_str; bool force_exit; } error_types[ERR_INTERNAL 
     [ERR_ILLEGAL_TYPE_CAST] = {"illegal cast", true},
     [ERR_TYPE_CAST_WARN]    = {"cast warning", false},
     [ERR_INTERNAL]          = {"internal", true},
+    [ERR_TYPE_ERROR]        = {"type", true},
     [ERR_MISC]              = {"misc", false}       // miscellaneous errors, who cannot get categorized
 };
 

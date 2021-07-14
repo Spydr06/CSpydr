@@ -187,6 +187,8 @@ LLVMTypeRef llvm_gen_type(LLVMCodegenData_T* cg, ASTType_T* ty)
         case TY_STRUCT:
             return NULL;
         case TY_UNDEF:
+        case TY_TUPLE:
+        case TY_LAMBDA:
             //TODO:
             return NULL;
     }

@@ -126,11 +126,12 @@ struct AST_NODE_STRUCT
         char* callee;
 
         // literals
-        int int_val;
-        float float_val;
-        bool bool_val;
-        char* str_val;  // also used for chars
-
+        union {
+            int int_val;
+            float float_val;
+            bool bool_val;
+            char* str_val;  // also used for chars
+        };
         bool is_constant;
 
         // op
@@ -235,6 +236,8 @@ void      free_ast_obj(ASTObj_T* obj);
 
 ASTProg_T* init_ast_prog(const char* main_file_path, const char* target_binary, List_T* imports);
 void       free_ast_prog(ASTProg_T* prog);
+
+const char* obj_kind_to_str(ASTObjKind_T kind);
 
 void merge_ast_progs(ASTProg_T* dest, ASTProg_T* src);
 

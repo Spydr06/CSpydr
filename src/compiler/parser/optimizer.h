@@ -5,11 +5,15 @@
 #include "../ast/ast.h"
 #include "../error/error.h"
 
+typedef struct SCOPE_STRUCT
+{
+    List_T* objs;
+    size_t depth;
+} Scope_T;
+
 typedef struct OPTIMIZER_STRUCT
 {
-    List_T* vars;
-    List_T* fns;
-    List_T* tdefs;
+    Scope_T* scope;
 
     int num_errors_found;
 } Optimizer_T;

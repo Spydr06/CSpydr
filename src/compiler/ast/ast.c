@@ -233,3 +233,21 @@ void merge_ast_progs(ASTProg_T* dest, ASTProg_T* src)
     free_list(src->objs);
     free(src);
 }
+
+const char* obj_kind_to_str(ASTObjKind_T kind)
+{
+    switch(kind)
+    {
+        case OBJ_FUNCTION:
+            return "function";
+        case OBJ_TYPEDEF:
+            return "typedef";
+        case OBJ_LOCAL: 
+            return "local variable";
+        case OBJ_GLOBAL:
+            return "global variable";
+        case OBJ_FN_ARG:
+            return "argument";
+    }
+    return "NULL";
+}
