@@ -30,3 +30,9 @@ fn lambda_test(lambda: fn<i32>(i32, i32)) {
 fn tuple_test(): [i32, bool] {
     <- {4, true};
 }
+
+# Some plans for generics:
+##fn generic_test<T>() {
+    let x: T = 0;
+    printf("typeof t: %s\n", typeof T);
+}##

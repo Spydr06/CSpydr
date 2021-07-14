@@ -5,8 +5,11 @@
 #include "../ast/types.h"
 #include "../platform/platform_bindings.h"
 
+#include <bits/floatn-common.h>
 #include <string.h>
 #include <stdio.h>
+#include <limits.h>
+#include <float.h>
 
 #ifdef __linux__
     #include <libgen.h>
@@ -911,19 +914,53 @@ static ASTNode_T* parse_id(Parser_T* p)
 
 static ASTNode_T* parse_int_lit(Parser_T* p)
 {
-    ASTNode_T* int_lit = init_ast_node(ND_INT, p->tok);
-    int_lit->int_val = atoi(p->tok->value);
-    int_lit->is_constant = true;
+    ASTNode_T* lit = init_ast_node(ND_INT, p->tok);
     parser_consume(p, TOKEN_INT, "expect integer literal (0, 1, 2, ...)");
-    return int_lit;
+    long long num = atoll(lit->tok->value);
+    if(num <= INT_MAX)
+    {
+        lit->kind = ND_INT;
+        lit->int_val = (int) num;
+        lit->data_type = get_primitive_type("i32");
+    }
+    else if(num <= LONG_MAX)
+    {
+        lit->kind = ND_LONG;
+        lit->long_val = (long) num;
+        lit->data_type = get_primitive_type("i64");
+    }
+    else
+    {
+        lit->kind = ND_LLONG;
+        lit->llong_val = num;
+        lit->data_type = get_primitive_type("u64");
+    }
+
+    lit->is_constant = true;
+    return lit;
 }
 
 static ASTNode_T* parse_float_lit(Parser_T* p)
 {
-    ASTNode_T* float_lit = init_ast_node(ND_FLOAT, p->tok);
-    float_lit->float_val = atof(p->tok->value);
+    ASTNode_T* lit = init_ast_node(ND_FLOAT, p->tok);
     parser_consume(p, TOKEN_INT, "expect float literal (0, 1, 2.3, ...)");
-    return float_lit;
+    double num; 
+    sscanf(lit->tok->value, "%lf", &num); 
+
+    if(num <= FLT_MAX)
+    {
+        lit->kind = ND_FLOAT;
+        lit->float_val = (float) num;
+        lit->data_type = get_primitive_type("f32");
+    }
+    else
+    {
+        lit->kind = ND_DOUBLE;
+        lit->double_val = num;
+        lit->data_type = get_primitive_type("f64");
+    }
+
+    return lit;
 }
 
 static ASTNode_T* parse_bool_lit(Parser_T* p)

@@ -375,8 +375,17 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
         case ND_INT:
             print(cg, "%d", node->int_val);
             break;
+        case ND_LONG:
+            print(cg, "%ldL", node->long_val);
+            break;
+        case ND_LLONG:
+            print(cg, "%lldLL", node->llong_val);
+            break;
         case ND_FLOAT:
             print(cg, "%f", node->float_val);
+            break;
+        case ND_DOUBLE:
+            print(cg, "%lf", node->double_val);
             break;
         case ND_BOOL:
             print(cg, node->bool_val ? "true" : "false");

@@ -16,7 +16,10 @@ typedef enum {
 
     // literals
     ND_INT,     // 0
+    ND_LONG,
+    ND_LLONG, 
     ND_FLOAT,   // 0.1
+    ND_DOUBLE,
     ND_BOOL,    // true, false
     ND_CHAR,    // 'x'
     ND_STR,     // "..."
@@ -128,7 +131,10 @@ struct AST_NODE_STRUCT
         // literals
         union {
             int int_val;
+            long long_val;
+            long long llong_val;
             float float_val;
+            double double_val;
             bool bool_val;
             char* str_val;  // also used for chars
         };
