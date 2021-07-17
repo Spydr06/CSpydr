@@ -8,7 +8,7 @@ typedef struct LIST_STRUCT
     void** items;
     size_t size;
     size_t item_size;
-} List_T;
+} __attribute__((packed)) List_T;
 
 List_T* init_list(size_t itemsize);
 void free_list(List_T* list);

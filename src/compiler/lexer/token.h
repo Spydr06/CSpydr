@@ -96,7 +96,7 @@ typedef struct TOKEN_STRUCT {
     TokenType_T type;
 
     SrcFile_T* source;
-} Token_T;
+} __attribute__((packed)) Token_T;
 
 typedef Token_T** TokVec_T;
 

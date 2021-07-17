@@ -19,15 +19,15 @@ char* cc_flags = DEFAULT_CC_FLAGS;
                         "#include <stdlib.h>"
 
 static const char* primitive_to_c_type[TY_UNDEF + 1] = {
-    [TY_I8]  = "int8_t" ,
-    [TY_I16] = "int16_t",
-    [TY_I32] = "int32_t",
-    [TY_I64] = "int64_t",
+    [TY_I8]  = "char" ,
+    [TY_I16] = "short",
+    [TY_I32] = "int",
+    [TY_I64] = "long",
 
-    [TY_U8]  = "u_int8_t" ,
-    [TY_U16] = "u_int16_t",
-    [TY_U32] = "u_int32_t",
-    [TY_U64] = "u_int64_t",
+    [TY_U8]  = "unsigned char" ,
+    [TY_U16] = "unsigned short",
+    [TY_U32] = "unsigned int",
+    [TY_U64] = "unsigned long",
 
     [TY_F32] = "float",
     [TY_F64] = "double",
@@ -319,6 +319,9 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
     switch(obj->kind)
     {
         case OBJ_GLOBAL:
+            if(obj->is_constant)
+                print(cg, "const ");
+
             c_gen_type(cg, obj->data_type, "");
             print(cg, " %s", obj->callee);
             if(obj->data_type->kind == TY_ARR)

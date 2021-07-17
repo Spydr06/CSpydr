@@ -282,6 +282,7 @@ ASTProg_T* parse(List_T* files, bool is_silent)
             case TOKEN_TYPE:
                 list_push(prog->objs, parse_typedef(p));
                 break;
+            case TOKEN_CONST:
             case TOKEN_LET:
                 list_push(prog->objs, parse_global(p));
                 break;
@@ -292,7 +293,7 @@ ASTProg_T* parse(List_T* files, bool is_silent)
                 list_push(prog->objs, parse_extern(p));
                 break;
             default:
-                throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect [import, type, let, fn]", p->tok->value);
+                throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect [import, type, let, const, fn]", p->tok->value);
         }
     }
 
@@ -562,7 +563,15 @@ static ASTObj_T* parse_fn(Parser_T* p)
 static ASTObj_T* parse_global(Parser_T* p)
 {
     ASTObj_T* global = init_ast_obj(OBJ_GLOBAL, p->tok);
-    parser_consume(p, TOKEN_LET, "expect `let` keyword for variable definition");
+    if(p->tok->type == TOKEN_LET)
+        parser_advance(p);
+    else if(p->tok->type == TOKEN_CONST)
+    {
+        global->is_constant = true;
+        parser_advance(p);
+    }
+    else
+        throw_error(ERR_SYNTAX_ERROR, p->tok, "expect `let` keyword for variable definition");
     
     global->callee = strdup(p->tok->value);
     parser_consume(p, TOKEN_ID, "expect variable name");
@@ -770,7 +779,15 @@ static ASTNode_T* parse_expr_stmt(Parser_T* p)
 static ASTNode_T* parse_local(Parser_T* p)
 {
     ASTObj_T* local = init_ast_obj(OBJ_LOCAL, p->tok);
-    parser_consume(p, TOKEN_LET, "expect `let` keyword for variable definition");
+    if(p->tok->type == TOKEN_LET)
+        parser_advance(p);
+    else if(p->tok->type == TOKEN_CONST)
+    {
+        local->is_constant = true;
+        parser_advance(p);
+    }
+    else
+        throw_error(ERR_SYNTAX_ERROR, p->tok, "expect `let` keyword for variable definition");
     
     local->callee = strdup(p->tok->value);
     ASTNode_T* id = init_ast_node(ND_ID, p->tok);
@@ -837,6 +854,7 @@ static ASTNode_T* parse_stmt(Parser_T* p)
             return parse_while(p);
         case TOKEN_MATCH:
             return parse_match(p);
+        case TOKEN_CONST:
         case TOKEN_LET:
             {
                 ASTNode_T* assignment = parse_local(p);

@@ -166,7 +166,7 @@ ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok)
     obj->args = NULL;
     obj->body = NULL;
 
-    obj->is_mutable = true;
+    obj->is_constant = false;
 
     return obj;
 }

@@ -175,7 +175,7 @@ struct AST_NODE_STRUCT
 
         // calls, array literals
         List_T* args;   // list of ASTNode_Ts
-};
+} __attribute__((packed));
 
 struct AST_TYPE_STRUCT 
 {
@@ -198,7 +198,7 @@ struct AST_TYPE_STRUCT
 
     // enums, structs
     List_T* members;    // list of ASTNode_Ts
-};
+} __attribute__((packed));
 
 struct AST_OBJ_STRUCT 
 {
@@ -209,7 +209,7 @@ struct AST_OBJ_STRUCT
     bool is_extern;
 
     // variables
-    bool is_mutable;
+    bool is_constant;
     ASTType_T* data_type;
     ASTNode_T* value;
 
@@ -217,7 +217,7 @@ struct AST_OBJ_STRUCT
     ASTType_T* return_type;
     List_T* args;           // list of ASTObj_Ts
     ASTNode_T* body;
-};
+} __attribute__((packed));
 
 typedef struct AST_PROG_STRUCT
 {

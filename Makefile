@@ -30,7 +30,7 @@ LLVM_LDFLAGS = `llvm-config --ldflags --libs core executionengine interpreter an
 LLVM_CFLAGS = `llvm-config --cflags`
 LLVM_CPPFLAGS = `llvm-config --cppflags`
 
-CXXFLAGS ?= -DDEBUG -Wall -fPIC -O0 -I$(LIB_DIR)
+CXXFLAGS ?= -m64 -DDEBUG -Wall -fPIC -O0 -I$(LIB_DIR)
 
 # Object files
 OBJS :=   $(SRCS:%=$(BUILD_DIR)/%.o)
