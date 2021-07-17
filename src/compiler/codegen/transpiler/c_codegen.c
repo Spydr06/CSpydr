@@ -416,6 +416,16 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, ")");
             break;
         case ND_ASSIGN:
+            c_gen_expr(cg, node->left);
+            print(cg, "=");
+            if(node->data_type)
+            {
+                print(cg, "(");
+                c_gen_type(cg, node->data_type, "");
+                print(cg, ")");
+            }
+            c_gen_expr(cg, node->right);
+            break;
         case ND_ADD:
         case ND_SUB:
         case ND_DIV:

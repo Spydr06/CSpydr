@@ -276,7 +276,7 @@ void compile_llvm(char* path, char* target, Action_T action, bool print_llvm, bo
 
     for(size_t i = 0; i < files->size; i++)
         free_srcfile(files->items[i]);
-    free_ast_prog(ast);
+   // free_ast_prog(ast);
 }
 
 void transpile_c(char* path, char* target, Action_T action, bool print_c, bool silent)
@@ -299,5 +299,5 @@ void transpile_c(char* path, char* target, Action_T action, bool print_c, bool s
     for(size_t i = 0; i < files->size; i++)
         free_srcfile(files->items[i]);
     free_c_cg(cg);
-    free_ast_prog(ast);
+    // free_ast_prog(ast);
 }

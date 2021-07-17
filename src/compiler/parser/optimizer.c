@@ -9,6 +9,16 @@
 #define MAX(a, b) (a > b ? a : b)
 #define MIN(a, b) (a < b ? a : b)
 
+#define TYPENAME_REDEF(obj, found)                                                                                          \
+        throw_error(ERR_REDEFINITION, obj->tok, "redefinition of typename \"%s\", already defined as: at: [%s%s%ld:%ld]",   \
+            obj->callee,                                                                                                    \
+            obj_kind_to_str(found->kind),                                                                                   \
+            strcmp(found->tok->source->path, obj->tok->source->path) == 0 ? "" : obj->tok->source->path,                    \
+            strcmp(found->tok->source->path, obj->tok->source->path) == 0 ? "" : ":",                                       \
+            obj->tok->line,                                                                                                 \
+            obj->tok->pos                                                                                                   \
+        )
+
 Optimizer_T* init_optimizer(void)
 {
     Optimizer_T* o = malloc(sizeof(struct OPTIMIZER_STRUCT));
@@ -17,6 +27,8 @@ Optimizer_T* init_optimizer(void)
     o->scope = malloc(sizeof(struct SCOPE_STRUCT)); 
     o->scope->objs = init_list(sizeof(struct AST_OBJ_STRUCT*)),
     o->scope->depth = 0;
+    
+    o->cur_fn = NULL;
 
     return o;
 }
@@ -31,6 +43,7 @@ static inline void begin_scope(Scope_T* scope) { scope->depth++; }
 static inline void end_scope(Scope_T* scope) { scope->depth--; }
 static inline void pop_obj(Scope_T* scope) { scope->objs->size--; }
 static inline size_t scope_size(Scope_T* scope) { return scope->objs->size; }
+static void optimize_expr(Optimizer_T* o, ASTNode_T* expr);
 
 static ASTObj_T* find_obj(Scope_T* scope, char* callee);
 
@@ -38,22 +51,16 @@ static inline void push_obj(Scope_T* scope, ASTObj_T* obj)
 {   
     ASTObj_T* found = find_obj(scope, obj->callee);
     if(found)
-        throw_error(ERR_REDEFINITION, obj->tok, "redefinition of typename \"%s\", already defined as: at: [%s%s%ld:%ld]",
-            obj->callee,
-            obj_kind_to_str(found->kind),
-            strcmp(found->tok->source->path, obj->tok->source->path) == 0 ? "" : obj->tok->source->path,
-            strcmp(found->tok->source->path, obj->tok->source->path) == 0 ? "" : ":",
-            obj->tok->line,
-            obj->tok->pos
-        );
+        TYPENAME_REDEF(obj, found);
     else
         list_push(scope->objs, obj); 
 }
 
-
 static inline ASTObj_T* want_fn(ASTObj_T* obj, Token_T* call_tok) 
 { 
-    if(obj->kind == OBJ_FUNCTION) 
+    if(!obj)
+        throw_error(ERR_UNDEFINED, call_tok, "undefined function `%s`", call_tok->value);
+    else if(obj->kind == OBJ_FUNCTION) 
         return obj; 
     else 
         throw_error(ERR_TYPE_ERROR, call_tok, "\"%s\" is expected to be a function, got: %s", obj->callee, obj_kind_to_str(obj->kind)); 
@@ -62,7 +69,9 @@ static inline ASTObj_T* want_fn(ASTObj_T* obj, Token_T* call_tok)
 
 static inline ASTObj_T* want_var(ASTObj_T* obj, Token_T* call_tok) 
 {
-    if(obj->kind == OBJ_FN_ARG || obj->kind == OBJ_LOCAL || obj->kind == OBJ_GLOBAL)
+    if(!obj)
+        throw_error(ERR_UNDEFINED, call_tok, "undefined variable `%s`", call_tok->value);
+    else if(obj->kind == OBJ_FN_ARG || obj->kind == OBJ_LOCAL || obj->kind == OBJ_GLOBAL)
         return obj;
     else
         throw_error(ERR_TYPE_ERROR, call_tok, "\"%s\" is expected to be a variable, got: %s", obj->callee, obj_kind_to_str(obj->kind)); 
@@ -71,7 +80,9 @@ static inline ASTObj_T* want_var(ASTObj_T* obj, Token_T* call_tok)
 
 static inline ASTObj_T* want_typedef(ASTObj_T* obj, Token_T* call_tok) 
 {
-    if(obj->kind == OBJ_TYPEDEF)
+    if(!obj)
+        throw_error(ERR_UNDEFINED, call_tok, "undefined type `%s`", call_tok->value);
+    else if(obj->kind == OBJ_TYPEDEF)
         return obj;
     else
         throw_error(ERR_TYPE_ERROR, call_tok, "\"%s\" is expected to be a type definition, got: %s", obj->callee, obj_kind_to_str(obj->kind)); 
@@ -84,7 +95,7 @@ static void register_tdef(Optimizer_T* o, ASTObj_T* ty);
 
 static void check_main_fn(Optimizer_T* o);
 static void optimize_stmt(Optimizer_T* o, ASTNode_T* stmt);
-static void optimize_local(Optimizer_T* o, ASTNode_T* local);
+static void optimize_local(Optimizer_T* o, ASTObj_T* local);
 
 void optimize(ASTProg_T* ast)
 {
@@ -116,6 +127,8 @@ void optimize(ASTProg_T* ast)
         ASTObj_T* fn = ast->objs->items[i];
         if(fn->kind != OBJ_FUNCTION || fn->is_extern)
             continue;
+        
+        o->cur_fn = fn;
         
         if(fn->body->kind != ND_BLOCK)
         {
@@ -244,9 +257,9 @@ static void check_main_fn(Optimizer_T* o)
     }
 }
 
-static void optimize_local(Optimizer_T* o, ASTNode_T* local)
+static void optimize_local(Optimizer_T* o, ASTObj_T* local)
 {
-
+    push_obj(o->scope, local);
 }
 
 static void optimize_stmt(Optimizer_T* o, ASTNode_T* stmt)
@@ -254,10 +267,20 @@ static void optimize_stmt(Optimizer_T* o, ASTNode_T* stmt)
     switch(stmt->kind)
     {
         case ND_BLOCK:
+            for(size_t i = 0; i < stmt->locals->size; i++)
+                optimize_local(o, stmt->locals->items[i]);
+            for(size_t i = 0; i < stmt->stmts->size; i++)
+                optimize_stmt(o, stmt->stmts->items[i]);
             break;
         case ND_EXPR_STMT:
             break;
         case ND_RETURN:
+            if(stmt->return_val)
+            {
+                optimize_expr(o, stmt->return_val);
+                if(!check_type_compatibility(stmt->return_val->data_type, o->cur_fn->return_type))
+                    throw_error(ERR_ILLEGAL_TYPE_CAST, stmt->return_val->tok, "return statement of type %d is not compatible with function return type %d", stmt->return_val->kind, o->cur_fn->return_type);
+            }
             break;
         case ND_IF:
             break;
@@ -265,6 +288,23 @@ static void optimize_stmt(Optimizer_T* o, ASTNode_T* stmt)
             break;
         case ND_LOOP:
             break;  
+        case ND_NOOP:
+            break;
+        default:
+            break;
+    }
+}
+
+static void optimize_expr(Optimizer_T* o, ASTNode_T* expr)
+{
+    switch(expr->kind)
+    {
+        case ND_ID:
+            {
+                ASTObj_T* obj = want_var(find_obj(o->scope, expr->callee), expr->tok);
+                expr->data_type = obj->data_type;
+            }
+        // TODO: evaluate all expressions
         default:
             break;
     }

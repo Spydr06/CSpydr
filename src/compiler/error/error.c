@@ -13,7 +13,7 @@ static struct { const char* as_str; bool force_exit; } error_types[ERR_INTERNAL 
     [ERR_SYNTAX_ERROR]      = {"syntax", true},
     [ERR_SYNTAX_WARNING]    = {"warning", false},
     [ERR_UNDEFINED]         = {"undef", true},
-    [ERR_REDEFINITION]      = {"redef", false},
+    [ERR_REDEFINITION]      = {"redef", true},
     [ERR_ILLEGAL_TYPE_CAST] = {"illegal cast", true},
     [ERR_TYPE_CAST_WARN]    = {"cast warning", false},
     [ERR_INTERNAL]          = {"internal", true},

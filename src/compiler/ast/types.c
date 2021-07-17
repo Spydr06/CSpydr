@@ -1,6 +1,7 @@
 #include "types.h"
 #include "ast.h"
 
+#include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
 
@@ -72,6 +73,33 @@ const int type_byte_size_map[NUM_TYPES] = { // a array to find the size in bytes
     [TY_STRUCT] = 0
 };
 
+const bool type_compatibility_map[NUM_TYPES][NUM_TYPES] = {
+    //             i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, bool, void, char, ptr, array, struct, enum, lambda, tuple, undef
+    [TY_I8]     = {1,  1,   1,   1,   1,  1,   1,   1,   1,   1,   1,    0,    1,    0,   0,     0,      1,     0,     0,     1},
+    [TY_I16]    = {1,  1,   1,   1,   1,  1,   1,   1,   1,   1,   1,    0,    0,    0,   0,     0,      1,     0,     0,     1},
+    [TY_I32]    = {1,  1,   1,   1,   1,  1,   1,   1,   1,   1,   1,    0,    0,    0,   0,     0,      1,     0,     0,     1},
+    [TY_I64]    = {1,  1,   1,   1,   1,  1,   1,   1,   1,   1,   1,    0,    0,    0,   0,     0,      1,     0,     0,     1},
+
+    [TY_U8]     = {1,  1,   1,   1,   1,  1,   1,   1,   1,   1,   1,    0,    1,    0,   0,     0,      1,     0,     0,     1},
+    [TY_U16]    = {1,  1,   1,   1,   1,  1,   1,   1,   1,   1,   1,    0,    0,    0,   0,     0,      1,     0,     0,     1},
+    [TY_U32]    = {1,  1,   1,   1,   1,  1,   1,   1,   1,   1,   1,    0,    0,    0,   0,     0,      1,     0,     0,     1},
+    [TY_U64]    = {1,  1,   1,   1,   1,  1,   1,   1,   1,   1,   1,    0,    0,    1,   0,     0,      1,     0,     0,     1},
+
+    [TY_F32]    = {1,  1,   1,   1,   1,  1,   1,   1,   1,   1,   1,    0,    0,    0,   0,     0,      0,     0,     0,     1},
+    [TY_F64]    = {1,  1,   1,   1,   1,  1,   1,   1,   1,   1,   1,    0,    0,    0,   0,     0,      0,     0,     0,     1},
+
+    [TY_BOOL]   = {1,  1,   1,   1,   1,  1,   1,   1,   1,   1,   1,    0,    1,    0,   0,     0,      1,     0,     0,     1},
+    [TY_VOID]   = {0,  0,   0,   0,   0,  0,   0,   0,   0,   0,   0,    1,    0,    0,   0,     0,      0,     0,     0,     1},
+    [TY_CHAR]   = {1,  1,   1,   1,   1,  1,   1,   1,   1,   1,   1,    0,    1,    0,   0,     0,      1,     0,     0,     1},
+    [TY_PTR]    = {0,  0,   0,   0,   0,  0,   0,   1,   0,   0,   0,    0,    0,    1,   1,     0,      0,     0,     0,     1},
+    [TY_ARR]    = {0,  0,   0,   0,   0,  0,   0,   0,   0,   0,   0,    0,    0,    1,   1,     0,      0,     0,     0,     1},
+    [TY_STRUCT] = {0,  0,   0,   0,   0,  0,   0,   0,   0,   0,   0,    0,    0,    0,   0,     1,      0,     0,     1,     1},
+    [TY_ENUM]   = {1,  1,   1,   1,   1,  1,   1,   1,   1,   1,   1,    0,    1,    0,   0,     0,      1,     0,     0,     1},
+    [TY_LAMBDA] = {0,  0,   0,   0,   0,  0,   0,   0,   0,   0,   0,    0,    0,    0,   0,     0,      0,     1,     0,     1},
+    [TY_TUPLE]  = {0,  0,   0,   0,   0,  0,   0,   0,   0,   0,   0,    0,    0,    0,   0,     1,      0,     0,     1,     1},
+    [TY_UNDEF]  = {1,  1,   1,   1,   1,  1,   1,   1,   1,   1,   1,    1,    1,    1,   1,     1,      1,     1,     1,     1},
+};
+
 ASTTypeKind_T get_datatype_from_str(char* str)
 {
     for(int i = 0; i < NUM_TYPES; i++)
@@ -85,4 +113,9 @@ ASTType_T* get_primitive_type(char* type)
 {
     ASTType_T* prim = primitives[get_datatype_from_str(type)];
     return prim;
+}
+
+bool check_type_compatibility(ASTType_T* a, ASTType_T* b)
+{
+    return type_compatibility_map[a->kind][b->kind];
 }

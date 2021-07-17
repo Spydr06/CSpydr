@@ -16,6 +16,7 @@ typedef struct OPTIMIZER_STRUCT
     Scope_T* scope;
 
     int num_errors_found;
+    ASTObj_T* cur_fn;
 } Optimizer_T;
 
 Optimizer_T* init_optimizer(void);
