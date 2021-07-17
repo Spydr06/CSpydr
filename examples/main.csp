@@ -5,7 +5,7 @@ import "string.csp";
 
 macro message() |: init_str("Hello World") :|
 
-fn main(argc: i32, argv: **char): i32 {
+fn main(argc: i32, argv: &&char): i32 {
     let string: str = message!;
     str_append(string, '!');
 
@@ -16,7 +16,7 @@ fn main(argc: i32, argv: **char): i32 {
     lambda_test(|x: i32, y: i32| i32 => ret x + y;);
     lambda_test(|x: i32, y: i32| i32 => ret x - y;);
 
-    let tuple: [i32, bool] = tuple_test();
+    let tuple: [i32, bool] = tuple_test(); 
 
     <- 0;
 }

@@ -4,10 +4,10 @@ import "types.csp";
 
 # --- the vec_data struct and vec typedef ---
 type vec_s: struct {
-    data: **void,
+    data: &&void,
     alloc: usize,
     len: usize
 };
-type vec: *vec_s;
+type vec: &vec_s;
 
 # TODO: add typeof/sizeof expressions

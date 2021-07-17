@@ -190,7 +190,7 @@ Token_T* parser_consume(Parser_T* p, TokenType_T type, const char* msg)
 
 static inline bool is_editable(ASTNodeKind_T n)
 {
-    return n == ND_ID || n == ND_MEMBER || n == ND_INDEX || n == ND_CAST || n == ND_CALL;
+    return n == ND_ID || n == ND_MEMBER || n == ND_INDEX || n == ND_CAST || n == ND_CALL || n == ND_ARRAY;
 }
 
 static inline bool is_executable(ASTNodeKind_T n)
@@ -389,6 +389,11 @@ static ASTType_T* parse_type(Parser_T* p)
     else
         switch(p->tok->type)
         {
+            case TOKEN_LPAREN:
+                parser_advance(p);
+                type = parse_type(p);
+                parser_consume(p, TOKEN_RPAREN, "expect closing `)` after data type");
+                break;
             case TOKEN_FN:
                 type = parse_lambda_type(p);
                 break;
@@ -398,7 +403,13 @@ static ASTType_T* parse_type(Parser_T* p)
             case TOKEN_ENUM:
                 type = parse_enum_type(p);
                 break;
-            case TOKEN_STAR:
+            case TOKEN_AND:
+                type = init_ast_type(TY_PTR, p->tok);
+                type->base = init_ast_type(TY_PTR, p->tok);
+                parser_advance(p);
+                type->base->base = parse_type(p);
+                break;
+            case TOKEN_REF:
                 type = init_ast_type(TY_PTR, p->tok);
                 parser_advance(p);
                 type->base = parse_type(p);

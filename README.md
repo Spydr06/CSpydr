@@ -78,7 +78,7 @@ A simple hello-world program:
 # hello-world.csp
 import "stdio";
 
-fn main(argc: i32, argv: *str): i32
+fn main(argc: i32, argv: &&char): i32
 {
     puts("Hello World!\n");
     <- 0;

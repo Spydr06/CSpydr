@@ -460,7 +460,8 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             for(size_t i = 0; i < node->args->size; i++)
             {
                 c_gen_expr(cg, node->args->items[i]);
-                print(cg, ",");
+                if(i < node->args->size -1)
+                    print(cg, ",");
             }
 
             print(cg, "}");
@@ -471,7 +472,8 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             for(size_t i = 0; i < node->args->size; i++)
             {
                 c_gen_expr(cg, node->args->items[i]);
-                print(cg, ",");
+                if(i < node->args->size -1)
+                    print(cg, ",");
             }
 
             print(cg, "}");

@@ -4,11 +4,11 @@ import "types.csp";
 
 # --- the str_s struct and str typedef ---
 type str_s: struct {
-    data: *char,
+    data: &char,
     len: usize,
     alloc: usize
 };
-type str: *str_s;
+type str: &str_s;
 # ----------------------------------------
 
 # --- a default `nil` type for strings ---
@@ -16,7 +16,7 @@ let str_nil: str = &{"\0", 0, 0}: str_s;
 # ----------------------------------------
 
 # the initializer function
-fn init_str(string: *char): str {
+fn init_str(string: &char): str {
     let s: str = malloc(sizeof str_s);
 
     if string != nil {
@@ -43,7 +43,7 @@ fn free_str(s: str) {
     free(s);
 }
 
-fn str_lit(s: str): *char {
+fn str_lit(s: str): &char {
     <- s.data;
 }
 
