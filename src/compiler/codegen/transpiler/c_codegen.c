@@ -492,6 +492,8 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, "(");
             print(cg, "(");
             c_gen_type(cg, node->data_type, "");
+            if(node->data_type->kind == TY_ARR)
+                c_gen_array_brackets(cg, node->data_type);
             print(cg, ")");
             c_gen_expr(cg, node->left);
             print(cg, ")");

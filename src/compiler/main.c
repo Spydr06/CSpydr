@@ -25,6 +25,7 @@
 #include "codegen/llvm/llvm_codegen.h"
 #include "codegen/transpiler/c_codegen.h"
 #include "platform/platform_bindings.h"
+#include "ast/xml.h"
 
 // default texts, which get shown if you enter help, info or version flags
 // links to me, the creator of CSpydr
@@ -71,6 +72,8 @@ const char* help_text = "%s"
                        "      --silent           Disables all command line output except error messages.\n"
                        "      --cc [compiler]    Sets the C compiler being used after transpiling (default: " DEFAULT_CC ")\n"
                        "      --cc-flags [flags] Sets the C compiler flags, must be last argument (default: " DEFAULT_CC_FLAGS ")\n"
+                       "      --from-xml         Instructs the compiler to construct a AST directly from a XML file (debug!!)\n"
+                       "      --to-xml           Instructs the compiler to parse the AST to a XML file (debug!!)\n"
                        "\n"
                        "If you are unsure, what CSpydr is (or how to use it), please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n";
 
@@ -92,7 +95,8 @@ typedef enum ACTION_ENUM
 typedef enum COMPILE_TYPE_ENUM
 {
     CT_LLVM,
-    CT_TRANSPILE
+    CT_TRANSPILE,
+    CT_TO_XML,
 } CompileType_T;
 
 const struct { char* as_str; Action_T ac; } action_table[AC_UNDEF] = {
@@ -109,6 +113,7 @@ extern void optimize(ASTProg_T* ast);
 
 void compile_llvm(char* path, char* target, Action_T action, bool print_llvm, bool silent);
 void transpile_c(char* path, char* target, Action_T action, bool print_c, bool silent);
+void parse_to_xml(char* path, char* target, Action_T action, bool silent);
 
 static inline bool streq(char* a, char* b)
 {
@@ -215,6 +220,8 @@ int main(int argc, char* argv[])
             cc_flags = flags;
             break;
         }
+        else if(streq(arg, "--to-xml"))
+            ct = CT_TO_XML;
         else
         {
             LOG_ERROR_F("[Error] Unknown flag \"%s\", type \"cspydr --help\" to get help.\n", argv[i]);
@@ -229,6 +236,9 @@ int main(int argc, char* argv[])
             break;
         case CT_TRANSPILE:
             transpile_c(input_file, output_file, action, print_c, silent);
+            break;
+        case CT_TO_XML:
+            parse_to_xml(input_file, output_file, action, silent);
             break;
         default:
             LOG_ERROR_F("[Error] Unknown compile type %d!\n", ct);
@@ -299,5 +309,22 @@ void transpile_c(char* path, char* target, Action_T action, bool print_c, bool s
     for(size_t i = 0; i < files->size; i++)
         free_srcfile(files->items[i]);
     free_c_cg(cg);
+    // free_ast_prog(ast);
+}
+
+void parse_to_xml(char* path, char* target, Action_T action, bool silent)
+{
+    List_T* files = init_list(sizeof(struct SRC_FILE_STRUCT*));
+    list_push(files, read_file(path));
+
+    ASTProg_T* ast = parse(files, silent);
+
+    LOG_OK_F(COLOR_BOLD_GREEN "  Emitting " COLOR_RESET "  AST as XML to \"%s\"\n", target);
+    optimize(ast);
+
+    ast_to_xml(ast, target);
+    
+    for(size_t i = 0; i < files->size; i++)
+        free_srcfile(files->items[i]);
     // free_ast_prog(ast);
 }
