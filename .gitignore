@@ -68,4 +68,5 @@ Mkfile.old
 dkms.conf
 
 # temporary file created by the compiler
+a.xml
 a.out.c

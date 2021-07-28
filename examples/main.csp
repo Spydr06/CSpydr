@@ -39,4 +39,24 @@ fn tuple_test(): [i32, bool] {
 ##fn generic_test<T>() {
     let x: T = 0;
     printf("typeof t: %s\n", typeof T);
-}##
+}
+
+type Pair: struct<K, V> {
+    key: K,
+    val: V
+}
+
+fn new_pair<K, V>(key: K, val: V): Pair {
+    let pair: Pair<K, V> = malloc(sizeof(Pair<K, V>));
+    pair.key = key;
+    pair.val = val;
+
+    return pair;
+}
+
+##
+
+# Idea for macro argument implementation:
+##
+macro x(a, b) |: printf("-> $a is %d\n-> $b is %d", $a, $b); :|
+##
