@@ -14,6 +14,7 @@
 #include <string.h>
 
 // compiler includes
+#include "globals.h"
 #include "ast/ast.h"
 #include "io/file.h"
 #include "io/io.h"
@@ -32,8 +33,6 @@
 // please be nice and don't change them without any reason. You may add yourself to the credits, if you changed something
 #define CSPYDR_GIT_REPOSITORY "https://github.com/spydr06/cspydr.git"
 #define CSPYDR_GIT_DEVELOPER "https://github.com/spydr06"
-
-#define DEFAULT_COMPILE_TYPE CT_TRANSPILE
 
 const char* usage_text = COLOR_BOLD_WHITE "Usage:" COLOR_RESET " cspydr [run, build, debug] <input file> [<flags>]\n"
                          "       cspydr [--help, --info, --version]\n";
@@ -111,9 +110,13 @@ extern const char* get_cspydr_build();
 
 extern void optimize(ASTProg_T* ast);
 
-void compile_llvm(char* path, char* target, Action_T action, bool print_llvm, bool silent);
-void transpile_c(char* path, char* target, Action_T action, bool print_c, bool silent);
-void parse_to_xml(char* path, char* target, Action_T action, bool silent);
+// generate the ast from the source file (lexing, preprocessing, parsing)
+ASTProg_T* generate_ast(char* path, char* target, bool silent);
+
+// generate the output code (c, llvm, xml)
+void generate_llvm(ASTProg_T*, char* target, Action_T action, bool print_llvm, bool silent);
+void transpile_c(ASTProg_T*, char* target, Action_T action, bool print_c, bool silent);
+void parse_to_xml(ASTProg_T*, char* target, Action_T action, bool silent);
 
 static inline bool streq(char* a, char* b)
 {
@@ -229,16 +232,18 @@ int main(int argc, char* argv[])
         }
     }
 
+    ASTProg_T* program_ast = generate_ast(input_file, output_file, silent);
+
     switch(ct)
     {
         case CT_LLVM:
-            compile_llvm(input_file, output_file, action, print_llvm, silent);
+            generate_llvm(program_ast, output_file, action, print_llvm, silent);
             break;
         case CT_TRANSPILE:
-            transpile_c(input_file, output_file, action, print_c, silent);
+            transpile_c(program_ast, output_file, action, print_c, silent);
             break;
         case CT_TO_XML:
-            parse_to_xml(input_file, output_file, action, silent);
+            parse_to_xml(program_ast, output_file, action, silent);
             break;
         default:
             LOG_ERROR_F("[Error] Unknown compile type %d!\n", ct);
@@ -251,16 +256,23 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-// sets up and runs the compilation pipeline using LLVM
-void compile_llvm(char* path, char* target, Action_T action, bool print_llvm, bool silent)
+ASTProg_T* generate_ast(char* path, char* target, bool silent)
 {
     List_T* files = init_list(sizeof(struct SRC_FILE_STRUCT*));
     list_push(files, read_file(path));
 
     ASTProg_T* ast = parse(files, silent);
-
     optimize(ast);
 
+    for(size_t i = 0; i < files->size; i++) 
+        free_srcfile(files->items[i]);
+    free_list(files);
+    return ast;
+}
+
+// sets up and runs the compilation pipeline using LLVM
+void generate_llvm(ASTProg_T* ast, char* target, Action_T action, bool print_llvm, bool silent)
+{
     LLVMCodegenData_T* cg = init_llvm_cg(ast);
     cg->print_ll = print_llvm;
     cg->silent = silent;
@@ -283,21 +295,11 @@ void compile_llvm(char* path, char* target, Action_T action, bool print_llvm, bo
     }
 
     free_llvm_cg(cg);
-
-    for(size_t i = 0; i < files->size; i++)
-        free_srcfile(files->items[i]);
-   // free_ast_prog(ast);
+    // free_ast_prog(ast);
 }
 
-void transpile_c(char* path, char* target, Action_T action, bool print_c, bool silent)
+void transpile_c(ASTProg_T* ast, char* target, Action_T action, bool print_c, bool silent)
 {
-    List_T* files = init_list(sizeof(struct SRC_FILE_STRUCT*));
-    list_push(files, read_file(path));
-
-    ASTProg_T* ast = parse(files, silent);
-
-    optimize(ast);
-
     CCodegenData_T* cg = init_c_cg(ast);
     cg->print_c = print_c;
     cg->silent = silent;
@@ -306,25 +308,14 @@ void transpile_c(char* path, char* target, Action_T action, bool print_c, bool s
     if(action == AC_RUN)
         run_c_code(cg, target);
     
-    for(size_t i = 0; i < files->size; i++)
-        free_srcfile(files->items[i]);
     free_c_cg(cg);
     // free_ast_prog(ast);
 }
 
-void parse_to_xml(char* path, char* target, Action_T action, bool silent)
+void parse_to_xml(ASTProg_T* ast, char* target, Action_T action, bool silent)
 {
-    List_T* files = init_list(sizeof(struct SRC_FILE_STRUCT*));
-    list_push(files, read_file(path));
-
-    ASTProg_T* ast = parse(files, silent);
-
     LOG_OK_F(COLOR_BOLD_GREEN "  Emitting " COLOR_RESET "  AST as XML to \"%s\"\n", target);
-    optimize(ast);
-
     ast_to_xml(ast, target);
     
-    for(size_t i = 0; i < files->size; i++)
-        free_srcfile(files->items[i]);
     // free_ast_prog(ast);
 }

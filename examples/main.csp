@@ -1,5 +1,13 @@
 # a basic test program used for developing this programming language 
 
+##
+@derive(compile_type, transpile);
+@derive(include_dirs, {
+    "./examples",
+    "std"
+});
+##
+
 import "vec.csp";
 import "string.csp";
 

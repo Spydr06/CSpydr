@@ -289,8 +289,27 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
         list_push(token_stage_3, tok);
     }
 
+    /**************************************
+    * Stage 4: evaluate compiler derives  *
+    **************************************/
+
+    List_T* token_stage_4 = init_list(sizeof(struct TOKEN_STRUCT*)); // init a new list for stage 4
+    for(size_t i = 0; i < token_stage_3->size; i++)
+    {
+        tok = token_stage_3->items[i];
+        Token_T* next = i < token_stage_3->size - 1 ? token_stage_3->items[i + 1] : NULL;
+        /* TODO: evaluate derives
+        if(tok->type == TOKEN_AT && next != NULL && next->type == TOKEN_ID && strcmp(next->value, "derive") == 0) 
+        {
+            printf ("derive found!\n");
+        }
+        */
+        list_push(token_stage_4, tok);
+    }
+
     free_list(pp->tokens);
     free_list(token_stage_2);
+    free_list(token_stage_3);
     free_preprocessor(pp);
-    return token_stage_3;
+    return token_stage_4;
 }
