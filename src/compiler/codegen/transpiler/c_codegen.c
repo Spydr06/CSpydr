@@ -296,6 +296,11 @@ static void c_gen_array_brackets(CCodegenData_T* cg, ASTType_T* ty)
 
 static void c_gen_fn_arg_list(CCodegenData_T* cg, List_T* args)
 {
+    if(args->size == 0) 
+    {
+        print(cg, "void");
+        return;
+    }
     for(size_t i = 0; i < args->size; i++)
     {
         ASTObj_T* arg = args->items[i];

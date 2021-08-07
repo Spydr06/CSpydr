@@ -43,6 +43,10 @@ fn tuple_test(): [i32, bool] {
     <- {4, true};
 }
 
+fn F() {
+
+}
+
 # Some plans for generics:
 ##fn generic_test<T>() {
     let x: T = 0;
