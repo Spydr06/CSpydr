@@ -8,6 +8,8 @@
 });
 ##
 
+# TODO: add missing C operators: >>, <<, =>>, <<=, |, &, |=, &=, ^, ^=, %, %=
+
 import "vec.csp";
 import "string.csp";
 
@@ -41,10 +43,6 @@ fn lambda_test(lambda: fn<i32>(i32, i32)) {
 
 fn tuple_test(): [i32, bool] {
     <- {4, true};
-}
-
-fn F() {
-
 }
 
 # Some plans for generics:

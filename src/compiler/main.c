@@ -23,7 +23,7 @@
 #include "version.h"
 #include "parser/parser.h"
 #include "parser/optimizer.h"
-#include "codegen/llvm/llvm_codegen.h"
+#include "codegen/llvm/llvm_c_bindings.h"
 #include "codegen/transpiler/c_codegen.h"
 #include "platform/platform_bindings.h"
 #include "ast/xml.h"
