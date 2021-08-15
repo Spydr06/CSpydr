@@ -273,18 +273,15 @@ ASTProg_T* generate_ast(char* path, char* target, bool silent)
 // sets up and runs the compilation pipeline using LLVM
 void generate_llvm(ASTProg_T* ast, char* target, Action_T action, bool print_llvm, bool silent)
 {
-    LLVMCodegenData_T* cg = init_llvm_cg(ast);
-    cg->print_ll = print_llvm;
-    cg->silent = silent;
-    llvm_gen_code(cg);
+    llvm_gen_code(ast, silent, print_llvm);
 
     switch(action)
     {
         case AC_BUILD:
-            llvm_emit_code(cg, target);
+            llvm_emit_code(target, silent);
             break;
         case AC_RUN:
-            llvm_run_code(cg);
+            llvm_run_code(silent);
             break;
         case AC_DEBUG:
             // TODO:
@@ -293,8 +290,6 @@ void generate_llvm(ASTProg_T* ast, char* target, Action_T action, bool print_llv
             LOG_ERROR_F("Unrecognized action of type [%d], exit\n", action);
             exit(1);
     }
-
-    free_llvm_cg(cg);
     // free_ast_prog(ast);
 }
 

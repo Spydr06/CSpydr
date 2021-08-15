@@ -1,38 +1,39 @@
 #include "llvm_cpp_layer.hpp"
+#include "llvm_emitter.hpp"
+#include "generators/llvm_generators.hpp"
+
 #include <memory>
-#include <iostream>
 
-void free_llvm_cg(LLVMCodegenData_T* cg)
+using namespace CSpydrLLVMCodegen; // this file can't be in the namespace, since it's the the "bridge" between C and C++
+
+std::shared_ptr<LLVMCodegenData_T> CSpydrLLVMCodegen::codegen_data = std::make_shared<LLVMCodegenData_T>();
+
+void llvm_gen_code(ASTProg_T* ast, bool silent, bool print_llvm)
 {
+    assert(codegen_data && "codegen_data is not initialized!");
+    codegen_data->silent = silent;
 
+    ProgramGenerator generator = ProgramGenerator(ast);
+    generator.generate();
+
+    if(print_llvm)
+        generator.print_code();
 }
 
-LLVMCodegenData_T* init_llvm_cg(ASTProg_T* ast)
+void llvm_emit_code(const char* target, bool silent)
 {
-    LLVMCodegenData_T* cg = (LLVMCodegenData_T*) malloc(sizeof(struct LLVM_CODEGEN_DATA_STRUCT));
-    cg->print_ll = false;
-    cg->silent = false;
+    assert(codegen_data && "codegen_data is not initialized!");
+    codegen_data->silent = silent;
 
-    std::unique_ptr<LLVMCodegen> cg_class = std::make_unique<LLVMCodegen>(ast);
-    cg->class_callback = cg_class.get();
-
-    return cg;
+    LLVMEmitter emitter = LLVMEmitter(LLVMEmitType::BIN);
+    emitter.emit(target);
 }
 
-void llvm_gen_code(LLVMCodegenData_T* cg)
+void llvm_run_code(bool silent)
 {
+    assert(codegen_data && "codegen_data is not initialized!");
+    codegen_data->silent = silent;
 
+    LLVMEmitter emitter = LLVMEmitter(LLVMEmitType::JIT);
+    emitter.emit();
 }
-
-void llvm_emit_code(LLVMCodegenData_T* cg, const char* target)
-{
-
-}
-
-void llvm_run_code(LLVMCodegenData_T* cg)
-{
-
-}
-
-LLVMCodegen::LLVMCodegen(ASTProg_T* ast)
-    : ast(ast) {}
