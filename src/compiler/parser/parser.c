@@ -880,11 +880,20 @@ static ASTNode_T* parse_stmt(Parser_T* p)
         case TOKEN_CONTINUE:
             return parse_continue(p);
         case TOKEN_SEMICOLON:   // skip random semicolons in the code
+        case TOKEN_NOOP:
             {
                 ASTNode_T* noop = init_ast_node(ND_NOOP, p->tok);
+                
+                if(tok_is(p, TOKEN_NOOP))
+                {
+                    parser_advance(p);
+                    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after `noop` statement");
+                } else 
+                {
                 parser_advance(p);
+                }
                 return noop;
-            }
+            }            
         default:
             return parse_expr_stmt(p);
     }
