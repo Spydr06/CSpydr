@@ -3,7 +3,7 @@
 namespace CSpydrLLVMCodegen 
 {
     ExpressionGenerator::ExpressionGenerator(ASTNode_T* ast_expression) 
-        : ast(ast_Expression)
+        : ast(ast_expression)
     {
     }
 
