@@ -1,4 +1,5 @@
 #include "llvm_generators.hpp"
+#include <llvm/IR/Value.h>
 
 namespace CSpydrLLVMCodegen 
 {
@@ -12,7 +13,7 @@ namespace CSpydrLLVMCodegen
     }
 
     llvm::Value ExpressionGenerator::generate() 
-    {
+    { 
     }
 }
 

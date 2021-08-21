@@ -218,7 +218,8 @@ static void register_tdef(Optimizer_T* o, ASTObj_T* ty)
 
 static void check_main_fn(Optimizer_T* o)
 {
-    ASTObj_T* main_fn = find_obj(o->scope, "main");
+    char main_name[__CSP_MAX_TOKEN_SIZE] = "main";
+    ASTObj_T* main_fn = find_obj(o->scope, main_name);
     if(!main_fn)
     {
         LOG_ERROR("Missing entry point: could not find function \"main\".\n");

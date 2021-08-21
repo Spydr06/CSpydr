@@ -2,6 +2,7 @@
 #include "../../../lib/LittleXML/lxml.h"
 #include "../io/io.h"
 #include "../io/log.h"
+#include "../platform/platform_bindings.h"
 
 const char* xml_header = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n";
 
@@ -98,6 +99,8 @@ void parse_type(ASTType_T* type, XMLNode* parent, char* tag) {
         case TY_CHAR:
             node->inner_text = "char";
             break;
+        case TY_LAMBDA:
+            break;
     }
 }
 
@@ -166,5 +169,5 @@ void ast_to_xml(ASTProg_T* ast, const char* path)
 
 ASTProg_T* xml_to_ast(const char* path)
 {
-
+    return init_ast_prog(path, DEFAULT_OUTPUT_FILE, NULL);
 }
