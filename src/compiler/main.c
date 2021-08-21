@@ -23,7 +23,7 @@
 #include "version.h"
 #include "parser/parser.h"
 #include "parser/optimizer.h"
-#include "codegen/llvm/llvm_c_bindings.h"
+#include "codegen/llvm/llvm_codegen.h"
 #include "codegen/transpiler/c_codegen.h"
 #include "platform/platform_bindings.h"
 #include "ast/xml.h"
@@ -273,15 +273,18 @@ ASTProg_T* generate_ast(char* path, char* target, bool silent)
 // sets up and runs the compilation pipeline using LLVM
 void generate_llvm(ASTProg_T* ast, char* target, Action_T action, bool print_llvm, bool silent)
 {
-    llvm_gen_code(ast, silent, print_llvm);
+    LLVMCodegenData_T* cg = init_llvm_cg(ast);
+    cg->silent = silent;
+    cg->print_ll = print_llvm;
+    llvm_gen_code(cg);
 
     switch(action)
     {
         case AC_BUILD:
-            llvm_emit_code(target, silent);
+            llvm_emit_code(cg, target);
             break;
         case AC_RUN:
-            llvm_run_code(silent);
+            llvm_run_code(cg);
             break;
         case AC_DEBUG:
             // TODO:
@@ -291,6 +294,7 @@ void generate_llvm(ASTProg_T* ast, char* target, Action_T action, bool print_llv
             exit(1);
     }
     // free_ast_prog(ast);
+    free_llvm_cg(cg);
 }
 
 void transpile_c(ASTProg_T* ast, char* target, Action_T action, bool print_c, bool silent)
@@ -311,6 +315,6 @@ void parse_to_xml(ASTProg_T* ast, char* target, Action_T action, bool silent)
 {
     LOG_OK_F(COLOR_BOLD_GREEN "  Emitting " COLOR_RESET "  AST as XML to \"%s\"\n", target);
     ast_to_xml(ast, target);
-    
+
     // free_ast_prog(ast);
 }
