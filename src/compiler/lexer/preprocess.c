@@ -188,8 +188,6 @@ static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
     Import_T* imp = init_import(next);
 
     next = token_list->items[(*i)];
-    if(next->type != TOKEN_SEMICOLON)
-        throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `;` after import file", next->value);
 
     // generate the full path to the import
     imp->import_path = get_full_import_path((char*) imp->tok->source->path, imp->tok);

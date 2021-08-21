@@ -277,7 +277,8 @@ ASTProg_T* parse(List_T* files, bool is_silent)
                 //parser_consume(p, TOKEN_STRING, "expect file to import as string");
                 //parser_consume(p, TOKEN_SEMICOLON, "expect `;` after import statement");
                 parser_advance(p);
-                parser_advance(p);
+                if(tok_is(p, TOKEN_SEMICOLON))
+                    parser_advance(p);
                 break;
             case TOKEN_TYPE:
                 list_push(prog->objs, parse_typedef(p));
@@ -475,7 +476,8 @@ static ASTObj_T* parse_typedef(Parser_T* p)
 
     tydef->data_type = parse_type(p);
 
-    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after typedef type");
+    if(tok_is(p, TOKEN_SEMICOLON))
+        parser_advance(p);
     return tydef;
 }
 
@@ -499,7 +501,8 @@ static ASTObj_T* parse_extern(Parser_T* p)
         case TOKEN_FN:
         {
             ASTObj_T* ext_fn = parse_fn_def(p);
-            parser_consume(p, TOKEN_SEMICOLON, "expect `;` after extern function declaration");
+            if(tok_is(p, TOKEN_SEMICOLON))
+                parser_advance(p);
             ext_fn->is_extern = true;
 
             return ext_fn;
@@ -597,8 +600,8 @@ static ASTObj_T* parse_global(Parser_T* p)
             throw_error(ERR_UNDEFINED, p->tok, "assigned value unknown at compile-time");*/
     }
     
-    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after variable declaration");
-
+    if(tok_is(p, TOKEN_SEMICOLON))
+        parser_advance(p);
     return global;
 }
 
@@ -641,7 +644,8 @@ static ASTNode_T* parse_return(Parser_T* p)
         cast->data_type = p->cur_fn->return_type;
         ret->return_val = cast;
     }
-    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after return statement");
+    if(tok_is(p, TOKEN_SEMICOLON))
+        parser_advance(p);
 
     return ret;
 }
@@ -781,7 +785,8 @@ static ASTNode_T* parse_expr_stmt(Parser_T* p)
     if(!is_executable(stmt->expr->kind))
         throw_error(ERR_SYNTAX_ERROR, stmt->expr->tok, "cannot treat `%s` as a statement, expect function call, assignment or similar", stmt->expr->tok->value);
 
-    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after expression statement");
+    if(tok_is(p, TOKEN_SEMICOLON))
+        parser_advance(p);
 
     return stmt;
 }
@@ -819,7 +824,8 @@ static ASTNode_T* parse_local(Parser_T* p)
         value = assignment;
     }
     
-    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after variable declaration");
+    if(tok_is(p, TOKEN_SEMICOLON))
+        parser_advance(p);
 
     if(!p->cur_block || p->cur_block->kind != ND_BLOCK)
         throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot define a local variable outside a block statement");
@@ -831,7 +837,8 @@ static ASTNode_T* parse_break(Parser_T* p)
 {
     ASTNode_T* break_stmt = init_ast_node(ND_BREAK, p->tok);
     parser_consume(p, TOKEN_BREAK, "expect `break` keyword");
-    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after break statement");
+    if(tok_is(p, TOKEN_SEMICOLON))
+        parser_advance(p);
 
     return break_stmt;
 }
@@ -840,7 +847,8 @@ static ASTNode_T* parse_continue(Parser_T* p)
 {
     ASTNode_T* continue_stmt = init_ast_node(ND_CONTINUE, p->tok);
     parser_consume(p, TOKEN_CONTINUE, "expect `continue` keyword");
-    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after break statement");
+    if(tok_is(p, TOKEN_SEMICOLON))
+        parser_advance(p);
 
     return continue_stmt;
 }
@@ -886,7 +894,8 @@ static ASTNode_T* parse_stmt(Parser_T* p)
                 if(tok_is(p, TOKEN_NOOP))
                 {
                     parser_advance(p);
-                    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after `noop` statement");
+                    if(tok_is(p, TOKEN_SEMICOLON))
+                        parser_advance(p);
                 } else 
                 {
                 parser_advance(p);

@@ -16,34 +16,34 @@ import "string.csp";
 macro message() |: init_str("Hello World") :|
 
 fn main(argc: i32, argv: &&char): i32 {
-    let string: str = message!;
-    str_append(string, '!');
+    let string: str = message!
+    str_append(string, '!')
 
-    printf("str: %s\n", str_lit(string));
+    printf("str: %s\n", str_lit(string))
 
-    free_str(string);
+    free_str(string)
 
-    lambda_test(|x: i32, y: i32| i32 => ret x + y;);
-    lambda_test(lambda_test_fn);
+    lambda_test(|x: i32, y: i32| i32 => ret x + y)
+    lambda_test(lambda_test_fn)
 
-    let tuple: [i32, bool] = tuple_test(); 
-    noop;
+    let tuple: [i32, bool] = tuple_test()
+    noop
 
-    <- 0;
+    <- 0
 }
 
-let test_arr: i32[] = [4, 5];
+let test_arr: i32[] = [4, 5]
 
 fn lambda_test_fn(x: i32, y: i32): i32 {
-    <- x - y;
+    <- x - y
 }
 
 fn lambda_test(lambda: fn<i32>(i32, i32)) {
-    printf("lambda: %d\n", lambda(test_arr[1], test_arr[0]));
+    printf("lambda: %d\n", lambda(test_arr[1], test_arr[0]))
 }
 
 fn tuple_test(): [i32, bool] {
-    <- {4, true};
+    <- {4, true}
 }
 
 # Some plans for generics:
