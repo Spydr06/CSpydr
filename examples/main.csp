@@ -1,17 +1,17 @@
 # a basic test program used for developing this programming language 
 
 ##
-@derive(compile_type, transpile);
+@derive(compile_type, transpile)
 @derive(include_dirs, {
     "./examples",
     "std"
-});
+})
 ##
 
 # TODO: add missing C operators: >>, <<, =>>, <<=, |, &, |=, &=, ^, ^=, %, %=
 
-import "vec.csp";
-import "string.csp";
+import "vec.csp"
+import "string.csp"
 
 macro message() |: init_str("Hello World") :|
 
@@ -48,8 +48,8 @@ fn tuple_test(): [i32, bool] {
 
 # Some plans for generics:
 ##fn generic_test<T>() {
-    let x: T = 0;
-    printf("typeof t: %s\n", typeof T);
+    let x: T = 0
+    printf("typeof t: %s\n", typeof T)
 }
 
 type Pair: struct<K, V> {
@@ -58,16 +58,16 @@ type Pair: struct<K, V> {
 }
 
 fn new_pair<K, V>(key: K, val: V): Pair {
-    let pair: Pair<K, V> = malloc(sizeof(Pair<K, V>));
-    pair.key = key;
-    pair.val = val;
+    let pair: Pair<K, V> = malloc(sizeof(Pair<K, V>))
+    pair.key = key
+    pair.val = val
 
-    return pair;
+    return pair
 }
 
 ##
 
 # Idea for macro argument implementation:
 ##
-macro x(a, b) |: printf("-> $a is %d\n-> $b is %d", $a, $b); :|
+macro x(a, b) |: printf("-> $a is %d\n-> $b is %d", $a, $b) :|
 ##
