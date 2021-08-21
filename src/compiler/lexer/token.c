@@ -14,7 +14,7 @@ Token_T* init_token(char* value, unsigned int line, unsigned int pos, TokenType_
     token->pos = pos;
     token->type = type;
 
-    token->value = strdup(value);
+    strcpy(token->value, value);
     token->source = source;
 
     return token;
@@ -22,7 +22,6 @@ Token_T* init_token(char* value, unsigned int line, unsigned int pos, TokenType_
 
 void free_token(Token_T* token)
 {
-    free(token->value);
     free(token);
 }
 

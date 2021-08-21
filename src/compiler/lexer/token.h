@@ -2,6 +2,7 @@
 #define CSPYDR_TOKEN_H
 
 #include "../io/file.h"
+#include "../globals.h"
 
 typedef enum TOKEN_TYPE {
     TOKEN_ID,           // names, types, etc.
@@ -91,15 +92,13 @@ typedef enum TOKEN_TYPE {
 } TokenType_T;
 
 typedef struct TOKEN_STRUCT {
-    char* value;
+    char value[__CSP_MAX_TOKEN_SIZE];
     unsigned int line;
     unsigned int pos;
     TokenType_T type;
 
     SrcFile_T* source;
 } __attribute__((packed)) Token_T;
-
-typedef Token_T** TokVec_T;
 
 Token_T* init_token(char* value, unsigned int line, unsigned int position, TokenType_T type, SrcFile_T* source);
 void free_token(Token_T* token);

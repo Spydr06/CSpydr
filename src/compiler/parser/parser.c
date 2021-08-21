@@ -316,7 +316,7 @@ static ASTType_T* parse_struct_type(Parser_T* p)
     while(!tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF))
     {
         ASTNode_T* member = init_ast_node(ND_STRUCT_MEMBER, p->tok);
-        member->callee = member->tok->value;
+        strcpy(member->callee, member->tok->value);
         parser_consume(p, TOKEN_ID, "expect struct member name");
         parser_consume(p, TOKEN_COLON, "expect `:` after struct member name");
         member->data_type = parse_type(p);
@@ -341,7 +341,7 @@ static ASTType_T* parse_enum_type(Parser_T* p)
     for(int i = 0; !tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF); i++)
     {
         ASTNode_T* member = init_ast_node(ND_ENUM_MEMBER, p->tok);
-        member->callee = member->tok->value;
+        strcpy(member->callee, member->tok->value);
         member->int_val = i;
         parser_consume(p, TOKEN_ID, "expect enum member name");
 
@@ -429,11 +429,10 @@ static ASTType_T* parse_type(Parser_T* p)
 
                 ASTType_T* existing_tuple = get_compatible_tuple(p, type);
                 if(existing_tuple)
-                    type->callee = strdup(existing_tuple->callee);
+                    strcpy(type->callee, existing_tuple->callee);
                 else
                 {
                     const char* tuple_tmp = "__csp_tuple_%ld__";
-                    type->callee = calloc(strlen(tuple_tmp) + 1, sizeof(char));
                     sprintf(type->callee, tuple_tmp, p->cur_tuple_id++);
                 
                     list_push(p->root_ref->tuple_structs, type);
@@ -442,7 +441,7 @@ static ASTType_T* parse_type(Parser_T* p)
                 break;
             default:
                 type = init_ast_type(TY_UNDEF, p->tok);
-                type->callee = type->tok->value;
+                strcpy(type->callee, type->tok->value);
                 parser_consume(p, TOKEN_ID, "expect type or typedef");
                 break;
         }
@@ -469,8 +468,8 @@ static ASTObj_T* parse_typedef(Parser_T* p)
 {
     ASTObj_T* tydef = init_ast_obj(OBJ_TYPEDEF, p->tok);
     parser_consume(p, TOKEN_TYPE, "expect `type` keyword for typedef");
-    
-    tydef->callee = strdup(p->tok->value);
+
+    strcpy(tydef->callee, p->tok->value);
     parser_consume(p, TOKEN_ID, "expect type name");
     parser_consume(p, TOKEN_COLON, "expect `:` after type name");
 
@@ -521,7 +520,7 @@ static List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok)
     while(p->tok->type != end_tok)
     {
         ASTObj_T* arg = init_ast_obj(OBJ_FN_ARG, p->tok);
-        arg->callee = strdup(p->tok->value);
+        strcpy(arg->callee, p->tok->value);
         parser_consume(p, TOKEN_ID, "expect argument name");
         parser_consume(p, TOKEN_COLON, "expect `:` after argument name");
 
@@ -542,7 +541,7 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
     ASTObj_T* fn = init_ast_obj(OBJ_FUNCTION, p->tok);
     parser_consume(p, TOKEN_FN, "expect `fn` keyword for a function definition");
 
-    fn->callee = strdup(p->tok->value);
+    strcpy(fn->callee,p->tok->value);
     parser_consume(p, TOKEN_ID, "expect function name");
 
     parser_consume(p, TOKEN_LPAREN, "expect `(` after function name");
@@ -584,7 +583,7 @@ static ASTObj_T* parse_global(Parser_T* p)
     else
         throw_error(ERR_SYNTAX_ERROR, p->tok, "expect `let` keyword for variable definition");
     
-    global->callee = strdup(p->tok->value);
+    strcpy(global->callee, p->tok->value);
     parser_consume(p, TOKEN_ID, "expect variable name");
     parser_consume(p, TOKEN_COLON, "expect `:` after variable name");
 
@@ -800,9 +799,9 @@ static ASTNode_T* parse_local(Parser_T* p)
     else
         throw_error(ERR_SYNTAX_ERROR, p->tok, "expect `let` keyword for variable definition");
     
-    local->callee = strdup(p->tok->value);
+    strcpy(local->callee, p->tok->value);
     ASTNode_T* id = init_ast_node(ND_ID, p->tok);
-    id->callee = strdup(p->tok->value);
+    strcpy(id->callee, p->tok->value);
 
     parser_consume(p, TOKEN_ID, "expect variable name");
     parser_consume(p, TOKEN_COLON, "expect `:` after variable name");
@@ -945,7 +944,7 @@ static List_T* parse_expr_list(Parser_T* p, TokenType_T end_tok)
 static ASTNode_T* parse_id(Parser_T* p)
 {
     ASTNode_T* id = init_ast_node(ND_ID, p->tok);
-    id->callee = id->tok->value;
+    strcpy(id->callee, id->tok->value);
     parser_consume(p, TOKEN_ID, "expect an identifier");
     return id;
 }
@@ -1080,7 +1079,7 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p)
     {
         // parse a lambda arguments
         ASTObj_T* arg = init_ast_obj(OBJ_FN_ARG, p->tok);
-        arg->callee = strdup(p->tok->value);
+        strcpy(arg->callee, p->tok->value);
         parser_consume(p, TOKEN_ID, "expect argument name");
         parser_consume(p, TOKEN_COLON, "expect `:` after lambda argument");
 
@@ -1098,10 +1097,9 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p)
     lambda_lit->body = parse_stmt(p);
 
     const char* callee_tmp = "__csp_lambda_lit_%ld__";
-    char* callee = calloc(strlen(callee_tmp) + 1, sizeof(char));
+    char callee[__CSP_MAX_TOKEN_SIZE];
     sprintf(callee, callee_tmp, p->cur_lambda_id++);
-
-    lambda_lit->callee = callee;
+    strcpy(lambda_lit->callee, callee);
 
     list_push(p->root_ref->lambda_literals, lambda_lit);
 

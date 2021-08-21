@@ -45,7 +45,7 @@ static inline void pop_obj(Scope_T* scope) { scope->objs->size--; }
 static inline size_t scope_size(Scope_T* scope) { return scope->objs->size; }
 static void optimize_expr(Optimizer_T* o, ASTNode_T* expr);
 
-static ASTObj_T* find_obj(Scope_T* scope, char* callee);
+static ASTObj_T* find_obj(Scope_T* scope, char callee[__CSP_MAX_TOKEN_SIZE]);
 
 static inline void push_obj(Scope_T* scope, ASTObj_T* obj) 
 {   
@@ -166,7 +166,7 @@ void optimize(ASTProg_T* ast)
     free_optimizer(o);
 }
 
-static ASTObj_T* find_obj(Scope_T* scope, char* callee)
+static ASTObj_T* find_obj(Scope_T* scope, char callee[__CSP_MAX_TOKEN_SIZE])
 {
     for(size_t i = 0; i < scope_size(scope); i++)
         if(strcmp(((ASTObj_T*)scope->objs->items[i])->callee, callee) == 0)

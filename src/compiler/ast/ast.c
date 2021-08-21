@@ -40,8 +40,6 @@ ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok)
 
     node->locals = NULL;
     node->data_type = NULL;
-    node->callee = NULL;
-    node->str_val = NULL;
     node->left = NULL;
     node->right = NULL;
     node->stmts = NULL;
@@ -66,7 +64,6 @@ void free_ast_node(ASTNode_T* node)
 
     free_sf(node->tok, free_token);
 
-    free_s(node->callee);
     free_s(node->str_val);
     free_sf(node->left, free_ast_node);
     free_sf(node->right, free_ast_node);
@@ -112,7 +109,6 @@ ASTType_T* init_ast_type(ASTTypeKind_T kind, Token_T* tok)
     type->size = type_byte_size_map[kind];
 
     type->base = NULL;
-    type->callee = NULL;
     type->arg_types = NULL;
     type->num_indices = NULL;
     type->members = NULL;
@@ -131,7 +127,6 @@ void free_ast_type(ASTType_T* type)
 
     free_token(type->tok);
     free_sf(type->base, free_ast_type);
-    free_s(type->callee);
 
     if(type->arg_types)
     {
@@ -159,7 +154,6 @@ ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok)
     obj->tok = dupl_token(tok);
     obj->is_extern = false;
 
-    obj->callee = NULL;
     obj->data_type = NULL;
     obj->value = NULL;
     obj->return_type = NULL;
@@ -178,7 +172,6 @@ void free_ast_obj(ASTObj_T* obj)
 
     free_token(obj->tok);
     
-    free_s(obj->callee);
     free_sf(obj->data_type, free_ast_type);
     free_sf(obj->value, free_ast_node);
 

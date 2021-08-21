@@ -224,11 +224,11 @@ static TokenType_T lexer_get_id_type(char* id)
 
 static Token_T* lexer_get_id(Lexer_T* lexer)
 {
-    char* buffer = calloc(1, sizeof(char));
+    char buffer[__CSP_MAX_TOKEN_SIZE];
+    strcpy(buffer, "");
 
     while(isalnum(lexer->c) || lexer->c == '_')
     {
-        buffer = realloc(buffer, (strlen(buffer) + 2) * sizeof(char));
         strcat(buffer, (char[]){lexer->c, '\0'});
         lexer_advance(lexer);
     }
@@ -241,8 +241,6 @@ static Token_T* lexer_get_id(Lexer_T* lexer)
     }
 
     Token_T* token = init_token(buffer, lexer->line, lexer->pos - 1, is_macro ? TOKEN_MACRO_CALL : lexer_get_id_type(buffer), lexer->file);
-
-    free(buffer);
     return token;
 }
 
@@ -251,7 +249,8 @@ static Token_T* lexer_get_hexadecimal(Lexer_T* lexer)
     lexer_advance(lexer);    // cut the '0x'
     lexer_advance(lexer);
 
-    char* buffer = calloc(1, sizeof(char));
+    char buffer[__CSP_MAX_TOKEN_SIZE];
+    strcpy(buffer, "");
 
     while(isxdigit(lexer->c) || lexer->c == '_')
     {
@@ -260,19 +259,15 @@ static Token_T* lexer_get_hexadecimal(Lexer_T* lexer)
             lexer_advance(lexer);
             continue;
         }
-
-        buffer = realloc(buffer, (strlen(buffer) + 2) * sizeof(char));
-        strcat(buffer, (char[]){lexer->c, '\0'});
+        strcat(buffer, (char[2]){lexer->c, '\0'});
 
         lexer_advance(lexer);
     }
 
     long decimal = strtol(buffer, NULL, 16);
-    buffer = realloc(buffer, (strlen("%ld") + 1) * sizeof(char));
     sprintf(buffer, "%ld", decimal);
 
     Token_T* token = init_token(buffer, lexer->line, lexer->pos, TOKEN_INT, lexer->file);
-    free(buffer);
     return token;
 }
 
@@ -281,7 +276,8 @@ static Token_T* lexer_get_binary(Lexer_T* lexer)
     lexer_advance(lexer);    // cut the '0b'
     lexer_advance(lexer);
     
-    char* buffer = calloc(1, sizeof(char));
+    char buffer [__CSP_MAX_TOKEN_SIZE];
+    strcpy(buffer, "");
 
     while(lexer->c == '0' || lexer->c == '1' || lexer->c == '_')
     {
@@ -291,24 +287,22 @@ static Token_T* lexer_get_binary(Lexer_T* lexer)
             continue;
         }
 
-        buffer = realloc(buffer, (strlen(buffer) + 2) * sizeof(char));
-        strcat(buffer, (char[]){lexer->c, '\0'});
+        strcat(buffer, (char[2]){lexer->c, '\0'});
 
         lexer_advance(lexer);
     }
 
     long decimal = strtol(buffer, NULL, 2);
-    buffer = realloc(buffer, (strlen("%ld") + 1) * sizeof(char));
     sprintf(buffer, "%ld", decimal);
 
     Token_T* token = init_token(buffer, lexer->line, lexer->pos, TOKEN_INT, lexer->file);
-    free(buffer);
     return token;
 }
 
 static Token_T* lexer_get_decimal(Lexer_T* lexer)
 {
-    char* buffer = calloc(1, sizeof(char));
+    char buffer[__CSP_MAX_TOKEN_SIZE];
+    strcpy(buffer, "");
     TokenType_T type = TOKEN_INT;
 
     while(isdigit(lexer->c) || lexer->c == '.' || lexer->c == '_')
@@ -319,27 +313,18 @@ static Token_T* lexer_get_decimal(Lexer_T* lexer)
             continue;
         }
 
-        buffer = realloc(buffer, (strlen(buffer) + 2) * sizeof(char));
-        strcat(buffer, (char[]){lexer->c, '\0'});
+        strcat(buffer, (char[2]){lexer->c, '\0'});
 
         if(lexer->c == '.')
         {   
             if(lexer_peek(lexer, 1) == '.')
             {
                 Token_T* token = init_token(buffer, lexer->line, lexer->pos, type, lexer->file);
-                free(buffer);
                 return token;
             }
 
             if(type == TOKEN_FLOAT)
-            {
-                Token_T* token = init_token(buffer, lexer->line, lexer->pos, type, lexer->file);
-
-                free(buffer);
-                
                 throw_error(ERR_SYNTAX_ERROR,  &(Token_T){.line = lexer->line, .pos = lexer->pos, .source = lexer->file}, "multiple `.` found in number literal");
-                return token;
-            }
 
             type = TOKEN_FLOAT;
         }
@@ -347,8 +332,6 @@ static Token_T* lexer_get_decimal(Lexer_T* lexer)
     }
 
     Token_T* token = init_token(buffer, lexer->line, lexer->pos, type, lexer->file);
-
-    free(buffer);
     return token;
 }
 
@@ -373,19 +356,18 @@ static Token_T* lexer_get_str(Lexer_T* lexer)
 {
     lexer_advance(lexer);
 
-    char* buffer = calloc(1, sizeof(char));
+    char buffer[__CSP_MAX_TOKEN_SIZE];
+    strcpy(buffer, "");
     unsigned int start_line = lexer->line;
     unsigned int start_pos = lexer->pos;
 
     while(lexer->c != '"')
     {
-        buffer = realloc(buffer, (strlen(buffer) + 2) * sizeof(char));
-        strcat(buffer, (char[]){lexer->c, '\0'});
+        strcat(buffer, (char[2]){lexer->c, '\0'});
         lexer_advance(lexer);
 
         if(lexer->c == '\0')
         {
-            free(buffer);
             throw_error(ERR_SYNTAX_ERROR,  &(Token_T){.line = start_line, .pos = start_pos, .source = lexer->file}, "unterminated string literal");
             return init_token("EOF", start_line, lexer->pos, TOKEN_EOF, lexer->file);
         }
@@ -393,8 +375,6 @@ static Token_T* lexer_get_str(Lexer_T* lexer)
     lexer_advance(lexer);
 
     Token_T* token = init_token(buffer, lexer->line, lexer->pos, TOKEN_STRING, lexer->file);
-
-    free(buffer);
     return token;
 }
 
@@ -408,12 +388,14 @@ static Token_T* lexer_get_char(Lexer_T* lexer)
         return init_token("EOF", lexer->line, lexer->pos, TOKEN_EOF, lexer->file);
     }
 
-    char* data = (char[]){lexer->c, '\0'};
+    char data[3] = {lexer->c, '\0', '\0'};
 
     if(lexer->c == '\\')
     {
         lexer_advance(lexer);
-        data = (char[]){'\\', lexer->c, '\0'};
+        data[0] = '\\';
+        data[1] = lexer->c;
+        data[2] = '\0';
     }
 
     Token_T* token = init_token(data, lexer->line, lexer->pos, TOKEN_CHAR, lexer->file);
