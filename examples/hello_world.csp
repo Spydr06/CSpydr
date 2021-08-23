@@ -1,7 +1,15 @@
 import "stdio.csp"
+import "stdlib.csp"
+
+fn test2() {
+
+}
+
+fn test(x: i32, y: i32) {
+}
 
 fn main(argc: i32, argv: &&char): i32 {
-    puts("Hello World!")
+    test(2, 3)
 
     <- 0
 }

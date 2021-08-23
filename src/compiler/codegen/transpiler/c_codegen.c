@@ -321,6 +321,9 @@ static void c_gen_fn_arg_list(CCodegenData_T* cg, List_T* args)
 
 static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
 {
+    if(obj->is_extern)
+        print(cg, "extern ");
+
     switch(obj->kind)
     {
         case OBJ_GLOBAL:
@@ -360,6 +363,9 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
 
 static void c_gen_obj(CCodegenData_T* cg, ASTObj_T* obj)
 {
+    if(obj->is_extern)
+        return;
+
     switch(obj->kind)
     {
         case OBJ_FUNCTION:

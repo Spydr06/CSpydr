@@ -1,5 +1,6 @@
 #include "llvm_codegen.h"
 #include "../../ast/types.h"
+#include <stdio.h>
 
 void llvm_gen_stmt(LLVMCodegenData_T* cg, ASTNode_T* node)
 {
@@ -16,6 +17,9 @@ void llvm_gen_stmt(LLVMCodegenData_T* cg, ASTNode_T* node)
             break;
         case ND_LOOP:
             llvm_gen_loop(cg, node);
+            break;
+        case ND_EXPR_STMT:
+            llvm_gen_expr(cg, node->expr);
             break;
         default:
             break;

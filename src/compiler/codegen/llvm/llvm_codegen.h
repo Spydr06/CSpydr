@@ -11,7 +11,6 @@
 typedef struct LLVM_CODEGEN_DATA_STRUCT
 {
     ASTProg_T* ast;
-    bool print_ll;
     bool silent;
 
     LLVMModuleRef  llvm_module;
@@ -31,6 +30,7 @@ LLVMCodegenData_T* init_llvm_cg(ASTProg_T* ast);
 void               free_llvm_cg(LLVMCodegenData_T* cg);
 
 void llvm_gen_code(LLVMCodegenData_T* cg);
+void llvm_print_code(LLVMCodegenData_T* cg);
 
 void llvm_emit_code(LLVMCodegenData_T* cg, const char* target);
 void llvm_run_code(LLVMCodegenData_T* cg);

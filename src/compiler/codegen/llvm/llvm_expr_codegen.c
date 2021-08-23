@@ -1,6 +1,7 @@
 #include "llvm_codegen.h"
 #include "llvm_casts.h"
 #include <llvm-c/Types.h>
+#include <stdio.h>
 
 LLVMValueRef llvm_gen_expr(LLVMCodegenData_T* cg, ASTNode_T* node)
 {
@@ -56,12 +57,12 @@ LLVMValueRef llvm_gen_call(LLVMCodegenData_T* cg, ASTNode_T* call)
 {
     LLVMValueRef fn = find_fn(cg, call->expr->callee);
     size_t argc = call->args->size;
-    LLVMValueRef* args = calloc(argc, sizeof(LLVMValueRef));
+    LLVMValueRef* args = argc > 0 ? calloc(argc, sizeof(LLVMValueRef)) : NULL;
 
-    for(int i = 0; i < argc; i++)
+    for(size_t i = 0; i < argc; i++)
         args[i] = llvm_gen_expr(cg, call->args->items[i]);
     
-    return LLVMBuildCall(cg->llvm_builder, fn, args, (unsigned) argc, "call");
+    return LLVMBuildCall(cg->llvm_builder, fn, args, (unsigned) argc, "");
 }
 
 LLVMValueRef llvm_gen_op(LLVMCodegenData_T* cg, ASTNode_T* op)

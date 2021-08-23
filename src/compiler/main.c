@@ -275,8 +275,10 @@ void generate_llvm(ASTProg_T* ast, char* target, Action_T action, bool print_llv
 {
     LLVMCodegenData_T* cg = init_llvm_cg(ast);
     cg->silent = silent;
-    cg->print_ll = print_llvm;
     llvm_gen_code(cg);
+
+    if(print_llvm)
+        llvm_print_code(cg);
 
     switch(action)
     {

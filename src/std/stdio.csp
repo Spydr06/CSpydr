@@ -1,2 +1,1 @@
-extern fn puts(str: &char)
-extern fn putc(c: char)
+extern fn puts(str: &char): i32

@@ -23,7 +23,6 @@ LLVMCodegenData_T* init_llvm_cg(ASTProg_T* ast)
 {
     LLVMCodegenData_T* cg = malloc(sizeof(struct LLVM_CODEGEN_DATA_STRUCT));
     cg->ast = ast;
-    cg->print_ll = false;
     cg->silent = false;
     cg->current_fn = NULL;
     cg->current_block = NULL;
@@ -32,6 +31,7 @@ LLVMCodegenData_T* init_llvm_cg(ASTProg_T* ast)
     cg->main_fn = NULL;
     cg->fns = init_list(sizeof(LLVMValueRef));
 
+    LLVMStartMultithreaded();
     LLVMEnablePrettyStackTrace();
 
     return cg;
@@ -41,6 +41,8 @@ void free_llvm_cg(LLVMCodegenData_T* cg)
 {
     LLVMDisposeModule(cg->llvm_module);
     LLVMDisposeBuilder(cg->llvm_builder);
+
+    LLVMShutdown();
 
     free_list(cg->vars);
     free_list(cg->fns);
@@ -80,6 +82,13 @@ void llvm_gen_code(LLVMCodegenData_T* cg)
         LOG_ERROR("Failed generating llvm-bytecode"); 
 }
 
+void llvm_print_code(LLVMCodegenData_T* cg)
+{
+    if(!cg->silent)
+        LOG_OK(COLOR_BOLD_GREEN "->" COLOR_RESET " Generated LLVM Code:\n");
+    LOG_INFO_F("%s\n", LLVMPrintModuleToString(cg->llvm_module));
+}
+
 static void llvm_optimize_module(LLVMCodegenData_T* cg)
 {
     LLVMPassManagerRef pass = LLVMCreatePassManager();
@@ -95,9 +104,6 @@ static void llvm_optimize_module(LLVMCodegenData_T* cg)
 void llvm_emit_code(LLVMCodegenData_T* cg, const char* target)
 {
     llvm_optimize_module(cg);
-
-    if(cg->print_ll)
-        LOG_INFO_F("%s\n", LLVMPrintModuleToString(cg->llvm_module));
 
     const char* bc_tmp = "%s.bc";
     char* target_bc = calloc(strlen(bc_tmp) + strlen(target) + 1, sizeof(char));
