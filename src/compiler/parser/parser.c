@@ -989,7 +989,7 @@ static ASTNode_T* parse_int_lit(Parser_T* p)
 static ASTNode_T* parse_float_lit(Parser_T* p)
 {
     ASTNode_T* lit = init_ast_node(ND_FLOAT, p->tok);
-    parser_consume(p, TOKEN_INT, "expect float literal (0, 1, 2.3, ...)");
+    parser_consume(p, TOKEN_FLOAT, "expect float literal (0, 1, 2.3, ...)");
     double num; 
     sscanf(lit->tok->value, "%lf", &num); 
 
