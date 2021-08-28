@@ -35,6 +35,7 @@ Optimizer_T* init_optimizer(void)
 
 void free_optimizer(Optimizer_T* o)
 {
+    free_list(o->scope->objs);
     free(o->scope);
     free(o);
 }

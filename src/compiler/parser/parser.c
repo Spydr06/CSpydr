@@ -3,6 +3,7 @@
 #include "../io/io.h"
 
 #include "../ast/types.h"
+#include "../ast/mem/ast_mem.h"
 #include "../platform/platform_bindings.h"
 
 #include <bits/floatn-common.h>
@@ -298,6 +299,7 @@ ASTProg_T* parse(List_T* files, bool is_silent)
         }
     }
 
+    free_list(tokens);
     free_parser(p);
     free_lexer(lex);
 
@@ -313,6 +315,7 @@ static ASTType_T* parse_struct_type(Parser_T* p)
     parser_consume(p, TOKEN_STRUCT, "expect `struct` keyword for struct type");
     parser_consume(p, TOKEN_LBRACE, "expect `{` after struct keyword");
     struct_type->members = init_list(sizeof(struct AST_NODE_STRUCT*));
+    ast_mem_add_list(struct_type->members);
 
     while(!tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF))
     {
@@ -369,6 +372,8 @@ static ASTType_T* parse_lambda_type(Parser_T* p)
     parser_consume(p, TOKEN_LPAREN, "expect `(` before lambda argument types");
 
     lambda->arg_types = init_list(sizeof(struct AST_TYPE_STRUCT*));
+    ast_mem_add_list(lambda->arg_types);
+
     while(!tok_is(p, TOKEN_RPAREN) && !tok_is(p, TOKEN_EOF))
     {
         list_push(lambda->arg_types, parse_type(p));
@@ -419,6 +424,7 @@ static ASTType_T* parse_type(Parser_T* p)
                 type = init_ast_type(TY_TUPLE, p->tok);
                 parser_advance(p);
                 type->arg_types = init_list(sizeof(struct AST_TYPE_STRUCT*));
+                ast_mem_add_list(type->arg_types);
 
                 while(!tok_is(p, TOKEN_RBRACKET) && !tok_is(p, TOKEN_EOF))
                 {
@@ -550,6 +556,7 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
     parser_consume(p, TOKEN_LPAREN, "expect `(` after function name");
 
     fn->args = parse_argument_list(p, TOKEN_RPAREN);
+    ast_mem_add_list(fn->args);
 
     parser_consume(p, TOKEN_RPAREN, "expect `)` after function arguments");
 
@@ -624,6 +631,9 @@ static ASTNode_T* parse_block(Parser_T* p)
     p->cur_block = prev_block;
 
     parser_consume(p, TOKEN_RBRACE, "expect `}` at the end of a block statement");
+
+    ast_mem_add_list(block->locals);
+    ast_mem_add_list(block->stmts);
 
     return block;
 }
@@ -938,6 +948,7 @@ static ASTNode_T* parse_expr(Parser_T* p, Precedence_T prec, TokenType_T end_tok
 static List_T* parse_expr_list(Parser_T* p, TokenType_T end_tok)
 {
     List_T* list = init_list(sizeof(struct AST_NODE_STRUCT*));
+    ast_mem_add_list(list);
 
     while (!tok_is(p, end_tok) && !tok_is(p, TOKEN_EOF)) 
     {
@@ -1042,8 +1053,10 @@ static ASTNode_T* parse_char_lit(Parser_T* p)
         char_lit->str_val = strdup((char[]){'\\', p->tok->value[1], '\0'});
     else 
         char_lit->str_val = strdup((char[]){p->tok->value[0], '\0'});
-    char_lit->is_constant = true;
+    char_lit->is_constant = true; 
     parser_consume(p, TOKEN_CHAR, "expect char literal ('a', 'b', ...)");
+    
+    ast_mem_add_ptr(char_lit->str_val);
     return char_lit;
 }
 
@@ -1084,6 +1097,8 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p)
     parser_consume(p, TOKEN_BIT_OR, "expect `|` for lambda expression");
 
     lambda_lit->args = init_list(sizeof(struct AST_OBJ_STRUCT*));
+    ast_mem_add_list(lambda_lit->args);
+
     while(!tok_is(p, TOKEN_BIT_OR) && !tok_is(p, TOKEN_EOF))
     {
         // parse a lambda arguments

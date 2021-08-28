@@ -11,11 +11,14 @@
 */
 
 // std includes
+#include <llvm-c/Core.h>
 #include <string.h>
+#include <stdlib.h>
 
 // compiler includes
 #include "globals.h"
 #include "ast/ast.h"
+#include "ast/mem/ast_mem.h"
 #include "io/file.h"
 #include "io/io.h"
 #include "io/log.h"
@@ -118,6 +121,8 @@ void generate_llvm(ASTProg_T*, char* target, Action_T action, bool print_llvm, b
 void transpile_c(ASTProg_T*, char* target, Action_T action, bool print_c, bool silent);
 void parse_to_xml(ASTProg_T*, char* target, Action_T action, bool silent);
 
+void exit_hook();
+
 static inline bool streq(char* a, char* b)
 {
     return strcmp(a, b) == 0;
@@ -140,6 +145,8 @@ static void evaluate_info_flags(char* argv)
 // entry point
 int main(int argc, char* argv[])
 {
+    atexit(exit_hook);
+
     if(argc == 1)
     {
         LOG_ERROR_F("[Error] Too few arguments given.\n" COLOR_RESET "%s", usage_text);
@@ -256,6 +263,11 @@ int main(int argc, char* argv[])
     return 0;
 }
 
+void exit_hook() 
+{
+    LLVMShutdown();
+}
+
 ASTProg_T* generate_ast(char* path, char* target, bool silent)
 {
     List_T* files = init_list(sizeof(struct SRC_FILE_STRUCT*));
@@ -295,7 +307,7 @@ void generate_llvm(ASTProg_T* ast, char* target, Action_T action, bool print_llv
             LOG_ERROR_F("Unrecognized action of type [%d], exit\n", action);
             exit(1);
     }
-    // free_ast_prog(ast);
+    free_ast_prog(ast);
     free_llvm_cg(cg);
 }
 
@@ -310,7 +322,7 @@ void transpile_c(ASTProg_T* ast, char* target, Action_T action, bool print_c, bo
         run_c_code(cg, target);
     
     free_c_cg(cg);
-    // free_ast_prog(ast);
+    free_ast_prog(ast);
 }
 
 void parse_to_xml(ASTProg_T* ast, char* target, Action_T action, bool silent)
@@ -318,5 +330,5 @@ void parse_to_xml(ASTProg_T* ast, char* target, Action_T action, bool silent)
     LOG_OK_F(COLOR_BOLD_GREEN "  Emitting " COLOR_RESET "  AST as XML to \"%s\"\n", target);
     ast_to_xml(ast, target);
 
-    // free_ast_prog(ast);
+    free_ast_prog(ast);
 }

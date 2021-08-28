@@ -51,6 +51,8 @@ LLVMValueRef llvm_gen_expr(LLVMCodegenData_T* cg, ASTNode_T* node)
             return llvm_gen_cmp(cg, node);
         case ND_CAST:
             return llvm_gen_cast(cg, node);
+        case ND_INDEX:
+            
         default:
             return NULL;
     }

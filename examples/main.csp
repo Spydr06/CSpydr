@@ -10,7 +10,6 @@
 
 # TODO: add missing C operators: >>, <<, =>>, <<=, |, &, |=, &=, ^, ^=, %, %=
 
-import "vec.csp"
 import "string.csp"
 
 macro message() |: init_str("Hello World") :|

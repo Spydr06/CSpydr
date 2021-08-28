@@ -32,7 +32,6 @@ LLVMCodegenData_T* init_llvm_cg(ASTProg_T* ast)
     cg->fns = init_list(sizeof(LLVMValueRef));
 
     LLVMStartMultithreaded();
-    LLVMEnablePrettyStackTrace();
 
     return cg;
 }
@@ -56,7 +55,10 @@ void llvm_gen_code(LLVMCodegenData_T* cg)
 
     cg->llvm_module = LLVMModuleCreateWithName(cg->ast->main_file_path);
     LLVMSetDataLayout(cg->llvm_module, "");
-    LLVMSetTarget(cg->llvm_module, LLVMGetDefaultTargetTriple());
+
+    char* defaultTarget = LLVMGetDefaultTargetTriple();
+    LLVMSetTarget(cg->llvm_module, defaultTarget);
+    LLVMDisposeMessage(defaultTarget);
 
     cg->llvm_builder = LLVMCreateBuilder();
 
@@ -99,6 +101,7 @@ static void llvm_optimize_module(LLVMCodegenData_T* cg)
     LLVMAddVerifierPass(pass);
 
     LLVMRunPassManager(pass, cg->llvm_module);
+    LLVMDisposePassManager(pass);
 }
 
 void llvm_emit_code(LLVMCodegenData_T* cg, const char* target)
@@ -157,7 +160,7 @@ void llvm_run_code(LLVMCodegenData_T *cg)
         free(argv);
     }
     if(!cg->silent)
-        LOG_INFO_F("\"%s\" terminated with exit code %d.\n", cg->ast->main_file_path, exit_code);
+        LOG_INFO_F("[\"%s\" terminated with exit code %d]\n", cg->ast->main_file_path, exit_code);
 }
 
 LLVMValueRef find_id(LLVMCodegenData_T* cg, char* callee)

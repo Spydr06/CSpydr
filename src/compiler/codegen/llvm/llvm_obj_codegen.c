@@ -44,6 +44,7 @@ LLVMValueRef llvm_gen_fn(LLVMCodegenData_T* cg, ASTObj_T* obj)
     if(strcmp(obj->callee, "main") == 0)
         cg->main_fn = obj;
 
+    free(arg_types);
     return fn;
 }
 

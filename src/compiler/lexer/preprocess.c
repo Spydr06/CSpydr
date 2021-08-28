@@ -112,9 +112,8 @@ static Macro_T* parse_macro_def(Preprocessor_T* pp, size_t* i)
     if(next->type != TOKEN_MACRO_BEGIN)
         throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `|:` to begin the macro body", next->value);
     free_token(next);
-    next = pp->tokens->items[(*i)++];
 
-    for(; next->type != TOKEN_EOF && next->type != TOKEN_MACRO_END; next = pp->tokens->items[(*i)++])
+    for(next = pp->tokens->items[(*i)++]; next->type != TOKEN_EOF && next->type != TOKEN_MACRO_END; next = pp->tokens->items[(*i)++])
         list_push(macro->replacing_tokens, next);
 
     if(next->type != TOKEN_MACRO_END)
@@ -203,16 +202,18 @@ static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
     list_push(pp->imports, imp);
 
     // get the tokens from the file
-    SrcFile_T* import_file = read_file(strdup(imp->import_path));
+    SrcFile_T* import_file = read_file(imp->import_path);
     import_file->short_path = strdup(imp->tok->value);
     Lexer_T* import_lexer = init_lexer(import_file);
     if(!pp->is_silent)
         LOG_OK_F(COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s\n", imp->tok->value);
 
     // add the tokens
-    for(Token_T* tok = lexer_next_token(import_lexer); tok->type != TOKEN_EOF; tok = lexer_next_token(import_lexer))  
+    Token_T* tok;
+    for(tok = lexer_next_token(import_lexer); tok->type != TOKEN_EOF; tok = lexer_next_token(import_lexer))  
         push_tok(pp, tok);
 
+    free_token(tok); // free the EOF token
     free_lexer(import_lexer);
     list_push(pp->files, import_file);
 }
@@ -240,9 +241,7 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
     {
         tok = pp->tokens->items[i];
         if(tok->type == TOKEN_IMPORT)
-        {
             parse_import_def(pp, pp->tokens, &i);
-        }
     }
 
     push_tok(pp, eof);
@@ -280,6 +279,8 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
             if(!macro)
                 throw_error(ERR_UNDEFINED, tok, "unedefined macro `%s`", tok->value);
             
+            free_token(tok);
+
             for(size_t i = 0; i < macro->replacing_tokens->size; i++)
                 list_push(token_stage_3, macro->replacing_tokens->items[i]);
             continue;
