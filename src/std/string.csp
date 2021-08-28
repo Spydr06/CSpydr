@@ -1,67 +1,67 @@
 # An implementation of a string type
 
-import "types.csp"
+import "types.csp";
 
 # --- the str_s struct and str typedef ---
 type str_s: struct {
     data: &char,
     len: usize,
     alloc: usize
-}
-type str: &str_s
+};
+type str: &str_s;
 # ----------------------------------------
 
 # --- a default `nil` type for strings ---
-let str_nil: str = &{"\0", 0, 0}: str_s
+let str_nil: str = &{"\0", 0, 0}: str_s;
 # ----------------------------------------
 
 # the initializer function
 fn init_str(string: &char): str {
-    let s: str = malloc(sizeof str_s)
+    let s: str = malloc(sizeof str_s);
 
     if string != nil {
-        let len: usize = strlen(string)
-        s.alloc = len + 1
-        s.data = malloc(s.alloc)
-        memcpy(s.data, string, len)
-        s.len = len
+        let len: usize = strlen(string);
+        s.alloc = len + 1;
+        s.data = malloc(s.alloc);
+        memcpy(s.data, string, len);
+        s.len = len;
     }
     else {
-        s.alloc = 1
-        s.data = malloc(s.alloc)
-        s.data[0] = '\0'
+        s.alloc = 1;
+        s.data = malloc(s.alloc);
+        s.data[0] = '\0';
 
-        s.len = 0
+        s.len = 0;
     }
 
-    <- s
+    <- s;
 }
 
 fn free_str(s: str) {
-    s = s
-    free(s.data)
-    free(s)
+    s = s;
+    free(s.data);
+    free(s);
 }
 
 fn str_lit(s: str): &char {
-    <- s.data
+    <- s.data;
 }
 
 fn str_len(s: str): usize {
-    <- s.len
+    <- s.len;
 }
 
 fn str_eq(a: str, b: str): bool {
-    <- strcmp(str_lit(a), str_lit(b)) == 0  
+    <- strcmp(str_lit(a), str_lit(b)) == 0  ;
 }
 
 fn str_append(s: str, c: char) {
-    s.alloc++
-    s.data = realloc(s.data, s.alloc)
+    s.alloc++;
+    s.data = realloc(s.data, s.alloc);
 
-    s.data[s.len++] = c
+    s.data[s.len++] = c;
 }
 
 fn str_cpy(s: str): str {
-    <- init_str(s.data)
+    <- init_str(s.data);
 }

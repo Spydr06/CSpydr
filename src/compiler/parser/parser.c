@@ -607,8 +607,7 @@ static ASTObj_T* parse_global(Parser_T* p)
             throw_error(ERR_UNDEFINED, p->tok, "assigned value unknown at compile-time");*/
     }
     
-    if(tok_is(p, TOKEN_SEMICOLON))
-        parser_advance(p);
+    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after variable definition");
     return global;
 }
 
@@ -654,8 +653,7 @@ static ASTNode_T* parse_return(Parser_T* p)
         cast->data_type = p->cur_fn->return_type;
         ret->return_val = cast;
     }
-    if(tok_is(p, TOKEN_SEMICOLON))
-        parser_advance(p);
+    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after return statement");
 
     return ret;
 }
@@ -795,8 +793,7 @@ static ASTNode_T* parse_expr_stmt(Parser_T* p)
     if(!is_executable(stmt->expr->kind))
         throw_error(ERR_SYNTAX_ERROR, stmt->expr->tok, "cannot treat `%s` as a statement, expect function call, assignment or similar", stmt->expr->tok->value);
 
-    if(tok_is(p, TOKEN_SEMICOLON))
-        parser_advance(p);
+    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after expression statement");
 
     return stmt;
 }
@@ -834,8 +831,7 @@ static ASTNode_T* parse_local(Parser_T* p)
         value = assignment;
     }
     
-    if(tok_is(p, TOKEN_SEMICOLON))
-        parser_advance(p);
+    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after variable definition");
 
     if(!p->cur_block || p->cur_block->kind != ND_BLOCK)
         throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot define a local variable outside a block statement");
@@ -847,8 +843,7 @@ static ASTNode_T* parse_break(Parser_T* p)
 {
     ASTNode_T* break_stmt = init_ast_node(ND_BREAK, p->tok);
     parser_consume(p, TOKEN_BREAK, "expect `break` keyword");
-    if(tok_is(p, TOKEN_SEMICOLON))
-        parser_advance(p);
+    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after break statement");
 
     return break_stmt;
 }
@@ -857,8 +852,7 @@ static ASTNode_T* parse_continue(Parser_T* p)
 {
     ASTNode_T* continue_stmt = init_ast_node(ND_CONTINUE, p->tok);
     parser_consume(p, TOKEN_CONTINUE, "expect `continue` keyword");
-    if(tok_is(p, TOKEN_SEMICOLON))
-        parser_advance(p);
+    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after continue statement");
 
     return continue_stmt;
 }
@@ -904,8 +898,7 @@ static ASTNode_T* parse_stmt(Parser_T* p)
                 if(tok_is(p, TOKEN_NOOP))
                 {
                     parser_advance(p);
-                    if(tok_is(p, TOKEN_SEMICOLON))
-                        parser_advance(p);
+                    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after noop statement");
                 } else 
                 {
                 parser_advance(p);

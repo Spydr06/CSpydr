@@ -3,9 +3,11 @@
 #include "token.h"
 #include "../error/error.h"
 #include "../platform/platform_bindings.h"
+#include "../globals.h"
 
 #include <string.h>
 #include <stdio.h>
+#include <sys/types.h>
 
 #include "../io/io.h"
 #include "../io/log.h"
@@ -14,19 +16,23 @@ typedef struct MACRO_STRUCT
 {
     Token_T* tok;
     List_T* replacing_tokens;
-} Macro_T;
+
+    u_int8_t argc;
+    Token_T* args[__CSP_MAX_FN_NUM_ARGS];
+} __attribute__((packed)) Macro_T ;
 
 typedef struct IMPORT_STRUCT
 {
     Token_T* tok;
     char* import_path;
-} Import_T;
+} __attribute__((packed)) Import_T;
 
 static Macro_T* init_macro(Token_T* tok)
 {
     Macro_T* mac = malloc(sizeof(struct MACRO_STRUCT));
     mac->tok = tok;
     mac->replacing_tokens = init_list(sizeof(struct TOKEN_STRUCT*));
+    mac->argc = 0;
 
     return mac;
 }
@@ -35,8 +41,19 @@ static void free_macro(Macro_T* mac)
 {
     free_list(mac->replacing_tokens);
 
+    for(u_int8_t i = 0; i < mac->argc; i++)
+        free_token(mac->args[i]);
+
     free_token(mac->tok);
     free(mac);
+}
+
+static bool macro_has_arg(Macro_T* macro, char* callee)
+{
+    for(u_int8_t i = 0; i < macro->argc; i++)
+        if(strcmp(callee, macro->args[i]->value) == 0)
+            return true;
+    return false;
 }
 
 static Import_T* init_import(Token_T* tok)
@@ -95,13 +112,34 @@ static Macro_T* parse_macro_def(Preprocessor_T* pp, size_t* i)
         throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect macro name", next->value);
     Macro_T* macro = init_macro(next);
 
-    next = pp->tokens->items[(*i)++];
+     next = pp->tokens->items[(*i)++];    
     if(next->type == TOKEN_LPAREN)
     {
         free_token(next);
-        next = pp->tokens->items[(*i)++];
+        
 
         // TODO: evaluate arguments
+
+        for(next = pp->tokens->items[(*i)++]; next->type != TOKEN_EOF && next->type != TOKEN_RPAREN; next = pp->tokens->items[(*i)++]) 
+        {
+            if(next->type != TOKEN_ID)
+                throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect macro argument name", next->value);
+            if(macro_has_arg(macro, next->value))
+                throw_error(ERR_REDEFINITION, next, "duplicate macro argument `%s`", next->value);
+            if(macro->argc >= __CSP_MAX_FN_NUM_ARGS)
+                throw_error(ERR_MISC, next, "too many macro arguments, maximal argument count is `%d`", __CSP_MAX_FN_NUM_ARGS);
+
+            macro->args[macro->argc++] = next;
+
+            next = pp->tokens->items[(*i)++];
+            if(next->type == TOKEN_RPAREN)
+                break;
+
+            if(next->type != TOKEN_COMMA)
+                throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `,` between macro arguments", next->value);
+            
+            free_token(next);
+        }
 
         if(next->type != TOKEN_RPAREN)
             throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `)` after macro arguments", next->value);

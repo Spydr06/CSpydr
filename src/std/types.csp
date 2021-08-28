@@ -1,6 +1,6 @@
 
 # rename u64 to usize for more clear code
-type usize: u64
+type usize: u64;
 
 # --- MIN and MAX macros for all the different primitive number data types ---
 
