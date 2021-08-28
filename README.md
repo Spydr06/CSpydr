@@ -76,12 +76,12 @@ cspydr --help
 A simple hello-world program:
 ```
 # hello-world.csp
-import "stdio.csp"
+import "stdio.csp";
 
 fn main(argc: i32, argv: &&char): i32
 {
-    puts("Hello World!\n")
-    <- 0
+    puts("Hello World!\n");
+    <- 0;
 }
 ```
 Running this program is as easy as entering the following command:
