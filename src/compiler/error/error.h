@@ -19,6 +19,7 @@ typedef enum ERROR_TYPE
     ERR_TYPE_CAST_WARN,
 
     ERR_TYPE_ERROR,
+    ERR_CONST_ASSIGN,
 
     ERR_INTERNAL,
 } ErrorType_T;

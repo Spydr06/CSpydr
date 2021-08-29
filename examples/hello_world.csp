@@ -7,6 +7,14 @@ fn test(x: i32, y: f32, z: char) {
 
 macro x(a) |:  :|
 
+type x: enum {
+    OK,
+    INFO,
+    WARN,
+    ERR,
+    FATAL
+};
+
 fn main(argc: i32, argv: &&char): i32 {
     puts("Hello World!");
 

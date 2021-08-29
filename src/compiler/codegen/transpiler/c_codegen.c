@@ -239,7 +239,16 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
                 print(cg, "enum {");
 
                 for(size_t i = 0; i < ty->members->size; i++)
-                    print(cg, "%s=%ld,", ((ASTNode_T*) ty->members->items[i])->callee, ((ASTNode_T*) ty->members->items[i])->int_val);
+                {   
+                    ASTNode_T* member = ty->members->items[i];
+                    if(member->expr)
+                    {
+                        print(cg, "%s=", member->callee);
+                        c_gen_expr(cg, member->expr);
+                        print(cg, ",");
+                    } else
+                        print(cg, "%s,", member->callee);
+                }
 
                 print(cg, "}");
                 break;

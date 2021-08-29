@@ -341,6 +341,7 @@ static ASTType_T* parse_enum_type(Parser_T* p)
     parser_consume(p, TOKEN_ENUM, "expect `enum` keyword for enum type");
     parser_consume(p, TOKEN_LBRACE, "expect `{` after enum keyword");
     enum_type->members = init_list(sizeof(struct AST_NODE_STRUCT*));
+    ast_mem_add_list(enum_type->members);
 
     for(int i = 0; !tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF); i++)
     {
@@ -350,6 +351,15 @@ static ASTType_T* parse_enum_type(Parser_T* p)
         parser_consume(p, TOKEN_ID, "expect enum member name");
 
         list_push(enum_type->members, member);
+
+        if(tok_is(p, TOKEN_ASSIGN))
+        {
+            parser_advance(p);
+            
+            member->expr = parse_expr(p, LOWEST, TOKEN_COMMA);
+            if(!member->expr->is_constant)
+                throw_error(ERR_CONST_ASSIGN, member->expr->tok, "cannot assign non-constant value to enum member");
+        }
 
         if(!tok_is(p, TOKEN_RBRACE))
             parser_consume(p, TOKEN_COMMA, "expect `,` between enum members");
