@@ -45,6 +45,7 @@ static ASTNode_T* parse_unary(Parser_T* p);
 static ASTNode_T* parse_num_op(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_bit_op(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_bool_op(Parser_T* p, ASTNode_T* left);
+static ASTNode_T* parse_static_member(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_assignment(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_postfix(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left);
@@ -100,6 +101,7 @@ static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } ex
     [TOKEN_XOR_ASSIGN] = {NULL, parse_assignment, ASSIGN},
     [TOKEN_BIT_AND_ASSIGN] = {NULL, parse_assignment, ASSIGN},
     [TOKEN_BIT_OR_ASSIGN] = {NULL, parse_assignment, ASSIGN},  
+    [TOKEN_STATIC_MEMBER] = {NULL, parse_static_member, CALL},
 }; 
 
 static ASTNodeKind_T unary_ops[TOKEN_EOF + 1] = {
@@ -207,6 +209,13 @@ static inline Token_T* parser_advance(Parser_T* p)
     free_token(p->tok);
     p->tok = p->tokens->items[++p->token_i];
     return p->tok;
+}
+
+static inline Token_T* parser_peek(Parser_T* p, int level)
+{
+    if(p->token_i + level >= p->tokens->size)
+        return NULL;
+    return p->tokens->items[p->token_i + level];
 }
 
 static inline bool tok_is(Parser_T* p, TokenType_T type)
@@ -602,13 +611,41 @@ static List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok)
 
 static ASTNode_T* parse_stmt(Parser_T* p);
 
+static List_T* parse_template_list(Parser_T* p)
+{
+    parser_consume(p, TOKEN_LT, "expect `<` before function template types");
+
+    List_T* templates = init_list(sizeof(struct AST_NODE_STRUCT));
+
+    while(!tok_is(p, TOKEN_GT) && !tok_is(p, TOKEN_EOF))
+    {
+        ASTType_T* template = init_ast_type(TY_TEMPLATE, p->tok);
+        parser_consume(p, TOKEN_ID, "expect template typename");
+        list_push(templates, template);
+
+        if(!tok_is(p, TOKEN_GT))
+            parser_consume(p, TOKEN_COMMA, "expect `,` between template types");
+    }
+
+    parser_consume(p, TOKEN_GT, "expect `>` after function template types");
+
+    return templates;
+}
+
 static ASTObj_T* parse_fn_def(Parser_T* p)
 {
     ASTObj_T* fn = init_ast_obj(OBJ_FUNCTION, p->tok);
     parser_consume(p, TOKEN_FN, "expect `fn` keyword for a function definition");
 
-    strcpy(fn->callee,p->tok->value);
+    strcpy(fn->callee, p->tok->value);
     parser_consume(p, TOKEN_ID, "expect function name");
+    
+    if(tok_is(p, TOKEN_STATIC_MEMBER))
+    {
+        parser_advance(p);
+        fn->templates = parse_template_list(p);
+        ast_mem_add_list(fn->templates);
+    }
 
     parser_consume(p, TOKEN_LPAREN, "expect `(` after function name");
 
@@ -1263,6 +1300,24 @@ static ASTNode_T* parse_postfix(Parser_T* p, ASTNode_T* left)
     return postfix;
 }
 
+static List_T* parse_call_templates(Parser_T* p)
+{
+    parser_consume(p, TOKEN_LT, "expect `<` before template types");
+
+    List_T* template_types = init_list(sizeof(struct AST_TYPE_STRUCT*));
+
+    while(!tok_is(p, TOKEN_GT) && !tok_is(p, TOKEN_EOF))
+    {
+        list_push(template_types, parse_type(p));
+
+        if(!tok_is(p, TOKEN_GT))
+            parser_consume(p, TOKEN_COMMA, "expect `,` between template types");
+    }
+
+    parser_consume(p, TOKEN_GT, "expect `>` after template types");
+    return template_types;
+}
+
 static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left)
 {
     if(left->kind != ND_ID)
@@ -1271,12 +1326,29 @@ static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left)
     ASTNode_T* call = init_ast_node(ND_CALL, p->tok);
     call->expr = left;  // the expression to call
 
+    if(tok_is(p, TOKEN_LT))
+    {
+        call->template_types = parse_call_templates(p);
+        ast_mem_add_list(call->template_types);
+    }   
+
     parser_consume(p, TOKEN_LPAREN, "expect `(` after callee");
 
     call->args = parse_expr_list(p, TOKEN_RPAREN);
     parser_consume(p, TOKEN_RPAREN, "expect `)` after call arguments");
-    
+
     return call;
+}
+
+static ASTNode_T* parse_static_member(Parser_T* p, ASTNode_T* left)
+{
+    parser_consume(p, TOKEN_STATIC_MEMBER, "expect `::` for static member access");
+
+    if(tok_is(p, TOKEN_LT))
+        return parse_call(p, left);
+    else 
+        throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot take a static member of token `%s`", p->tok->value);
+    return NULL;
 }
 
 static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left)

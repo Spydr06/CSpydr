@@ -8,8 +8,6 @@
 })
 ##
 
-# TODO: add missing C operators: >>, <<, =>>, <<=, |, &, |=, &=, ^, ^=, %, %=
-
 import "string.csp";
 import "vec.csp";
 import "memory.csp";

@@ -34,6 +34,7 @@ ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok)
     node->default_case = NULL;
     node->expr = NULL;
     node->args = NULL;
+    node->template_types = NULL;
 
     ast_mem_add_ptr(node->tok);
 
@@ -83,6 +84,7 @@ ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok)
     obj->return_type = NULL;
     obj->args = NULL;
     obj->body = NULL;
+    obj->templates = NULL;
 
     obj->is_constant = false;
 

@@ -113,6 +113,7 @@ typedef enum {
 
     TY_LAMBDA,
     TY_TUPLE,
+    TY_TEMPLATE,
 
     TY_UNDEF
 } ASTTypeKind_T;
@@ -182,6 +183,7 @@ struct AST_NODE_STRUCT
 
         // calls, array literals
         List_T* args;   // list of ASTNode_Ts
+        List_T* template_types;
 } __attribute__((packed));
 
 struct AST_TYPE_STRUCT 
@@ -225,6 +227,7 @@ struct AST_OBJ_STRUCT
     ASTType_T* return_type;
     List_T* args;           // list of ASTObj_Ts
     ASTNode_T* body;
+    List_T* templates;
 } __attribute__((packed));
 
 typedef struct AST_PROG_STRUCT

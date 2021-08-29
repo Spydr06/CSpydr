@@ -75,6 +75,8 @@ typedef enum TOKEN_TYPE {
     TOKEN_SEMICOLON,    // ;
     TOKEN_UNDERSCORE,   // _
 
+    TOKEN_STATIC_MEMBER,     // ::
+
     TOKEN_AT,           // @
     TOKEN_DOLLAR,       // $
 

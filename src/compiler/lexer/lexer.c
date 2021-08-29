@@ -83,6 +83,7 @@ const struct { const char* symbol; TokenType_T type; } symbols[] = {
     {",", TOKEN_COMMA},
     {";", TOKEN_SEMICOLON},
     {"_", TOKEN_UNDERSCORE},
+    {"::", TOKEN_STATIC_MEMBER},
     {":", TOKEN_COLON},
     {"..", TOKEN_RANGE},
     {".", TOKEN_DOT},
@@ -250,8 +251,11 @@ static Token_T* lexer_get_id(Lexer_T* lexer)
         is_macro = true;
     }
 
-    Token_T* token = init_token(buffer, lexer->line, lexer->pos - 1, is_macro ? TOKEN_MACRO_CALL : lexer_get_id_type(buffer), lexer->file);
-    return token;
+    return init_token(buffer, lexer->line, lexer->pos - 1, 
+        is_macro ? 
+            TOKEN_MACRO_CALL : 
+                lexer_get_id_type(buffer)
+            , lexer->file);
 }
 
 static Token_T* lexer_get_hexadecimal(Lexer_T* lexer)

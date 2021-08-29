@@ -35,6 +35,7 @@ extern ASTNode_T* constant_literals[TOKEN_EOF];
 
 extern const bool type_cast_map[NUM_TYPES][NUM_TYPES];
 
+ASTTypeKind_T get_datatype_from_str(char* str);
 ASTType_T* get_primitive_type(char* type);
 bool check_type_compatibility(ASTType_T* a, ASTType_T* b);
 

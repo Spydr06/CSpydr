@@ -37,8 +37,8 @@ void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
 
     char* source_file_path = tok->source->short_path ? tok->source->short_path : (char*) tok->source->path;
 
-    unsigned int line = tok->line;
-    unsigned int character = tok->pos;
+    unsigned int line = tok->line + 1;
+    unsigned int character = tok->pos + 1;
 
     va_list arg_list;
     va_start(arg_list, format);
@@ -46,7 +46,7 @@ void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
     // print the error
     fprintf(OUTPUT_FILE_STREAM, err_tmp1, source_file_path, line, character, err_ty_str);
     vfprintf(OUTPUT_FILE_STREAM, format, arg_list);
-    fprintf(OUTPUT_FILE_STREAM, err_tmp2, LINE_NUMBER_SPACES, line, src_line, LINE_NUMBER_SPACES, "", character, "");
+    fprintf(OUTPUT_FILE_STREAM, err_tmp2, LINE_NUMBER_SPACES, line, src_line, LINE_NUMBER_SPACES, "", character - strlen(tok->value), "");
 
     va_end(arg_list);
 
