@@ -437,6 +437,13 @@ static ASTType_T* parse_lambda_type(Parser_T* p)
 
 static ASTType_T* parse_type(Parser_T* p)
 {
+    bool constant_type = false;
+    if(tok_is(p, TOKEN_CONST))
+    {
+        constant_type = true;
+        parser_advance(p);
+    }
+
     ASTType_T* type = get_primitive_type(p->tok->value);
     if(type)
         parser_advance(p);
@@ -500,6 +507,8 @@ static ASTType_T* parse_type(Parser_T* p)
                 parser_consume(p, TOKEN_ID, "expect type or typedef");
                 break;
         }
+    
+    type->is_constant = constant_type;
 
 parse_array_ty:
     if(tok_is(p, TOKEN_LBRACKET))

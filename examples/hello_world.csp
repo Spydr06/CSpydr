@@ -1,27 +1,7 @@
-fn test2() {
-
-}
-
-fn test(x: i32, y: f32, z: char) {
-}
-
-macro x(a) |:  :|
-
-type x: enum {
-    OK,
-    INFO,
-    WARN,
-    ERR,
-    FATAL
-};
+extern fn puts(msg: const &char): i32;
 
 fn main(argc: i32, argv: &&char): i32 {
     puts("Hello World!");
-
-    let a: i32 = 0xff;
-    let b: i32 = 0x10;
-
-    a ^= b;
 
     <- 0;
 }

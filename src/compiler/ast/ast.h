@@ -195,6 +195,7 @@ struct AST_TYPE_STRUCT
     char callee[__CSP_MAX_TOKEN_SIZE];
 
     bool is_primitive;
+    bool is_constant;
 
     // functions
     bool is_fn;

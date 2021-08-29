@@ -204,6 +204,8 @@ void run_c_code(CCodegenData_T* cg, const char* bin)
 
 static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
 {
+    if(ty->is_constant)
+        print(cg, "const ");
 
     if(primitive_to_c_type[ty->kind])
         print(cg, "%s", primitive_to_c_type[ty->kind]);
