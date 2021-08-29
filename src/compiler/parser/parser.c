@@ -43,6 +43,7 @@ static ASTNode_T* parse_typeof(Parser_T* p);
 
 static ASTNode_T* parse_unary(Parser_T* p);
 static ASTNode_T* parse_num_op(Parser_T* p, ASTNode_T* left);
+static ASTNode_T* parse_bit_op(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_bool_op(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_assignment(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_postfix(Parser_T* p, ASTNode_T* left);
@@ -67,7 +68,9 @@ static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } ex
     [TOKEN_LBRACKET] = {parse_array_lit, parse_index, INDEX},   
     [TOKEN_LBRACE]   = {parse_struct_lit, NULL, LOWEST}, 
     [TOKEN_STAR]     = {parse_unary, parse_num_op, PRODUCT},
-    [TOKEN_REF]      = {parse_unary, NULL, LOWEST},
+    [TOKEN_PERCENT]  = {NULL, parse_num_op, PRODUCT},
+    [TOKEN_MOD]      = {NULL, parse_assignment, ASSIGN},
+    [TOKEN_REF]      = {parse_unary, parse_bit_op, PRODUCT},
     [TOKEN_TILDE]    = {parse_unary, NULL, LOWEST},
     [TOKEN_PLUS]     = {NULL, parse_num_op, SUM},    
     [TOKEN_SLASH]    = {NULL, parse_num_op, PRODUCT},    
@@ -88,7 +91,15 @@ static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } ex
     [TOKEN_COLON]    = {NULL, parse_cast, CAST},
     [TOKEN_SIZEOF]   = {parse_sizeof, NULL, LOWEST},
     [TOKEN_TYPEOF]   = {parse_typeof, NULL, LOWEST},
-    [TOKEN_BIT_OR]   = {parse_lambda_lit, NULL, LOWEST},
+    [TOKEN_BIT_OR]   = {parse_lambda_lit, parse_bit_op, PRODUCT},
+    [TOKEN_LSHIFT]   = {NULL, parse_bit_op, PRODUCT},
+    [TOKEN_RSHIFT]   = {NULL, parse_bit_op, PRODUCT},
+    [TOKEN_XOR]      = {NULL, parse_bit_op, PRODUCT},
+    [TOKEN_LSHIFT_ASSIGN] = {NULL, parse_assignment, ASSIGN},
+    [TOKEN_RSHIFT_ASSIGN] = {NULL, parse_assignment, ASSIGN},
+    [TOKEN_XOR_ASSIGN] = {NULL, parse_assignment, ASSIGN},
+    [TOKEN_BIT_AND_ASSIGN] = {NULL, parse_assignment, ASSIGN},
+    [TOKEN_BIT_OR_ASSIGN] = {NULL, parse_assignment, ASSIGN},  
 }; 
 
 static ASTNodeKind_T unary_ops[TOKEN_EOF + 1] = {
@@ -97,6 +108,19 @@ static ASTNodeKind_T unary_ops[TOKEN_EOF + 1] = {
     [TOKEN_TILDE] = ND_BIT_NEG,
     [TOKEN_REF]   = ND_REF,
     [TOKEN_STAR]  = ND_DEREF
+};
+
+static TokenType_T assign_to_op[TOKEN_EOF + 1] = {
+    [TOKEN_RSHIFT_ASSIGN]  = TOKEN_RSHIFT,
+    [TOKEN_LSHIFT_ASSIGN]  = TOKEN_LSHIFT,
+    [TOKEN_XOR_ASSIGN]     = TOKEN_XOR,
+    [TOKEN_BIT_OR_ASSIGN]  = TOKEN_BIT_OR,
+    [TOKEN_BIT_AND_ASSIGN] = TOKEN_REF,
+    [TOKEN_MOD]            = TOKEN_PERCENT,
+    [TOKEN_ADD]            = TOKEN_PLUS,
+    [TOKEN_SUB]            = TOKEN_MINUS,
+    [TOKEN_MULT]           = TOKEN_STAR,
+    [TOKEN_DIV]            = TOKEN_SLASH,
 };
 
 static ASTNodeKind_T infix_ops[TOKEN_EOF + 1] = {
@@ -118,7 +142,21 @@ static ASTNodeKind_T infix_ops[TOKEN_EOF + 1] = {
     [TOKEN_MULT]   = ND_MUL,    // is still an assignment!
     [TOKEN_DIV]    = ND_DIV,    // is still an assignment!
 
+    [TOKEN_RSHIFT_ASSIGN] = ND_RSHIFT,
+    [TOKEN_LSHIFT_ASSIGN] = ND_LSHIFT,
+    [TOKEN_MOD] = ND_MOD,
+    [TOKEN_XOR_ASSIGN] = ND_XOR,
+    [TOKEN_BIT_OR_ASSIGN] = ND_BIT_OR,
+    [TOKEN_BIT_AND_ASSIGN] = ND_BIT_AND,
+
     [TOKEN_DOT]    = ND_MEMBER,
+
+    [TOKEN_LSHIFT] = ND_LSHIFT,
+    [TOKEN_RSHIFT] = ND_RSHIFT,
+    [TOKEN_XOR] = ND_XOR,
+    [TOKEN_BIT_OR] = ND_BIT_OR,
+    [TOKEN_REF] = ND_BIT_AND, 
+    [TOKEN_PERCENT] = ND_MOD,
 
     [TOKEN_INC] = ND_INC,   // technically postfix operators, but get treated like infix ops internally
     [TOKEN_DEC] = ND_DEC    // technically postfix operators, but get treated like infix ops internally
@@ -1153,6 +1191,11 @@ static ASTNode_T* parse_num_op(Parser_T* p, ASTNode_T* left)
     return infix;
 }
 
+static ASTNode_T* parse_bit_op(Parser_T* p, ASTNode_T* left)
+{
+    return parse_num_op(p, left);
+}
+
 static ASTNode_T* parse_bool_op(Parser_T* p, ASTNode_T* left)
 {
     ASTNode_T* infix = init_ast_node(infix_ops[p->tok->type], p->tok);
@@ -1169,6 +1212,7 @@ static ASTNode_T* parse_bool_op(Parser_T* p, ASTNode_T* left)
 static ASTNode_T* generate_assignment_op_rval(Parser_T* p, ASTNode_T* left, TokenType_T op)
 {
     ASTNode_T* rval = init_ast_node(infix_ops[op], p->tok);
+    parser_advance(p);
     rval->left = left;
     rval->right = parse_expr(p, expr_parse_fns[op].prec, TOKEN_EOF);
 
@@ -1188,15 +1232,15 @@ static ASTNode_T* parse_assignment(Parser_T* p, ASTNode_T* left)
         case TOKEN_ASSIGN:
             parser_advance(p);
             assign->right = parse_expr(p, expr_parse_fns[p->tok->type].prec, TOKEN_EOF);
-            return assign;
-        default:
-            parser_advance(p);
-            assign->right = generate_assignment_op_rval(p, left, p->tok->type);
-            return assign;
+            break;
+        default:   
+            assign->right = generate_assignment_op_rval(p, left, assign_to_op[p->tok->type]);
+            break;
     }
 
-    // satisfy -Wall
-    return NULL;
+    printf("right: %s", assign->right->tok->value);
+
+    return assign;
 }
 
 static ASTNode_T* parse_postfix(Parser_T* p, ASTNode_T* left)

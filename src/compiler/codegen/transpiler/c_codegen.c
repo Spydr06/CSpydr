@@ -447,17 +447,83 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             c_gen_expr(cg, node->right);
             break;
         case ND_ADD:
+            c_gen_expr(cg, node->left);
+            print(cg, "+");
+            c_gen_expr(cg, node->right);
+            break;
         case ND_SUB:
+            c_gen_expr(cg, node->left);
+            print(cg, "-");
+            c_gen_expr(cg, node->right);
+            break;  
         case ND_DIV:
+            c_gen_expr(cg, node->left);
+            print(cg, "/");
+            c_gen_expr(cg, node->right);
+            break;
         case ND_MUL:
+            c_gen_expr(cg, node->left);
+            print(cg, "*");
+            c_gen_expr(cg, node->right);
+            break;
         case ND_EQ:
+            c_gen_expr(cg, node->left);
+            print(cg, "==");
+            c_gen_expr(cg, node->right);
+            break;
         case ND_LT:
+            c_gen_expr(cg, node->left);
+            print(cg, "<");
+            c_gen_expr(cg, node->right);
+            break;
         case ND_LE:
+            c_gen_expr(cg, node->left);
+            print(cg, "<=");
+            c_gen_expr(cg, node->right);
+            break;
         case ND_GT:
+            c_gen_expr(cg, node->left);
+            print(cg, ">");
+            c_gen_expr(cg, node->right);
+            break;
         case ND_GE:
+            c_gen_expr(cg, node->left);
+            print(cg, ">=");
+            c_gen_expr(cg, node->right);
+            break;
         case ND_NE:
             c_gen_expr(cg, node->left);
-            print(cg, node->tok->value);
+            print(cg, "!=");
+            c_gen_expr(cg, node->right);
+            break;
+        case ND_LSHIFT:
+            c_gen_expr(cg, node->left);
+            print(cg, "<<");
+            c_gen_expr(cg, node->right);
+            break;
+        case ND_RSHIFT:
+            c_gen_expr(cg, node->left);
+            print(cg, ">>");
+            c_gen_expr(cg, node->right);
+            break;
+        case ND_XOR:
+            c_gen_expr(cg, node->left);
+            print(cg, "^");
+            c_gen_expr(cg, node->right);
+            break;
+        case ND_BIT_OR:
+            c_gen_expr(cg, node->left);
+            print(cg, "|");
+            c_gen_expr(cg, node->right);
+            break;
+        case ND_BIT_AND:
+            c_gen_expr(cg, node->left);
+            print(cg, "&");
+            c_gen_expr(cg, node->right);
+            break;
+        case ND_MOD:
+            c_gen_expr(cg, node->left);
+            print(cg, "%%");
             c_gen_expr(cg, node->right);
             break;
         case ND_REF:

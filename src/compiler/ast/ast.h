@@ -49,6 +49,12 @@ typedef enum {
     ND_LT,      // <
     ND_LE,      // <=
 
+    ND_LSHIFT,  // <<
+    ND_RSHIFT,  // >>
+    ND_XOR,     // ^
+    ND_BIT_OR,  // |
+    ND_BIT_AND, // &
+
     ND_INC,     // ++
     ND_DEC,     // --
 

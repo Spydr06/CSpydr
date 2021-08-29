@@ -45,11 +45,21 @@ const struct { const char* symbol; TokenType_T type; } symbols[] = {
     {"-", TOKEN_MINUS},
     {"*=", TOKEN_MULT},
     {"*", TOKEN_STAR},
+    {"%=", TOKEN_MOD},
+    {"%", TOKEN_PERCENT},
     {"/=", TOKEN_DIV},
     {"/", TOKEN_SLASH},
+    {"&=", TOKEN_BIT_AND_ASSIGN},
     {"&&", TOKEN_AND},
     {"&", TOKEN_REF},
+    {"^=", TOKEN_XOR_ASSIGN},
+    {"^", TOKEN_XOR},
+    {"<<=", TOKEN_LSHIFT_ASSIGN},
+    {"<<", TOKEN_LSHIFT},
+    {">>=", TOKEN_RSHIFT_ASSIGN},
+    {">>", TOKEN_RSHIFT},
     {"||", TOKEN_OR},
+    {"|=", TOKEN_BIT_OR_ASSIGN},
     {"|:", TOKEN_MACRO_BEGIN},
     {":|", TOKEN_MACRO_END},
     {"|", TOKEN_BIT_OR},
@@ -419,9 +429,23 @@ static Token_T* lexer_get_symbol(Lexer_T* lexer)
     {
         const char* s = symbols[i].symbol;
         if(strlen(s) == 1 && lexer->c == s[0])
-            return lexer_consume(lexer, init_token((char*) s, lexer->line, lexer->pos, symbols[i].type, lexer->file));
+            return lexer_consume(lexer, 
+                init_token((char*) s, lexer->line, lexer->pos, symbols[i].type, lexer->file)
+            );
         if(strlen(s) == 2 && lexer->c == s[0] && lexer_peek(lexer, 1) == s[1])
-            return lexer_consume(lexer, lexer_consume(lexer, init_token((char*) s, lexer->line, lexer->pos, symbols[i].type, lexer->file)));
+            return lexer_consume(lexer, 
+                lexer_consume(lexer, 
+                    init_token((char*) s, lexer->line, lexer->pos, symbols[i].type, lexer->file)
+                )
+            );
+        if(strlen(s) == 3 && lexer->c == s[0] && lexer_peek(lexer, 1) == s[1] && lexer_peek(lexer, 2) == s[2])
+            return lexer_consume(lexer, 
+                lexer_consume(lexer, 
+                    lexer_consume(lexer, 
+                        init_token((char*) s, lexer->line, lexer->pos, symbols[i].type, lexer->file)
+                    )
+                )
+            );
     }
 
     switch(lexer->c) {

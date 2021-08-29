@@ -36,6 +36,7 @@ typedef enum TOKEN_TYPE {
     TOKEN_MINUS,        // -
     TOKEN_STAR,         // *
     TOKEN_SLASH,        // /
+    TOKEN_PERCENT,      // %
     TOKEN_RANGE,        // ..
     TOKEN_ARROW,        // =>
     TOKEN_AND,          // &&
@@ -55,6 +56,18 @@ typedef enum TOKEN_TYPE {
     TOKEN_SUB,          // -=
     TOKEN_MULT,         // *=
     TOKEN_DIV,          // /=
+    TOKEN_MOD,          // %=
+
+    TOKEN_XOR,          // ^
+    TOKEN_XOR_ASSIGN,   // ^=
+    TOKEN_LSHIFT,       // <<
+    TOKEN_RSHIFT,       // >>
+    
+    TOKEN_LSHIFT_ASSIGN,// <<=
+    TOKEN_RSHIFT_ASSIGN,// >>=
+
+    TOKEN_BIT_AND_ASSIGN,// &=
+    TOKEN_BIT_OR_ASSIGN, // |=
 
     TOKEN_COLON,        // :
     TOKEN_COMMA,        // ,
