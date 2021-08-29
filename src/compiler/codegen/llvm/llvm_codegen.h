@@ -35,6 +35,8 @@ void llvm_print_code(LLVMCodegenData_T* cg);
 void llvm_emit_code(LLVMCodegenData_T* cg, const char* target);
 void llvm_run_code(LLVMCodegenData_T* cg);
 
+void llvm_exit_hook(void);
+
 /*********************************
  **      Internal functions     **
  ********************************/

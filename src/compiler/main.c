@@ -11,21 +11,14 @@
 */
 
 // std includes
-#include <llvm-c/Core.h>
 #include <string.h>
-#include <stdlib.h>
 
 // compiler includes
-#include "globals.h"
-#include "ast/ast.h"
 #include "ast/mem/ast_mem.h"
-#include "io/file.h"
 #include "io/io.h"
 #include "io/log.h"
 #include "list.h"
-#include "version.h"
 #include "parser/parser.h"
-#include "parser/optimizer.h"
 #include "codegen/llvm/llvm_codegen.h"
 #include "codegen/transpiler/c_codegen.h"
 #include "platform/platform_bindings.h"
@@ -121,8 +114,6 @@ void generate_llvm(ASTProg_T*, char* target, Action_T action, bool print_llvm, b
 void transpile_c(ASTProg_T*, char* target, Action_T action, bool print_c, bool silent);
 void parse_to_xml(ASTProg_T*, char* target, Action_T action, bool silent);
 
-void exit_hook();
-
 static inline bool streq(char* a, char* b)
 {
     return strcmp(a, b) == 0;
@@ -145,7 +136,7 @@ static void evaluate_info_flags(char* argv)
 // entry point
 int main(int argc, char* argv[])
 {
-    atexit(exit_hook);
+    atexit(llvm_exit_hook);
 
     if(argc == 1)
     {
@@ -261,11 +252,6 @@ int main(int argc, char* argv[])
         free(cc_flags);
 
     return 0;
-}
-
-void exit_hook() 
-{
-    LLVMShutdown();
 }
 
 ASTProg_T* generate_ast(char* path, char* target, bool silent)

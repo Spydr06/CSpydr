@@ -41,8 +41,6 @@ void free_llvm_cg(LLVMCodegenData_T* cg)
     LLVMDisposeModule(cg->llvm_module);
     LLVMDisposeBuilder(cg->llvm_builder);
 
-    LLVMShutdown();
-
     free_list(cg->vars);
     free_list(cg->fns);
     free(cg);
@@ -179,4 +177,7 @@ LLVMValueRef find_fn(LLVMCodegenData_T* cg, char* callee)
     return NULL;
 }
 
-
+void llvm_exit_hook(void)
+{
+    LLVMShutdown();
+}
