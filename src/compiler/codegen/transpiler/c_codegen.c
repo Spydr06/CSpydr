@@ -15,8 +15,11 @@
 char* cc = DEFAULT_CC;
 char* cc_flags = DEFAULT_CC_FLAGS;
 
-#define DEFAULT_IMPORTS "#include <stdbool.h>\n" \
-                        "#include <stdlib.h>"
+const char* default_header_code =
+    "typedef char bool;\n"
+    "#define true ((bool) 1)\n"
+    "#define false ((bool) 0)\n"
+    "#define NULL ((void*) 0)\n";
 
 static const char* primitive_to_c_type[TY_UNDEF + 1] = {
     [TY_I8]  = "char" ,
@@ -101,10 +104,11 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
      */
 
     // import files from the C std (temporary)
-    println(cg, "#include <stdlib.h>");
+    /*println(cg, "#include <stdlib.h>");
     println(cg, "#include <stdbool.h>");
     println(cg, "#include <string.h>");
-    println(cg, "#include <stdio.h>");
+    println(cg, "#include <stdio.h>");*/
+    println(cg, (char*) default_header_code);
 
     // generate typedefs
     for(size_t i = 0; i < cg->ast->objs->size; i++)

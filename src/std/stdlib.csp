@@ -1,1 +1,2 @@
 extern fn exit(code: i32);
+extern fn atexit(func: fn<void>()): i32;

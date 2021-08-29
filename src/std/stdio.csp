@@ -1,1 +1,2 @@
 extern fn puts(str: &char): i32;
+extern fn gets(str: &char): &char;

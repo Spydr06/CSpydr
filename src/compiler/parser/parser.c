@@ -1247,8 +1247,6 @@ static ASTNode_T* parse_assignment(Parser_T* p, ASTNode_T* left)
             break;
     }
 
-    printf("right: %s", assign->right->tok->value);
-
     return assign;
 }
 
