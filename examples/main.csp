@@ -18,11 +18,15 @@ import "stdio.csp";
 
 macro message() |: init_str("Hello World") :|
 
-fn main(argc: i32, argv: &&char): i32 {
+fn main(argc: i32, argv: &&char): i32 {   
     let string: str = message!;
     str_append(string, '!');
 
     puts(str_lit(string));
+
+    atexit(| | => {
+        puts("exiting...");
+    });
 
     <- 0;
 }

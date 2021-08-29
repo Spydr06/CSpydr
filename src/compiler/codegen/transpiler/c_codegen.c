@@ -103,11 +103,6 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
      * Sections of a program and emit them seperately.
      */
 
-    // import files from the C std (temporary)
-    /*println(cg, "#include <stdlib.h>");
-    println(cg, "#include <stdbool.h>");
-    println(cg, "#include <string.h>");
-    println(cg, "#include <stdio.h>");*/
     println(cg, (char*) default_header_code);
 
     // generate typedefs

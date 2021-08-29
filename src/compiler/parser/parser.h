@@ -4,7 +4,7 @@
 #include "../lexer/lexer.h"
 #include "../error/error.h"
 #include "../ast/ast.h"
-#include "../lexer/preprocess.h"
+#include "../lexer/preprocessor.h"
 
 typedef struct PARSER_STRUCT Parser_T;
 

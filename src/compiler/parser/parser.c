@@ -1165,7 +1165,10 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p)
     }
     parser_consume(p, TOKEN_BIT_OR, "expect `|` after lambda args");
 
-    lambda_lit->data_type = parse_type(p);
+    if(tok_is(p, TOKEN_ARROW))
+        lambda_lit->data_type = get_primitive_type("void");
+    else
+        lambda_lit->data_type = parse_type(p);
     parser_consume(p, TOKEN_ARROW, "expect `=>` after lambda return type");
 
     lambda_lit->body = parse_stmt(p);
