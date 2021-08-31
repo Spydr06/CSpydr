@@ -24,5 +24,33 @@ extern fn freopen(filename: const &char, modes: const &char, stream: &FILE): &FI
 extern fn setbuf(stream: &FILE, buf: &char);
 extern fn setvbuf(stream: &FILE, buf: &char, modes: i32, n: usize): i32;
 
-extern fn puts(str: &char): i32;
-extern fn gets(str: &char): &char;
+extern fn fgetc(stream: &FILE): i32;
+extern fn getc(stream: &FILE): i32;
+extern fn getchar(): i32;
+
+extern fn fputc(c: i32, stream: &FILE): i32;
+extern fn putc(c: i32, stream: &FILE): i32;
+extern fn putchar(c: i32): i32;
+
+extern fn getw(stream: i32): i32;
+extern fn putw(w: i32, stream: &FILE): i32;
+
+extern fn fputs(s: const &char, stream: &FILE): i32;
+extern fn puts(str: const &char): i32;
+extern fn gets(str: const &char): &char;
+extern fn ungetc(c: i32, stream: &FILE): i32;
+
+extern fn fread(ptr: &void, size: usize, n: usize, s: &FILE): usize;
+extern fn fwrite(ptr: const &void, size: usize, n: usize, s: &FILE): u64;
+
+extern fn fseek(stream: &FILE, off: i64, whence: i32): i32;
+extern fn ftell(stream: &FILE): i64;
+extern fn rewind(stream: &FILE);
+
+#extern fn fgetpos(stream: &FILE, pos: &fpos_t): i32;
+#extern fn fsetpos(stream: &FILE, pos: const &fpos_t): i32;
+
+extern fn perror(s: const &char);
+
+extern fn __uflow(stream: &FILE): i32;
+extern fn __overflow(stream: &FILE, n: i32): i32;
