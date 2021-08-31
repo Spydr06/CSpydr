@@ -360,7 +360,17 @@ static ASTType_T* parse_struct_type(Parser_T* p)
 {
     ASTType_T* struct_type = init_ast_type(TY_STRUCT, p->tok);
     parser_consume(p, TOKEN_STRUCT, "expect `struct` keyword for struct type");
-    parser_consume(p, TOKEN_LBRACE, "expect `{` after struct keyword");
+
+    if(tok_is(p, TOKEN_ID))
+    {
+        struct_type->kind = TY_OPAQUE_STRUCT;
+        strcpy(struct_type->callee, p->tok->value);
+        parser_advance(p);
+
+        return struct_type;
+    }
+
+    parser_consume(p, TOKEN_LBRACE, "expect `{` or identifier after struct keyword");
     struct_type->members = init_list(sizeof(struct AST_NODE_STRUCT*));
     ast_mem_add_list(struct_type->members);
 

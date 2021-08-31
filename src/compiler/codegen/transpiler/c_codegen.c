@@ -22,10 +22,10 @@ const char* default_header_code =
     "#define NULL ((void*) 0)\n";
 
 static const char* primitive_to_c_type[TY_UNDEF + 1] = {
-    [TY_I8]  = "char" ,
-    [TY_I16] = "short",
-    [TY_I32] = "int",
-    [TY_I64] = "long",
+    [TY_I8]  = "signed char" ,
+    [TY_I16] = "signed short",
+    [TY_I32] = "signed int",
+    [TY_I64] = "signed long",
 
     [TY_U8]  = "unsigned char" ,
     [TY_U16] = "unsigned short",
@@ -275,6 +275,9 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
                 if(struct_name && strcmp(ty->callee, struct_name) == 0)
                     print(cg, "struct ");
                 print(cg, ty->callee);
+                break;
+            case TY_OPAQUE_STRUCT:
+                print(cg, "struct %s", ty->callee);
                 break;
             default:
                 throw_error(ERR_MISC, ty->tok, "Types with kind %d are currently not supported.", ty->kind);

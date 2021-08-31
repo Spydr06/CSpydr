@@ -109,6 +109,7 @@ typedef enum {
     TY_PTR,
     TY_ARR,
     TY_STRUCT,
+    TY_OPAQUE_STRUCT,
     TY_ENUM,
 
     TY_LAMBDA,
