@@ -159,7 +159,7 @@ Token_T* lexer_next_token(Lexer_T* lexer)
     if(lexer->c == '#')
         lexer_skip_comment(lexer);
 
-    if(isalpha(lexer->c))
+    if(isalpha(lexer->c) || (lexer->c == '_' && (lexer_peek(lexer, 1) == '_' || isalnum(lexer_peek(lexer, 1)))))
         return lexer_get_id(lexer);
     else if(isdigit(lexer->c))
         return lexer_get_number(lexer);
