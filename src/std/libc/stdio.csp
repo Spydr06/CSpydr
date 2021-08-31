@@ -1,0 +1,28 @@
+import "libc/bits/types/FILE.csp";
+import "types.csp";
+
+macro BUFSIZ |: (8192) :|
+macro EOF |: (-1) :|
+macro P_tmpdir |: "/tmp" :| # //FIXME: only unix
+
+extern let stdin: &FILE;
+extern let stdout: &FILE;
+extern let stderr: &FILE;
+
+extern fn remove(filename: const &char): i32;
+extern fn rename(old: const &char, new: const &char): i32;
+
+extern fn tmpfile(): &FILE;
+extern fn tmpnam(s: &char): &char;
+
+extern fn fclose(stream: &FILE): i32;
+extern fn fflush(stream: &FILE): i32;
+
+extern fn fopen(filename: const &char, modes: const &char, stream: &FILE): &FILE;
+extern fn freopen(filename: const &char, modes: const &char, stream: &FILE): &FILE;
+
+extern fn setbuf(stream: &FILE, buf: &char);
+extern fn setvbuf(stream: &FILE, buf: &char, modes: i32, n: usize): i32;
+
+extern fn puts(str: &char): i32;
+extern fn gets(str: &char): &char;

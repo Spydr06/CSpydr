@@ -10,11 +10,14 @@
 
 import "string.csp";
 import "vec.csp";
-import "memory.csp";
-import "stdlib.csp";
-import "stdio.csp";
+import "libc/memory.csp";
+import "libc/stdlib.csp";
+import "libc/stdio.csp";
+import "libc/stdint.csp";
 
 macro message() |: init_str("Hello World") :|
+
+type x: struct y;
 
 fn main(argc: i32, argv: &&char): i32 {   
     let string: str = message!;

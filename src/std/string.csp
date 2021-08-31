@@ -1,7 +1,7 @@
 # An implementation of a string type
 
 import "types.csp";
-import "stdlib.csp";
+import "libc/stdlib.csp";
 
 # --- the str_s struct and str typedef ---
 type str_s: struct {
