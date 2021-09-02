@@ -5,52 +5,56 @@ macro BUFSIZ |: (8192) :|
 macro EOF |: (-1) :|
 macro P_tmpdir |: "/tmp" :| # //FIXME: only unix
 
-extern let stdin: &FILE;
-extern let stdout: &FILE;
-extern let stderr: &FILE;
+extern {
 
-extern fn remove(filename: const &char): i32;
-extern fn rename(old: const &char, new: const &char): i32;
+    let stdin: &FILE;
+    let stdout: &FILE;
+    let stderr: &FILE;
 
-extern fn tmpfile(): &FILE;
-extern fn tmpnam(s: &char): &char;
+    fn remove(filename: const &char): i32;
+    fn rename(old: const &char, new: const &char): i32;
 
-extern fn fclose(stream: &FILE): i32;
-extern fn fflush(stream: &FILE): i32;
+    fn tmpfile(): &FILE;
+    fn tmpnam(s: &char): &char;
 
-extern fn fopen(filename: const &char, modes: const &char, stream: &FILE): &FILE;
-extern fn freopen(filename: const &char, modes: const &char, stream: &FILE): &FILE;
+    fn fclose(stream: &FILE): i32;
+    fn fflush(stream: &FILE): i32;
 
-extern fn setbuf(stream: &FILE, buf: &char);
-extern fn setvbuf(stream: &FILE, buf: &char, modes: i32, n: usize): i32;
+    fn fopen(filename: const &char, modes: const &char, stream: &FILE): &FILE;
+    fn freopen(filename: const &char, modes: const &char, stream: &FILE): &FILE;
 
-extern fn fgetc(stream: &FILE): i32;
-extern fn getc(stream: &FILE): i32;
-extern fn getchar(): i32;
+    fn setbuf(stream: &FILE, buf: &char);
+    fn setvbuf(stream: &FILE, buf: &char, modes: i32, n: usize): i32;
 
-extern fn fputc(c: i32, stream: &FILE): i32;
-extern fn putc(c: i32, stream: &FILE): i32;
-extern fn putchar(c: i32): i32;
+    fn fgetc(stream: &FILE): i32;
+    fn getc(stream: &FILE): i32;
+    fn getchar(): i32;
 
-extern fn getw(stream: i32): i32;
-extern fn putw(w: i32, stream: &FILE): i32;
+    fn fputc(c: i32, stream: &FILE): i32;
+    fn putc(c: i32, stream: &FILE): i32;
+    fn putchar(c: i32): i32;
 
-extern fn fputs(s: const &char, stream: &FILE): i32;
-extern fn puts(str: const &char): i32;
-extern fn gets(str: const &char): &char;
-extern fn ungetc(c: i32, stream: &FILE): i32;
+    fn getw(stream: i32): i32;
+    fn putw(w: i32, stream: &FILE): i32;
 
-extern fn fread(ptr: &void, size: usize, n: usize, s: &FILE): usize;
-extern fn fwrite(ptr: const &void, size: usize, n: usize, s: &FILE): u64;
+    fn fputs(s: const &char, stream: &FILE): i32;
+    fn puts(str: const &char): i32;
+    fn gets(str: const &char): &char;
+    fn ungetc(c: i32, stream: &FILE): i32;
 
-extern fn fseek(stream: &FILE, off: i64, whence: i32): i32;
-extern fn ftell(stream: &FILE): i64;
-extern fn rewind(stream: &FILE);
+    fn fread(ptr: &void, size: usize, n: usize, s: &FILE): usize;
+    fn fwrite(ptr: const &void, size: usize, n: usize, s: &FILE): u64;
 
-#extern fn fgetpos(stream: &FILE, pos: &fpos_t): i32;
-#extern fn fsetpos(stream: &FILE, pos: const &fpos_t): i32;
+    fn fseek(stream: &FILE, off: i64, whence: i32): i32;
+    fn ftell(stream: &FILE): i64;
+    fn rewind(stream: &FILE);
 
-extern fn perror(s: const &char);
+    # fn fgetpos(stream: &FILE, pos: &fpos_t): i32;
+    # fn fsetpos(stream: &FILE, pos: const &fpos_t): i32;
 
-extern fn __uflow(stream: &FILE): i32;
-extern fn __overflow(stream: &FILE, n: i32): i32;
+    fn perror(s: const &char);
+
+    fn __uflow(stream: &FILE): i32;
+    fn __overflow(stream: &FILE, n: i32): i32;
+
+}

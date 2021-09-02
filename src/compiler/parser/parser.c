@@ -299,7 +299,7 @@ static ASTType_T* get_compatible_tuple(Parser_T* p, ASTType_T* tuple)
 static ASTObj_T* parse_typedef(Parser_T* p);
 static ASTObj_T* parse_fn(Parser_T* p);
 static ASTObj_T* parse_global(Parser_T* p);
-static ASTObj_T* parse_extern(Parser_T* p);
+static void parse_extern(Parser_T* p, List_T* objs);
 
 ASTProg_T* parse(List_T* files, bool is_silent)
 {
@@ -339,7 +339,7 @@ ASTProg_T* parse(List_T* files, bool is_silent)
                 list_push(prog->objs, parse_fn(p));
                 break;
             case TOKEN_EXTERN:  
-                list_push(prog->objs, parse_extern(p));
+                parse_extern(p, prog->objs);
                 break;
             default:
                 throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect [import, type, let, const, fn]", p->tok->value);
@@ -565,10 +565,8 @@ static ASTObj_T* parse_typedef(Parser_T* p)
 
 static ASTObj_T* parse_fn_def(Parser_T* p);
 
-static ASTObj_T* parse_extern(Parser_T* p)
+static ASTObj_T* parse_extern_def(Parser_T *p)
 {
-    parser_advance(p);
-
     switch(p->tok->type)
     {
         case TOKEN_LET:
@@ -596,6 +594,24 @@ static ASTObj_T* parse_extern(Parser_T* p)
 
     // satisfy -Wall
     return NULL;
+}
+
+static void parse_extern(Parser_T* p, List_T* objs)
+{
+    parser_advance(p);
+
+    if(tok_is(p, TOKEN_LBRACE)) {
+        parser_advance(p);
+        while(!tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF))
+        {
+            list_push(objs, parse_extern_def(p));  
+        }
+
+        parser_consume(p, TOKEN_RBRACE, "expect `}` after extern function/variable definitions");
+        return;
+    }
+
+    list_push(objs, parse_extern_def(p));    
 }
 
 static List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok)
