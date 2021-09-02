@@ -12,6 +12,12 @@
 #include "../io/io.h"
 #include "../io/log.h"
 
+#define throw_error(...)          \
+    {                             \
+        printf("\n");             \
+        throw_error(__VA_ARGS__); \
+    }
+
 typedef struct MACRO_STRUCT
 {
     Token_T* tok;
@@ -243,8 +249,10 @@ static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
     SrcFile_T* import_file = read_file(imp->import_path);
     import_file->short_path = strdup(imp->tok->value);
     Lexer_T* import_lexer = init_lexer(import_file);
-    if(!pp->is_silent)
-        LOG_OK_F(COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s\n", imp->tok->value);
+    if(!pp->is_silent) {
+        LOG_OK_F("\33[2K\r" COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s", imp->tok->value);
+        fflush(stdout);
+    }
 
     // add the tokens
     Token_T* tok;

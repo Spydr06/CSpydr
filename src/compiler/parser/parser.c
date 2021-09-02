@@ -310,7 +310,7 @@ ASTProg_T* parse(List_T* files, bool is_silent)
 
     if(!is_silent)
     {
-        LOG_OK_F(COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s\n", main_file->path);
+        LOG_OK_F(COLOR_BOLD_GREEN "\33[2K\r  Compiling " COLOR_RESET " %s\n", main_file->path);
     }
 
     ASTProg_T* prog = init_ast_prog(main_file->path, NULL, NULL);
