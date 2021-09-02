@@ -167,6 +167,13 @@ Token_T* lexer_next_token(Lexer_T* lexer)
         return lexer_get_symbol(lexer);
 }
 
+static bool str_starts_with(const char *pre, const char *str)
+{
+    size_t lenpre = strlen(pre),
+           lenstr = strlen(str);
+    return lenstr < lenpre ? false : memcmp(pre, str, lenpre) == 0;
+}
+
 static void lexer_skip_whitespace(Lexer_T* lexer)
 {
     while(lexer->c == '\t' || lexer->c == ' ' || lexer->c == '\r' || lexer->c == '\n')
@@ -251,11 +258,13 @@ static Token_T* lexer_get_id(Lexer_T* lexer)
         is_macro = true;
     }
 
-    return init_token(buffer, lexer->line, lexer->pos - 1, 
-        is_macro ? 
-            TOKEN_MACRO_CALL : 
-                lexer_get_id_type(buffer)
-            , lexer->file);
+    Token_T* id_token = init_token(buffer, lexer->line, lexer->pos - 1, is_macro ? TOKEN_MACRO_CALL : lexer_get_id_type(buffer), lexer->file);
+
+    if(str_starts_with("__csp_", id_token->value)) {
+        throw_error(ERR_SYNTAX_WARNING, id_token, "Unsafe identifier name: identifier that start with `__csp_` may be used internally");
+    }
+
+    return id_token;
 }
 
 static Token_T* lexer_get_hexadecimal(Lexer_T* lexer)
