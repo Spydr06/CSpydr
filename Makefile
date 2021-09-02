@@ -5,7 +5,7 @@ TEST_EXEC ?= tests.out
 # source, test, build and target directories
 TARGET_DEST ?= ./bin
 SRC_DIR ?= ./src/compiler
-TEST_DIR ?= ./tests
+TEST_DIR ?= ./tests/compiler
 BUILD_DIR ?= ./build
 
 LIB_DIR ?= ./lib
