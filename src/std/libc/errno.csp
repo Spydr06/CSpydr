@@ -1,0 +1,12 @@
+import "libc/bits/types/error_t.csp";
+
+macro errno() |: (*__errno_location()) :|
+
+extern {
+
+    fn __errno_location(): &i32;
+
+    let program_invocation_name: &char;
+    let program_invocation_short_name: &char;
+
+}
