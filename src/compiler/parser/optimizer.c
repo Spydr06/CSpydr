@@ -180,7 +180,7 @@ static void register_fn(Optimizer_T* o, ASTObj_T* fn)
     ASTObj_T* found = find_obj(o->scope, fn->callee);
     if(found) 
     {
-        throw_error(ERR_REDEFINITION, fn->tok, "redefinition of function \"%s\", first defined in" COLOR_BOLD_WHITE " %s:[%ld:%ld]" COLOR_RESET, fn->callee, "TODO", found->tok->line, found->tok->pos);
+        throw_error(ERR_REDEFINITION, fn->tok, "redefinition of function \"%s\", first defined in" COLOR_BOLD_WHITE " %s:[%ld:%ld]" COLOR_RESET, fn->callee, found->tok->source->short_path, found->tok->line, found->tok->pos);
         o->num_errors_found++;
     }
 
@@ -192,7 +192,7 @@ static void register_var(Optimizer_T* o, ASTObj_T* var)
     ASTObj_T* found = find_obj(o->scope, var->callee);
     if(found)
     {
-        throw_error(ERR_REDEFINITION, var->tok, "redefinition of variable \"%s\", first defined in" COLOR_BOLD_WHITE " %s:[%ld:%ld]" COLOR_RESET, var->callee, "TODO", found->tok->line, found->tok->pos);
+        throw_error(ERR_REDEFINITION, var->tok, "redefinition of variable \"%s\", first defined in" COLOR_BOLD_WHITE " %s:[%ld:%ld]" COLOR_RESET, var->callee, found->tok->source->short_path, found->tok->line, found->tok->pos);
         o->num_errors_found++;
     }
 

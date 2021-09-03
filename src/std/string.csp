@@ -2,6 +2,7 @@
 
 import "types.csp";
 import "libc/stdlib.csp";
+import "libc/string.csp";
 
 # --- the str_s struct and str typedef ---
 type str_s: struct {
@@ -15,9 +16,6 @@ type str: &str_s;
 # --- a default `nil` type for strings ---
 let str_nil: str = &{"\0", 0, 0}: str_s;
 # ----------------------------------------
-
-extern fn strcmp(str1: const &char, str2: const &char): i32;
-extern fn strlen(str: const &char): usize;
 
 # the initializer function
 fn init_str(string: &char): str {

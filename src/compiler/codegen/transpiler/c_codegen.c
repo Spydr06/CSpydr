@@ -116,7 +116,11 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
                 print(cg, "struct %s", obj->callee);
             else
                 c_gen_type(cg, obj->data_type, obj->callee);
-            println(cg, " %s;", obj->callee);
+            
+            if(obj->data_type->kind == TY_LAMBDA)
+                println(cg, ";");
+            else
+                println(cg, " %s;", obj->callee);
         }
     }
 

@@ -1,8 +1,0 @@
-import "types.csp";
-
-extern{
-    fn malloc(size: usize): &void;
-    fn realloc(ptr: &void, size: usize): &void
-    fn free(ptr: &void);
-    fn memcpy(dest: &void, src: const &void, n: usize): &void;
-}

@@ -10,10 +10,8 @@
 
 import "string.csp";
 import "vec.csp";
-import "libc/memory.csp";
-import "libc/stdlib.csp";
 import "libc/stdio.csp";
-import "libc/stdint.csp";
+import "libc/stdlib.csp";
 
 macro message() |: init_str("Hello World") :|
 

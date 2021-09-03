@@ -1,4 +1,80 @@
+# a basic implementation of the libc stdlib.h header file
+
+import "stddef.csp";
+
+type div_t: struct {
+    quot: i32,
+    rem: i32
+};
+
+type ldiv_t: struct {
+    quot: i64,
+    rem: i64
+};
+
+type __compar_fn_t: fn<i32>(const &void, const &void);
+
+macro RAND_MAX |: 2147483647 :|
+
+macro EXIT_FAILURE |: 1 :|
+macro EXIT_SUCCESS |: 0 :|
+
+macro MB_CUR_MAX |: (__ctype_get_mb_max()) :|
+extern fn __ctype_get_mb_max(): size_t;
+
 extern {
-    fn exit(code: i32);
-    fn atexit(func: fn<void>()): i32;
+
+    fn atof(nptr: const &char): f64;
+    fn atoi(nptr: const &char): i32;
+    fn atol(nptr: const &char): i64;
+    # fn atoll(nptr: const &char): i64; # FIXME:
+
+    fn strtod(nptr: const &char, endptr: &&char): f64;
+    fn strtof(nptr: const &char, endptr: &&char): f32;
+    # fn strtold(nptr: const &char, endptr: &&char); f64 # FIXME:
+    fn strtol(nptr: const &char, endptr: &&char): i64;
+    fn strtoul(nptr: const &char, endptr: &&char): u64;
+    # fn strtoll(nptr: const &char, endptr: &&char): i64; # FIXME:
+    # fn strtoull(nptr: const &char, endptr: &&char): u64; # FIXME:
+
+    fn strfromd(dest: &char, size: size_t, format: const &char, f: f64): i32;
+    fn strfromf(dest: &char, size: size_t, format: const &char, f: f32): i32;
+    # fn strforml(dest: &char, size: size_t, format: const &char, f: f64): i32; // FIXME:
+
+    fn rand(): i32;
+    fn strand(seed: u32): i32;
+
+    fn malloc(size: size_t): &void;
+    fn calloc(nmemb: size_t, size: size_t): &void;
+    fn realloc(ptr: &void, size: size_t): &void;
+
+    fn free(ptr: &void);
+
+    fn abort();
+    fn atexit(funct: fn<void>());
+    fn exit(status: i32);
+    fn _Exit(status: i32); # for c99 compatibility
+
+    fn getenv(name: const &char): &char;
+    fn putenv(string: &char): i32;
+    fn clearenv(): i32;
+
+    fn system(command: const &char): i32;
+
+    fn bsearch(key: const &void, base: const &void, nmemb: size_t, size: size_t, compar: __compar_fn_t);
+    fn qsort(base: &void, nmemb: size_t, size: size_t, compar: __compar_fn_t);
+
+    fn abs(x: i32): i32;
+    fn labs(x: i64): i64;
+
+    fn div(number: i32, denom: i32): div_t;
+    fn ldiv(number: i64, denom: i64): ldiv_t;
+    # fn lldiv(number: i64, denom: i64): lldiv_t; # FIXME:
+
+    fn mblen(s: const &char, n: size_t): i32;
+    fn mbtowc(pwc: &wchar_t, s: const &char, n: size_t): i32;
+    fn wctomb(s: &char, wchar: wchar_t): i32;
+    fn mbstowcs(pwcs: wchar_t, s: const &char, n: size_t): size_t;
+    fn wcstombs(s: &char, pwcs: const &wchar_t, n: size_t): size_t;
+
 }

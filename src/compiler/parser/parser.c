@@ -322,11 +322,8 @@ ASTProg_T* parse(List_T* files, bool is_silent)
         {
             case TOKEN_IMPORT:
                 parser_advance(p);
-                //parser_consume(p, TOKEN_STRING, "expect file to import as string");
-                //parser_consume(p, TOKEN_SEMICOLON, "expect `;` after import statement");
-                parser_advance(p);
-                if(tok_is(p, TOKEN_SEMICOLON))
-                    parser_advance(p);
+                parser_consume(p, TOKEN_STRING, "expect file to import as string");
+                parser_consume(p, TOKEN_SEMICOLON, "expect `;` after import statement");
                 break;
             case TOKEN_TYPE:
                 list_push(prog->objs, parse_typedef(p));

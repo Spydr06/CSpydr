@@ -25,6 +25,7 @@ typedef struct MACRO_STRUCT
 
     u_int8_t argc;
     Token_T* args[__CSP_MAX_FN_NUM_ARGS];
+    bool used;
 } __attribute__((packed)) Macro_T ;
 
 typedef struct IMPORT_STRUCT
@@ -39,6 +40,7 @@ static Macro_T* init_macro(Token_T* tok)
     mac->tok = tok;
     mac->replacing_tokens = init_list(sizeof(struct TOKEN_STRUCT*));
     mac->argc = 0;
+    mac->used = true;
 
     return mac;
 }
@@ -49,6 +51,10 @@ static void free_macro(Macro_T* mac)
 
     for(u_int8_t i = 0; i < mac->argc; i++)
         free_token(mac->args[i]);
+    
+    if(!mac->used)
+        for(size_t i = 0; i < mac->replacing_tokens->size; i++)
+            free_token(mac->replacing_tokens->items[i]);
 
     free_token(mac->tok);
     free(mac);
@@ -72,7 +78,6 @@ static Import_T* init_import(Token_T* tok)
 
 static void free_import(Import_T* imp)
 {
-    //free_token(imp->tok);
     free(imp->import_path);
     free(imp);
 }
@@ -189,10 +194,11 @@ static char* get_full_import_path(char* origin, Token_T* import_file)
     char* full_import_path = calloc(strlen(template) + strlen(full_path) + strlen(import_file->value) + 1, sizeof(char));
     sprintf(full_import_path, template, full_path, import_file->value);
 
+    free(abs_path);
+
     if(!file_exists(full_import_path))
     {
         free(full_import_path);
-        free(abs_path);
         // if the file does not exist locally, search for it in the STD path
 
         const char* std_tmp = STD_DIR DIRECTORY_DELIMS "%s";
@@ -203,8 +209,6 @@ static char* get_full_import_path(char* origin, Token_T* import_file)
             throw_error(ERR_SYNTAX_ERROR, import_file, "Error reading imported file \"%s\", no such file or directory", import_file->value);
         return std_path;
     }
-
-    free(abs_path);
 
     return full_import_path;
 }
@@ -321,11 +325,10 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
         if(tok->type == TOKEN_MACRO_CALL)
         {
             Macro_T* macro = find_macro(pp, tok->value);
-            //free_token(tok);
             if(!macro)
                 throw_error(ERR_UNDEFINED, tok, "unedefined macro `%s`", tok->value);
-            
             free_token(tok);
+            macro->used = true;
 
             for(size_t i = 0; i < macro->replacing_tokens->size; i++)
                 list_push(token_stage_3, macro->replacing_tokens->items[i]);
