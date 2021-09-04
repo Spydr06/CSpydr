@@ -1,0 +1,4 @@
+# a basic implementation of the libc assert.h header for the CSpydr programming language
+
+macro assert(## TODO: ignore ##) |: (0: void) :|
+macro static_assert |: _Static_assert :|

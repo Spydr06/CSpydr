@@ -1,5 +1,10 @@
 # a program to test the llvm frontend
 
+import "libc/float.csp";
+import "libc/fenv.csp";
+import "libc/locale.csp";
+
 fn main(): i32 {
+
     <- 0;
 }

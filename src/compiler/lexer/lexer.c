@@ -26,6 +26,7 @@ const struct { const char* str; TokenType_T type; } keywords[] = {
     {"enum", TOKEN_ENUM},
     {"import", TOKEN_IMPORT},
     {"const", TOKEN_CONST},
+    {"complex", TOKEN_COMPLEX},
     {"extern", TOKEN_EXTERN},
     {"macro", TOKEN_MACRO},
     {"sizeof", TOKEN_SIZEOF},

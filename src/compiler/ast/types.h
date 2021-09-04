@@ -15,6 +15,7 @@
 #define U64_S  8
 #define F32_S  4
 #define F64_S  8
+#define F80_S  10
 #define CHAR_S 1
 #define BOOL_S 1
 #define VOID_S 1

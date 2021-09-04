@@ -60,6 +60,7 @@ ASTType_T* init_ast_type(ASTTypeKind_T kind, Token_T* tok)
 
     type->is_primitive = false;
     type->is_constant = false;
+    //type->is_complex = false;
     type->size = 0;
     type->is_fn = false;
 

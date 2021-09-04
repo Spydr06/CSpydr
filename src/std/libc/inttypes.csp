@@ -1,0 +1,3 @@
+# a basic implementation of the libc inttypes.h header for the CSpydr programming language
+import "libc/stdint.csp";
+

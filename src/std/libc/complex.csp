@@ -1,0 +1,97 @@
+# a basic implementation of the libc complex.h header for the CSpydr programming language
+
+extern {
+
+    fn casin(z: complex f64): complex f64;
+    fn casinf(z: complex f32): complex f32;
+    fn casinl(z: complex f80): complex f80;
+    
+    fn cacos(z: complex f64): complex f64;
+    fn cacosf(z: complex f32): complex f32;
+    fn cacosl(z: complex f80): complex f80;
+
+    fn catan(z: complex f64): complex f64;
+    fn catanf(z: complex f32): complex f32;
+    fn catanl(z: complex f80): complex f80;
+
+    fn ccos(z: complex f64): complex f64;
+    fn ccosf(z: complex f32): complex f32;
+    fn ccosl(z: complex f80): complex f80;
+
+    fn csin(z: complex f64): complex f64;
+    fn csinf(z: complex f32): complex f32;
+    fn csinl(z: complex f80): complex f80;
+
+    fn ctan(z: complex f64): complex f64;
+    fn ctanf(z: complex f32): complex f32;
+    fn ctanl(z: complex f80): complex f80;
+
+    fn cacosh(z: complex f64): complex f64;
+    fn cacoshf(z: complex f32): complex f32;
+    fn cacoshl(z: complex f80): complex f80;
+
+    fn casinh(z: complex f64): complex f64;
+    fn casinhf(z: complex f32): complex f32;
+    fn cansinl(z: complex f80): complex f80;
+
+    fn catanh(z: complex f64): complex f64;
+    fn catanhf(z: complex f32): complex f32;
+    fn catanhl(z: complex f80): complex f80;
+
+    fn ccosh(z: complex f64): complex f64;
+    fn ccoshf(z: complex f32): complex f32;
+    fn ccoshl(z: complex f80): complex f80;
+
+    fn csinh(z: complex f64): complex f64;
+    fn csinhf(z: complex f32): complex f32;
+    fn csinhl(z: complex f80): complex f80;
+
+    fn ctahh(z: complex f64): complex f64;
+    fn ctanhf(z: complex f32): complex f32;
+    fn ctanhl(z: complex f80): complex f80;
+
+    fn cexp(z: complex f64): complex f64;
+    fn cexpf(z: complex f32): complex f32;
+    fn cexpl(z: complex f80): complex f80;
+
+    fn clog(z: complex f64): complex f64;
+    fn clogf(z: complex f32): complex f32;
+    fn clogl(z: complex f80): complex f80;
+
+    fn cabs(z: complex f64): complex f64;
+    fn cabsf(z: complex f32): complex f32;
+    fn cabsl(z: complex f80): complex f80;
+
+    fn cpow(x: complex f64, y: complex f64): complex f64;
+    fn cpowf(x: complex f32, y: complex f32): complex f32;
+    fn cpowl(x: complex f80, y: complex f80): complex f80;
+
+    fn csqrt(z: complex f64): complex f64;
+    fn csqrtf(z: complex f32): complex f32;
+    fn csqrtl(z: complex f80): complex f80;
+
+    fn carg(z: complex f64): f64;
+    fn cargf(z: complex f32): f32;
+    fn cargl(z: complex f80): f80;
+
+    fn cimag(z: complex f64): f64;
+    fn cimagf(z: complex f32): f32;
+    fn cimagl(z: complex f80): f80;
+
+    fn CMPLX(x: f64, y: f64): complex f64;
+    fn CMPLXF(x: f32, y: f32): complex f32;
+    fn CMPLXL(x: f80, y: f80): complex f80;
+
+    fn conj(z: complex f64): f64;
+    fn conjf(z: complex f32): f32;
+    fn conjl(z: complex f80): f80;
+
+    fn cproj(z: complex f64): complex f64;
+    fn cprojf(z: complex f32): complex f32;
+    fn cprojl(z: complex f80): complex f80;
+
+    fn creal(z: complex f64): f64;
+    fn crealf(z: complex f32): f32;
+    fn creall(z: complex f80): f80;
+
+}

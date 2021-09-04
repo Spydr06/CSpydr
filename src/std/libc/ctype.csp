@@ -1,0 +1,21 @@
+# a basic implementation of the libc ctype.h header for the CSpydr programming language
+
+extern {
+
+    fn isalnum(c: i32): i32;
+    fn isalpha(c: i32): i32;
+    fn isblank(c: i32): i32;
+    fn iscntrl(c: i32): i32;
+    fn isdigit(c: i32): i32;
+    fn isgraph(c: i32): i32;
+    fn islower(c: i32): i32;
+    fn isprint(c: i32): i32;
+    fn ispunct(c: i32): i32;
+    fn isspace(c: i32): i32;
+    fn isupper(c: i32): i32;
+    fn isxdigit(c: i32): i32;
+    
+    fn tolower(c: i32): i32;
+    fn toupper(c: i32): i32;
+
+}

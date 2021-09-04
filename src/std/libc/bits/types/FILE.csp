@@ -1,1 +1,0 @@
-type FILE: struct _IO_FILE;

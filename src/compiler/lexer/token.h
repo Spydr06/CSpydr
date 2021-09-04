@@ -94,6 +94,7 @@ typedef enum TOKEN_TYPE {
     TOKEN_EXTERN,       // extern
     TOKEN_MACRO,        // macro
     TOKEN_CONST,        // const
+    TOKEN_COMPLEX,      // complex
     TOKEN_SIZEOF,       // sizeof
     TOKEN_TYPEOF,       // typeof
     TOKEN_WHILE,        // while

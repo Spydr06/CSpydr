@@ -12,6 +12,8 @@
 #include <limits.h>
 #include <float.h>
 
+#include <errno.h>
+
 #ifdef __linux__
     #include <libgen.h>
 #endif
@@ -460,6 +462,13 @@ static ASTType_T* parse_type(Parser_T* p)
         parser_advance(p);
     }
 
+    bool complex_type = false;
+    if(tok_is(p, TOKEN_COMPLEX))
+    {  
+        complex_type = true;
+        parser_advance(p); 
+    }
+
     ASTType_T* type = get_primitive_type(p->tok->value);
     if(type)
         parser_advance(p);
@@ -525,6 +534,7 @@ static ASTType_T* parse_type(Parser_T* p)
         }
     
     type->is_constant = constant_type;
+    type->is_complex = complex_type;
 
 parse_array_ty:
     if(tok_is(p, TOKEN_LBRACKET))

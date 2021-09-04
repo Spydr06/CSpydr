@@ -1,1 +1,0 @@
-type error_t: i32;

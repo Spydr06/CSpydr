@@ -101,6 +101,7 @@ typedef enum {
 
     TY_F32,
     TY_F64,
+    TY_F80,
 
     TY_BOOL,
     TY_VOID,
@@ -199,6 +200,7 @@ struct AST_TYPE_STRUCT
 
     bool is_primitive;
     bool is_constant;
+    bool is_complex;
 
     // functions
     bool is_fn;

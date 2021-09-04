@@ -1,0 +1,39 @@
+# a basic implementation of the libc fenv.h header for the CSpydr programming language
+
+# TODO: find a way to define this libc- and platform independant.
+type fenv_t: struct {
+    __control_word: u16,
+    __glibc_reserved1: u16,
+    __status_word: u16,
+    __glibc_reserved2: u16,
+    __tags: u16,
+    __glibc_reserved3: u16,
+    __eip: u32,
+    __cs_selector: u16,
+    __opcode: u32, # FIXME: bitflags :11, __glibc_reserved4:5
+    __data_offset: u32,
+    __data_selector: u16,
+    __glibc_reserved5: u16,
+
+    __mxcsr: u16, # FIXME: only x86_64
+}
+
+type fexcept_t: u16;
+
+extern {
+
+    fn feclearexcept(excepts: i32): i32;
+    fn fegetexceptflag(flagp: &fexcept_t, excepts: i32): i32;
+    fn feraiseexcept(excepts: i32): i32;
+    fn fesetexceptflag(flagp: const &fexcept_t, excepts: i32): i32;
+    fn fetestexcept(excpets: i32): i32;
+
+    fn fetgetround(): i32;
+    fn fetsetround(round: i32);
+
+    fn fgetenv(envp: &fenv_t): i32;
+    fn feholdexcept(envp: &fenv_t): i32;
+    fn fesetenv(envp: const &fenv_t): i32;
+    fn feupdateenv(envp: const &fenv_t): i32;
+
+}

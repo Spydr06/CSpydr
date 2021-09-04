@@ -1,0 +1,6 @@
+# a basic implementation of the libc math.h header for the CSpydr programming language
+
+type float_t: f32;
+type double_t: f64;
+
+

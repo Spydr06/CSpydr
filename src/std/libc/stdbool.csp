@@ -1,0 +1,3 @@
+# a basic implementation of the libc bool.h header for the CSpydr programming language
+
+# this file is unecessary, since CSpydr already includes booleans, it's only here for compatability reasons

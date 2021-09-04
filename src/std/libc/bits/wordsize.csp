@@ -1,3 +1,0 @@
-macro LIBC_WORDSIZE_TIME64_COMPAT32 |: 1 :|
-macro LIBC_WORDSIZE         |: 64 :| # FIXME: hard-coded to 64bit
-macro LIBC_SYSCALL_WORDSIZE |: 64 :|

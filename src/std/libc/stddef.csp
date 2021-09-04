@@ -1,2 +1,12 @@
+# a basic implementation of the libc stddef.h header for the CSpydr programming language
+
+type ptrdiff_t: i64;
 type size_t: u64;
-type wchar_t: u32;
+type max_align_t: f64;
+type wchar_t: i32;
+
+# kind of unecessary, since CSpydr already includes nil, which is the same
+macro NULL |: nil :|
+
+# TODO: fix macro 
+macro offsetof(t, d) |: __builtin_offsetof(t, d) :|

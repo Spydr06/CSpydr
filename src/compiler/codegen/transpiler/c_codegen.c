@@ -34,6 +34,7 @@ static const char* primitive_to_c_type[TY_UNDEF + 1] = {
 
     [TY_F32] = "float",
     [TY_F64] = "double",
+    [TY_F80] = "long double",
 
     [TY_BOOL] = "bool",
     [TY_VOID] = "void",
@@ -209,6 +210,12 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
 {
     if(ty->is_constant)
         print(cg, "const ");
+
+    if(ty->is_complex)
+    {
+        printf("Complex type!\n");
+        print(cg, "_Complex ");
+    }
 
     if(primitive_to_c_type[ty->kind])
         print(cg, "%s", primitive_to_c_type[ty->kind]);
