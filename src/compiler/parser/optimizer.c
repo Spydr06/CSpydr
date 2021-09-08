@@ -15,9 +15,9 @@
             obj_kind_to_str(found->kind),                                                                                   \
             strcmp(found->tok->source->path, obj->tok->source->path) == 0 ? "" : obj->tok->source->path,                    \
             strcmp(found->tok->source->path, obj->tok->source->path) == 0 ? "" : ":",                                       \
-            obj->tok->line,                                                                                                 \
-            obj->tok->pos                                                                                                   \
-        )
+            obj->tok->line + 1,                                                                                             \
+            obj->tok->pos + 1                                                                                               \
+)
 
 Optimizer_T* init_optimizer(void)
 {

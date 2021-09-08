@@ -28,7 +28,7 @@ void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
                           COLOR_RESET " => " COLOR_BOLD_RED "[%s]" // type of the error
                           COLOR_RESET ": ";                        //before the error message
     const char* err_tmp2 = COLOR_RESET "\n"                        // after the error message
-                          " %*d | %s "                             // the line number and source code line
+                          " %*d | %s %s"                             // the line number and source code line
                           "%*s | " COLOR_BOLD_BLUE "%*s^~here"     // the pointer to the error in the source
                           "\n" COLOR_RESET;                        // end of the message
 
@@ -46,7 +46,7 @@ void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
     // print the error
     fprintf(OUTPUT_FILE_STREAM, err_tmp1, source_file_path, line, character, err_ty_str);
     vfprintf(OUTPUT_FILE_STREAM, format, arg_list);
-    fprintf(OUTPUT_FILE_STREAM, err_tmp2, LINE_NUMBER_SPACES, line, src_line, LINE_NUMBER_SPACES, "", character - strlen(tok->value), "");
+    fprintf(OUTPUT_FILE_STREAM, err_tmp2, LINE_NUMBER_SPACES, line, src_line, src_line[strlen(src_line) - 1] == '\n' ? "" : "\n ", LINE_NUMBER_SPACES, "", character - strlen(tok->value), "");
 
     va_end(arg_list);
 
