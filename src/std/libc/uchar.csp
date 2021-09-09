@@ -1,0 +1,18 @@
+# a basic implementation of the libc uchar.h header for the CSpydr programming language
+
+import "libc/stdint.csp";
+import "libc/stddef.csp";
+import "libc/wchar.csp";
+
+type char16_t: uint_least16_t;
+type char32_t: uint_least32_t;
+
+extern {
+
+    fn mbrtoc16(pc16: &char16_t, s: const &char, n: size_t, ps: &mbstate_t): size_t;
+    fn c16rtomb(s: &char, c16: char16_t, ps: &mbstate_t): size_t;
+    
+    fn mbrtoc32(pc32: &char32_t, s: const &char, n: size_t, ps: &mbstate_t): size_t;
+    fn c32rtomb(s: &char, c32: char32_t, ps: &mbstate_t): size_t;
+
+}
