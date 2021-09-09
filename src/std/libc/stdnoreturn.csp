@@ -1,0 +1,3 @@
+# a basic implementation of the libc stdlib.h header for the CSpydr programming language
+
+macro noreturn |: _Noreturn :|
