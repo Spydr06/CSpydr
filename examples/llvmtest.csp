@@ -1,5 +1,6 @@
 # a program to test the llvm frontend
 import "libc/stdio.csp";
+import "libc/stdlib.csp";
 
 fn main(): i32 {
     puts("Hello World!");
