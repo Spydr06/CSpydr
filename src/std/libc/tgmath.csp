@@ -1,0 +1,3 @@
+# a basic implementation of the libc tgmath.h header for the CSpydr programming language
+
+# TODO: implement as soon as the compiler supports macros with arguments

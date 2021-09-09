@@ -1,0 +1,75 @@
+# a basic implementation of the libc threads.h header for the CSpydr programming language
+
+macro thread_local |: _Thread_local :|
+
+macro ONCE_FLAG_INIT |: {0} :|
+macro TSS_DTOR_ITERATIONS |: 4 :|
+
+macro __SIZEOF_PTHREAD_COND_T |: 48 :|
+macro __SIZEOF_PTHREAD_MUTEX_T |: 40 :|
+
+type cnd_t: struct {
+    __size: i8[__SIZEOF_PTHREAD_COND_T!]
+};
+
+type thrd_t: u64;
+type tss_t: u32;
+
+type mtx_t: struct {
+    __size: i8[__SIZEOF_PTHREAD_MUTEX_T!]
+};
+
+type tss_dtor_t: fn<void>(&void);
+type thrd_start_t: fn<i32>(&void);
+
+type once_flag: struct {
+    __data: i32
+};
+
+type mutex_types: enum {
+    mtx_plain     = 0,
+    mtx_recursive = 1,
+    mtx_timed     = 2
+};
+
+type exit_codes: enum {
+    thrd_success  = 0,
+    thrd_busy     = 1,
+    thrd_error    = 2,
+    thrd_nomem    = 3,
+    thrd_timedout = 4
+};
+
+extern {
+
+    fn call_once(flag: &once_flag, func: fn<void>());
+
+    fn cnd_broadcast(cond: &cnd_t): i32;
+    fn cnd_destroy(cond: &cnd_t);
+    fn cnd_init(cond: &cnd_t): i32;
+    fn cnd_signal(cond: &cnd_t): i32;
+    fn cnd_timedwait(cond: &cnd_t, mtx: &mtx_t, ts: const &struct timespec): i32;
+    fn cnd_wait(cond: &cnd_t, mtx: &mtx_t): i32;
+
+    fn mtx_destroy(mtx: &mtx_t);
+    fn mtx_init(mtx: &mtx_t, type_: i32): i32;
+    fn mtx_lock(mtx: &mtx_t): i32;
+    fn mtx_timedlock(mtx: &mtx_t, ts: const &struct timespec): i32;
+    fn mtx_trylock(mtx: &mtx_t): i32;
+    fn mtx_unlock(mtx: &mtx_t): i32;
+    
+    fn thrd_create(thrd: &thrd_t, func: thrd_start_t, arg: &void): i32;
+    fn thrd_current(): thrd_t;
+    fn thrd_detach(thr: thrd_t): i32;
+    fn thrd_equal(thr0: thrd_t, thr1: thrd_t): i32;
+    fn thrd_exit(res: i32);
+    fn thrd_join(thr: thrd_t, res: &i32): i32;
+    fn thrd_sleep(duration: const &struct timespec, remaining: &struct timespec);
+    fn thrd_yield();
+    
+    fn tss_create(key: &tss_t, dtor: tss_dtor_t): i32;
+    fn tss_delete(key: tss_t);
+    fn tss_get(key: tss_t): &void;
+    fn tss_set(key: tss_t, val: &void): i32;
+
+}

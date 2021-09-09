@@ -2,6 +2,7 @@
 import "libc/stdio.csp";
 import "libc/stdlib.csp";
 import "libc/string.csp";
+import "libc/threads.csp";
 
 fn main(): i32 {
     puts("Hello World!");
