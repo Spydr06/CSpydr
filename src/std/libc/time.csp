@@ -1,0 +1,45 @@
+# a basic implementation of the libc time.h header for the CSpydr programming language
+
+import "libc/stddef.csp";
+
+macro CLOCKS_PER_SEC |: (1000000: __clock_t) :|
+macro TIME_UTC |: 1 :|
+
+type __clock_t: i64;    #FIXME: highly platform dependant
+type __time_t: i64;     #FIXME:    "     "        "
+type clock_t: __clock_t;
+type time_t: __time_t;
+
+# FIXME: highly platform dependant
+type timespec: struct {
+    tv_sec: __time_t,
+    tv_nsec: __time_t
+};
+
+type tm: struct {
+    tm_sec: i32,
+    tm_min: i32,
+    tm_hour: i32,
+    tm_mday: i32,
+    tm_month: i32,
+    tm_year: i32,
+    tm_wday: i32,
+    tm_yday: i32,
+    tm_isdst: i32,
+};
+
+extern {
+
+    fn clock(): clock_t;
+
+    fn difftime(t1: time_t, t2: time_t): f64;
+    fn mktime(timeptr: &struct tm): time_t;
+    fn time(timer: &time_t): time_t;
+    fn timespec_get(ts: &struct timespec, base: i32): i32;
+    fn asctime(timeptr: const &struct tm): &char;
+    fn ctime(timer: const &time_t): &char;
+    fn gmtime(timer: const &time_t): &struct tm;
+    fn localtime(timer: const &time_t): &struct tm;
+    fn strftime(s: &char, maxsize: size_t, format: const &char, timeptr: const &struct tm): size_t;
+
+}

@@ -13,7 +13,7 @@
 #include <float.h>
 
 #include <errno.h>
-#include <threads.h>
+#include <time.h>
 
 #ifdef __linux__
     #include <libgen.h>

@@ -1,5 +1,7 @@
 # a basic implementation of the libc threads.h header for the CSpydr programming language
 
+import "libc/time.csp";
+
 macro thread_local |: _Thread_local :|
 
 macro ONCE_FLAG_INIT |: {0} :|
