@@ -1,0 +1,103 @@
+# a basic implementation of the libc stdio.h header for the CSpydr programming language
+
+import "libc/stddef.csp";
+import "libc/stdarg.csp";
+
+macro BUFSIZ |: 8192 :|
+
+macro _IOFBF |: nil :|
+macro _IOLBF |: nil :|
+macro _IONBF |: nil :|
+
+macro EOF |: (-1) :|
+
+# from bits/stdio_lim.h
+macro L_tmpnam |: 20 :|
+macro FOPEN_MAX |: 16 :|
+macro FILENAME_MAX |: 4096 :|
+macro TMP_MAX |: 238328 :|
+
+macro SEEK_CUR |: 1 :|
+macro SEEK_END |: 2 :|
+macro SEEK_SET |: 0 :|
+
+type FILE: struct _IO_FILE;
+
+type off_t: i64;
+type mbstate_t: struct {
+    count: i32,
+    wchb: i32[4]
+};
+type fpos_t: struct {
+    pos: off_t,
+    state: mbstate_t
+};
+
+extern {
+    let stdin: &FILE;
+    let stdout: &FILE;
+    let stderr: &FILE;
+}
+
+extern {
+
+    fn remove(filename: const &char): i32;
+    fn rename(old: const &char, new: const &char);
+
+    fn tmpfile(): &FILE;
+    fn tmpnam(s: &char): &char;
+
+    fn fclose(stream: &FILE): i32;
+    fn fflush(stream: &FILE): i32;
+    fn fopen(filename: const &char, mode: const &char): &FILE;
+    fn freopen(filename: const &char, mode: const &char, stream: &FILE): &FILE;
+
+    fn setbuf(stream: &FILE, buf: &char);
+    fn setvbuf(stream: &FILE, buf: &char, mode: i32, size: size_t): i32;
+
+    # FIXME: implement these when the compiler supports va_lists
+    #fn fprintf(stream: &FILE, format: const &char, ...): i32;
+    #fn fscanf(stream: &FILE, format: const &char, ...): i32;
+    #fn printf(format: const &char, ...): i32;
+    #fn scanf(format: const &char, ...): i32;
+    #fn snprintf(s: &char, n: size_t, format: const &char, ...): i32;
+    #fn sprintf(s: &char, format: const &char, ...): i32;
+    #fn sscanf(s: const &char, format: const &char, ...): i32;
+
+    # IO functions for va_lists (at the moment useless, because the compiler does not support va_lists)
+    fn vfprintf(stream: &FILE, format: const &char, arg: va_list): i32;
+    fn vfscanf(stream: &FILE, format: const &char, arg: va_list): i32;
+    fn vprintf(format: const &char, arg: va_list): i32;
+    fn vscanf(format: const &char, arg: va_list): i32;
+    fn vsnprintf(s: &char, n: size_t, format: const &char, arg: va_list): i32;
+    fn vsprintf(s: &char, format: const &char, arg: va_list): i32;
+    fn vsscanf(s: const &char, format: const &char, arg: va_list): i32;
+
+    fn fgetc(stream: &FILE): i32;
+    fn fgets(s: &char, n: i32, stream: &FILE): &char;
+    fn fputc(c: i32, stream: &FILE): i32;
+    fn fputs(s: const &char, stream: &FILE): i32;
+
+    fn getc(stream: &FILE): i32;
+    fn getchar(): i32;
+    fn putc(c: i32, stream: &FILE): i32;
+    fn putchar(c: i32): i32;
+    fn puts(s: const &char): i32; 
+
+    fn ungetc(c: i32, stream: &FILE): i32;
+
+    fn fread(ptr: &void, size: size_t, nmenb: size_t, stream: &FILE): size_t;
+    fn fwrite(ptr: const &void, size: size_t, nmemb: size_t, stream: &FILE): size_t;
+    fn fseek(stream: &FILE, offset: i64, whence: i32): i32;
+    fn ftell(strem: &FILE): i64;
+
+    fn fgetpos(stream: &FILE, pos: &fpos_t);
+    fn fsetpos(stream: &FILE, pos: const &fpos_t): i32;
+    fn rewind(stream: &FILE);
+
+    fn clearerr(stream: &FILE);
+    fn feof(stream: &FILE): i32;
+    fn ferror(stream: &FILE): i32;
+    fn perror(s: const &char): i32;
+
+}

@@ -1,8 +1,8 @@
 # a program to test the llvm frontend
-import "libc/stddef.csp";
-import "libc/stdint.csp";
-import "libc/stdatomic.csp";
+import "libc/stdio.csp";
 
 fn main(): i32 {
+    puts("Hello World!");
+
     <- 0;
 }
