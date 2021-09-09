@@ -1,0 +1,34 @@
+# a basic implementation of the libc wctype.h header for the CSpydr programming language
+
+macro WEOF |: (0xffffffff) :|
+
+type wint_t: u32;
+type wctrans_t: const &i32;
+type wctype_t: u64;
+
+extern {
+
+    fn iswalnum(wc: wint_t): i32;
+    fn iswalpha(wc: wint_t): i32;
+    fn iswblank(wc: wint_t): i32;
+    fn iswcntrl(wc: wint_t): i32;
+    fn iswdigit(wc: wint_t): i32;
+    fn iswgraph(wc: wint_t): i32;
+    fn iswlower(wc: wint_t): i32;
+    fn iswprint(wc: wint_t): i32;
+    fn iswpunct(wc: wint_t): i32;
+    fn iswspace(wc: wint_t): i32;
+    fn iswupper(wc: wint_t): i32;
+    fn iswxdigit(wc: wint_t): i32;
+    
+    fn iswctype(wc: wint_t, desc: wctype_t): i32;
+    
+    fn wctype(property: const &char): wctype_t;
+
+    fn towlower(wc: wint_t): wint_t;
+    fn towupper(wc: wint_t): wint_t;
+    fn towctrans(wc: wint_t, desc: wctrans_t): wint_t;
+
+    fn wctrans(property: const &char): wctrans_t;
+
+}
