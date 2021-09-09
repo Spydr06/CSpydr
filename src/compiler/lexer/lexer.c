@@ -27,6 +27,8 @@ const struct { const char* str; TokenType_T type; } keywords[] = {
     {"import", TOKEN_IMPORT},
     {"const", TOKEN_CONST},
     {"complex", TOKEN_COMPLEX},
+    {"atomic", TOKEN_ATOMIC},
+    {"volatile", TOKEN_VOLATILE},
     {"extern", TOKEN_EXTERN},
     {"macro", TOKEN_MACRO},
     {"sizeof", TOKEN_SIZEOF},

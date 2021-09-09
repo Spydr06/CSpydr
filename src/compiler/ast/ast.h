@@ -6,6 +6,7 @@
 #include "../list.h"
 #include "../lexer/token.h"
 #include "../globals.h"
+#include <stdint.h>
 
 typedef struct AST_NODE_STRUCT ASTNode_T;
 typedef struct AST_TYPE_STRUCT ASTType_T;
@@ -198,12 +199,14 @@ struct AST_TYPE_STRUCT
 
     char callee[__CSP_MAX_TOKEN_SIZE];
 
-    bool is_primitive;
-    bool is_constant;
-    bool is_complex;
+    bool is_primitive: 1;
+    bool is_constant: 1;
+    bool is_complex: 1;
+    bool is_volatile: 1;
+    bool is_atomic: 1;
+    bool is_fn: 1;
 
     // functions
-    bool is_fn;
     List_T* arg_types;  // list of ASTType_Ts
 
     // arrays

@@ -455,26 +455,34 @@ static ASTType_T* parse_lambda_type(Parser_T* p)
 
 static ASTType_T* parse_type(Parser_T* p)
 {
-    bool constant_type = false;
-    if(tok_is(p, TOKEN_CONST))
-    {
-        constant_type = true;
-        parser_advance(p);
-    }
-
-    bool complex_type = false;
-    if(tok_is(p, TOKEN_COMPLEX))
-    {  
-        complex_type = true;
-        parser_advance(p); 
-    }
-
     ASTType_T* type = get_primitive_type(p->tok->value);
     if(type)
         parser_advance(p);
     else
+    {
         switch(p->tok->type)
         {
+            case TOKEN_CONST: 
+                parser_advance(p);
+                type = parse_type(p);
+                type->is_constant = true;
+                return type;
+            case TOKEN_COMPLEX:
+                parser_advance(p);
+                type = parse_type(p);
+                type->is_complex = true;
+                return type;
+            case TOKEN_ATOMIC:
+                parser_advance(p);
+                type = parse_type(p);
+                type->is_atomic = true;
+                return type;
+            case TOKEN_VOLATILE:
+                parser_advance(p);
+                type = parse_type(p);
+                type->is_volatile = true;
+                return type;
+
             case TOKEN_LPAREN:
                 parser_advance(p);
                 type = parse_type(p);
@@ -532,9 +540,7 @@ static ASTType_T* parse_type(Parser_T* p)
                 parser_consume(p, TOKEN_ID, "expect type or typedef");
                 break;
         }
-    
-    type->is_constant = constant_type;
-    type->is_complex = complex_type;
+    }
 
 parse_array_ty:
     if(tok_is(p, TOKEN_LBRACKET))
@@ -565,8 +571,7 @@ static ASTObj_T* parse_typedef(Parser_T* p)
 
     tydef->data_type = parse_type(p);
 
-    if(tok_is(p, TOKEN_SEMICOLON))
-        parser_advance(p);
+    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after type definition");
     return tydef;
 }
 

@@ -118,7 +118,16 @@ ASTTypeKind_T get_datatype_from_str(char* str)
 ASTType_T* get_primitive_type(char* type)
 {
     ASTType_T* prim = primitives[get_datatype_from_str(type)];
-    return prim;
+
+    if(prim) 
+    {
+        ASTType_T* dupl = init_ast_type(prim->kind, prim->tok);
+        dupl->is_primitive = prim->is_primitive;
+        dupl->size = prim->size;
+        return dupl;
+    }
+
+    return NULL;
 }
 
 bool check_type_compatibility(ASTType_T* a, ASTType_T* b)

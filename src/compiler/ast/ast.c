@@ -49,7 +49,13 @@ ASTType_T* init_ast_type(ASTTypeKind_T kind, Token_T* tok)
 {
     ASTType_T* type = ast_malloc(sizeof(struct AST_TYPE_STRUCT));
     type->kind = kind;
-    type->tok = dupl_token(tok);
+    type->tok = NULL;
+
+    if(tok) 
+    {
+        type->tok = dupl_token(tok);
+        ast_mem_add_ptr(type->tok);
+    }
 
     type->size = type_byte_size_map[kind];
 
@@ -60,11 +66,11 @@ ASTType_T* init_ast_type(ASTTypeKind_T kind, Token_T* tok)
 
     type->is_primitive = false;
     type->is_constant = false;
-    //type->is_complex = false;
+    type->is_complex = false;
+    type->is_atomic = false;
+    type->is_volatile = false;
     type->size = 0;
     type->is_fn = false;
-
-    ast_mem_add_ptr(type->tok);
 
     return type;
 }
