@@ -1,1 +1,35 @@
 # a basic implementation of the libc string.h header for the CSpydr programming language
+
+extern {
+
+    fn memcpy(s1: &void, s2: const &void, n: size_t): &void;
+    fn memmove(s1: &void, s2: const &void, n: size_t): &void;
+    fn memcmp(s1: const &void, s2: const &void, n: size_t): i32;
+    fn memchr(s: const &void, c: i32, n: size_t): &void;
+    fn memset(s: &void, c: i32, n: size_t): &void;
+
+    fn strcpy(s1: &char, s2: const &char): &char;
+    fn strncpy(s1: &char, s2: const &char, n: size_t): &char;
+    
+    fn strcat(s1: &char, s2: const &char): &char;
+    fn strncat(s1: &char, s2: const &char, n: size_t): &char;
+
+    fn strcmp(s1: const &char, s2: const &char): i32;
+    fn strncmp(s1: const &char, s2: const &char, n: size_t): i32;
+
+    fn strcoll(s1: const &char, s2: const &char): i32;
+    fn strxfrm(s1: &char, s2: const &char, n: size_t): size_t;
+
+    fn strchr(s: const &char, c: i32): &char;
+    fn strcspn(s1: const &char, s2: const &char): size_t;
+    fn strpbrk(s1: const &char, s2: const &char): &char;
+    fn strrchr(s: const &char, c: i32): &char;
+    fn strspn(s1: const &char, s2: const &char): size_t;
+    fn strstr(s1: const &char, s2: const &char): &char;
+    fn strtok(s1: &char, s2: const &char): &char;
+
+    fn strerror(errnum: i32): &char;
+
+    fn strlen(s: const &char): size_t;
+    
+}
