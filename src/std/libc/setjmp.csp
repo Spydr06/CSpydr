@@ -1,0 +1,17 @@
+# a basic implementation of the libc setjmp.h header for the CSpydr programming language
+
+macro _SIGSET_NWORDS |: (1024 / 64) :|
+
+type __jmp_buf: i64[8];
+type __sigset_t: struct {
+    __val: u64[_SIGSET_NWORDS!]
+};
+
+type jmp_buf: struct {
+    __jmpbuf: __jmp_buf,
+    __mask_was_saved: i32,
+    __saved_mask: __sigset_t
+};
+
+extern fn setjmp(env: jmp_buf): i32;
+extern fn longjmp(env: jmp_buf, val: i32);

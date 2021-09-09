@@ -30,8 +30,8 @@ type uint16_t: u16;
 type uint32_t: u32;
 type uint64_t: u64;
 
-type intptr: i64;
-type uintptr: u64;
+type intptr_t: i64;
+type uintptr_t: u64;
 
 type intmax_t: i64; # TODO: use long long
 type uintmax_t: u64; # TODO: use long long
