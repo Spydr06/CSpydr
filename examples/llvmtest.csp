@@ -2,6 +2,7 @@
 import "libc/time.csp";
 import "libc/wchar.csp";
 import "libc/stdio.csp";
+import "libc/math.csp";
 
 fn main(): i32 {
     let rawtime: time_t;

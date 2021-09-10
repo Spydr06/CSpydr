@@ -1,6 +1,274 @@
 # a basic implementation of the libc math.h header for the CSpydr programming language
 
+macro HUGE_VAL  |: __builtin_huge_val()  :|
+macro HUGE_VALF |: __builtin_huge_valf() :|
+macro HUGE_VALL |: __builtin_huge_vall() :|
+
+macro INFINITY |: __builtin_inff()   :|
+macro NAN      |: __builtin_nanf("") :|
+
+macro FP_FAST_FMA  |: 1 :|
+macro FP_FAST_FMAF |: 1 :|
+macro FP_FAST_FMAL |: 1 :|
+
+macro MATH_ERRNO     |: 1 :|
+macro MATH_ERREXCEPT |: 2 :|
+
+macro math_errhandling |: (MATH_ERRNO! | MATH_ERREXCEPT!) :|
+
+#macro fpclassify(x) |: __builtin_fpclassify(FP_NAN, FP_INFINITE, FP_NORMAL, FP_SUBNORMAL, FP_ZERO, x) :|
+
+macro isinf    |: __builtin_isinf_sign :|
+macro isnan    |: __builtin_isnan      :|
+macro isnormal |: __builtin_isnormal   :|
+macro signbit  |: __builtin_signbit    :|
+
+# TODO: implement these macros when the compiler supports macro arguments
+##
+macro isgreater(x, y)      |: ((x) > (y))              :|
+macro isgreaterequal(x, y) |: ((x) >= (y))             :|
+macro isless(x, y)         |: ((x) < (y))              :|
+macro islessequal(x, y)    |: ((x) <= (y))             :|
+macro islessgreater(x, y)  |: ((x) < (y) || (x) > (y)) :|
+macro isunordered(x, y)    |: TODO:                    :|
+##
+
 type float_t: f32;
 type double_t: f64;
 
+type math_FP: enum {
+    FP_NAN       = 0,
+    FP_INFINITE  = 1,
+    FP_ZERO      = 2,
+    FP_SUBNORMAL = 3,
+    FP_NORMAL    = 4
+};
 
+extern {
+
+    fn acos(x: f64): f64;
+    fn acosf(x: f32): f32;
+    fn acosl(x: f80): f80;
+
+    fn asin(x: f64): f64;
+    fn asinf(x: f32): f32;
+    fn asinl(x: f80): f80; 
+
+    fn atan(x: f64): f64;
+    fn atanf(x: f32): f32;
+    fn atanl(x: f80): f80;
+
+    fn atan2(x: f64, y: f64): f64;
+    fn atan2f(x: f32, y: f32): f32;
+    fn atan2l(x: f80, y: f80): f80;
+
+    fn cos(x: f64): f64;
+    fn cosf(x: f32): f32;
+    fn cosl(x: f80): f80;
+
+    fn sin(x: f64): f64;
+    fn sinf(x: f32): f32;
+    fn sinl(x: f80): f80;
+
+    fn tan(x: f64): f64;
+    fn tanf(x: f32): f32;
+    fn tanl(x: f80): f80;
+
+    fn acosh(x: f64): f64;
+    fn acoshf(x: f32): f32;
+    fn acoshl(x: f80): f80;
+
+    fn asinh(x: f64): f64;
+    fn asinhf(x: f32): f32;
+    fn asinhl(x: f80): f80; 
+
+    fn atanh(x: f64): f64;
+    fn atanhf(x: f32): f32;
+    fn atanhl(x: f80): f80;
+
+    fn cosh(x: f64): f64;
+    fn coshf(x: f32): f32;
+    fn coshl(x: f80): f80;
+
+    fn sinh(x: f64): f64;
+    fn sinhf(x: f32): f32;
+    fn sinhl(x: f80): f80;
+    
+    fn tanh(x: f64): f64;
+    fn tanhf(x: f32): f32;
+    fn tanhl(x: f80): f80;
+
+    fn exp(x: f64): f64;
+    fn expf(x: f32): f32;
+    fn expl(x: f80): f80;
+
+    fn exp2(x: f64): f64;
+    fn exp2f(x: f32): f32;
+    fn exp2l(x: f80): f80;
+
+    fn expm(x: f64): f64;
+    fn expmf(x: f32): f32;
+    fn expml(x: f80): f80;
+
+    fn frexp(x: f64, y: &i32): f64;
+    fn frexpf(x: f32, y: &i32): f32;
+    fn frexpl(x: f80, y: &i32): f80;
+
+    fn ldexp(x: f64, exp: i32): f64;
+    fn ldexpf(x: f32, exp: i32): f32;
+    fn ldexpl(x: f80, exp: i32): f80;
+
+    fn ilogb(x: f64): i32;
+    fn ilogbf(x: f32): i32;
+    fn ilogbl(x: f80): i32;
+
+    fn log(x: f64): f64;
+    fn logf(x: f32): f32;
+    fn logl(x: f80): f80;
+
+    fn log10(x: f64): f64;
+    fn log10f(x: f32): f32;
+    fn log10l(x: f80): f80;
+
+    fn log1p(x: f64): f64;
+    fn log1pf(x: f32): f32;
+    fn log1pl(x: f80): f80;
+
+    fn log2(x: f64): f64;
+    fn log2f(x: f32): f32;
+    fn log2l(x: f80): f80;
+
+    fn logb(x: f64): f64;
+    fn logbf(x: f32): f32;
+    fn logbl(x: f80): f80;
+
+    fn modf(x: f64, iptr: &f64): f64;
+    fn modff(x: f32, iptr: &f32): f32;
+    fn modfl(x: f80, iptr: &f80): f80;
+
+    fn scalbn(x: f64, n: i32): f64;
+    fn scalbnf(x: f32, n: i32): f32;
+    fn scalbnl(x: f80, n: i32): f80;
+    fn scalbln(x: f64, n: i64): f64;
+    fn scalblnf(x: f32, n: i64): f32;
+    fn scalblnl(x: f80, n: i64): f80;
+
+    fn cbrt(x: f64): f64;
+    fn cbrtf(x: f32): f32;
+    fn cbrtl(x: f80): f80;
+
+    fn fabs(x: f64): f64;
+    fn fabsf(x: f32): f32;
+    fn fabsl(x: f80): f80;
+
+    fn hypot(x: f64, y: f64): f64;
+    fn hypotf(x: f32, y: f32): f32;
+    fn hypotl(x: f80, y: f80): f80;
+
+    fn pow(x: f64, y: f64): f64;
+    fn powf(x: f32, y: f32): f32;
+    fn powl(x: f80, y: f80): f80;
+
+    fn sqrt(x: f64): f64;
+    fn sqrtf(x: f32): f32;
+    fn sqrtl(x: f80): f80;
+
+    fn erf(x: f64): f64;
+    fn erff(x: f32): f32;
+    fn erfl(x: f80): f80;
+
+    fn erfc(x: f64): f64;
+    fn erfcf(x: f32): f32;
+    fn erfcl(x: f80): f80;
+
+    fn lgamma(x: f64): f64;
+    fn lgammaf(x: f32): f32;
+    fn lgammal(x: f80): f80;
+
+    fn tgamma(x: f64): f64;
+    fn tgammaf(x: f32): f32;
+    fn tgammal(x: f80): f80;
+
+    fn ceil(x: f64): f64;
+    fn ceilf(x: f32): f32;
+    fn ceill(x: f80): f80;
+
+    fn floor(x: f64): f64;
+    fn floorf(x: f32): f32;
+    fn floorl(x: f80): f80;
+
+    fn nearbyint(x: f64): f64;
+    fn nearbyintf(x: f32): f32;
+    fn nearbyintl(x: f80): f80;
+
+    fn rint(x: f64): f64;
+    fn rintf(x: f32): f32;
+    fn rintl(x: f80): f80;
+
+    fn lrint(x: f64): i64;
+    fn lrintf(x: f32): i64;
+    fn lrintl(x: f80): i64;
+    #fn llrint(x: f64): i64; # FIXME: implement when the compiler supports long longs
+    #fn llrintf(x: f32): i64;
+    #fn llrintl(x: f80): i64;
+
+    fn round(x: f64): f64;
+    fn roundf(x: f32): f32;
+    fn roundl(x: f80): f80;
+
+    fn lround(x: f64): i64;
+    fn lroundf(x: f32): i64;
+    fn lroundl(x: f80): i64;
+    #fn llround(x: f64): i64; # FIXME: implement when the compiler supports long longs
+    #fn llroundf(x: f32): i64;
+    #fn llroundl(x: f80): i64;
+
+    fn trunc(x: f64): f64;
+    fn truncf(x: f32): f32;
+    fn truncl(x: f80): f80;
+
+    fn fmod(x: f64, y: f64): f64;
+    fn fmodf(x: f32, y: f32): f32;
+    fn fmodl(x: f80, y: f80): f80;
+
+    fn remainder(x: f64, y: f64): f64;
+    fn remainderf(x: f32, y: f32): f32;
+    fn remainderl(x: f80, y: f80): f80;
+
+    fn remquo(x: f64, y: f64, quo: &i32): f64;
+    fn remquof(x: f32, y: f32, quo: &i32): f32;
+    fn remquol(x: f80, y: f80, quo: &i32): f80;
+
+    fn copysign(x: f64, y: f64): f64;
+    fn copysignf(x: f32, y: f32): f32;
+    fn copysignl(x: f80, y: f80): f80;
+
+    fn nan(tagp: const &char): f64;
+    fn nanf(tagp: const &char): f32;
+    fn nanl(tagp: const &char): f80;
+
+    fn nextafter(x: f64, y: f64): f64;
+    fn nextafterf(x: f32, y: f32): f32;
+    fn nextafterl(x: f80, y: f80): f80;
+
+    fn nexttoward(x: f64, y: f80): f64;
+    fn nexttowardf(x: f32, y: f80): f32;
+    fn nexttowardl(x: f80, y: f80): f80;
+
+    fn fdim(x: f64, y: f64): f64;
+    fn fdimf(x: f32, y: f32): f32;
+    fn fdiml(x: f80, y: f80): f80;
+
+    fn fmax(x: f64, y: f64): f64;
+    fn fmaxf(x: f32, y: f32): f32;
+    fn fmaxl(x: f80, y: f80): f80;
+
+    fn fmin(x: f64, y: f64): f64;
+    fn fminf(x: f32, y: f32): f32;
+    fn fminl(x: f80, y: f80): f80;
+
+    fn fma(x: f64, y: f64, z: f64): f64;
+    fn fmaf(x: f32, y: f32, z: f32): f32;
+    fn fmal(x: f80, y: f80, z: f80): f80;
+
+}
