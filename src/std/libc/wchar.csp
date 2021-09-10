@@ -1,0 +1,98 @@
+# a basic implementation of the libc wchar.h header for the CSpydr programming language
+
+import "libc/time.csp";
+import "libc/stdio.csp";
+import "libc/stddef.csp";
+import "libc/stdarg.csp";
+
+macro WEOF |: (0xffffffff : wint_t) :|
+
+type mbstate_t: struct {
+    count: i32,
+    wchb: i32[4]
+};
+
+type wint_t: u32;
+
+extern {
+
+    #fn fwprintf(stream: &FILE, format: const &wchar_t, ...): i32; # FIXME: implement when the compiler supports va_lists
+    #fn fwscanf(stream: &FILE, format: const &wchar_t, ...): i32;
+    #fn swprintf(s: &wchar_t, n: size_t, format: const &wchar_t, ...): i32;
+    #fn swscanf(s: const &wchar_t, format: const &wchar_t, ...): i32;
+    #fn wprintf(format: const &wchar_t, ...): i32;
+    #fn wscanf(format: const &wchar_t: ...): i32;
+
+    fn vfwprintf(stream: &FILE, format: const &wchar_t, arg: va_list): i32;
+    fn vfwscanf(stream: &FILE, format: const &wchar_t, arg: va_list): i32;
+    fn vswprintf(s: &wchar_t, n: size_t, format: const &wchar_t, arg: va_list): i32;
+    fn vswscanf(s: const &wchar_t, format: const &wchar_t, arg: va_list): i32;
+    fn vwprintf(format: const &wchar_t, arg: va_list): i32;
+    fn vwscanf(format: const &wchar_t, arg: va_list): i32;
+
+    fn fgetwc(stream: &FILE): wint_t;
+    fn fgetws(s: &wchar_t, n: i32, stream: &FILE): &wchar_t;
+    
+    fn fputwc(c: wchar_t, stream: &FILE): wint_t;
+    fn fputws(s: const &wchar_t, stream: &FILE): i32;
+    
+    fn fwide(stream: &FILE, mode: i32): i32;
+
+    fn getwc(stream: &FILE): wint_t;
+    fn getwchar(): wint_t;
+
+    fn putwc(c: wchar_t, stream: &FILE): wint_t;
+    fn putwchar(c: wchar_t): wint_t;
+    fn ungetwchar(c: wint_t, stream: &FILE): wint_t;
+
+    fn wcstod(nptr: const &wchar_t, endptr: const &&wchar_t): f64;
+    fn wcstof(nptr: const &wchar_t, endptr: const &&wchar_t): f32;
+    fn wcstold(nptr: const &wchar_t, endptr: const &&wchar_t): f80;
+
+    fn wcstol(nptr: const &wchar_t, endptr: const &&wchar_t, base: i32): i64;
+    #fn wcstoll(nptr: const &wchar_t, endptr: const &&wchar_t, base: i32): i64; # FIXME: implement when the compiler supports long longs
+    fn wcstoul(nptr: const &wchar_t, endptr: const &&wchar_t, base: i32): u64;
+    #fn wcstoull(nptr: const &wchar_t, endptr: const &&wchar_t, base: i32): i64;
+
+    fn wcscpy(s1: &wchar_t, s2: const &wchar_t): &wchar_t;
+    fn wcsncpy(s1: &wchar_t, s2: const &wchar_t, n: size_t): &wchar_t;
+    
+    fn wmemcpy(s1: &wchar_t, s2: const &wchar_t, n: size_t): &wchar_t;
+    fn wmemmove(s1: &wchar_t, s2: const &wchar_t): &wchar_t;
+    fn wmemcmp(s1: const &wchar_t, s2: const &wchar_t, n: size_t): i32;
+    fn wmemchr(s: const &wchar_t, c: wchar_t, n: size_t): &wchar_t;
+    fn wmemset(s: &wchar_t, c: wchar_t, n: size_t): &wchar_t;
+
+    fn wcscat(s1: &wchar_t, s2: const &wchar_t): &wchar_t;
+    fn wcsncat(s1: &wchar_t, s2: const &wchar_t, n: size_t): &wchar_t;
+
+    fn wcscmp(s1: const &wchar_t, s2: const &wchar_t): i32;
+    fn wcscoll(s1: const &wchar_t, s2: const &wchar_t): i32;
+    fn wcsncmp(s1: const &wchar_t, s2: const &wchar_t, n: size_t): i32;
+    fn wcsxfrm(s1: &wchar_t, s2: const &wchar_t, n: size_t): size_t;
+
+    fn wcschr(s: const &wchar_t, c: wchar_t): &wchar_t;
+    fn wcscspn(s1: const &wchar_t, s2: const &wchar_t): size_t;
+
+    fn wvspbrk(s1: const &wchar_t, s2: const &wchar_t): &wchar_t;
+    fn wcsrchr(s: const &wchar_t, c: wchar_t): &wchar_t;
+    fn wcsspn(s1: const &wchar_t, s2: const &wchar_t): size_t;
+    fn wcsstr(s1: const &wchar_t, s2: const &wchar_t): &wchar_t;
+    fn wcstok(s1: &wchar_t, s2: const &wchar_t, ptr: &&wchar_t);
+
+    fn wcslen(s: const &wchar_t): size_t;
+
+    fn wcsftime(s: &wchar_t, maxsize: size_t, format: const &wchar_t, timeptr: const &struct tm): size_t;
+
+    fn btowc(c: i32): wint_t;
+    fn wctob(c: wint_t): i32;
+
+    fn mbsinit(ps: const &mbstate_t): i32;
+    fn mbrlen(s: const &char, n: size_t, ps: &mbstate_t): size_t;
+    fn mbrtowc(pwc: &wchar_t, s: const &char, n: size_t, ps: &mbstate_t): size_t;
+    fn wcrtomb(s: &char, wc: wchar_t, ps: &mbstate_t): size_t;
+
+    fn mbsrtowcs(dst: &wchar_t, src: const &&char, len: size_t, ps: &mbstate_t): size_t;
+    fn wcsrtombs(dst: &char, src: const &&wchar_t, len: size_t, ps: &mbstate_t): size_t;
+
+}

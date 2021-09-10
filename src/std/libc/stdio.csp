@@ -2,6 +2,7 @@
 
 import "libc/stddef.csp";
 import "libc/stdarg.csp";
+import "libc/wchar.csp";
 
 macro BUFSIZ |: 8192 :|
 
@@ -24,10 +25,7 @@ macro SEEK_SET |: 0 :|
 type FILE: struct _IO_FILE;
 
 type off_t: i64;
-type mbstate_t: struct {
-    count: i32,
-    wchb: i32[4]
-};
+
 type fpos_t: struct {
     pos: off_t,
     state: mbstate_t

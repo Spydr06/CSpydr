@@ -210,7 +210,7 @@ static void register_tdef(Optimizer_T* o, ASTObj_T* ty)
     ASTObj_T* found = find_obj(o->scope, ty->callee);
     if(found)
     {
-        throw_error(ERR_REDEFINITION, ty->tok, "redefinition of type \"%s\", first defined in" COLOR_BOLD_WHITE " %s:[%ld:%ld]" COLOR_RESET, ty->callee, "TODO", found->tok->line, found->tok->pos);
+        throw_error(ERR_REDEFINITION, ty->tok, "redefinition of type \"%s\", first defined in" COLOR_BOLD_WHITE " %s:[%ld:%ld]" COLOR_RESET, ty->callee, found->tok->source->short_path, found->tok->line, found->tok->pos);
         o->num_errors_found++;
     }
     

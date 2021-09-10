@@ -1,8 +1,9 @@
 # a basic implementation of the libc wctype.h header for the CSpydr programming language
 
+import "libc/wchar.csp";
+
 macro WEOF |: (0xffffffff) :|
 
-type wint_t: u32;
 type wctrans_t: const &i32;
 type wctype_t: u64;
 

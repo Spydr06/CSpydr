@@ -1,5 +1,6 @@
 # a program to test the llvm frontend
 import "libc/time.csp";
+import "libc/wchar.csp";
 import "libc/stdio.csp";
 
 fn main(): i32 {
