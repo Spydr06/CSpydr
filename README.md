@@ -41,9 +41,9 @@ A list of all the features, that are/will be implemented.
 
 ##### Standard library features
 - [x] basic `c17` `libc`-header implementation
-- [ ] control- and safety constructs and functions (like in Rust)
+- [ ] control- and safety-structs and -functions (like in Rust)
 - [ ] llvm-c implementation
-- [ ] higher-level wrapper functions and structs for the `libc` functions
+- [ ] higher-level wrapper-functions and -structs for the `libc` functions
 
 ## Installation
 
