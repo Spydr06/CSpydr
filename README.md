@@ -30,7 +30,6 @@ A list of all the features, that are/will be implemented.
 - [x] file imports
 - [x] `extern` functions and globals
 - [x] `sizeof` keyword (currently called through the C interface)
-- [ ] std (standard library) -> under construction
 - [x] different loop types: `for`, `while` and `loop`
 - [x] macros (without arguments)
 - [ ] namespaces
@@ -39,6 +38,12 @@ A list of all the features, that are/will be implemented.
 - [x] lambda expressions (not asynchronous)
 - [x] tuples
 - [ ] generics in functions and structs
+
+##### Standard library features
+- [x] basic `c17` `libc`-header implementation
+- [ ] control- and safety constructs and functions (like in Rust)
+- [ ] llvm-c implementation
+- [ ] higher-level wrapper functions and structs for the `libc` functions
 
 ## Installation
 
