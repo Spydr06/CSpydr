@@ -81,7 +81,7 @@ cspydr --help
 A simple hello-world program:
 ```
 # hello-world.csp
-import "stdio.csp";
+import "libc/stdio.csp";
 
 fn main(argc: i32, argv: &&char): i32
 {
