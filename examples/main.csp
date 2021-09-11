@@ -8,6 +8,7 @@
 })
 ##
 
+import "libc/wchar.csp"; 
 import "string.csp";
 import "vec.csp";
 import "libc/stdio.csp";
