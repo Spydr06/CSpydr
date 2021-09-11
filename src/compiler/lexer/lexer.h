@@ -10,8 +10,8 @@ typedef struct LEXER_STRUCT {
     SrcFile_T* file;
 
     char c;
-    unsigned int line;
-    unsigned int pos;
+    size_t line;
+    size_t pos;
 } Lexer_T;
 
 Lexer_T* init_lexer(SrcFile_T* src);
