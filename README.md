@@ -79,16 +79,9 @@ cspydr --help
 ## The CSpydr Syntax
 
 A simple hello-world program:
-```
-# hello-world.csp
-import "libc/stdio.csp";
 
-fn main(argc: i32, argv: &&char): i32
-{
-    puts("Hello World!\n");
-    <- 0;
-}
-```
+![helloworld](https://github.com/[username]/[reponame]/blob/[branch]/doc/img/helloworld.csp.png?raw=true)
+
 Running this program is as easy as entering the following command:
 ```bash
 cspydr run hello-world.csp
