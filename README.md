@@ -80,7 +80,7 @@ cspydr --help
 
 A simple hello-world program:
 
-![helloworld](https://github.com/[username]/[reponame]/blob/[branch]/doc/img/helloworld.csp.png?raw=true)
+![helloworld](https://github.com/Spydr06/cspydr/blob/main/doc/img/helloworld.csp.png?raw=true)
 
 Running this program is as easy as entering the following command:
 ```bash
