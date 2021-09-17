@@ -50,6 +50,9 @@ typedef enum {
     ND_LT,      // <
     ND_LE,      // <=
 
+    ND_AND, // &&
+    ND_OR,  // ||
+
     ND_LSHIFT,  // <<
     ND_RSHIFT,  // >>
     ND_XOR,     // ^

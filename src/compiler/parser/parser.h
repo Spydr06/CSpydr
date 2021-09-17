@@ -31,14 +31,15 @@ typedef enum {
     LTGT    =  3, // < >
     SUM     =  4, // + -
     PRODUCT =  5, // * /
-    POSTFIX =  6, // x++, x--
-    PREFIX  =  7, // -x, !x
-    CALL    =  8, // x(y)
-    INDEX   =  9, // x[y]
-    MEMBER  = 10, // x.y
-    CLOSURE = 11, // (x + y) * z
-    CAST    = 12, // x:i32
-    HIGHEST = 13,
+    ANDOR   =  6,
+    POSTFIX =  7, // x++, x--
+    PREFIX  =  8, // -x, !x
+    CALL    =  9, // x(y)
+    INDEX   = 10, // x[y]
+    MEMBER  = 11, // x.y
+    CLOSURE = 12, // (x + y) * z
+    CAST    = 13, // x:i32
+    HIGHEST = 14,
 } Precedence_T;
 
 Parser_T* init_parser(List_T* tokens);

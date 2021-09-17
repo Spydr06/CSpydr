@@ -515,6 +515,16 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, "!=");
             c_gen_expr(cg, node->right);
             break;
+        case ND_AND:
+            c_gen_expr(cg, node->left);
+            print(cg, "&&");
+            c_gen_expr(cg, node->right);
+            break;
+        case ND_OR:
+            c_gen_expr(cg, node->left);
+            print(cg, "||");
+            c_gen_expr(cg, node->right);
+            break;
         case ND_LSHIFT:
             c_gen_expr(cg, node->left);
             print(cg, "<<");

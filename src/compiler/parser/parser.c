@@ -83,7 +83,9 @@ static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } ex
     [TOKEN_GT]       = {NULL, parse_bool_op, LTGT}, 
     [TOKEN_GT_EQ]    = {NULL, parse_bool_op, LTGT},    
     [TOKEN_LT]       = {NULL, parse_bool_op, LTGT}, 
-    [TOKEN_LT_EQ]    = {NULL, parse_bool_op, LTGT},           
+    [TOKEN_LT_EQ]    = {NULL, parse_bool_op, LTGT},          
+    [TOKEN_OR]       = {NULL, parse_bool_op, ANDOR},
+    [TOKEN_AND]      = {NULL, parse_bool_op, ANDOR}, 
     [TOKEN_INC]      = {NULL, parse_postfix, POSTFIX},  
     [TOKEN_DEC]      = {NULL, parse_postfix, POSTFIX},  
     [TOKEN_ASSIGN]   = {NULL, parse_assignment, ASSIGN},     
@@ -140,6 +142,9 @@ static ASTNodeKind_T infix_ops[TOKEN_EOF + 1] = {
     [TOKEN_GT_EQ]  = ND_GE,
     [TOKEN_LT]     = ND_LT,
     [TOKEN_LT_EQ]  = ND_LE,
+
+    [TOKEN_AND] = ND_AND,
+    [TOKEN_OR]  = ND_OR,
 
     [TOKEN_ASSIGN] = ND_ASSIGN,
     [TOKEN_ADD]    = ND_ADD,    // is still an assignment!
