@@ -1,0 +1,24 @@
+# fibonacci.csp
+import "libc/wchar.csp";
+import "libc/stdio.csp";  # for puts()
+import "strutils.csp";    # for itoa()
+
+fn fib(n: i32): i32
+{
+    if n <= 1 {
+        <- n;
+    }
+
+    <- fib(n - 1) + fib(n - 2);
+}
+
+fn main(argc: i32, argv: &&char): i32
+{
+    let n: i32 = 12;
+    let str: char[100];
+
+    itoa(fib(n), str, 10);
+    puts(str);
+
+    <- 0;
+}
