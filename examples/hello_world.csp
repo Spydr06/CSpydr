@@ -1,12 +1,14 @@
-import "stdio.csp";
+import "libc/wchar.csp";
+import "libc/stdio.csp";
 
-fn main(argc: i32, argv: &&char): i32 {
-    puts("Hello World!");
-
-    template_test::<i32>();
-
-    <- 0;
+namespace foo {
+    fn bar() {
+        puts("foo::bar");
+    }
 }
 
-fn template_test::<>() {
+fn main(argc: i32, argv: &&char): i32 {
+    foo::bar();
+
+    <- 0;
 }

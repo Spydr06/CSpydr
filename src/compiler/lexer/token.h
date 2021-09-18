@@ -94,6 +94,7 @@ typedef enum TOKEN_TYPE {
     TOKEN_EXTERN,       // extern
     TOKEN_MACRO,        // macro
     TOKEN_CONST,        // const
+    TOKEN_NAMESPACE,    // namespace
     TOKEN_COMPLEX,      // complex
     TOKEN_ATOMIC,       // atomic
     TOKEN_VOLATILE,     // volatile

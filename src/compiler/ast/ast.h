@@ -14,7 +14,10 @@ typedef struct AST_OBJ_STRUCT ASTObj_T;
 
 typedef enum {
     ND_NOOP,
-    ND_ID,
+
+    // identifiers
+    ND_ID,            // x
+    ND_STATIC_MEMBER, // x::y
 
     // literals
     ND_INT,     // 0
@@ -130,6 +133,7 @@ typedef enum {
     OBJ_FUNCTION,
     OBJ_FN_ARG,
     OBJ_TYPEDEF,
+    OBJ_NAMESPACE,
 } ASTObjKind_T;
 
 struct AST_NODE_STRUCT
@@ -237,6 +241,9 @@ struct AST_OBJ_STRUCT
     List_T* args;           // list of ASTObj_Ts
     ASTNode_T* body;
     List_T* templates;
+
+    // namespaces
+    List_T* objs;
 } __attribute__((packed));
 
 typedef struct AST_PROG_STRUCT

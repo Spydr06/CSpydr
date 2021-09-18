@@ -251,7 +251,7 @@ static inline bool is_editable(ASTNodeKind_T n)
 
 static inline bool is_executable(ASTNodeKind_T n)
 {
-    return n == ND_CALL || n == ND_ASSIGN || n == ND_INC || n == ND_DEC || n == ND_CAST;
+    return n == ND_CALL || n == ND_ASSIGN || n == ND_INC || n == ND_DEC || n == ND_CAST || n == ND_STATIC_MEMBER;
 }
 
 static bool check_type(ASTType_T* a, ASTType_T* b)
@@ -304,10 +304,7 @@ static ASTType_T* get_compatible_tuple(Parser_T* p, ASTType_T* tuple)
 // Parser                      //
 /////////////////////////////////
 
-static ASTObj_T* parse_typedef(Parser_T* p);
-static ASTObj_T* parse_fn(Parser_T* p);
-static ASTObj_T* parse_global(Parser_T* p);
-static void parse_extern(Parser_T* p, List_T* objs);
+static void parse_obj(Parser_T* p, List_T* obj_list);
 
 ASTProg_T* parse(List_T* files, bool is_silent)
 {
@@ -333,21 +330,8 @@ ASTProg_T* parse(List_T* files, bool is_silent)
                 parser_consume(p, TOKEN_STRING, "expect file to import as string");
                 parser_consume(p, TOKEN_SEMICOLON, "expect `;` after import statement");
                 break;
-            case TOKEN_TYPE:
-                list_push(prog->objs, parse_typedef(p));
-                break;
-            case TOKEN_CONST:
-            case TOKEN_LET:
-                list_push(prog->objs, parse_global(p));
-                break;
-            case TOKEN_FN:
-                list_push(prog->objs, parse_fn(p));
-                break;
-            case TOKEN_EXTERN:  
-                parse_extern(p, prog->objs);
-                break;
-            default:
-                throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect [import, type, let, const, fn]", p->tok->value);
+            default: 
+                parse_obj(p, prog->objs);
         }
     }
 
@@ -357,6 +341,10 @@ ASTProg_T* parse(List_T* files, bool is_silent)
 
     return prog;
 }
+
+/////////////////////////////////
+// Datatype Parser             //
+/////////////////////////////////
 
 static ASTNode_T* parse_expr(Parser_T* p, Precedence_T prec, TokenType_T end_tok);
 static ASTType_T* parse_type(Parser_T* p);
@@ -566,6 +554,13 @@ parse_array_ty:
     return type;
 }
 
+/////////////////////////////////
+// Definition & Obj Parser     //
+/////////////////////////////////
+
+static ASTObj_T* parse_global(Parser_T* p);
+static ASTObj_T* parse_fn_def(Parser_T* p);
+
 static ASTObj_T* parse_typedef(Parser_T* p)
 {
     ASTObj_T* tydef = init_ast_obj(OBJ_TYPEDEF, p->tok);
@@ -580,8 +575,6 @@ static ASTObj_T* parse_typedef(Parser_T* p)
     parser_consume(p, TOKEN_SEMICOLON, "expect `;` after type definition");
     return tydef;
 }
-
-static ASTObj_T* parse_fn_def(Parser_T* p);
 
 static ASTObj_T* parse_extern_def(Parser_T *p)
 {
@@ -747,6 +740,68 @@ static ASTObj_T* parse_global(Parser_T* p)
     
     parser_consume(p, TOKEN_SEMICOLON, "expect `;` after variable definition");
     return global;
+}
+
+static ASTObj_T* parse_namespace(Parser_T* p)
+{
+    ASTObj_T* namespace = init_ast_obj(OBJ_NAMESPACE, p->tok);
+    parser_advance(p); // skip the "namespace" token
+
+    strcpy(namespace->callee, p->tok->value);
+    parser_consume(p, TOKEN_ID, "expect namespace name");
+
+    // initialize the namespace's object list
+    namespace->objs = init_list(sizeof(struct AST_OBJ_STRUCT));
+    ast_mem_add_list(namespace->objs);
+
+    if(tok_is(p, TOKEN_SEMICOLON)) // if the namespace has a semicolon directly after its name, it exists in the whole file
+    {
+        parser_advance(p);
+        const char* namespace_file = namespace->tok->source->path;
+
+        while(strcmp(p->tok->source->path, namespace_file) == 0)
+        {
+            parse_obj(p, namespace->objs);
+        }
+
+        return namespace;
+    }
+    
+    // if the namespace has a { directly after its name, it exists in the current scope
+    parser_consume(p, TOKEN_LBRACE, "expect either `{` or `;` after namespace declaration");
+
+    while(!tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF))
+    {
+        parse_obj(p, namespace->objs);
+    }
+    parser_consume(p, TOKEN_RBRACE, "expect `}` after namespace scope");
+
+    return namespace;
+}
+
+static void parse_obj(Parser_T* p, List_T* obj_list)
+{
+    switch(p->tok->type)
+    {
+        case TOKEN_TYPE:
+                list_push(obj_list, parse_typedef(p));
+                break;
+            case TOKEN_CONST:
+            case TOKEN_LET:
+                list_push(obj_list, parse_global(p));
+                break;
+            case TOKEN_FN:
+                list_push(obj_list, parse_fn(p));
+                break;
+            case TOKEN_EXTERN:  
+                parse_extern(p, obj_list);
+                break;
+            case TOKEN_NAMESPACE:
+                list_push(obj_list, parse_namespace(p));
+                break;
+            default:
+                throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect [import, type, let, const, fn]", p->tok->value);
+    }
 }
 
 /////////////////////////////////
@@ -1386,12 +1441,21 @@ static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left)
 
 static ASTNode_T* parse_static_member(Parser_T* p, ASTNode_T* left)
 {
+    ASTNode_T* static_member = init_ast_node(ND_STATIC_MEMBER, p->tok);
     parser_consume(p, TOKEN_STATIC_MEMBER, "expect `::` for static member access");
 
-    if(tok_is(p, TOKEN_LT))
-        return parse_call(p, left);
-    else 
-        throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot take a static member of token `%s`", p->tok->value);
+    switch(p->tok->type)
+    {
+        case TOKEN_LT:
+            return parse_call(p, left);
+        case TOKEN_ID:
+            static_member->left = left;
+            static_member->right = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+            return static_member;
+        default:
+            throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot take a static member of `%s`", left->tok);
+    }
+
     return NULL;
 }
 

@@ -31,6 +31,7 @@ const struct { const char* str; TokenType_T type; } keywords[] = {
     {"volatile", TOKEN_VOLATILE},
     {"extern", TOKEN_EXTERN},
     {"macro", TOKEN_MACRO},
+    {"namespace", TOKEN_NAMESPACE},
     {"sizeof", TOKEN_SIZEOF},
     {"typeof", TOKEN_TYPEOF},
     {"break", TOKEN_BREAK},
