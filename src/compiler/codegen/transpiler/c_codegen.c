@@ -384,6 +384,25 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
                 c_gen_array_brackets(cg, obj->data_type);
             println(cg, ";");
             break;
+        case OBJ_NAMESPACE:
+            for(size_t i = 0; i < obj->objs->size; i++)
+            {
+                ASTObj_T* namespace_member = obj->objs->items[i];
+
+                char new_name[BUFSIZ];
+
+                if(namespace_member->kind != OBJ_NAMESPACE) 
+                    strcat(new_name, "__csp_");
+
+                strcat(new_name, obj->callee);
+                strcat(new_name, "_");
+                strcat(new_name, namespace_member->callee);
+
+                strcpy(namespace_member->callee, new_name);
+
+                c_gen_obj_decl(cg, namespace_member);     
+            }
+            break;
         default:
             break;
     }
@@ -405,6 +424,11 @@ static void c_gen_obj(CCodegenData_T* cg, ASTObj_T* obj)
             c_gen_stmt(cg, obj->body);
             println(cg, "}");
             break;
+        case OBJ_NAMESPACE:
+            for(size_t i = 0; i < obj->objs->size; i++)
+            {
+                c_gen_obj(cg, obj->objs->items[i]);
+            }
         default:
             break;
     }
@@ -623,6 +647,10 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             break;
         case ND_LAMBDA:
             print(cg, node->callee);
+            break;
+        case ND_STATIC_MEMBER:
+            print(cg, "__csp_%s_", node->left->callee);
+            c_gen_expr(cg, node->right);
             break;
         default:
             throw_error(ERR_MISC, node->tok, "Expressions of type %d are currently not supported", node->kind);

@@ -246,7 +246,7 @@ Token_T* parser_consume(Parser_T* p, TokenType_T type, const char* msg)
 
 static inline bool is_editable(ASTNodeKind_T n)
 {
-    return n == ND_ID || n == ND_MEMBER || n == ND_INDEX || n == ND_CAST || n == ND_CALL || n == ND_ARRAY;
+    return n == ND_ID || n == ND_MEMBER || n == ND_INDEX || n == ND_CAST || n == ND_CALL || n == ND_ARRAY || n == ND_STR;
 }
 
 static inline bool is_executable(ASTNodeKind_T n)
@@ -1450,7 +1450,7 @@ static ASTNode_T* parse_static_member(Parser_T* p, ASTNode_T* left)
             return parse_call(p, left);
         case TOKEN_ID:
             static_member->left = left;
-            static_member->right = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+            static_member->right = parse_expr(p, STATIC, TOKEN_SEMICOLON);
             return static_member;
         default:
             throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot take a static member of `%s`", left->tok);

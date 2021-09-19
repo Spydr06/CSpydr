@@ -6,7 +6,9 @@
 #include "../list.h"
 #include "../lexer/token.h"
 #include "../globals.h"
+
 #include <stdint.h>
+#include <stdio.h>
 
 typedef struct AST_NODE_STRUCT ASTNode_T;
 typedef struct AST_TYPE_STRUCT ASTType_T;
@@ -144,7 +146,7 @@ struct AST_NODE_STRUCT
         ASTType_T* data_type;
 
         // id
-        char callee[__CSP_MAX_TOKEN_SIZE];
+        char callee[BUFSIZ];
 
         // literals
         union {
@@ -204,7 +206,7 @@ struct AST_TYPE_STRUCT
     ASTType_T* base;
     int size;
 
-    char callee[__CSP_MAX_TOKEN_SIZE];
+    char callee[BUFSIZ];
 
     bool is_primitive: 1;
     bool is_constant: 1;
@@ -228,7 +230,7 @@ struct AST_OBJ_STRUCT
     ASTObjKind_T kind;
     Token_T* tok;
 
-    char callee[__CSP_MAX_TOKEN_SIZE];
+    char callee[BUFSIZ];
     bool is_extern;
 
     // variables

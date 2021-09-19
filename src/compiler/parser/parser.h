@@ -34,12 +34,13 @@ typedef enum {
     ANDOR   =  6,
     POSTFIX =  7, // x++, x--
     PREFIX  =  8, // -x, !x
-    CALL    =  9, // x(y)
-    INDEX   = 10, // x[y]
-    MEMBER  = 11, // x.y
-    CLOSURE = 12, // (x + y) * z
-    CAST    = 13, // x:i32
-    HIGHEST = 14,
+    STATIC  =  9, // x::y
+    CALL    = 10, // x(y)
+    INDEX   = 11, // x[y]
+    MEMBER  = 12, // x.y
+    CLOSURE = 13, // (x + y) * z
+    CAST    = 14, // x:i32
+    HIGHEST = 15,
 } Precedence_T;
 
 Parser_T* init_parser(List_T* tokens);
