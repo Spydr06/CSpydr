@@ -87,8 +87,9 @@ typedef enum {
     ND_CASE,    // x => {} !!only in match statements!!
     ND_RETURN,  // ret x;
     ND_EXPR_STMT, // "executable" expressions
-    ND_BREAK,       // break;
-    ND_CONTINUE,    // continue;
+    ND_BREAK,     // break;
+    ND_CONTINUE,  // continue;
+    ND_ASM,       // asm "<assembly code>";
 
     ND_LAMBDA,
 
