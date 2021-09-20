@@ -32,7 +32,7 @@ A list of all the features, that are/will be implemented.
 - [x] `sizeof` keyword (currently called through the C interface)
 - [x] different loop types: `for`, `while` and `loop`
 - [x] macros (without arguments)
-- [ ] namespaces
+- [ ] namespaces -> under construction
 - [ ] public/private functions, globals, types and struct members
 - [ ] functions inside of structs
 - [x] lambda expressions (not asynchronous)
