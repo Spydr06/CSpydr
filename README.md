@@ -6,7 +6,7 @@ CSpydr is a low-level, static typed, compiled programming language inspired by R
 A list of all the features, that are/will be implemented.
 
 ##### Compiler features:
-- [ ] LLVM compiler
+- [ ] LLVM compiler -> under construction
 - [ ] Assembly compiler
 - [x] C transpiler
 - [x] lexing symbols
@@ -16,7 +16,7 @@ A list of all the features, that are/will be implemented.
 - [ ] type validator
 - [x] function validation
 - [x] CLI and error handling
-- [ ] memory management -> under construction
+- [x] memory management
 
 ##### Language features:
 - [x] functions
@@ -33,7 +33,7 @@ A list of all the features, that are/will be implemented.
 - [x] different loop types: `for`, `while` and `loop`
 - [x] macros (without arguments)
 - [ ] namespaces -> under construction
-- [ ] public/private functions, globals, types and struct members
+- [x] public functions, globals, types and struct members
 - [ ] functions inside of structs
 - [x] lambda expressions (not asynchronous)
 - [x] tuples
