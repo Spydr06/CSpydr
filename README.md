@@ -58,7 +58,7 @@ cd ./cspydr
 make
 sudo make install
 ```
-This installs the CSpydr compiler with the CSpydr STD (Standard Library)
+This installs the CSpydr compiler with the CSpydr standard library
 
 ## Usage
 
