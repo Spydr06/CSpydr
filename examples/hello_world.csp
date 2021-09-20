@@ -1,14 +1,5 @@
-import "libc/wchar.csp";
-import "libc/stdio.csp";
-
-namespace foo {
-    fn bar() {
-        puts("foo::bar");
-    }
-}
-
 fn main(argc: i32, argv: &&char): i32 {
-    foo::bar();
+    asm "ret";
 
     <- 0;
 }

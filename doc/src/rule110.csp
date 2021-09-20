@@ -1,0 +1,33 @@
+# rule110.csp
+import "libc/wchar.csp";
+import "libc/stdio.csp";
+
+let board_cap: const i32 = 100;
+let board: i32[board_cap];
+
+fn main(argc: i32, argv: &&char): i32
+{
+    board[board_cap - 2] = 1;
+
+    for let i: size_t = 0; i < board_cap - 2; i++ 
+    {
+        for let j: size_t = 0; j < board_cap; j++
+        {
+            let c: char = " *"[board[j]];
+            fputc(c, stdout);
+        }
+        fputc('\n', stdout);
+
+        let pattern = (board[0] << 1) | board[1];
+        for let j: size_t = 1; j < board_cap - 1; j++
+        {
+            pattern = ((pattern << 1) & 7) | board[j + 1];
+            board[j] = (110 >> pattern) & 1;
+        }
+    } 
+
+    <- 0;
+}
+
+
+

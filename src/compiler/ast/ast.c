@@ -4,6 +4,8 @@
 #include "types.h"
 #include "mem/ast_mem.h"
 
+#include <string.h>
+
 ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok)
 {
     ASTNode_T* node = ast_malloc(sizeof(struct AST_NODE_STRUCT));
@@ -41,8 +43,18 @@ ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok)
     return node;
 }
 
-void free_ast_node(ASTNode_T* node)
+ASTIdentifier_T* init_ast_name(Token_T* tok, char callee[BUFSIZ])
 {
+    ASTIdentifier_T* id = ast_malloc(sizeof(struct AST_IDENTIFIER_STRUCT));
+    id->tok = dupl_token(tok);
+    id->is_static = false;
+    id->outer = NULL;
+    id->kind = -1;
+
+    strcpy(id->callee, callee);
+    ast_mem_add_ptr(id->tok);
+
+    return id;
 }
 
 ASTType_T* init_ast_type(ASTTypeKind_T kind, Token_T* tok)
@@ -75,10 +87,6 @@ ASTType_T* init_ast_type(ASTTypeKind_T kind, Token_T* tok)
     return type;
 }
 
-void free_ast_type(ASTType_T* type)
-{
-}
-
 ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok)
 {
     ASTObj_T* obj = ast_malloc(sizeof(struct AST_OBJ_STRUCT));
@@ -98,10 +106,6 @@ ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok)
     ast_mem_add_ptr(obj->tok);
 
     return obj;
-}
-
-void free_ast_obj(ASTObj_T* obj)
-{
 }
 
 ASTProg_T* init_ast_prog(const char* main_file_path, const char* target_binary, List_T* imports)
@@ -154,6 +158,9 @@ const char* obj_kind_to_str(ASTObjKind_T kind)
             return "global variable";
         case OBJ_FN_ARG:
             return "argument";
+        case OBJ_NAMESPACE:
+            return "namespace";
+        default:
+            return "<undefined object type>";
     }
-    return "NULL";
 }

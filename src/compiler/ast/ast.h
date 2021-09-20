@@ -11,6 +11,7 @@
 #include <stdio.h>
 
 typedef struct AST_NODE_STRUCT ASTNode_T;
+typedef struct AST_IDENTIFIER_STRUCT ASTIdentifier_T;
 typedef struct AST_TYPE_STRUCT ASTType_T;
 typedef struct AST_OBJ_STRUCT ASTObj_T;
 
@@ -136,7 +137,7 @@ typedef enum {
     OBJ_FUNCTION,
     OBJ_FN_ARG,
     OBJ_TYPEDEF,
-    OBJ_NAMESPACE,
+    OBJ_NAMESPACE
 } ASTObjKind_T;
 
 struct AST_NODE_STRUCT
@@ -147,7 +148,7 @@ struct AST_NODE_STRUCT
         ASTType_T* data_type;
 
         // id
-        char callee[BUFSIZ];
+        ASTIdentifier_T* id;
 
         // literals
         union {
@@ -199,6 +200,17 @@ struct AST_NODE_STRUCT
         List_T* template_types;
 } __attribute__((packed));
 
+struct AST_IDENTIFIER_STRUCT
+{
+    ASTObjKind_T kind; // kind of the object, which the name is referring to
+    Token_T* tok;
+
+    bool is_static: 1; // true, if the reference is done via :: rather than .
+
+    char callee[BUFSIZ];
+    ASTIdentifier_T* outer;
+} __attribute((packed));
+
 struct AST_TYPE_STRUCT 
 {
     ASTTypeKind_T kind;
@@ -207,7 +219,7 @@ struct AST_TYPE_STRUCT
     ASTType_T* base;
     int size;
 
-    char callee[BUFSIZ];
+    ASTIdentifier_T* id;
 
     bool is_primitive: 1;
     bool is_constant: 1;
@@ -231,7 +243,7 @@ struct AST_OBJ_STRUCT
     ASTObjKind_T kind;
     Token_T* tok;
 
-    char callee[BUFSIZ];
+    ASTIdentifier_T* id;
     bool is_extern;
 
     // variables
@@ -262,13 +274,9 @@ typedef struct AST_PROG_STRUCT
 } ASTProg_T;
 
 ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok);
-void       free_ast_node(ASTNode_T* node);
-
 ASTType_T* init_ast_type(ASTTypeKind_T kind, Token_T* tok);
-void       free_ast_type(ASTType_T* type);
-
+ASTIdentifier_T* init_ast_identifier(Token_T* tok, char callee[BUFSIZ]);
 ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok);
-void      free_ast_obj(ASTObj_T* obj);
 
 ASTProg_T* init_ast_prog(const char* main_file_path, const char* target_binary, List_T* imports);
 void       free_ast_prog(ASTProg_T* prog);
