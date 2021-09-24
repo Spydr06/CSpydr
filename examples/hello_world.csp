@@ -1,5 +1,5 @@
 fn main(argc: i32, argv: &&char): i32 {
-    asm "ret";
+    puts("Hello World!");
 
     <- 0;
 }

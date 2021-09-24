@@ -22,7 +22,7 @@
 #include "codegen/llvm/llvm_codegen.h"
 #include "codegen/transpiler/c_codegen.h"
 #include "platform/platform_bindings.h"
-#include "ast/xml.h"
+//#include "ast/xml.h"
 
 // default texts, which get shown if you enter help, info or version flags
 // links to me, the creator of CSpydr
@@ -260,7 +260,7 @@ ASTProg_T* generate_ast(char* path, char* target, bool silent)
     list_push(files, read_file(path));
 
     ASTProg_T* ast = parse(files, silent);
-    optimize(ast);
+    //optimize(ast);
 
     for(size_t i = 0; i < files->size; i++) 
         free_srcfile(files->items[i]);
@@ -314,7 +314,7 @@ void transpile_c(ASTProg_T* ast, char* target, Action_T action, bool print_c, bo
 void parse_to_xml(ASTProg_T* ast, char* target, Action_T action, bool silent)
 {
     LOG_OK_F(COLOR_BOLD_GREEN "  Emitting " COLOR_RESET "  AST as XML to \"%s\"\n", target);
-    ast_to_xml(ast, target);
+    //ast_to_xml(ast, target);
 
     free_ast_prog(ast);
 }

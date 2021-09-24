@@ -45,6 +45,8 @@ void llvm_exit_hook(void);
 LLVMValueRef find_id(LLVMCodegenData_T* cg, char* callee);
 LLVMValueRef find_fn(LLVMCodegenData_T* cg, char* callee);
 
+char* llvm_gen_identifier(LLVMCodegenData_T* cg, ASTIdentifier_T* id);
+
 // llvm_type_codegen.c
 LLVMTypeRef llvm_gen_type(LLVMCodegenData_T* cg, ASTType_T* ty);
 

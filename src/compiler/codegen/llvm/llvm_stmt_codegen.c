@@ -43,7 +43,7 @@ LLVMBasicBlockRef llvm_begin_label(LLVMCodegenData_T* cg, char* name)
         for(size_t i = 0; i < argc; i++)
         {
             ASTObj_T* arg = cg->current_fn_ast->args->items[i];
-            LLVMSetValueName(arg_values[i], arg->callee);
+            LLVMSetValueName(arg_values[i], llvm_gen_identifier(cg, arg->id));
             arg_allocs[i] = LLVMBuildAlloca(cg->llvm_builder, llvm_gen_type(cg, arg->data_type), "");
             LLVMBuildStore(cg->llvm_builder, arg_values[i], arg_allocs[i]);
             list_push(cg->vars, arg_values[i]);

@@ -34,14 +34,16 @@ LLVMValueRef llvm_gen_fn(LLVMCodegenData_T* cg, ASTObj_T* obj)
         arg_types[i] = llvm_gen_type(cg, ((ASTObj_T*) obj->args->items[i])->data_type);
     }   
 
+    char* callee = llvm_gen_identifier(cg, obj->id);
+
     LLVMTypeRef fn_type = LLVMFunctionType(return_type, arg_types, argc, false);
-    LLVMValueRef fn = LLVMAddFunction(cg->llvm_module, obj->callee, fn_type);
+    LLVMValueRef fn = LLVMAddFunction(cg->llvm_module, callee, fn_type);
 
     cg->current_fn = fn;
     cg->current_fn_ast = obj;
     list_push(cg->fns, fn);
 
-    if(strcmp(obj->callee, "main") == 0)
+    if(strcmp(callee, "main") == 0)
         cg->main_fn = obj;
 
     free(arg_types);
@@ -60,7 +62,7 @@ void llvm_gen_fn_body(LLVMCodegenData_T* cg, ASTObj_T* fn)
 LLVMValueRef llvm_gen_global(LLVMCodegenData_T* cg, ASTObj_T* ast)
 {
     LLVMTypeRef type = llvm_gen_type(cg, ast->data_type);
-    LLVMValueRef global = LLVMAddGlobal(cg->llvm_module, type, ast->callee);
+    LLVMValueRef global = LLVMAddGlobal(cg->llvm_module, type, llvm_gen_identifier(cg, ast->id));
 
     list_push(cg->vars, global);
 

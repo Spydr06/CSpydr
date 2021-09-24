@@ -27,7 +27,7 @@ LLVMValueRef llvm_gen_expr(LLVMCodegenData_T* cg, ASTNode_T* node)
         case ND_CHAR:
             return LLVMConstInt(LLVMInt8Type(), strlen(node->str_val) == 1 ? node->str_val[0] : node->str_val[1], false);
         case ND_ID:
-            return find_id(cg, node->callee);
+            return find_id(cg, llvm_gen_identifier(cg, node->id));
         case ND_CALL:
             return llvm_gen_call(cg, node);
         case ND_ADD:
@@ -69,7 +69,7 @@ LLVMValueRef llvm_gen_cast(LLVMCodegenData_T* cg, ASTNode_T* cast)
 
 LLVMValueRef llvm_gen_call(LLVMCodegenData_T* cg, ASTNode_T* call)
 {
-    LLVMValueRef fn = find_fn(cg, call->expr->callee);
+    LLVMValueRef fn = find_fn(cg, llvm_gen_identifier(cg, call->expr->id));
     size_t argc = call->args->size;
     LLVMValueRef* args = argc > 0 ? calloc(argc, sizeof(LLVMValueRef)) : NULL;
 

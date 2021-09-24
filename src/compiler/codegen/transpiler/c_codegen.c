@@ -76,6 +76,8 @@ static void print(CCodegenData_T* cg, char* fmt, ...)
     va_end(va);
 }
 
+static char* gen_identifier(CCodegenData_T* cg, ASTIdentifier_T* id);
+
 static void write_code(CCodegenData_T* cg, const char* target_bin);
 static void run_compiler(CCodegenData_T* cg,  const char* target_bin);
 
@@ -113,15 +115,16 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
         if(obj->kind == OBJ_TYPEDEF)
         {
             print(cg, "typedef ");
+            char* callee = gen_identifier(cg, obj->id);
             if(obj->data_type->kind == TY_STRUCT)
-                print(cg, "struct %s", obj->callee);
+                print(cg, "struct %s", callee);
             else
-                c_gen_type(cg, obj->data_type, obj->callee);
+                c_gen_type(cg, obj->data_type, callee);
             
             if(obj->data_type->kind == TY_LAMBDA)
                 println(cg, ";");
             else
-                println(cg, " %s;", obj->callee);
+                println(cg, " %s;", callee);
         }
     }
 
@@ -257,13 +260,14 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
                 for(size_t i = 0; i < ty->members->size; i++)
                 {   
                     ASTNode_T* member = ty->members->items[i];
+                    char* callee = gen_identifier(cg, member->id);
                     if(member->expr)
                     {
-                        print(cg, "%s=", member->callee);
+                        print(cg, "%s=", callee);
                         c_gen_expr(cg, member->expr);
                         print(cg, ",");
                     } else
-                        print(cg, "%s,", member->callee);
+                        print(cg, "%s,", callee);
                 }
 
                 print(cg, "}");
@@ -275,7 +279,7 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
                 {
                     ASTNode_T* member = ty->members->items[i];
                     c_gen_type(cg, member->data_type, struct_name);
-                    print(cg, " %s", member->callee); 
+                    print(cg, " %s", gen_identifier(cg, member->id)); 
                     if(member->data_type->kind == TY_ARR)
                         c_gen_array_brackets(cg, member->data_type);
                     println(cg, ";");
@@ -284,15 +288,15 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
                 print(cg, "}");
                 break;
             case TY_TUPLE:
-                print(cg, "struct %s", ty->callee);
+                print(cg, "struct %s", gen_identifier(cg, ty->id));
                 break;
             case TY_UNDEF:
-                if(struct_name && strcmp(ty->callee, struct_name) == 0)
+                if(struct_name && strcmp(gen_identifier(cg, ty->id), struct_name) == 0)
                     print(cg, "struct ");
-                print(cg, ty->callee);
+                print(cg, gen_identifier(cg, ty->id));
                 break;
             case TY_OPAQUE_STRUCT:
-                print(cg, "struct %s", ty->callee);
+                print(cg, "struct %s", gen_identifier(cg, ty->id));
                 break;
             default:
                 throw_error(ERR_MISC, ty->tok, "Types with kind %d are currently not supported.", ty->kind);
@@ -302,7 +306,7 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
 
 static void c_gen_tuple_struct(CCodegenData_T* cg, ASTType_T* tuple)
 {
-    print(cg, "struct %s{", tuple->callee);
+    print(cg, "struct %s{", gen_identifier(cg, tuple->id));
     for(size_t i = 0; i < tuple->arg_types->size; i++)
     {
         c_gen_type(cg, tuple->arg_types->items[i], "");
@@ -332,12 +336,13 @@ static void c_gen_fn_arg_list(CCodegenData_T* cg, List_T* args)
     for(size_t i = 0; i < args->size; i++)
     {
         ASTObj_T* arg = args->items[i];
+        char* callee = gen_identifier(cg, arg->id);
         if(arg->data_type->kind == TY_LAMBDA)
-            c_gen_type(cg, arg->data_type, arg->callee);
+            c_gen_type(cg, arg->data_type, callee);
         else
         {   
             c_gen_type(cg, arg->data_type, "");
-            print(cg, " %s", arg->callee);
+            print(cg, " %s", callee);
         }
 
         if(arg->data_type->kind == TY_ARR)
@@ -352,6 +357,8 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
     if(obj->is_extern)
         print(cg, "extern ");
 
+    char* obj_callee = gen_identifier(cg, obj->id);
+
     switch(obj->kind)
     {
         case OBJ_GLOBAL:
@@ -359,7 +366,7 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
                 print(cg, "const ");
 
             c_gen_type(cg, obj->data_type, "");
-            print(cg, " %s", obj->callee);
+            print(cg, " %s", obj_callee);
             if(obj->data_type->kind == TY_ARR)
                 c_gen_array_brackets(cg, obj->data_type);
             if(obj->value)
@@ -371,7 +378,7 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
             break;
         case OBJ_FUNCTION:
             c_gen_type(cg, obj->return_type, "");
-            print(cg, " %s(", obj->callee);
+            print(cg, " %s(", obj_callee);
             if(obj->args)
                 c_gen_fn_arg_list(cg, obj->args);
             println(cg, ");");
@@ -379,7 +386,7 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
         case OBJ_TYPEDEF:
             if(obj->data_type->kind != TY_STRUCT)
                 break;
-            c_gen_type(cg, obj->data_type, obj->callee);
+            c_gen_type(cg, obj->data_type, obj_callee);
             if(obj->data_type->kind == TY_ARR)
                 c_gen_array_brackets(cg, obj->data_type);
             println(cg, ";");
@@ -390,15 +397,17 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
                 ASTObj_T* namespace_member = obj->objs->items[i];
 
                 char new_name[BUFSIZ];
+                char* member_callee = gen_identifier(cg, namespace_member->id);
 
                 if(namespace_member->kind != OBJ_NAMESPACE) 
                     strcat(new_name, "__csp_");
 
-                strcat(new_name, obj->callee);
+                strcat(new_name, obj_callee);
                 strcat(new_name, "_");
-                strcat(new_name, namespace_member->callee);
 
-                strcpy(namespace_member->callee, new_name);
+                strcat(new_name, member_callee);
+
+                strcpy(member_callee, new_name);
 
                 c_gen_obj_decl(cg, namespace_member);     
             }
@@ -417,7 +426,7 @@ static void c_gen_obj(CCodegenData_T* cg, ASTObj_T* obj)
     {
         case OBJ_FUNCTION:
             c_gen_type(cg, obj->return_type, "");
-            print(cg, " %s(", obj->callee);
+            print(cg, " %s(", gen_identifier(cg, obj->id));
             if(obj->args)
                 c_gen_fn_arg_list(cg, obj->args);
             println(cg, "){");
@@ -466,7 +475,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, "\"%s\"", node->str_val);
             break;
         case ND_ID: 
-            print(cg, "%s", node->callee);
+            print(cg, "%s", gen_identifier(cg, node->id));
             break;
         case ND_CALL:
             c_gen_expr(cg, node->expr);
@@ -646,10 +655,10 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, ")");
             break;
         case ND_LAMBDA:
-            print(cg, node->callee);
+            print(cg, gen_identifier(cg, node->id));
             break;
         case ND_STATIC_MEMBER:
-            print(cg, "__csp_%s_", node->left->callee);
+            print(cg, "__csp_%s_", gen_identifier(cg, node->left->id));
             c_gen_expr(cg, node->right);
             break;
         default:
@@ -660,7 +669,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
 static void c_gen_local(CCodegenData_T* cg, ASTObj_T* obj)
 {
     c_gen_type(cg, obj->data_type, "");
-    print(cg, " %s", obj->callee);
+    print(cg, " %s", gen_identifier(cg, obj->id));
     if(obj->data_type->kind == TY_ARR)
                 c_gen_array_brackets(cg, obj->data_type);
     println(cg, ";"); 
@@ -772,11 +781,17 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
 static void c_gen_lambda_fn(CCodegenData_T* cg, ASTNode_T* lambda)
 {
     c_gen_type(cg, lambda->data_type, "");
-    print(cg, " %s(", lambda->callee);
+    print(cg, " %s(", gen_identifier(cg, lambda->id));
 
     c_gen_fn_arg_list(cg, lambda->args);
 
     println(cg, "){");
     c_gen_stmt(cg, lambda->body);
     println(cg, "}");
+}
+
+static char* gen_identifier(CCodegenData_T* cg, ASTIdentifier_T* id)
+{
+    // temporary
+    return id->callee;
 }
