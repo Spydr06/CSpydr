@@ -1,5 +1,11 @@
+namespace x {
+    fn y(char* str) {
+        puts(str);
+    }
+}
+
 fn main(argc: i32, argv: &&char): i32 {
-    puts("Hello World!");
+    x::puts("Hello World!");
 
     <- 0;
 }
