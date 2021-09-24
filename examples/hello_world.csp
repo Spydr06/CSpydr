@@ -1,11 +1,19 @@
 namespace x {
-    fn y(char* str) {
+    fn puts(str: &char) {
         puts(str);
     }
 }
 
+type data: struct {
+    msg: &char
+};
+
+let program_data: &data;
+
 fn main(argc: i32, argv: &&char): i32 {
-    x::puts("Hello World!");
+    program_data = &({"Hello"}: data);
+
+    x::puts(program_data.msg);
 
     <- 0;
 }

@@ -48,7 +48,6 @@ static ASTNode_T* parse_unary(Parser_T* p);
 static ASTNode_T* parse_num_op(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_bit_op(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_bool_op(Parser_T* p, ASTNode_T* left);
-static ASTNode_T* parse_static_member(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_assignment(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_postfix(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left);
@@ -106,7 +105,6 @@ static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } ex
     [TOKEN_XOR_ASSIGN] = {NULL, parse_assignment, ASSIGN},
     [TOKEN_BIT_AND_ASSIGN] = {NULL, parse_assignment, ASSIGN},
     [TOKEN_BIT_OR_ASSIGN] = {NULL, parse_assignment, ASSIGN},  
-    [TOKEN_STATIC_MEMBER] = {NULL, parse_static_member, CALL},
 }; 
 
 static ASTNodeKind_T unary_ops[TOKEN_EOF + 1] = {
@@ -251,7 +249,7 @@ static inline bool is_editable(ASTNodeKind_T n)
 
 static inline bool is_executable(ASTNodeKind_T n)
 {
-    return n == ND_CALL || n == ND_ASSIGN || n == ND_INC || n == ND_DEC || n == ND_CAST || n == ND_STATIC_MEMBER;
+    return n == ND_CALL || n == ND_ASSIGN || n == ND_INC || n == ND_DEC || n == ND_CAST;
 }
 
 static bool check_type(ASTType_T* a, ASTType_T* b)
@@ -358,23 +356,17 @@ static ASTIdentifier_T* __parse_identifier(Parser_T* p, ASTIdentifier_T* outer, 
     switch(p->tok->type)
     {
         case TOKEN_DOT:
-            {
-                parser_advance(p);
-                ASTIdentifier_T* inner = __parse_identifier(p, id, false);
-                inner->is_static = false;
-                return inner;
-            }
+            parser_advance(p);
+            id->is_static = false;
+            return  __parse_identifier(p, id, false);
         case TOKEN_STATIC_MEMBER:
-            {
-                if(parser_peek(p, 1)->type == TOKEN_LT)
-                    return id; // :: followed by < would be a generic in a functon or -call 
+            if(parser_peek(p, 1)->type == TOKEN_LT)
+               return id; // :: followed by < would be a generic in a functon or -call 
 
-                parser_advance(p);
-                ASTIdentifier_T* inner = __parse_identifier(p, id, false);
-                inner->is_static = true;
-                inner->kind = OBJ_NAMESPACE;  // only namespaces can have static members
-                return inner;
-            }
+            parser_advance(p);
+            id->is_static = true;
+            id->kind = OBJ_NAMESPACE;  // only namespaces can have static members
+            return __parse_identifier(p, id, false);
         default:
             return id;
     }
@@ -1482,26 +1474,6 @@ static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left)
     parser_consume(p, TOKEN_RPAREN, "expect `)` after call arguments");
 
     return call;
-}
-
-static ASTNode_T* parse_static_member(Parser_T* p, ASTNode_T* left)
-{
-    ASTNode_T* static_member = init_ast_node(ND_STATIC_MEMBER, p->tok);
-    parser_consume(p, TOKEN_STATIC_MEMBER, "expect `::` for static member access");
-
-    switch(p->tok->type)
-    {
-        case TOKEN_LT:
-            return parse_call(p, left);
-        case TOKEN_ID:
-            static_member->left = left;
-            static_member->right = parse_expr(p, STATIC, TOKEN_SEMICOLON);
-            return static_member;
-        default:
-            throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot take a static member of `%s`", left->tok);
-    }
-
-    return NULL;
 }
 
 static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left)

@@ -11,6 +11,7 @@
 #include <stdarg.h>
 
 #include "../../platform/platform_bindings.h"
+#include "../../ast/mem/ast_mem.h"
 
 char* cc = DEFAULT_CC;
 char* cc_flags = DEFAULT_CC_FLAGS;
@@ -657,10 +658,6 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
         case ND_LAMBDA:
             print(cg, c_gen_identifier(cg, node->id));
             break;
-        case ND_STATIC_MEMBER:
-            print(cg, "__csp_%s_", c_gen_identifier(cg, node->left->id));
-            c_gen_expr(cg, node->right);
-            break;
         default:
             throw_error(ERR_MISC, node->tok, "Expressions of type %d are currently not supported", node->kind);
     }
@@ -790,8 +787,68 @@ static void c_gen_lambda_fn(CCodegenData_T* cg, ASTNode_T* lambda)
     println(cg, "}");
 }
 
+static List_T* get_id_path(ASTIdentifier_T* id) {
+    List_T* path = init_list(sizeof(struct AST_IDENTIFIER_STRUCT*));
+    list_push(path, id);
+
+    ASTIdentifier_T* outer = id;
+    while(outer->outer)
+    {
+        outer = outer->outer;
+        list_push(path, outer);
+    }
+
+    return path;
+}
+
+static void cat_id(char* callee, ASTIdentifier_T* id)
+{
+    strcat(callee, id->callee);
+}
+
 static char* c_gen_identifier(CCodegenData_T* cg, ASTIdentifier_T* id)
 {
-    // temporary
-    return id->callee;
+    if(id->outer == NULL)
+        return id->callee;
+
+    List_T* path = get_id_path(id);
+
+    size_t len = (BUFSIZ) * path->size + 1;
+    char callee[len];
+    memset(callee, 0, sizeof callee);
+
+    bool needs_csp_prefix = false;
+
+    for(size_t i = path->size - 1; i > 0; i--)
+    {
+        ASTIdentifier_T* id2 = path->items[i];
+        cat_id(callee, id2);
+
+        if(id2->is_static) {
+            strcat(callee, "_");
+            needs_csp_prefix = true;
+        }
+        else
+            strcat(callee, "->");
+    }
+    cat_id(callee, path->items[0]);
+    free_list(path);
+
+    if(needs_csp_prefix) 
+    {
+        char* with_prefix = malloc(sizeof(char) * (len + 6));
+        strcat(with_prefix, "__csp_");
+        strcat(with_prefix, callee);
+
+        ast_mem_add_ptr(with_prefix);
+        return with_prefix;
+    } 
+    else 
+    {
+        char* new_c = malloc(sizeof(char) * (len));
+        sprintf(new_c, "%s", callee);
+
+        ast_mem_add_ptr(new_c);
+        return new_c;
+    }
 }

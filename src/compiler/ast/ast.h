@@ -20,7 +20,6 @@ typedef enum {
 
     // identifiers
     ND_ID,            // x
-    ND_STATIC_MEMBER, // x::y
 
     // literals
     ND_INT,     // 0
@@ -207,7 +206,7 @@ struct AST_IDENTIFIER_STRUCT
 
     bool is_static: 1; // true, if the reference is done via :: rather than .
 
-    char callee[BUFSIZ];
+    char callee[__CSP_MAX_TOKEN_SIZE];
     ASTIdentifier_T* outer;
 } __attribute((packed));
 
