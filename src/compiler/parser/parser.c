@@ -1,7 +1,8 @@
 #include "parser.h"
+
+#include "validator.h"
 #include "../io/log.h"
 #include "../io/io.h"
-
 #include "../ast/types.h"
 #include "../ast/mem/ast_mem.h"
 #include "../platform/platform_bindings.h"
@@ -12,16 +13,9 @@
 #include <limits.h>
 #include <float.h>
 
-#include <errno.h>
-#include <time.h>
-
 #ifdef __linux__
     #include <libgen.h>
 #endif
-
-#include <unistd.h>
-
-#define SYNTAX_ERROR(parser, msg) throw_syntax_error(parser->eh, msg, parser->tok->line, parser->tok->pos);
 
 /////////////////////////////////
 // expression parsing settings //
@@ -51,7 +45,6 @@ static ASTNode_T* parse_bool_op(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_assignment(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_postfix(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left);
-static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left);
 
 static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_cast(Parser_T* p, ASTNode_T* left);
@@ -92,7 +85,6 @@ static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } ex
     [TOKEN_SUB]      = {NULL, parse_assignment, ASSIGN},  
     [TOKEN_DIV]      = {NULL, parse_assignment, ASSIGN},  
     [TOKEN_MULT]     = {NULL, parse_assignment, ASSIGN},   
-    [TOKEN_DOT]      = {NULL, parse_member, MEMBER},
     [TOKEN_COLON]    = {NULL, parse_cast, CAST},
     [TOKEN_SIZEOF]   = {parse_sizeof, NULL, LOWEST},
     [TOKEN_TYPEOF]   = {parse_typeof, NULL, LOWEST},
@@ -156,8 +148,6 @@ static ASTNodeKind_T infix_ops[TOKEN_EOF + 1] = {
     [TOKEN_XOR_ASSIGN] = ND_XOR,
     [TOKEN_BIT_OR_ASSIGN] = ND_BIT_OR,
     [TOKEN_BIT_AND_ASSIGN] = ND_BIT_AND,
-
-    [TOKEN_DOT]    = ND_MEMBER,
 
     [TOKEN_LSHIFT] = ND_LSHIFT,
     [TOKEN_RSHIFT] = ND_RSHIFT,
@@ -244,7 +234,7 @@ Token_T* parser_consume(Parser_T* p, TokenType_T type, const char* msg)
 
 static inline bool is_editable(ASTNodeKind_T n)
 {
-    return n == ND_ID || n == ND_MEMBER || n == ND_INDEX || n == ND_CAST || n == ND_CALL || n == ND_ARRAY || n == ND_STR;
+    return n == ND_ID || n == ND_INDEX || n == ND_CAST || n == ND_CALL || n == ND_ARRAY || n == ND_STR;
 }
 
 static inline bool is_executable(ASTNodeKind_T n)
@@ -337,6 +327,7 @@ ASTProg_T* parse(List_T* files, bool is_silent)
     free_parser(p);
     free_lexer(lex);
 
+    validate_ast(prog);
     return prog;
 }
 
@@ -1490,23 +1481,6 @@ static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left)
     parser_consume(p, TOKEN_RBRACKET, "expect `]` after array index");
 
     return index;
-}
-
-static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left)
-{
-    if(!is_editable(left->kind))
-        throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot get a member of `%s`, expect struct name or similar", left->tok->value);
-
-    ASTNode_T* member = init_ast_node(ND_MEMBER, p->tok);
-    member->left = left;
-
-    parser_consume(p, TOKEN_DOT, "expect `.` for a member expression");
-    member->right = parse_expr(p, expr_parse_fns[TOKEN_DOT].prec, TOKEN_EOF);
-
-    if(member->right->kind != ND_ID)
-        throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot get %s as a member of `%s`, expect member name", member->right->tok->value);
-
-    return member;
 }
 
 static ASTNode_T* parse_closure(Parser_T* p)

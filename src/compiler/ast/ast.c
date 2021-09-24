@@ -43,7 +43,7 @@ ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok)
     return node;
 }
 
-ASTIdentifier_T* init_ast_identifier(Token_T* tok, char callee[BUFSIZ])
+ASTIdentifier_T* init_ast_identifier(Token_T* tok, char callee[__CSP_MAX_TOKEN_SIZE])
 {
     ASTIdentifier_T* id = ast_malloc(sizeof(struct AST_IDENTIFIER_STRUCT));
     id->tok = dupl_token(tok);

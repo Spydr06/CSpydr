@@ -69,7 +69,6 @@ typedef enum {
 
     ND_ASSIGN,  // x = y
 
-    ND_MEMBER,  // x.y
     ND_CALL,    // x(y, z)
     ND_INDEX,   // x[y]
     ND_CAST,    // x:i32
@@ -275,7 +274,7 @@ typedef struct AST_PROG_STRUCT
 ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok);
 ASTType_T* init_ast_type(ASTTypeKind_T kind, Token_T* tok);
 
-ASTIdentifier_T* init_ast_identifier(Token_T* tok, char callee[BUFSIZ]);
+ASTIdentifier_T* init_ast_identifier(Token_T* tok, char callee[__CSP_MAX_TOKEN_SIZE]);
 
 ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok);
 

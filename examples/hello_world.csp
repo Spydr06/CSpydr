@@ -11,7 +11,7 @@ type data: struct {
 let program_data: &data;
 
 fn main(argc: i32, argv: &&char): i32 {
-    program_data = &({"Hello"}: data);
+    program_data = &({"Hello World"}: data);
 
     x::puts(program_data.msg);
 

@@ -602,11 +602,6 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             c_gen_expr(cg, node->left);
             print(cg, node->tok->value);
             break;
-        case ND_MEMBER:
-            c_gen_expr(cg, node->left);
-            print(cg, "->");    // TODO: switch automatically between `.` and `->`
-            c_gen_expr(cg, node->right);
-            break;
         case ND_INDEX:
             c_gen_expr(cg, node->left);
             print(cg, "[");
