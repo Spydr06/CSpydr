@@ -12,6 +12,18 @@
 #include "../io/io.h"
 #include "../io/log.h"
 
+struct PREPROCESSOR_STRUCT 
+{
+    Lexer_T* lex;
+    List_T* files;
+
+    List_T* tokens;
+    List_T* macros;
+    List_T* imports;
+
+    bool is_silent;
+};
+
 #define throw_error(...)          \
     {                             \
         printf("\n");             \

@@ -6,13 +6,7 @@
 #include "../io/file.h"
 #include "../error/error.h"
 
-typedef struct LEXER_STRUCT {
-    SrcFile_T* file;
-
-    char c;
-    size_t line;
-    size_t pos;
-} Lexer_T;
+typedef struct LEXER_STRUCT Lexer_T;
 
 Lexer_T* init_lexer(SrcFile_T* src);
 void     free_lexer(Lexer_T* lexer);

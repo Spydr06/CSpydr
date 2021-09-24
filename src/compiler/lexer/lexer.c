@@ -8,6 +8,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+struct LEXER_STRUCT 
+{
+    SrcFile_T* file;
+
+    char c;
+    size_t line;
+    size_t pos;
+};
+
 const struct { const char* str; TokenType_T type; } keywords[] = {
     {"true", TOKEN_TRUE},
     {"false", TOKEN_FALSE},
