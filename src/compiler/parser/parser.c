@@ -68,6 +68,7 @@ static ASTNode_T* parse_struct_lit(Parser_T* p);
 static ASTNode_T* parse_lambda_lit(Parser_T* p);
 
 static ASTNode_T* parse_sizeof(Parser_T* p);
+static ASTNode_T* parse_len(Parser_T* p);
 
 static ASTNode_T* parse_unary(Parser_T* p);
 static ASTNode_T* parse_num_op(Parser_T* p, ASTNode_T* left);
@@ -120,6 +121,7 @@ static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } ex
     [TOKEN_DOT]      = {NULL, parse_member, MEMBER},
     [TOKEN_COLON]    = {NULL, parse_cast, CAST},
     [TOKEN_SIZEOF]   = {parse_sizeof, NULL, LOWEST},
+    [TOKEN_LEN]      = {parse_len, NULL, LOWEST},
     [TOKEN_BIT_OR]   = {parse_lambda_lit, parse_bit_op, PRODUCT},
     [TOKEN_LSHIFT]   = {NULL, parse_bit_op, PRODUCT},
     [TOKEN_RSHIFT]   = {NULL, parse_bit_op, PRODUCT},
@@ -1536,7 +1538,6 @@ static ASTNode_T* parse_sizeof(Parser_T* p)
     ASTNode_T* size_of = init_ast_node(ND_SIZEOF, p->tok);
     parser_consume(p, TOKEN_SIZEOF, "expect `sizeof` keyword");
 
-    size_of->is_constant = true;
     // detect weather sizeof is called from an type, variable or array
     if(tok_is(p, TOKEN_STAR) || tok_is(p, TOKEN_LBRACKET) || tok_is(p, TOKEN_STRUCT) || tok_is(p, TOKEN_ENUM))
         size_of->data_type = parse_type(p);
@@ -1545,6 +1546,16 @@ static ASTNode_T* parse_sizeof(Parser_T* p)
         size_of->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
     
     return size_of;
+}
+
+static ASTNode_T* parse_len(Parser_T* p)
+{
+    ASTNode_T* len = init_ast_node(ND_LEN, p->tok);
+    parser_consume(p, TOKEN_LEN, "expect `len` keyword");
+
+    len->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+
+    return len;
 }
 
 static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left)

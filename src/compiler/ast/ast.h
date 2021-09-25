@@ -91,6 +91,7 @@ typedef enum {
     ND_BREAK,     // break;
     ND_CONTINUE,  // continue;
     ND_ASM,       // asm "<assembly code>";
+    ND_LEN,       // len x
 
     ND_LAMBDA,
 

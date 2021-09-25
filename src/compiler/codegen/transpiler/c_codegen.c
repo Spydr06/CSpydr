@@ -20,7 +20,11 @@ const char* default_header_code =
     "typedef char bool;\n"
     "#define true ((bool) 1)\n"
     "#define false ((bool) 0)\n"
-    "#define NULL ((void*) 0)\n";
+    "#define NULL ((void*) 0)\n"
+    "#define len(n) (n ? ((unsigned long) (sizeof(n) / sizeof(n[0]))) : 0)\n"
+;
+
+#define len(n) (n ? ((unsigned long) (sizeof(n) / sizeof(n[0]))) : 0)
 
 static const char* primitive_to_c_type[TY_UNDEF + 1] = {
     [TY_I8]  = "signed char" ,
@@ -658,6 +662,11 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
                 c_gen_expr(cg, node->expr);
             print(cg, ")");
             break;
+        case ND_LEN:
+            print(cg, "len(");
+            c_gen_expr(cg, node->expr);
+            print(cg, ")");
+            break;
         case ND_LAMBDA:
             print(cg, c_gen_identifier(cg, node->id));
             break;
@@ -679,6 +688,12 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
 {
     switch(node->kind)
     {       
+        case ND_RETURN:
+            print(cg, "return ");
+            if(node->return_val)
+                c_gen_expr(cg, node->return_val);
+            println(cg, ";");
+            break;
         case ND_BLOCK:
             println(cg, "{");
             for(size_t i = 0; i < node->locals->size; i++)

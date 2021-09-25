@@ -105,6 +105,7 @@ typedef enum TOKEN_TYPE {
     TOKEN_BREAK,        // break
     TOKEN_NOOP,         // noop
     TOKEN_ASM,          // asm
+    TOKEN_LEN,          // len
 
     TOKEN_ERROR,        // error handling token
     TOKEN_EOF,          // end of file

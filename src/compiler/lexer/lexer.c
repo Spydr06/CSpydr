@@ -46,6 +46,7 @@ const struct { const char* str; TokenType_T type; } keywords[] = {
     {"continue", TOKEN_CONTINUE},
     {"noop", TOKEN_NOOP},
     {"asm", TOKEN_ASM},
+    {"len", TOKEN_LEN},
     {NULL, TOKEN_EOF}   // end of array indicator
 };
 
