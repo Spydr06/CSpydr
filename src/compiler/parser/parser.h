@@ -7,7 +7,6 @@
 #include "../lexer/preprocessor.h"
 
 typedef struct PARSER_STRUCT Parser_T;
-typedef enum PRECEDENCE_ENUM Precedence_T;
 
 typedef ASTNode_T* (*prefix_parse_fn)(Parser_T* parser);
 typedef ASTNode_T* (*infix_parse_fn)(Parser_T* parser, ASTNode_T* left);

@@ -602,6 +602,16 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             c_gen_expr(cg, node->left);
             print(cg, node->tok->value);
             break;
+        case ND_CLOSURE:
+            print(cg, "(");
+            c_gen_expr(cg, node->expr);
+            print(cg, ")");
+            break;
+        case ND_MEMBER:
+            c_gen_expr(cg, node->left);
+            print(cg, "->"); // TODO: automatically switch between `->` and `.`
+            c_gen_expr(cg, node->right);
+            break;
         case ND_INDEX:
             c_gen_expr(cg, node->left);
             print(cg, "[");
@@ -634,13 +644,11 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             break;
         case ND_CAST:
             print(cg, "(");
-            print(cg, "(");
             c_gen_type(cg, node->data_type, "");
             if(node->data_type->kind == TY_ARR)
                 c_gen_array_brackets(cg, node->data_type);
             print(cg, ")");
             c_gen_expr(cg, node->left);
-            print(cg, ")");
             break;
         case ND_SIZEOF:
             print(cg, "sizeof(");
@@ -670,12 +678,7 @@ static void c_gen_local(CCodegenData_T* cg, ASTObj_T* obj)
 static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
 {
     switch(node->kind)
-    {
-        case ND_RETURN:
-            print(cg, "return ");
-            if(node->return_val)
-                c_gen_expr(cg, node->return_val);
-            println(cg, ";");
+    {            print(cg, ")");
             break;
         case ND_BLOCK:
             println(cg, "{");
@@ -810,40 +813,21 @@ static char* c_gen_identifier(CCodegenData_T* cg, ASTIdentifier_T* id)
 
     size_t len = (BUFSIZ) * path->size + 1;
     char callee[len];
-    memset(callee, 0, sizeof callee);
-
-    bool needs_csp_prefix = false;
+    memset(callee, '\0', sizeof callee);
+    strcat(callee, "__csp_");
 
     for(size_t i = path->size - 1; i > 0; i--)
     {
-        ASTIdentifier_T* id2 = path->items[i];
-        cat_id(callee, id2);
-
-        if(id2->is_static) {
-            strcat(callee, "_");
-            needs_csp_prefix = true;
-        }
-        else
-            strcat(callee, "->");
+        cat_id(callee, path->items[i]);
+        strcat(callee, "_");
     }
     cat_id(callee, path->items[0]);
+
     free_list(path);
 
-    if(needs_csp_prefix) 
-    {
-        char* with_prefix = malloc(sizeof(char) * (len + 6));
-        strcat(with_prefix, "__csp_");
-        strcat(with_prefix, callee);
+    char* new_c = calloc(strlen(callee) + 1, sizeof(char));
+    sprintf(new_c, "%s", callee);
 
-        ast_mem_add_ptr(with_prefix);
-        return with_prefix;
-    } 
-    else 
-    {
-        char* new_c = malloc(sizeof(char) * (len));
-        sprintf(new_c, "%s", callee);
-
-        ast_mem_add_ptr(new_c);
-        return new_c;
-    }
+    ast_mem_add_ptr(new_c);
+    return new_c;
 }

@@ -47,7 +47,6 @@ ASTIdentifier_T* init_ast_identifier(Token_T* tok, char callee[__CSP_MAX_TOKEN_S
 {
     ASTIdentifier_T* id = ast_malloc(sizeof(struct AST_IDENTIFIER_STRUCT));
     id->tok = dupl_token(tok);
-    id->is_static = false;
     id->outer = NULL;
     id->kind = -1;
 

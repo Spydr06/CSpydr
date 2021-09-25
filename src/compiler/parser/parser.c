@@ -30,7 +30,11 @@ struct PARSER_STRUCT
     size_t cur_tuple_id;
 };
 
-enum PRECEDENCE_ENUM 
+/////////////////////////////////
+// expression parsing settings //
+/////////////////////////////////
+
+typedef enum PRECEDENCE_ENUM 
 {
     LOWEST  =  0,
     ASSIGN  =  1, // x = y, x += y
@@ -41,16 +45,13 @@ enum PRECEDENCE_ENUM
     ANDOR   =  6,
     POSTFIX =  7, // x++, x--
     PREFIX  =  8, // -x, !x
-    CALL    =  9, // x(y)
-    INDEX   = 10, // x[y]
-    CLOSURE = 11, // (x + y) * z
-    CAST    = 12, // x:i32
-    HIGHEST = 13,
-};
-
-/////////////////////////////////
-// expression parsing settings //
-/////////////////////////////////
+    MEMBER  =  9, // x.y
+    CALL    = 10, // x(y)
+    INDEX   = 11, // x[y]
+    CLOSURE = 12, // (x + y) * z
+    CAST    = 13, // x:i32
+    HIGHEST = 14,
+} Precedence_T;
 
 static ASTNode_T* parse_id(Parser_T* p);
 static ASTNode_T* parse_int_lit(Parser_T* p);
@@ -79,6 +80,7 @@ static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left);
 
 static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_cast(Parser_T* p, ASTNode_T* left);
+static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left);
 
 static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } expr_parse_fns[TOKEN_EOF + 1] = {
     [TOKEN_ID]       = {parse_id, NULL, LOWEST},
@@ -116,6 +118,7 @@ static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } ex
     [TOKEN_SUB]      = {NULL, parse_assignment, ASSIGN},  
     [TOKEN_DIV]      = {NULL, parse_assignment, ASSIGN},  
     [TOKEN_MULT]     = {NULL, parse_assignment, ASSIGN},   
+    [TOKEN_DOT]      = {NULL, parse_member, MEMBER},
     [TOKEN_COLON]    = {NULL, parse_cast, CAST},
     [TOKEN_SIZEOF]   = {parse_sizeof, NULL, LOWEST},
     [TOKEN_TYPEOF]   = {parse_typeof, NULL, LOWEST},
@@ -375,23 +378,17 @@ static ASTIdentifier_T* __parse_identifier(Parser_T* p, ASTIdentifier_T* outer, 
     if(is_simple)
         return id; // if the id is "simple", it can't have any inner members defined with . or ::
 
-    switch(p->tok->type)
+    if(tok_is(p, TOKEN_STATIC_MEMBER))
     {
-        case TOKEN_DOT:
-            parser_advance(p);
-            id->is_static = false;
-            return  __parse_identifier(p, id, false);
-        case TOKEN_STATIC_MEMBER:
-            if(parser_peek(p, 1)->type == TOKEN_LT)
-               return id; // :: followed by < would be a generic in a functon or -call 
-
-            parser_advance(p);
-            id->is_static = true;
-            id->kind = OBJ_NAMESPACE;  // only namespaces can have static members
-            return __parse_identifier(p, id, false);
-        default:
-            return id;
+        if(parser_peek(p, 1)->type == TOKEN_LT)
+           return id; // :: followed by < would be a generic in a functon or -call 
+        
+        parser_advance(p);
+        id->kind = OBJ_NAMESPACE;  // only namespaces can have static members
+        return __parse_identifier(p, id, false);
     }
+    else
+        return id;
 }
 
 #define parse_identifier(p) __parse_identifier(p, NULL, false)
@@ -1516,11 +1513,13 @@ static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left)
 
 static ASTNode_T* parse_closure(Parser_T* p)
 {
+    ASTNode_T* closure = init_ast_node(ND_CLOSURE, p->tok);
     parser_consume(p, TOKEN_LPAREN, "expect `(` for closure");
-    ASTNode_T* expr = parse_expr(p, LOWEST, TOKEN_RPAREN);
-    parser_consume(p, TOKEN_RPAREN, "expect `)` after closure");
 
-    return expr;
+    closure->expr = parse_expr(p, LOWEST, TOKEN_RPAREN);
+    parser_consume(p, TOKEN_RPAREN, "expect `)` after closure");
+    
+    return closure;
 }
 
 static ASTNode_T* parse_cast(Parser_T* p, ASTNode_T* left)
@@ -1564,4 +1563,15 @@ static ASTNode_T* parse_typeof(Parser_T* p)
         type_of->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
     
     return type_of;
+}
+
+static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left)
+{
+    ASTNode_T* member = init_ast_node(ND_MEMBER, p->tok);
+    parser_consume(p, TOKEN_DOT, "expect `.` for member expression");
+
+    member->left = left;
+    member->right = parse_expr(p, MEMBER, TOKEN_SEMICOLON);
+
+    return member;
 }

@@ -1,3 +1,6 @@
+import "libc/wchar.csp";
+import "libc/stdio.csp";
+
 namespace x {
     fn puts(str: &char) {
         puts(str);
@@ -5,15 +8,16 @@ namespace x {
 }
 
 type data: struct {
-    msg: &char
+    msg: &char,
+    exit: i8
 };
 
-let program_data: &data;
+let program_data: data;
 
 fn main(argc: i32, argv: &&char): i32 {
-    program_data = &({"Hello World"}: data);
+    program_data = {"Hello World", 0x00}: data;
 
-    x::puts(program_data.msg);
+    x::puts((&program_data).msg);
 
-    <- 0;
+    <- (&program_data).exit;
 }

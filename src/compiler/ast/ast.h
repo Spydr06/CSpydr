@@ -67,8 +67,10 @@ typedef enum {
     ND_INC,     // ++
     ND_DEC,     // --
 
+    ND_CLOSURE, // ( )
     ND_ASSIGN,  // x = y
 
+    ND_MEMBER,  // x.y
     ND_CALL,    // x(y, z)
     ND_INDEX,   // x[y]
     ND_CAST,    // x:i32
@@ -202,8 +204,6 @@ struct AST_IDENTIFIER_STRUCT
 {
     ASTObjKind_T kind; // kind of the object, which the name is referring to
     Token_T* tok;
-
-    bool is_static: 1; // true, if the reference is done via :: rather than .
 
     char callee[__CSP_MAX_TOKEN_SIZE];
     ASTIdentifier_T* outer;
