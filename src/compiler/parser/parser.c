@@ -34,7 +34,7 @@ struct PARSER_STRUCT
 // expression parsing settings //
 /////////////////////////////////
 
-typedef enum PRECEDENCE_ENUM 
+typedef enum 
 {
     LOWEST  =  0,
     ASSIGN  =  1, // x = y, x += y
@@ -68,7 +68,6 @@ static ASTNode_T* parse_struct_lit(Parser_T* p);
 static ASTNode_T* parse_lambda_lit(Parser_T* p);
 
 static ASTNode_T* parse_sizeof(Parser_T* p);
-static ASTNode_T* parse_typeof(Parser_T* p);
 
 static ASTNode_T* parse_unary(Parser_T* p);
 static ASTNode_T* parse_num_op(Parser_T* p, ASTNode_T* left);
@@ -121,7 +120,6 @@ static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } ex
     [TOKEN_DOT]      = {NULL, parse_member, MEMBER},
     [TOKEN_COLON]    = {NULL, parse_cast, CAST},
     [TOKEN_SIZEOF]   = {parse_sizeof, NULL, LOWEST},
-    [TOKEN_TYPEOF]   = {parse_typeof, NULL, LOWEST},
     [TOKEN_BIT_OR]   = {parse_lambda_lit, parse_bit_op, PRODUCT},
     [TOKEN_LSHIFT]   = {NULL, parse_bit_op, PRODUCT},
     [TOKEN_RSHIFT]   = {NULL, parse_bit_op, PRODUCT},
@@ -268,12 +266,12 @@ Token_T* parser_consume(Parser_T* p, TokenType_T type, const char* msg)
 
 static inline bool is_editable(ASTNodeKind_T n)
 {
-    return n == ND_ID || n == ND_INDEX || n == ND_CAST || n == ND_CALL || n == ND_ARRAY || n == ND_STR;
+    return n == ND_ID || n == ND_INDEX || n == ND_CAST || n == ND_CALL || n == ND_ARRAY || n == ND_STR || n == ND_MEMBER;
 }
 
 static inline bool is_executable(ASTNodeKind_T n)
 {
-    return n == ND_CALL || n == ND_ASSIGN || n == ND_INC || n == ND_DEC || n == ND_CAST;
+    return n == ND_CALL || n == ND_ASSIGN || n == ND_INC || n == ND_DEC || n == ND_CAST || n == ND_MEMBER;
 }
 
 static bool check_type(ASTType_T* a, ASTType_T* b)
@@ -571,7 +569,7 @@ static ASTType_T* parse_type(Parser_T* p)
                 else
                 {
                     const char* tuple_tmp = "__csp_tuple_%ld__";
-                    char callee[BUFSIZ];
+                    char callee[__CSP_MAX_TOKEN_SIZE];
                     sprintf(callee, tuple_tmp, p->cur_tuple_id++);
                     type->id = init_ast_identifier(dupl_token(type->tok), callee);
                 
@@ -1547,22 +1545,6 @@ static ASTNode_T* parse_sizeof(Parser_T* p)
         size_of->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
     
     return size_of;
-}
-
-static ASTNode_T* parse_typeof(Parser_T* p)
-{
-    ASTNode_T* type_of = init_ast_node(ND_TYPEOF, p->tok);
-    parser_consume(p, TOKEN_SIZEOF, "expect `sizeof` keyword");
-
-    type_of->is_constant = true;
-    // detect weather sizeof is called from an type, variable or array
-    if(tok_is(p, TOKEN_STAR) || tok_is(p, TOKEN_LBRACKET) || tok_is(p, TOKEN_STRUCT) || tok_is(p, TOKEN_ENUM))
-        type_of->data_type = parse_type(p);
-    else
-        // we still don't know if a typedef was passed. We simply parse it as an expression and evaluate it later in the optimizer
-        type_of->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
-    
-    return type_of;
 }
 
 static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left)

@@ -145,59 +145,59 @@ struct AST_NODE_STRUCT
     ASTNodeKind_T kind;
     Token_T* tok;
 
-        ASTType_T* data_type;
+    ASTType_T* data_type;
 
-        // id
-        ASTIdentifier_T* id;
+    // id
+    ASTIdentifier_T* id;
 
-        // literals
-        union {
-            int int_val;
-            long long_val;
-            long long llong_val;
-            float float_val;
-            double double_val;
-            bool bool_val;
-            char* str_val;  // also used for chars
-        };
-        bool is_constant;
+    // literals
+    union {
+        int int_val;
+        long long_val;
+        long long llong_val;
+        float float_val;
+        double double_val;
+        bool bool_val;
+        char* str_val;  // also used for chars
+    };
 
-        // op
-        ASTNode_T* left;
-        ASTNode_T* right;
+    // op
+    ASTNode_T* left;
+    ASTNode_T* right;
 
-        // block
-        List_T* stmts;  // list of ASTNode_Ts
-        List_T* locals; // list of ASTObj_Ts
+    // block
+    List_T* stmts;  // list of ASTNode_Ts
+    List_T* locals; // list of ASTObj_Ts
 
-        // condition for loop, match, case and if statements
-        ASTNode_T* condition;
+    // condition for loop, match, case and if statements
+    ASTNode_T* condition;
 
-        // if
-        ASTNode_T* if_branch;
-        ASTNode_T* else_branch;
+    // if
+    ASTNode_T* if_branch;
+    ASTNode_T* else_branch;
 
-        // loop
-        ASTNode_T* body;
-        ASTObj_T* counter_var;
-        ASTNode_T* init_stmt;
+    // loop
+    ASTNode_T* body;
+    ASTObj_T* counter_var;
+    ASTNode_T* init_stmt;
 
-        // return
-        ASTNode_T* return_val;
+    // return
+    ASTNode_T* return_val;
 
-        // match
-        List_T* cases;           // list of ASTNode_Ts
-        ASTNode_T* default_case;
+    // match
+    List_T* cases;           // list of ASTNode_Ts
+    ASTNode_T* default_case;
 
-        // case
-        bool is_default_case;
+    // case
+    bool is_default_case: 1;
 
-        // expression statement
-        ASTNode_T* expr;
+    // expression statement
+    bool is_constant: 1;
+    ASTNode_T* expr;
 
-        // calls, array literals
-        List_T* args;   // list of ASTNode_Ts
-        List_T* template_types;
+    // calls, array literals
+    List_T* args;   // list of ASTNode_Ts
+    List_T* template_types;
 } __attribute__((packed));
 
 struct AST_IDENTIFIER_STRUCT
