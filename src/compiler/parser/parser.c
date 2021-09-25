@@ -34,6 +34,9 @@ struct PARSER_STRUCT
 // expression parsing settings //
 /////////////////////////////////
 
+typedef ASTNode_T* (*PrefixParseFn_T)(Parser_T* parser);
+typedef ASTNode_T* (*InfixParseFn_T)(Parser_T* parser, ASTNode_T* left);
+
 typedef enum 
 {
     LOWEST  =  0,
