@@ -678,8 +678,7 @@ static void c_gen_local(CCodegenData_T* cg, ASTObj_T* obj)
 static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
 {
     switch(node->kind)
-    {            print(cg, ")");
-            break;
+    {       
         case ND_BLOCK:
             println(cg, "{");
             for(size_t i = 0; i < node->locals->size; i++)
