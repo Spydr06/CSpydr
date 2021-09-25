@@ -82,7 +82,7 @@ static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_cast(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left);
 
-static struct { prefix_parse_fn pfn; infix_parse_fn ifn; Precedence_T prec; } expr_parse_fns[TOKEN_EOF + 1] = {
+static struct { PrefixParseFn_T pfn; InfixParseFn_T ifn; Precedence_T prec; } expr_parse_fns[TOKEN_EOF + 1] = {
     [TOKEN_ID]       = {parse_id, NULL, LOWEST},
     [TOKEN_INT]      = {parse_int_lit, NULL, LOWEST},
     [TOKEN_FLOAT]    = {parse_float_lit, NULL, LOWEST},
@@ -194,12 +194,12 @@ static ASTNodeKind_T infix_ops[TOKEN_EOF + 1] = {
     [TOKEN_DEC] = ND_DEC    // technically postfix operators, but get treated like infix ops internally
 };
 
-static inline prefix_parse_fn get_prefix_parse_fn(TokenType_T tt)
+static inline PrefixParseFn_T get_PrefixParseFn_T(TokenType_T tt)
 {
     return expr_parse_fns[tt].pfn;
 }
 
-static inline infix_parse_fn get_infix_parse_fn(TokenType_T tt)
+static inline InfixParseFn_T get_InfixParseFn_T(TokenType_T tt)
 {
     return expr_parse_fns[tt].ifn;
 }
@@ -1169,7 +1169,7 @@ static ASTNode_T* parse_stmt(Parser_T* p)
 
 static ASTNode_T* parse_expr(Parser_T* p, Precedence_T prec, TokenType_T end_tok)
 {
-    prefix_parse_fn prefix = get_prefix_parse_fn(p->tok->type);
+    PrefixParseFn_T prefix = get_PrefixParseFn_T(p->tok->type);
 
     if(!prefix)
         throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect expression", p->tok->value);
@@ -1178,7 +1178,7 @@ static ASTNode_T* parse_expr(Parser_T* p, Precedence_T prec, TokenType_T end_tok
 
     while(!tok_is(p, end_tok) && prec < get_precedence(p->tok->type))
     {
-        infix_parse_fn infix = get_infix_parse_fn(p->tok->type);
+        InfixParseFn_T infix = get_InfixParseFn_T(p->tok->type);
         if(!infix)
             return left_expr;
         
