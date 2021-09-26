@@ -1,7 +1,8 @@
 #include <acutest/include/acutest.h>
 
-#include "../src/compiler/lexer/lexer.h"
-#include "../src/compiler/parser/parser.h"
+#include "../../src/compiler/lexer/lexer.h"
+#include "../../src/compiler/lexer/preprocessor.h"
+#include "../../src/compiler/parser/parser.h"
 #include <stdarg.h>
 #include <string.h>
 

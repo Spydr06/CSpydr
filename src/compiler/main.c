@@ -104,10 +104,8 @@ const struct { char* as_str; Action_T ac; } action_table[AC_UNDEF] = {
 extern const char* get_cspydr_version();
 extern const char* get_cspydr_build();
 
-extern void optimize(ASTProg_T* ast);
-
 // generate the ast from the source file (lexing, preprocessing, parsing)
-ASTProg_T* generate_ast(char* path, char* target, bool silent);
+void generate_ast(ASTProg_T* ast, char* path, char* target, bool silent);
 
 // generate the output code (c, llvm, xml)
 void generate_llvm(ASTProg_T*, char* target, Action_T action, bool print_llvm, bool silent);
@@ -128,9 +126,12 @@ static void evaluate_info_flags(char* argv)
     else if(streq(argv, "-v") || streq(argv, "--version"))
         printf(version_text, get_cspydr_version(), get_cspydr_build());
     else
+    {
         LOG_ERROR_F("unknown or wrong used flag \"%s\", type \"cspydr --help\" to get help.", argv);
+        exit(1);
+    }
 
-    exit(1);
+    exit(0);
 }
 
 // entry point
@@ -230,18 +231,19 @@ int main(int argc, char* argv[])
         }
     }
 
-    ASTProg_T* program_ast = generate_ast(input_file, output_file, silent);
+    ASTProg_T ast; 
+    generate_ast(&ast, input_file, output_file, silent);
 
     switch(ct)
     {
         case CT_LLVM:
-            generate_llvm(program_ast, output_file, action, print_llvm, silent);
+            generate_llvm(&ast, output_file, action, print_llvm, silent);
             break;
         case CT_TRANSPILE:
-            transpile_c(program_ast, output_file, action, print_c, silent);
+            transpile_c(&ast, output_file, action, print_c, silent);
             break;
         case CT_TO_XML:
-            parse_to_xml(program_ast, output_file, action, silent);
+            parse_to_xml(&ast, output_file, action, silent);
             break;
         default:
             LOG_ERROR_F("[Error] Unknown compile type %d!\n", ct);
@@ -254,37 +256,37 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-ASTProg_T* generate_ast(char* path, char* target, bool silent)
+void generate_ast(ASTProg_T* ast, char* path, char* target, bool silent)
 {
     List_T* files = init_list(sizeof(struct SRC_FILE_STRUCT*));
     list_push(files, read_file(path));
 
-    ASTProg_T* ast = parse(files, silent);
+    parse(ast, files, silent);
     //optimize(ast);
 
     for(size_t i = 0; i < files->size; i++) 
         free_srcfile(files->items[i]);
     free_list(files);
-    return ast;
 }
 
 // sets up and runs the compilation pipeline using LLVM
 void generate_llvm(ASTProg_T* ast, char* target, Action_T action, bool print_llvm, bool silent)
 {
-    LLVMCodegenData_T* cg = init_llvm_cg(ast);
-    cg->silent = silent;
-    llvm_gen_code(cg);
+    LLVMCodegenData_T cg;
+    init_llvm_cg(&cg, ast);
+    cg.silent = silent;
+    llvm_gen_code(&cg);
 
     if(print_llvm)
-        llvm_print_code(cg);
+        llvm_print_code(&cg);
 
     switch(action)
     {
         case AC_BUILD:
-            llvm_emit_code(cg, target);
+            llvm_emit_code(&cg, target);
             break;
         case AC_RUN:
-            llvm_run_code(cg);
+            llvm_run_code(&cg);
             break;
         case AC_DEBUG:
             // TODO:
@@ -293,28 +295,25 @@ void generate_llvm(ASTProg_T* ast, char* target, Action_T action, bool print_llv
             LOG_ERROR_F("Unrecognized action of type [%d], exit\n", action);
             exit(1);
     }
-    free_ast_prog(ast);
-    free_llvm_cg(cg);
+    free_llvm_cg(&cg);
 }
 
 void transpile_c(ASTProg_T* ast, char* target, Action_T action, bool print_c, bool silent)
 {
-    CCodegenData_T* cg = init_c_cg(ast);
-    cg->print_c = print_c;
-    cg->silent = silent;
-    c_gen_code(cg, target);
+    CCodegenData_T cg;
+    init_c_cg(&cg, ast);
+    cg.print_c = print_c;
+    cg.silent = silent;
+    c_gen_code(&cg, target);
 
     if(action == AC_RUN)
-        run_c_code(cg, target);
+        run_c_code(&cg, target);
     
-    free_c_cg(cg);
-    free_ast_prog(ast);
+    free(cg.buf);
 }
 
 void parse_to_xml(ASTProg_T* ast, char* target, Action_T action, bool silent)
 {
     LOG_OK_F(COLOR_BOLD_GREEN "  Emitting " COLOR_RESET "  AST as XML to \"%s\"\n", target);
     //ast_to_xml(ast, target);
-
-    free_ast_prog(ast);
 }

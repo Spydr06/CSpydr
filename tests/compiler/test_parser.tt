@@ -2,13 +2,13 @@
                      {"parsing simple main function", test_parsing_simple_main_func},    \
                      {"parsing complex main function", test_parsing_complex_main_func}   \
 
-#define PARSER_TEST_FUNC(name, src, code) void name(void) {         \
+#define PARSER_TEST_FUNC(name, src, code) void name(void) {              \
     SrcFile_T* file = get_file(1, src);                                  \
     TEST_ASSERT(file != NULL);                                           \
     List_T* files = init_list(sizeof(struct SRC_FILE_STRUCT*));          \
     list_push(files, file);                                              \
-    ASTProg_T* prog = parse(files, true);                                \
-    TEST_ASSERT(prog != NULL);                                           \
+    ASTProg_T prog;                                                      \
+    parse(&prog, files, true);                                           \
     code                                                                 \
     /*FIXME: free_ast_prog(prog);*/                                      \
 }                                                                

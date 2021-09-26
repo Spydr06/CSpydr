@@ -6,6 +6,8 @@
 #include "../ast/types.h"
 #include "../ast/mem/ast_mem.h"
 #include "../platform/platform_bindings.h"
+#include "../lexer/lexer.h"
+#include "../lexer/preprocessor.h"
 
 #include <bits/floatn-common.h>
 #include <string.h>
@@ -17,7 +19,7 @@
     #include <libgen.h>
 #endif
 
-struct PARSER_STRUCT
+typedef struct PARSER_STRUCT
 {
     List_T* tokens;
     size_t token_i;
@@ -28,7 +30,7 @@ struct PARSER_STRUCT
 
     size_t cur_lambda_id;
     size_t cur_tuple_id;
-};
+} Parser_T;
 
 /////////////////////////////////
 // expression parsing settings //
@@ -216,9 +218,8 @@ static inline Precedence_T get_precedence(TokenType_T tt)
 // helperfunctions             //
 /////////////////////////////////
 
-Parser_T* init_parser(List_T* tokens)
+static void init_parser(Parser_T* parser, List_T* tokens)
 {
-    Parser_T* parser = calloc(1, sizeof(struct PARSER_STRUCT));
     parser->tokens = tokens;
     parser->tok = tokens->items[0];
     parser->token_i = 0;
@@ -227,14 +228,11 @@ Parser_T* init_parser(List_T* tokens)
 
     parser->cur_block = NULL;
     parser->cur_fn = NULL;
-    return parser;
 }
 
-void free_parser(Parser_T* p)
+static void free_parser(Parser_T* p)
 {
     free_token(p->tok);
-
-    free(p);
 }
 
 static inline Token_T* parser_advance(Parser_T* p)
@@ -331,41 +329,51 @@ static ASTType_T* get_compatible_tuple(Parser_T* p, ASTType_T* tuple)
 
 static void parse_obj(Parser_T* p, List_T* obj_list);
 
-ASTProg_T* parse(List_T* files, bool is_silent)
+void parse(ASTProg_T* ast, List_T* files, bool is_silent)
 {
+    // get the main source file
     SrcFile_T* main_file = files->items[0];
-    Lexer_T* lex = init_lexer(main_file);
-    List_T* tokens = lex_and_preprocess_tokens(lex, files, is_silent);
-    Parser_T* p = init_parser(tokens);
+
+    // initialize the lexer for the main file
+    Lexer_T lex;
+    init_lexer(&lex, main_file);
+
+    List_T* tokens = lex_and_preprocess_tokens(&lex, files, is_silent);
+
+    // initialize the parser;
+    Parser_T parser;
+    init_parser(&parser, tokens);
 
     if(!is_silent)
     {
         LOG_OK_F(COLOR_BOLD_GREEN "\33[2K\r  Compiling " COLOR_RESET " %s\n", main_file->path);
     }
 
-    ASTProg_T* prog = init_ast_prog(main_file->path, NULL, NULL);
-    p->root_ref = prog;
+    // initialize the main ast node
+    init_ast_prog(ast, main_file->path, NULL, NULL);
+    parser.root_ref = ast;
 
-    while(!tok_is(p, TOKEN_EOF))
+    // parse
+    while(!tok_is(&parser, TOKEN_EOF))
     {
-        switch(p->tok->type)
+        switch(parser.tok->type)
         {
             case TOKEN_IMPORT:
-                parser_advance(p);
-                parser_consume(p, TOKEN_STRING, "expect file to import as string");
-                parser_consume(p, TOKEN_SEMICOLON, "expect `;` after import statement");
+                parser_advance(&parser);
+                parser_consume(&parser, TOKEN_STRING, "expect file to import as string");
+                parser_consume(&parser, TOKEN_SEMICOLON, "expect `;` after import statement");
                 break;
             default: 
-                parse_obj(p, prog->objs);
+                parse_obj(&parser, ast->objs);
         }
     }
 
+    // dispose
     free_list(tokens);
-    free_parser(p);
-    free_lexer(lex);
+    free_parser(&parser);
 
-    validate_ast(prog);
-    return prog;
+    // check the ast for validity
+    validate_ast(ast);
 }
 
 /////////////////////////////////

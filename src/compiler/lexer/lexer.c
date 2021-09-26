@@ -8,16 +8,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct LEXER_STRUCT 
-{
-    SrcFile_T* file;
-
-    char c;
-    size_t line;
-    size_t pos;
-};
-
-const struct { const char* str; TokenType_T type; } keywords[] = {
+const struct { 
+    const char* str; 
+    TokenType_T type; 
+} keywords[] = {
     {"true", TOKEN_TRUE},
     {"false", TOKEN_FALSE},
     {"nil", TOKEN_NIL},
@@ -50,7 +44,10 @@ const struct { const char* str; TokenType_T type; } keywords[] = {
     {NULL, TOKEN_EOF}   // end of array indicator
 };
 
-const struct { const char* symbol; TokenType_T type; } symbols[] = {
+const struct { 
+    const char* symbol; 
+    TokenType_T type;
+} symbols[] = {
     {"++", TOKEN_INC},
     {"+=", TOKEN_ADD},
     {"+", TOKEN_PLUS},
@@ -110,25 +107,16 @@ static Token_T* lexer_get_id(Lexer_T* lexer);
 static Token_T* lexer_get_number(Lexer_T* lexer);
 static Token_T* lexer_get_symbol(Lexer_T* lexer);
 
-Lexer_T* init_lexer(SrcFile_T* src) 
+void init_lexer(Lexer_T* lexer, SrcFile_T* src) 
 {
-    Lexer_T* lexer = calloc(1, sizeof(struct LEXER_STRUCT));
-
     lexer->file = src;
 
     lexer->pos = 0;
     lexer->line = 0;
     lexer->c = get_char(lexer->file, lexer->line, lexer->pos);
-
-    return lexer;
 }
 
-void free_lexer(Lexer_T* lexer)
-{
-    free(lexer);
-}
-
-void lexer_advance(Lexer_T* lexer)
+static void lexer_advance(Lexer_T* lexer)
 {
     lexer->pos++;
     if(lexer->pos >= get_line_len(lexer->file, lexer->line))
@@ -147,7 +135,7 @@ void lexer_advance(Lexer_T* lexer)
     lexer->c = get_char(lexer->file, lexer->line, lexer->pos);
 }
 
-char lexer_peek(Lexer_T* lexer, int offset)
+static char lexer_peek(Lexer_T* lexer, int offset)
 {
     if(lexer->pos + offset >= get_line_len(lexer->file, lexer->line))
         return -1;

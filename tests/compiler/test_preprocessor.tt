@@ -7,8 +7,9 @@
     TEST_ASSERT(file != NULL);                                           \
     List_T* files = init_list(sizeof(struct SRC_FILE_STRUCT*));          \
     list_push(files, file);                                              \
-    Lexer_T* lex = init_lexer(file);                                     \
-    List_T* tokens = lex_and_preprocess_tokens(lex, files, true);        \
+    Lexer_T lex;                                                         \
+    init_lexer(&lex, file);                                             \
+    List_T* tokens = lex_and_preprocess_tokens(&lex, files, true);       \
     TEST_ASSERT(tokens != NULL);                                         \
     code                                                                 \
     /*FIXME: free_ast_prog(prog);*/                                      \

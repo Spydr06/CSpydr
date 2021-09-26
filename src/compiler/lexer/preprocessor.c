@@ -93,10 +93,9 @@ static void free_import(Import_T* imp)
     free(imp->import_path);
     free(imp);
 }
-
-static Preprocessor_T* init_preprocessor(Lexer_T* lex)
+ 
+void init_preprocessor(Preprocessor_T* pp, Lexer_T* lex)
 {
-    Preprocessor_T* pp = malloc(sizeof(struct PREPROCESSOR_STRUCT));
     pp->lex = lex;
     pp->macros = init_list(sizeof(struct MACRO_STRUCT*));
     pp->imports = init_list(sizeof(struct IMPORT_STRUCT*));
@@ -104,8 +103,6 @@ static Preprocessor_T* init_preprocessor(Lexer_T* lex)
     pp->tokens = init_list(sizeof(struct TOKEN_STRUCT*));
     
     pp->is_silent = false;
-
-    return pp;
 }
 
 static void free_preprocessor(Preprocessor_T* pp)
@@ -117,8 +114,6 @@ static void free_preprocessor(Preprocessor_T* pp)
     for(size_t i = 0; i < pp->imports->size; i++)
         free_import(pp->imports->items[i]);
     free_list(pp->imports);
-
-    free(pp);
 }
 
 static inline void push_tok(Preprocessor_T* pp, Token_T* tok)
@@ -264,7 +259,10 @@ static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
     // get the tokens from the file
     SrcFile_T* import_file = read_file(imp->import_path);
     import_file->short_path = strdup(imp->tok->value);
-    Lexer_T* import_lexer = init_lexer(import_file);
+
+    Lexer_T import_lexer;
+    init_lexer(&import_lexer, import_file);
+    
     if(!pp->is_silent) {
         LOG_OK_F("\33[2K\r" COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s", imp->tok->value);
         fflush(stdout);
@@ -272,19 +270,20 @@ static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
 
     // add the tokens
     Token_T* tok;
-    for(tok = lexer_next_token(import_lexer); tok->type != TOKEN_EOF; tok = lexer_next_token(import_lexer))  
+    for(tok = lexer_next_token(&import_lexer); tok->type != TOKEN_EOF; tok = lexer_next_token(&import_lexer))  
         push_tok(pp, tok);
 
     free_token(tok); // free the EOF token
-    free_lexer(import_lexer);
     list_push(pp->files, import_file);
 }
 
 List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
 {
-    Preprocessor_T* pp = init_preprocessor(lex);
-    pp->files = files;
-    pp->is_silent = is_silent;
+    Preprocessor_T pp;
+    init_preprocessor(&pp, lex);
+
+    pp.files = files;
+    pp.is_silent = is_silent;
 
     /**************************************
     * Stage 0: lex the main file          *
@@ -292,34 +291,34 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
 
     Token_T* tok;
     for(tok = lexer_next_token(lex); tok->type != TOKEN_EOF; tok = lexer_next_token(lex))
-        list_push(pp->tokens, tok);
+        list_push(pp.tokens, tok);
     Token_T* eof = tok;
 
     /**************************************
     * Stage 1: lex and import all files   *
     **************************************/
 
-    for(size_t i = 0; i < pp->tokens->size; i++)
+    for(size_t i = 0; i < pp.tokens->size; i++)
     {
-        tok = pp->tokens->items[i];
+        tok = pp.tokens->items[i];
         if(tok->type == TOKEN_IMPORT)
-            parse_import_def(pp, pp->tokens, &i);
+            parse_import_def(&pp, pp.tokens, &i);
     }
 
-    push_tok(pp, eof);
+    push_tok(&pp, eof);
 
     /***************************************
     * Stage 2: parse macro definitions     *
     ***************************************/
 
     List_T* token_stage_2 = init_list(sizeof(struct TOKEN_STRUCT*)); // init a new list for stage 2
-    for(size_t i = 0; i < pp->tokens->size;)
+    for(size_t i = 0; i < pp.tokens->size;)
     {
-        tok = pp->tokens->items[i];
+        tok = pp.tokens->items[i];
         if(tok->type == TOKEN_MACRO)
         {
             free_token(tok);
-            list_push(pp->macros, parse_macro_def(pp, &i));
+            list_push(pp.macros, parse_macro_def(&pp, &i));
             continue;
         }
         list_push(token_stage_2, tok);
@@ -336,7 +335,7 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
         tok = token_stage_2->items[i];
         if(tok->type == TOKEN_MACRO_CALL)
         {
-            Macro_T* macro = find_macro(pp, tok->value);
+            Macro_T* macro = find_macro(&pp, tok->value);
             if(!macro)
                 throw_error(ERR_UNDEFINED, tok, "unedefined macro `%s`", tok->value);
             free_token(tok);
@@ -349,8 +348,8 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
         list_push(token_stage_3, tok);
     }
 
-    free_list(pp->tokens);
+    free_list(pp.tokens);
     free_list(token_stage_2);
-    free_preprocessor(pp);
+    free_preprocessor(&pp);
     return token_stage_3;
 }

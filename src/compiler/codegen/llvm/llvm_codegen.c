@@ -19,9 +19,8 @@
 
 #include <string.h>
 
-LLVMCodegenData_T* init_llvm_cg(ASTProg_T* ast)
+void init_llvm_cg(LLVMCodegenData_T* cg, ASTProg_T* ast)
 {
-    LLVMCodegenData_T* cg = malloc(sizeof(struct LLVM_CODEGEN_DATA_STRUCT));
     cg->ast = ast;
     cg->silent = false;
     cg->current_fn = NULL;
@@ -32,8 +31,6 @@ LLVMCodegenData_T* init_llvm_cg(ASTProg_T* ast)
     cg->fns = init_list(sizeof(LLVMValueRef));
 
     LLVMStartMultithreaded();
-
-    return cg;
 }
 
 void free_llvm_cg(LLVMCodegenData_T* cg)
@@ -43,7 +40,6 @@ void free_llvm_cg(LLVMCodegenData_T* cg)
 
     free_list(cg->vars);
     free_list(cg->fns);
-    free(cg);
 }
 
 void llvm_gen_code(LLVMCodegenData_T* cg)

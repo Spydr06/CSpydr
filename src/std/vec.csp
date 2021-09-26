@@ -6,7 +6,7 @@ import "types.csp";
 type vec_s: struct {
     data: &&void,
     alloc: usize,
-    len: usize
+    length: usize
 };
 type vec: &vec_s;
 

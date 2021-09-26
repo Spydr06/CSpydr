@@ -46,22 +46,13 @@ static const char* primitive_to_c_type[TY_UNDEF + 1] = {
     [TY_CHAR] = "char",
 };
 
-CCodegenData_T* init_c_cg(ASTProg_T* ast)
+void init_c_cg(CCodegenData_T* cg, ASTProg_T* ast)
 {
-    CCodegenData_T* cg = malloc(sizeof(struct C_CODEGEN_DATA_STRUCT));
     cg->ast = ast;
     cg->print_c = false;
     cg->silent = false;
 
     cg->code_buffer = open_memstream(&cg->buf, &cg->buf_len);
-
-    return cg;
-}
-
-void free_c_cg(CCodegenData_T* cg)
-{
-    free(cg->buf);
-    free(cg);
 }
 
 static void println(CCodegenData_T* cg, char* fmt, ...)

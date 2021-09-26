@@ -7,7 +7,7 @@ import "libc/string.csp";
 # --- the str_s struct and str typedef ---
 type str_s: struct {
     data: &char,
-    len: usize,
+    length: usize,
     alloc: usize
 };
 type str: &str_s;
@@ -22,18 +22,18 @@ fn init_str(string: &char): str {
     let s: str = malloc(sizeof str_s);
 
     if string != nil {
-        let len: usize = strlen(string);
-        s.alloc = len + 1;
+        let length: usize = strlength(string);
+        s.alloc = lengthgth + 1;
         s.data = malloc(s.alloc);
-        memcpy(s.data, string, len);
-        s.len = len;
+        memcpy(s.data, string, lengthgth);
+        s.length = length;
     }
     else {
         s.alloc = 1;
         s.data = malloc(s.alloc);
         s.data[0] = '\0';
 
-        s.len = 0;
+        s.length = 0;
     }
 
     <- s;
@@ -49,8 +49,8 @@ fn str_lit(s: str): &char {
     <- s.data;
 }
 
-fn str_len(s: str): usize {
-    <- s.len;
+fn str_length(s: str): usize {
+    <- s.length;
 }
 
 fn str_eq(a: str, b: str): bool {
@@ -61,7 +61,7 @@ fn str_append(s: str, c: char) {
     s.alloc++;
     s.data = realloc(s.data, s.alloc);
 
-    s.data[s.len++] = c;
+    s.data[s.length++] = c;
 }
 
 fn str_cpy(s: str): str {

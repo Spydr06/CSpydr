@@ -10,8 +10,8 @@ void test_lexer_symbols(void)
     SrcFile_T* file = get_file(1, "{}()[];:,+-*/ =! != == >= <=");
     TEST_ASSERT(file != NULL);
 
-    Lexer_T* lexer = init_lexer(file);
-    TEST_ASSERT(lexer != NULL);
+    Lexer_T lexer;
+    init_lexer(&lexer, file);
 
 #define NUM_TOKENS 19
     char* expectedTokens[NUM_TOKENS] = {
@@ -23,7 +23,7 @@ void test_lexer_symbols(void)
     
     for(int i = 0; i < NUM_TOKENS; i++)
     {
-        Token_T* token =  lexer_next_token(lexer);
+        Token_T* token =  lexer_next_token(&lexer);
         TEST_ASSERT(token != NULL);
 
         TEST_ASSERT(token->value != NULL);
@@ -37,8 +37,8 @@ void test_lexer_strings(void)
     SrcFile_T* file = get_file(4, "\"hello\"\n", "\"\n", "world\n", "\"\n");
     TEST_ASSERT(file != NULL);
 
-    Lexer_T* lexer = init_lexer(file);
-    TEST_ASSERT(lexer != NULL);
+    Lexer_T lexer;
+    init_lexer(&lexer, file);
 
 #define NUM_TOKENS 2
     char* expectedTokens[NUM_TOKENS] = {
@@ -47,7 +47,7 @@ void test_lexer_strings(void)
 
     for(int i = 0; i < NUM_TOKENS; i++)
     {
-        Token_T* token =  lexer_next_token(lexer);
+        Token_T* token =  lexer_next_token(&lexer);
         TEST_ASSERT(token != NULL);
         TEST_CHECK(token->type == TOKEN_STRING);
 
@@ -62,8 +62,8 @@ void test_lexer_numbers(void)
     SrcFile_T* file = get_file(1, "23 2.5 0b0101 0xff 100_000_000");
     TEST_ASSERT(file != NULL);
 
-    Lexer_T* lexer = init_lexer(file);
-    TEST_ASSERT(lexer != NULL);
+    Lexer_T lexer;
+    init_lexer(&lexer, file);
 
 #define NUM_TOKENS 5
     char* expectedTokens[NUM_TOKENS] = {
@@ -72,7 +72,7 @@ void test_lexer_numbers(void)
 
     for(int i = 0; i < NUM_TOKENS; i++)
     {
-        Token_T* token =  lexer_next_token(lexer);
+        Token_T* token =  lexer_next_token(&lexer);
         TEST_ASSERT(token != NULL);
         TEST_CHECK(token->type == TOKEN_INT || token->type == TOKEN_FLOAT);
 
@@ -87,8 +87,8 @@ void test_lexer_ids(void)
     SrcFile_T* file = get_file(2, "hello wor\n", "ld");
     TEST_ASSERT(file != NULL);
 
-    Lexer_T* lexer = init_lexer(file);
-    TEST_ASSERT(lexer != NULL);
+    Lexer_T lexer;
+    init_lexer(&lexer, file);
 
 #define NUM_TOKENS 3
     char* expectedTokens[NUM_TOKENS] = {
@@ -97,7 +97,7 @@ void test_lexer_ids(void)
 
     for(int i = 0; i < NUM_TOKENS; i++)
     {
-        Token_T* token =  lexer_next_token(lexer);
+        Token_T* token =  lexer_next_token(&lexer);
         TEST_ASSERT(token != NULL);
         TEST_CHECK(token->type == TOKEN_ID);
 
@@ -112,8 +112,8 @@ void test_lexer_keywords(void)
     SrcFile_T* file = get_file(1, "true false nil let fn loop if else ret match type struct enum import");
     TEST_ASSERT(file != NULL);
 
-    Lexer_T* lexer = init_lexer(file);
-    TEST_ASSERT(lexer != NULL);
+    Lexer_T lexer;
+    init_lexer(&lexer, file);
 
 #define NUM_TOKENS 14
     TokenType_T expectedTokens[NUM_TOKENS] = {
@@ -122,7 +122,7 @@ void test_lexer_keywords(void)
 
     for(int i = 0; i < NUM_TOKENS; i++)
     {
-        Token_T* token =  lexer_next_token(lexer);
+        Token_T* token =  lexer_next_token(&lexer);
         TEST_ASSERT(token != NULL);
         TEST_CHECK(token->type == expectedTokens[i]);
 

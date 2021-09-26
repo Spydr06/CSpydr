@@ -107,9 +107,8 @@ ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok)
     return obj;
 }
 
-ASTProg_T* init_ast_prog(const char* main_file_path, const char* target_binary, List_T* imports)
+void init_ast_prog(ASTProg_T* prog, const char* main_file_path, const char* target_binary, List_T* imports)
 {
-    ASTProg_T* prog = ast_malloc(sizeof(struct AST_PROG_STRUCT));
     prog->main_file_path = main_file_path;
     prog->target_binary = target_binary;
 
@@ -122,8 +121,6 @@ ASTProg_T* init_ast_prog(const char* main_file_path, const char* target_binary, 
     ast_mem_add_list(prog->objs);
     ast_mem_add_list(prog->lambda_literals);
     ast_mem_add_list(prog->tuple_structs);
-
-    return prog;
 }
 
 void free_ast_prog(ASTProg_T* prog)

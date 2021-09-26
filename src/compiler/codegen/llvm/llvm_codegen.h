@@ -26,8 +26,8 @@ typedef struct LLVM_CODEGEN_DATA_STRUCT
     List_T* fns;
 } LLVMCodegenData_T;
 
-LLVMCodegenData_T* init_llvm_cg(ASTProg_T* ast);
-void               free_llvm_cg(LLVMCodegenData_T* cg);
+void init_llvm_cg(LLVMCodegenData_T* cg, ASTProg_T* ast);
+void free_llvm_cg(LLVMCodegenData_T* cg);
 
 void llvm_gen_code(LLVMCodegenData_T* cg);
 void llvm_print_code(LLVMCodegenData_T* cg);
