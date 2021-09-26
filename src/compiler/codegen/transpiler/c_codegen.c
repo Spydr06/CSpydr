@@ -17,11 +17,12 @@ char* cc = DEFAULT_CC;
 char* cc_flags = DEFAULT_CC_FLAGS;
 
 const char* default_header_code =
+    "#include<stdarg.h>\n"
     "typedef char bool;\n"
     "#define true ((bool) 1)\n"
     "#define false ((bool) 0)\n"
     "#define NULL ((void*) 0)\n"
-    "#define len(n) (n ? ((unsigned long) (sizeof(n) / sizeof(n[0]))) : 0)\n"
+    "#define len(n) (n?((unsigned long)(sizeof(n)/sizeof(n[0]))):0)\n"
 ;
 
 #define len(n) (n ? ((unsigned long) (sizeof(n) / sizeof(n[0]))) : 0)
@@ -322,7 +323,7 @@ static void c_gen_array_brackets(CCodegenData_T* cg, ASTType_T* ty)
         c_gen_array_brackets(cg, ty->base);
 }
 
-static void c_gen_fn_arg_list(CCodegenData_T* cg, List_T* args)
+static void c_gen_fn_arg_list(CCodegenData_T* cg, List_T* args, bool has_va_list)
 {
     if(args->size == 0) 
     {
@@ -345,6 +346,11 @@ static void c_gen_fn_arg_list(CCodegenData_T* cg, List_T* args)
             c_gen_array_brackets(cg, arg->data_type);
 
         print(cg, "%s", i < args->size - 1 ? "," : "");
+    }
+
+    if(has_va_list)
+    {
+        print(cg, ",...");
     }
 }
 
@@ -376,7 +382,7 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
             c_gen_type(cg, obj->return_type, "");
             print(cg, " %s(", obj_callee);
             if(obj->args)
-                c_gen_fn_arg_list(cg, obj->args);
+                c_gen_fn_arg_list(cg, obj->args, obj->va_name);
             println(cg, ");");
             break;
         case OBJ_TYPEDEF:
@@ -413,6 +419,21 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
     }
 }
 
+static void c_gen_va_list_init(CCodegenData_T* cg, ASTObj_T* fn)
+{
+    char* va_id = c_gen_identifier(cg, fn->va_name);
+    println(cg, "va_list %s;", va_id);
+
+    char* last_arg_id = c_gen_identifier(cg, ((ASTObj_T*)fn->args->items[fn->args->size - 1])->id);
+    println(cg, "va_start(%s, %s);", va_id, last_arg_id);
+}
+
+static void c_gen_va_list_end(CCodegenData_T* cg, ASTIdentifier_T* id)
+{
+    char* va_id = c_gen_identifier(cg, id);
+    println(cg, "va_end(%s);", va_id);
+}
+
 static void c_gen_obj(CCodegenData_T* cg, ASTObj_T* obj)
 {
     if(obj->is_extern)
@@ -424,9 +445,17 @@ static void c_gen_obj(CCodegenData_T* cg, ASTObj_T* obj)
             c_gen_type(cg, obj->return_type, "");
             print(cg, " %s(", c_gen_identifier(cg, obj->id));
             if(obj->args)
-                c_gen_fn_arg_list(cg, obj->args);
+                c_gen_fn_arg_list(cg, obj->args, obj->va_name);
             println(cg, "){");
+
+            if(obj->va_name)
+                c_gen_va_list_init(cg, obj);
+
             c_gen_stmt(cg, obj->body);
+
+            if(obj->va_name)
+                c_gen_va_list_end(cg, obj->va_name);
+
             println(cg, "}");
             break;
         case OBJ_NAMESPACE:
@@ -658,6 +687,13 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             c_gen_expr(cg, node->expr);
             print(cg, ")");
             break;
+        case ND_VA_ARG:
+            print(cg, "va_arg(");
+            c_gen_expr(cg, node->expr);
+            print(cg, ",");
+            c_gen_type(cg, node->data_type, "");
+            print(cg, ")");
+            break;
         case ND_LAMBDA:
             print(cg, c_gen_identifier(cg, node->id));
             break;
@@ -783,7 +819,7 @@ static void c_gen_lambda_fn(CCodegenData_T* cg, ASTNode_T* lambda)
     c_gen_type(cg, lambda->data_type, "");
     print(cg, " %s(", c_gen_identifier(cg, lambda->id));
 
-    c_gen_fn_arg_list(cg, lambda->args);
+    c_gen_fn_arg_list(cg, lambda->args, NULL);
 
     println(cg, "){");
     c_gen_stmt(cg, lambda->body);

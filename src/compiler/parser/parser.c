@@ -74,6 +74,7 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p);
 
 static ASTNode_T* parse_sizeof(Parser_T* p);
 static ASTNode_T* parse_len(Parser_T* p);
+static ASTNode_T* parse_va_arg(Parser_T* p);
 
 static ASTNode_T* parse_unary(Parser_T* p);
 static ASTNode_T* parse_num_op(Parser_T* p, ASTNode_T* left);
@@ -127,6 +128,7 @@ static struct { PrefixParseFn_T pfn; InfixParseFn_T ifn; Precedence_T prec; } ex
     [TOKEN_COLON]    = {NULL, parse_cast, CAST},
     [TOKEN_SIZEOF]   = {parse_sizeof, NULL, LOWEST},
     [TOKEN_LEN]      = {parse_len, NULL, LOWEST},
+    [TOKEN_VA_ARG]   = {parse_va_arg, NULL, LOWEST},
     [TOKEN_BIT_OR]   = {parse_lambda_lit, parse_bit_op, PRODUCT},
     [TOKEN_LSHIFT]   = {NULL, parse_bit_op, PRODUCT},
     [TOKEN_RSHIFT]   = {NULL, parse_bit_op, PRODUCT},
@@ -685,24 +687,48 @@ static void parse_extern(Parser_T* p, List_T* objs)
     list_push(objs, parse_extern_def(p));    
 }
 
-static List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok)
+static struct ARG_LIST_RES
 {
-    List_T* arg_list = init_list(sizeof(ASTObj_T*));
+    List_T* arg_list;
+    ASTIdentifier_T* va_name;
+} parse_argument_list(Parser_T* p, TokenType_T end_tok)
+{
+    struct ARG_LIST_RES return_struct;
+    return_struct.arg_list = init_list(sizeof(ASTObj_T*));
+    return_struct.va_name = NULL;
 
     while(p->tok->type != end_tok)
     {
-        ASTObj_T* arg = init_ast_obj(OBJ_FN_ARG, p->tok);
-        arg->id = parse_simple_identifier(p);
-        parser_consume(p, TOKEN_COLON, "expect `:` after argument name");
+        if(parser_peek(p, 2)->type == TOKEN_VA_LIST)
+        {
+            return_struct.va_name = parse_simple_identifier(p);
 
-        arg->data_type = parse_type(p);
-        list_push(arg_list, arg);
+            parser_consume(p, TOKEN_COLON, "expect `:` after argument name");
+            parser_consume(p, TOKEN_VA_LIST, "expect `...` for variable length arguments");
 
-        if(p->tok->type != end_tok)
-            parser_consume(p, TOKEN_COMMA, "expect `,` between arguments");
+            if(return_struct.arg_list->size == 0)
+                throw_error(ERR_MISC, p->tok, "cannot have a va_list as the only argument in a function");
+
+            if(tok_is(p, TOKEN_COMMA))
+                throw_error(ERR_SYNTAX_ERROR, p->tok, "a va_list has to be the last argument in a function");
+        
+            break;
+        }
+        else 
+        {
+            ASTObj_T* arg = init_ast_obj(OBJ_FN_ARG, p->tok);
+            arg->id = parse_simple_identifier(p);
+            parser_consume(p, TOKEN_COLON, "expect `:` after argument name");
+
+            arg->data_type = parse_type(p);
+            list_push(return_struct.arg_list, arg);
+
+            if(p->tok->type != end_tok)
+                parser_consume(p, TOKEN_COMMA, "expect `,` between arguments");
+        }
     }
 
-    return arg_list;
+    return return_struct;
 }
 
 static ASTNode_T* parse_stmt(Parser_T* p);
@@ -744,7 +770,10 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
 
     parser_consume(p, TOKEN_LPAREN, "expect `(` after function name");
 
-    fn->args = parse_argument_list(p, TOKEN_RPAREN);
+    struct ARG_LIST_RES arg_res = parse_argument_list(p, TOKEN_RPAREN);
+    fn->args = arg_res.arg_list;
+    fn->va_name = arg_res.va_name;
+
     ast_mem_add_list(fn->args);
 
     parser_consume(p, TOKEN_RPAREN, "expect `)` after function arguments");
@@ -1569,6 +1598,19 @@ static ASTNode_T* parse_len(Parser_T* p)
     return len;
 }
 
+static ASTNode_T* parse_va_arg(Parser_T* p)
+{
+    ASTNode_T* va_arg = init_ast_node(ND_VA_ARG, p->tok);
+    parser_consume(p, TOKEN_VA_ARG, "expect `va_arg` keyword");
+
+    va_arg->expr = parse_expr(p, LOWEST, TOKEN_COLON);
+    parser_consume(p, TOKEN_COLON, "expect `:` after `va_arg` expression");
+
+    va_arg->data_type = parse_type(p);
+
+    return va_arg;
+}
+
 static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left)
 {
     ASTNode_T* member = init_ast_node(ND_MEMBER, p->tok);
@@ -1579,3 +1621,4 @@ static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left)
 
     return member;
 }
+

@@ -44,6 +44,7 @@ typedef enum TOKEN_TYPE {
     TOKEN_BIT_OR,       // |
     TOKEN_REF,          // &
     TOKEN_TILDE,        // ~
+    TOKEN_VA_LIST,      // ...
 
     TOKEN_MACRO_BEGIN,  // |:
     TOKEN_MACRO_END,    // :|
@@ -106,6 +107,7 @@ typedef enum TOKEN_TYPE {
     TOKEN_NOOP,         // noop
     TOKEN_ASM,          // asm
     TOKEN_LEN,          // len
+    TOKEN_VA_ARG,       // va_arg
 
     TOKEN_ERROR,        // error handling token
     TOKEN_EOF,          // end of file

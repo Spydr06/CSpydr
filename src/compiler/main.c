@@ -250,6 +250,8 @@ int main(int argc, char* argv[])
             return 1;
     }
 
+    ast_free();
+
     if(!streq(cc_flags, DEFAULT_CC_FLAGS))
         free(cc_flags);
 

@@ -2,12 +2,3 @@
 # this will be implemented as soon as CSpydr supports va_lists
 
 type va_list: __builtin_va_list;
-
-##extern {
-
-    fn va_copy(dest: va_list, src: va_list);
-    fn va_end(ap: va_list);
-    fn va_start(ap: va_list);
-
-
-}##

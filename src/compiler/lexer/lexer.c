@@ -41,6 +41,7 @@ const struct {
     {"noop", TOKEN_NOOP},
     {"asm", TOKEN_ASM},
     {"len", TOKEN_LEN},
+    {"va_arg", TOKEN_VA_ARG},
     {NULL, TOKEN_EOF}   // end of array indicator
 };
 
@@ -96,6 +97,7 @@ const struct {
     {"_", TOKEN_UNDERSCORE},
     {"::", TOKEN_STATIC_MEMBER},
     {":", TOKEN_COLON},
+    {"...", TOKEN_VA_LIST},
     {"..", TOKEN_RANGE},
     {".", TOKEN_DOT},
     {NULL, TOKEN_EOF}   // the last one has to be null as an indicator for the end of the array

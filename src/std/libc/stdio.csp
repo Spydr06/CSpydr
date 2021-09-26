@@ -53,14 +53,13 @@ extern {
     fn setbuf(stream: &FILE, buf: &char);
     fn setvbuf(stream: &FILE, buf: &char, mode: i32, size: size_t): i32;
 
-    # FIXME: implement these when the compiler supports va_lists
-    #fn fprintf(stream: &FILE, format: const &char, ...): i32;
-    #fn fscanf(stream: &FILE, format: const &char, ...): i32;
-    #fn printf(format: const &char, ...): i32;
-    #fn scanf(format: const &char, ...): i32;
-    #fn snprintf(s: &char, n: size_t, format: const &char, ...): i32;
-    #fn sprintf(s: &char, format: const &char, ...): i32;
-    #fn sscanf(s: const &char, format: const &char, ...): i32;
+    fn fprintf(stream: &FILE, format: const &char, va: ...): i32;
+    fn fscanf(stream: &FILE, format: const &char, va: ...): i32;
+    fn printf(format: const &char, va: ...): i32;
+    fn scanf(format: const &char, va: ...): i32;
+    fn snprintf(s: &char, n: size_t, format: const &char, va: ...): i32;
+    fn sprintf(s: &char, format: const &char, va: ...): i32;
+    fn sscanf(s: const &char, format: const &char, va: ...): i32;
 
     # IO functions for va_lists (at the moment useless, because the compiler does not support va_lists)
     fn vfprintf(stream: &FILE, format: const &char, arg: va_list): i32;

@@ -99,6 +99,7 @@ ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok)
     obj->args = NULL;
     obj->body = NULL;
     obj->templates = NULL;
+    obj->va_name = NULL;
 
     obj->is_constant = false;
 

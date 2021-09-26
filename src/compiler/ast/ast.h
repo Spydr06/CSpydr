@@ -92,6 +92,7 @@ typedef enum {
     ND_CONTINUE,  // continue;
     ND_ASM,       // asm "<assembly code>";
     ND_LEN,       // len x
+    ND_VA_ARG,    // va_arg x: i32
 
     ND_LAMBDA,
 
@@ -243,14 +244,17 @@ struct AST_OBJ_STRUCT
     Token_T* tok;
 
     ASTIdentifier_T* id;
-    bool is_extern;
 
     // variables
-    bool is_constant;
+    bool is_constant : 1;
+    bool is_extern : 1;
+
     ASTType_T* data_type;
     ASTNode_T* value;
 
     // functions
+    ASTIdentifier_T* va_name;
+
     ASTType_T* return_type;
     List_T* args;           // list of ASTObj_Ts
     ASTNode_T* body;

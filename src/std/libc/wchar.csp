@@ -16,12 +16,12 @@ type wint_t: u32;
 
 extern {
 
-    #fn fwprintf(stream: &FILE, format: const &wchar_t, ...): i32; # FIXME: implement when the compiler supports va_lists
-    #fn fwscanf(stream: &FILE, format: const &wchar_t, ...): i32;
-    #fn swprintf(s: &wchar_t, n: size_t, format: const &wchar_t, ...): i32;
-    #fn swscanf(s: const &wchar_t, format: const &wchar_t, ...): i32;
-    #fn wprintf(format: const &wchar_t, ...): i32;
-    #fn wscanf(format: const &wchar_t: ...): i32;
+    fn fwprintf(stream: &FILE, format: const &wchar_t, va: ...): i32;
+    fn fwscanf(stream: &FILE, format: const &wchar_t, va: ...): i32;
+    fn swprintf(s: &wchar_t, n: size_t, format: const &wchar_t, va: ...): i32;
+    fn swscanf(s: const &wchar_t, format: const &wchar_t, va: ...): i32;
+    fn wprintf(format: const &wchar_t, va: ...): i32;
+    fn wscanf(format: const &wchar_t, va: ...): i32;
 
     fn vfwprintf(stream: &FILE, format: const &wchar_t, arg: va_list): i32;
     fn vfwscanf(stream: &FILE, format: const &wchar_t, arg: va_list): i32;
