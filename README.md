@@ -3,6 +3,18 @@
 CSpydr is a low-level, static typed, compiled programming language inspired by Rust and C building ontop of LLVM. 
 
 ## Current Status
+
+<div align="center">
+
+![Made with](https://img.shields.io/badge/made%20with-C-123456?style=flat)
+[![Stars](https://img.shields.io/github/stars/spydr06/cspydr?style=flat)](https://github.com/Spydr06/CSpydr/stargazers)
+[![Forks](https://img.shields.io/github/forks/spydr06/cspydr?style=flat)](https://github.com/Spydr06/CSpydr/network/members)
+[![License](https://img.shields.io/github/license/spydr06/cspydr?style=flat)](https://github.com/Spydr06/CSpydr/blob/main/LICENSE)
+[![Issues](https://img.shields.io/github/issues/spydr06/cspydr?style=flat)](https://github.com/Spydr06/CSpydr/issues)
+[![Build](https://img.shields.io/badge/build-success-success?style=flat)](https://github.com/Spydr06/CSpydr/releases)
+
+</div>
+
 A list of all the features, that are/will be implemented.
 
 ##### Compiler features:
