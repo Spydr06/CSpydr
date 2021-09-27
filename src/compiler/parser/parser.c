@@ -41,21 +41,22 @@ typedef ASTNode_T* (*InfixParseFn_T)(Parser_T* parser, ASTNode_T* left);
 
 typedef enum 
 {
-    LOWEST  =  0,
-    ASSIGN  =  1, // x = y, x += y
-    EQUALS  =  2, // ==
-    LTGT    =  3, // < >
-    SUM     =  4, // + -
-    PRODUCT =  5, // * /
-    ANDOR   =  6,
-    POSTFIX =  7, // x++, x--
-    PREFIX  =  8, // -x, !x
-    MEMBER  =  9, // x.y
-    CALL    = 10, // x(y)
-    INDEX   = 11, // x[y]
-    CLOSURE = 12, // (x + y) * z
-    CAST    = 13, // x:i32
-    HIGHEST = 14,
+    LOWEST     =  0,
+    ASSIGN     =  1, // x = y, x += y
+    INFIX_CALL =  2, // x `foo` y
+    EQUALS     =  3, // ==
+    LTGT       =  4, // < >
+    SUM        =  5, // + -
+    PRODUCT    =  6, // * /
+    ANDOR      =  7, // && ||
+    POSTFIX    =  8, // x++, x--
+    PREFIX     =  9, // -x, !x
+    MEMBER     = 10, // x.y
+    CALL       = 11, // x(y)
+    INDEX      = 12, // x[y]
+    CLOSURE    = 13, // (x + y) * z
+    CAST       = 14, // x:i32
+    HIGHEST    = 15,
 } Precedence_T;
 
 static ASTNode_T* parse_id(Parser_T* p);
@@ -83,6 +84,8 @@ static ASTNode_T* parse_bool_op(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_assignment(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_postfix(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left);
+
+static ASTNode_T* parse_infix_call(Parser_T* p, ASTNode_T* left);
 
 static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_cast(Parser_T* p, ASTNode_T* left);
@@ -138,6 +141,7 @@ static struct { PrefixParseFn_T pfn; InfixParseFn_T ifn; Precedence_T prec; } ex
     [TOKEN_XOR_ASSIGN] = {NULL, parse_assignment, ASSIGN},
     [TOKEN_BIT_AND_ASSIGN] = {NULL, parse_assignment, ASSIGN},
     [TOKEN_BIT_OR_ASSIGN] = {NULL, parse_assignment, ASSIGN},  
+    [TOKEN_INFIX_CALL] = {NULL, parse_infix_call, INFIX_CALL},
 }; 
 
 static ASTNodeKind_T unary_ops[TOKEN_EOF + 1] = {
@@ -1622,3 +1626,24 @@ static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left)
     return member;
 }
 
+static ASTNode_T* parse_infix_call_expr(Parser_T* p)
+{
+    ASTNode_T* infix_id = init_ast_node(ND_ID, p->tok);
+    infix_id->id = init_ast_identifier(p->tok, p->tok->value);
+
+    parser_consume(p, TOKEN_INFIX_CALL, "expect infix call name for infix function call");
+
+    return infix_id;
+}
+
+static ASTNode_T* parse_infix_call(Parser_T* p, ASTNode_T* left)
+{
+    ASTNode_T* call = init_ast_node(ND_CALL, p->tok);
+    call->expr = parse_infix_call_expr(p);
+    call->args = init_list(sizeof(ASTNode_T*));
+    list_push(call->args, left);
+    list_push(call->args, parse_expr(p, INFIX_CALL, TOKEN_SEMICOLON));
+
+    ast_mem_add_list(call->args);
+    return call;
+}

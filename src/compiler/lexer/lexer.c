@@ -379,14 +379,42 @@ static Token_T* lexer_get_number(Lexer_T* lexer)
     return lexer_get_decimal(lexer);    
 }
 
+static Token_T* lexer_get_infix_call(Lexer_T* lexer)
+{
+    lexer_advance(lexer); // skip the "`"
+
+    char buffer[__CSP_MAX_TOKEN_SIZE];
+    memset(buffer, '\0', sizeof buffer);
+
+    size_t start_line = lexer->line;
+    size_t start_pos = lexer->pos;
+
+    while(lexer->c != '`')
+    {
+        if(isalnum(lexer->c) || lexer->c == '_')
+        {
+            strcat(buffer, (char[2]){lexer->c, '\0'});
+            lexer_advance(lexer);
+        }
+        else
+            throw_error(ERR_SYNTAX_ERROR, &(Token_T){.line = start_line, .pos = start_pos, .source = lexer->file}, "unexpected character `%c` (ascii: %d), expect one of 0-9a-zA-Z_");
+    }
+
+    lexer_advance(lexer);
+
+    Token_T* token = init_token(buffer, lexer->line, lexer->pos, TOKEN_INFIX_CALL, lexer->file);
+    return token;
+}
+
 static Token_T* lexer_get_str(Lexer_T* lexer)
 {
     lexer_advance(lexer);
 
     char buffer[__CSP_MAX_TOKEN_SIZE];
-    strcpy(buffer, "");
-    unsigned int start_line = lexer->line;
-    unsigned int start_pos = lexer->pos;
+    memset(buffer, '\0', sizeof buffer);
+
+    size_t start_line = lexer->line;
+    size_t start_pos = lexer->pos;
 
     while(lexer->c != '"')
     {
@@ -469,6 +497,9 @@ static Token_T* lexer_get_symbol(Lexer_T* lexer)
 
         case '"':
             return lexer_get_str(lexer);
+
+        case '`':
+            return lexer_get_infix_call(lexer);
 
         case '\'':
             return lexer_get_char(lexer);

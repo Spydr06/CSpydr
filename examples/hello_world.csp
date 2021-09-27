@@ -14,9 +14,13 @@ type data: struct {
 
 let program_data: data;
 
+fn add(a: i32, b: i32): i32 {
+    <- a + b;
+}
+
 fn va_test(x: i32, y: ...) {
     let z: i32 = va_arg y: i32;
-
+    x `add` z;
     printf("%d\n", x + z);
 }
 
