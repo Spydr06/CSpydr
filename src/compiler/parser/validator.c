@@ -15,18 +15,12 @@ struct VALIDATOR_STRUCT
 };
 
 // validator struct functions
-static Validator_T* init_validator()
+static Validator_T* init_validator(Validator_T* v)
 {
-    Validator_T* v = malloc(sizeof(struct VALIDATOR_STRUCT));
     v->scope_depth = 0;
     v->current_scope = NULL;
 
     return v;
-}
-
-static void free_validator(Validator_T* v)
-{
-    free(v);
 }
 
 // iterator functions
@@ -54,11 +48,10 @@ static ASTIteratorList_T iterator_list =
 
 void validate_ast(ASTProg_T* ast)
 {
-    Validator_T* v = init_validator();
+    Validator_T v;
+    init_validator(&v);
 
-    ast_iterate(&iterator_list, ast, v);
-
-    free_validator(v);
+    ast_iterate(&iterator_list, ast, &v);
 }
 
 static void resolve_id_def(ASTIdentifier_T* id, va_list custom_args)
