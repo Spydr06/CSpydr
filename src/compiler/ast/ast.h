@@ -99,6 +99,7 @@ typedef enum {
     ND_ENUM_MEMBER,     // enum members
     ND_STRUCT_MEMBER,  // struct members
 
+    ND_KIND_LEN
 } ASTNodeKind_T;
 
 typedef enum {
@@ -130,7 +131,9 @@ typedef enum {
     TY_TUPLE,
     TY_TEMPLATE,
 
-    TY_UNDEF
+    TY_UNDEF,
+    
+    TY_KIND_LEN
 } ASTTypeKind_T;
 
 typedef enum {
@@ -139,7 +142,9 @@ typedef enum {
     OBJ_FUNCTION,
     OBJ_FN_ARG,
     OBJ_TYPEDEF,
-    OBJ_NAMESPACE
+    OBJ_NAMESPACE,
+
+    OBJ_KIND_LEN
 } ASTObjKind_T;
 
 struct AST_NODE_STRUCT

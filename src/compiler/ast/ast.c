@@ -154,10 +154,10 @@ const char* obj_kind_to_str(ASTObjKind_T kind)
         case OBJ_GLOBAL:
             return "global variable";
         case OBJ_FN_ARG:
-            return "argument";
+            return "function argument";
         case OBJ_NAMESPACE:
             return "namespace";
         default:
-            return "<undefined object type>";
+            return "<undefined ASTObj_T kind>";
     }
 }
