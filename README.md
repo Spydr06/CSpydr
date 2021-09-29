@@ -90,9 +90,20 @@ cspydr --help
 
 ## The CSpydr Syntax
 
-A simple hello-world program:
+A simple [hello-world](https://github.com/Spydr06/CSpydr/blob/main/doc/src/helloworld.csp) program:
 
-![helloworld](https://github.com/Spydr06/cspydr/blob/main/doc/img/helloworld.csp.png?raw=true)
+```cspydr
+# helloworld.csp
+import "libc/stdio.csp";
+
+fn main(argv: i32, argc: &&char): i32
+{
+    let message: &char = "Hello, World!";
+    puts(message);
+
+    <- 0;
+}
+```
 
 Running this program is as easy as entering the following command:
 ```bash
