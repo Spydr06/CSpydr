@@ -51,12 +51,13 @@ typedef enum
     ANDOR      =  7, // && ||
     POSTFIX    =  8, // x++, x--
     PREFIX     =  9, // -x, !x
-    MEMBER     = 10, // x.y
-    CALL       = 11, // x(y)
-    INDEX      = 12, // x[y]
-    CLOSURE    = 13, // (x + y) * z
-    CAST       = 14, // x:i32
-    HIGHEST    = 15,
+    POWER      = 10, // x²
+    MEMBER     = 11, // x.y
+    CALL       = 12, // x(y)
+    INDEX      = 13, // x[y]
+    CLOSURE    = 14, // (x + y) * z
+    CAST       = 15, // x:i32
+    HIGHEST    = 16,
 } Precedence_T;
 
 static ASTNode_T* parse_id(Parser_T* p);
@@ -90,6 +91,9 @@ static ASTNode_T* parse_infix_call(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_cast(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left);
+
+static ASTNode_T* parse_pow_2(Parser_T* p, ASTNode_T* left);
+static ASTNode_T* parse_pow_3(Parser_T* p, ASTNode_T* left);
 
 static struct { PrefixParseFn_T pfn; InfixParseFn_T ifn; Precedence_T prec; } expr_parse_fns[TOKEN_EOF + 1] = {
     [TOKEN_ID]       = {parse_id, NULL, LOWEST},
@@ -131,6 +135,8 @@ static struct { PrefixParseFn_T pfn; InfixParseFn_T ifn; Precedence_T prec; } ex
     [TOKEN_COLON]    = {NULL, parse_cast, CAST},
     [TOKEN_SIZEOF]   = {parse_sizeof, NULL, LOWEST},
     [TOKEN_LEN]      = {parse_len, NULL, LOWEST},
+    [TOKEN_POW_2]    = {NULL, parse_pow_2, POWER},
+    [TOKEN_POW_3]    = {NULL, parse_pow_3, POWER},
     [TOKEN_VA_ARG]   = {parse_va_arg, NULL, LOWEST},
     [TOKEN_BIT_OR]   = {parse_lambda_lit, parse_bit_op, PRODUCT},
     [TOKEN_LSHIFT]   = {NULL, parse_bit_op, PRODUCT},
@@ -1646,4 +1652,35 @@ static ASTNode_T* parse_infix_call(Parser_T* p, ASTNode_T* left)
 
     ast_mem_add_list(call->args);
     return call;
+}
+
+static ASTNode_T* parse_pow_2(Parser_T* p, ASTNode_T* left)
+{
+    // x² = (x * x)
+    ASTNode_T* closure = init_ast_node(ND_CLOSURE, p->tok);
+    ASTNode_T* mult = init_ast_node(ND_MUL, p->tok);
+    parser_consume(p, TOKEN_POW_2, "expect `²`");
+
+    mult->left = left;
+    mult->right = left;
+
+    closure->expr = mult;
+    return closure;
+}
+
+static ASTNode_T* parse_pow_3(Parser_T* p, ASTNode_T* left)
+{
+    // x³ = (x * x * x)
+    ASTNode_T* closure = init_ast_node(ND_CLOSURE, p->tok);
+    ASTNode_T* mult_a = init_ast_node(ND_MUL, p->tok);
+    ASTNode_T* mult_b = init_ast_node(ND_MUL, p->tok);
+    parser_consume(p, TOKEN_POW_3, "expect `³`");
+
+    mult_a->left = left;
+    mult_a->right = mult_b;
+    mult_b->left = left;
+    mult_b->right = left;
+
+    closure->expr = mult_a;
+    return closure;
 }

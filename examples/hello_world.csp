@@ -21,7 +21,7 @@ fn add(a: i32, b: i32): i32 {
 fn va_test(x: i32, y: ...) {
     let z: i32 = va_arg y: i32;
 
-    printf("%d\n", x `add` z);
+    printf("%d\n", x³ `add` z²);
 }
 
 fn main(argc: i32, argv: &&char): i32 {

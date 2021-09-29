@@ -100,6 +100,8 @@ const struct {
     {"...", TOKEN_VA_LIST},
     {"..", TOKEN_RANGE},
     {".", TOKEN_DOT},
+    {"²", TOKEN_POW_2},
+    {"³", TOKEN_POW_3},
     {NULL, TOKEN_EOF}   // the last one has to be null as an indicator for the end of the array
 };  
 

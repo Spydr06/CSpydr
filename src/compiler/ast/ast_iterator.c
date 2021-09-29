@@ -1,5 +1,6 @@
 #include "ast_iterator.h"
 #include "../io/log.h"
+#include "ast.h"
 
 #include <stdarg.h>
 
@@ -133,8 +134,21 @@ static void ast_type(ASTIteratorList_T* list, ASTType_T* type, va_list custom_ar
             break;
         
         case TY_LAMBDA:
+            ast_type(list, type->base, custom_args);
+            for(size_t i = 0; i < type->arg_types->size; i++)
+                ast_type(list, type->arg_types->items[i], custom_args);
+            list_fn(list->type_fns[TY_LAMBDA], type, custom_args);
             break;
 
+        case TY_TUPLE:
+            for(size_t i = 0; i < type->arg_types->size; i++)
+                ast_type(list, type->arg_types->items[i], custom_args);
+            list_fn(list->type_fns[TY_TUPLE], type, custom_args);
+            break;
+        
+        default:
+            // ignore
+            break;
     }
 }
 
