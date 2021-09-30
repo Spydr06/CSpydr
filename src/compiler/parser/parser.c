@@ -1525,9 +1525,6 @@ static List_T* parse_call_templates(Parser_T* p)
 
 static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left)
 {
-    if(left->kind != ND_ID)
-        throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot call `%s`, expect function name or similar", left->tok->value);
-
     ASTNode_T* call = init_ast_node(ND_CALL, p->tok);
     call->expr = left;  // the expression to call
 

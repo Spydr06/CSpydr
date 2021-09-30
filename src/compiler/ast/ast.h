@@ -75,8 +75,7 @@ typedef enum {
     ND_INDEX,   // x[y]
     ND_CAST,    // x:i32
 
-    ND_SIZEOF,  // typeof x
-    ND_TYPEOF,  // sizeof x
+    ND_SIZEOF,  // sizeof x
 
     // statements
     ND_BLOCK,   // {...}
@@ -94,9 +93,9 @@ typedef enum {
     ND_LEN,       // len x
     ND_VA_ARG,    // va_arg x: i32
 
-    ND_LAMBDA,
+    ND_LAMBDA,    // |x, y| => {}
 
-    ND_ENUM_MEMBER,     // enum members
+    ND_ENUM_MEMBER,    // enum members
     ND_STRUCT_MEMBER,  // struct members
 
     ND_KIND_LEN

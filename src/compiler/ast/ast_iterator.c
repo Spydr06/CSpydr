@@ -3,8 +3,9 @@
 #include "ast.h"
 
 #include <stdarg.h>
+#include <stdio.h>
 
-#define list_fn(fn, ast, ...) if(fn) fn(ast, __VA_ARGS__)
+#define list_fn(fn, ast, ...) if(fn && ast) fn(ast, __VA_ARGS__)
 
 static void ast_obj(ASTIteratorList_T* list, ASTObj_T* obj, va_list custom_args);
 static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_args);
@@ -27,6 +28,9 @@ void ast_iterate(ASTIteratorList_T* list, ASTProg_T* ast, ...)
 
 static void ast_obj(ASTIteratorList_T* list, ASTObj_T* obj, va_list custom_args)
 {
+    if(!obj)
+        return;
+    
     list_fn(list->obj_start_fns[obj->kind], obj, custom_args);
     switch(obj->kind)
     {
@@ -74,14 +78,214 @@ static void ast_obj(ASTIteratorList_T* list, ASTObj_T* obj, va_list custom_args)
 
 static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_args)
 {
+    if(!node)
+        return;
+
     switch(node->kind)
     {
+        case ND_NOOP:
+        case ND_BREAK:
+        case ND_CONTINUE:
+            list_fn(list->node_fns[ND_NOOP], node, custom_args);
+            break;
+    
+        case ND_ID:
+            if(node->data_type)
+                ast_type(list, node->data_type, custom_args);
+            list_fn(list->node_fns[ND_NOOP], node, custom_args);
+            break;
+    
+        case ND_INT:
+        case ND_LONG:
+        case ND_LLONG:
+        case ND_FLOAT:
+        case ND_DOUBLE:
+        case ND_BOOL:
+        case ND_CHAR:
+        case ND_STR:
+        case ND_NIL:
+            list_fn(list->node_fns[node->kind], node, custom_args);
+            break;
+        
+        // x op y
+        case ND_ADD:
+        case ND_SUB:
+        case ND_MUL:
+        case ND_DIV:
+        case ND_MOD:
+        case ND_EQ:
+        case ND_NE:
+        case ND_GT:
+        case ND_GE:
+        case ND_LT:
+        case ND_LE:
+        case ND_AND:
+        case ND_OR:
+        case ND_LSHIFT:
+        case ND_RSHIFT:
+        case ND_XOR:
+        case ND_BIT_OR:
+        case ND_BIT_AND:
+        case ND_ASSIGN:
+        case ND_MEMBER:
+            ast_node(list, node->left, custom_args);
+            ast_node(list, node->right, custom_args);
+            if(node->data_type) 
+                ast_type(list, node->data_type, custom_args);
+            list_fn(list->node_fns[node->kind], node, custom_args);
+            break;
+        
+        // op x
+        case ND_NEG:
+        case ND_BIT_NEG:
+        case ND_NOT:
+        case ND_REF:
+        case ND_DEREF:
+            ast_node(list, node->left, custom_args);
+            if(node->data_type) 
+                ast_type(list, node->data_type, custom_args);
+            list_fn(list->node_fns[node->kind], node, custom_args);
+            break;
+        
+        // x op
+        case ND_INC:
+        case ND_DEC:
+            ast_node(list, node->right, custom_args);
+            if(node->data_type) 
+                ast_type(list, node->data_type, custom_args);
+            list_fn(list->node_fns[node->kind], node, custom_args);
+            break;
+        
+        case ND_CLOSURE:
+            ast_node(list, node->expr, custom_args);
+            ast_type(list, node->data_type, custom_args);
+            list_fn(list->node_fns[ND_CLOSURE], node, custom_args);
+            break;
 
+        case ND_CALL:
+            ast_node(list, node->expr, custom_args);
+            if(node->data_type) 
+                ast_type(list, node->data_type, custom_args);
+            for(size_t i = 0; i < node->args->size; i++)
+                ast_node(list, node->args->items[i], custom_args);
+            list_fn(list->node_fns[ND_CALL], node, custom_args);
+            break;
+
+        case ND_INDEX:
+            ast_node(list, node->left, custom_args);
+            ast_node(list, node->expr, custom_args);
+            if(node->data_type) 
+                ast_type(list, node->data_type, custom_args);
+            list_fn(list->node_fns[ND_INDEX], node, custom_args);
+            break;
+
+        case ND_CAST:
+            ast_node(list, node->left, custom_args);
+            if(node->data_type) 
+                ast_type(list, node->data_type, custom_args);
+            list_fn(list->node_fns[ND_CAST], node, custom_args);
+            break;
+
+        case ND_LEN:
+        case ND_SIZEOF:
+            ast_node(list, node->expr, custom_args);
+            if(node->data_type) 
+                ast_type(list, node->data_type, custom_args);
+            list_fn(list->node_fns[ND_SIZEOF], node, custom_args);
+            break;
+
+        case ND_BLOCK:
+            for(size_t i = 0; i < node->stmts->size; i++)
+                ast_node(list, node->stmts->items[i], custom_args);
+            list_fn(list->node_fns[node->kind], node, custom_args);
+            break;
+
+        case ND_IF:
+        case ND_CASE:
+        case ND_WHILE:
+            ast_node(list, node->condition, custom_args);
+            ast_node(list, node->body, custom_args);
+            list_fn(list->node_fns[node->kind], node, custom_args);
+            break;
+
+        case ND_LOOP:
+            ast_node(list, node->body, custom_args);
+            list_fn(list->node_fns[ND_LOOP], node, custom_args);
+            break;
+
+        case ND_FOR:
+            if(node->init_stmt)
+                ast_node(list, node->init_stmt, custom_args);
+            if(node->condition)
+                ast_node(list, node->condition, custom_args);
+            if(node->expr)
+                ast_node(list, node->expr, custom_args);
+            ast_node(list, node->body, custom_args);
+            list_fn(list->node_fns[ND_FOR], node, custom_args);
+            break;
+
+        case ND_MATCH:
+            ast_node(list, node->body, custom_args);
+            for(size_t i = 0; i < node->cases->size; i++)
+                ast_node(list, node->cases->items[i], custom_args);
+            ast_node(list, node->body, custom_args);
+            list_fn(list->node_fns[ND_LOOP], node, custom_args);
+            break;
+
+        case ND_RETURN:
+            ast_node(list, node->return_val, custom_args);
+            list_fn(list->node_fns[ND_RETURN], node, custom_args);
+            break;
+
+        case ND_VA_ARG:
+            ast_type(list, node->data_type, custom_args);
+        case ND_EXPR_STMT:
+        case ND_ASM:
+            ast_node(list, node->expr, custom_args);
+            list_fn(list->node_fns[node->kind], node, custom_args);
+            break;
+
+        case ND_LAMBDA:
+            for(size_t i = 0; i < node->args->size; i++)
+                ast_obj(list, node->args->items[i], custom_args);
+            ast_type(list, node->data_type, custom_args);
+            ast_node(list, node->body, custom_args);
+            list_fn(list->node_fns[ND_LAMBDA], node, custom_args);
+            break;
+
+        case ND_ARRAY:
+        case ND_STRUCT:
+            for(size_t i = 0; i < node->args->size; i++)
+                ast_node(list, node->args->items[i], custom_args);
+            if(node->data_type)
+                ast_type(list, node->data_type, custom_args);
+            list_fn(list->node_fns[ND_ARRAY], node, custom_args);
+            break;
+
+        case ND_STRUCT_MEMBER:
+            ast_id(list, true, node->id, custom_args);
+            ast_type(list, node->data_type, custom_args);
+            list_fn(list->node_fns[ND_STRUCT_MEMBER], node, custom_args);
+            break;
+
+        case ND_ENUM_MEMBER:
+            ast_id(list, true, node->id, custom_args);
+            if(node->expr)
+                ast_node(list, node->expr, custom_args);
+            list_fn(list->node_fns[ND_ENUM_MEMBER], node, custom_args);
+            break;
+        
+        default:
+            // ignore
+            break;
     }
 }
 
 static void ast_type(ASTIteratorList_T* list, ASTType_T* type, va_list custom_args)
 {
+    if(!type)
+        return;
+
     switch(type->kind)
     {
         case TY_I8:
