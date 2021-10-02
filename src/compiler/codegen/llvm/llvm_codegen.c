@@ -154,7 +154,7 @@ void llvm_run_code(LLVMCodegenData_T *cg)
         free(argv);
     }
     if(!cg->silent)
-        LOG_INFO_F("[\"%s\" terminated with exit code %d]\n", cg->ast->main_file_path, exit_code);
+        LOG_INFO_F("[%s terminated with exit code %d]\n", cg->ast->main_file_path, exit_code);
 }
 
 char* llvm_gen_identifier(LLVMCodegenData_T* cg, ASTIdentifier_T* id)

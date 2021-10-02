@@ -13,6 +13,11 @@
 #include "../../platform/platform_bindings.h"
 #include "../../ast/mem/ast_mem.h"
 
+#ifdef __linux__
+    #include <unistd.h>
+    #include <sys/wait.h>
+#endif
+
 char* cc = DEFAULT_CC;
 char* cc_flags = DEFAULT_CC_FLAGS;
 
@@ -195,15 +200,47 @@ void run_c_code(CCodegenData_T* cg, const char* bin)
         LOG_OK_F(COLOR_BOLD_BLUE "  Executing " COLOR_RESET " %s\n", bin);
     
     const char* cmd_tmp = "." DIRECTORY_DELIMS "%s";
-    char* cmd = calloc(strlen(cmd_tmp) + strlen(bin) + 1, sizeof(char));
+    char cmd[BUFSIZ];
+    memset(cmd, '\0', sizeof cmd);
     sprintf(cmd, cmd_tmp, bin);
 
-    char* feedback = sh(cmd);
-    if(!cg->silent)
-        LOG_INFO_F("%s", feedback);
+#ifdef __linux__
+    // fork the current process and execute the generated executable
+    pid_t pid = fork();
 
-    free(feedback);
-    free(cmd);
+    if(pid < 0) 
+    {
+        LOG_ERROR_F("could not create subprocess for %s. <error code %d>\n", bin, pid);
+        return;
+    }
+
+    if(pid == 0 && execlp(cmd, "", (char*) 0) == -1)
+    {
+        LOG_ERROR_F("error executing %s\n", bin);
+        return;
+    }
+
+    int pid_status;
+    if(waitpid(pid, &pid_status, 0) == -1)
+    {
+        LOG_ERROR_F("error getting status of child process %d\n", pid);
+        return; // return here, to free all memory
+    }
+
+    // print exit messages
+    if(WIFEXITED(pid_status))
+        LOG_INFO_F(COLOR_RESET "[%s terminated with exit code %d]\n", bin, WEXITSTATUS(pid_status));
+    else if(WIFSIGNALED(pid_status))
+        LOG_INFO_F(COLOR_RESET "[%s killed by signal %s (%d)]\n", bin, strsignal(WTERMSIG(pid_status)), WTERMSIG(pid_status));
+    else if(WIFSTOPPED(pid_status))
+        LOG_INFO_F(COLOR_RESET "[%s stopped by signal %s (%d)\n", bin, strsignal(WSTOPSIG(pid_status)), WSTOPSIG(pid_status));
+#ifdef WCOREDUMP
+    else if(WCOREDUMP(pid_status))
+        LOG_INFO_F(COLOR_RESET "[%s core dumped]\n", bin);
+#endif
+#else
+    system(cmd);
+#endif
 }
 
 static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
@@ -850,12 +887,14 @@ static char* c_gen_identifier(CCodegenData_T* cg, ASTIdentifier_T* id)
     if(id->outer == NULL)
         return id->callee;
 
+    static const char* CSP_PREFIX_STR = "__csp_";
+
     List_T* path = get_id_path(id);
 
     size_t len = (BUFSIZ) * path->size + 1;
     char callee[len];
     memset(callee, '\0', sizeof callee);
-    strcat(callee, "__csp_");
+    strcat(callee, CSP_PREFIX_STR);
 
     for(size_t i = path->size - 1; i > 0; i--)
     {

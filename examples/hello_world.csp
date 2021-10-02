@@ -1,5 +1,6 @@
 import "libc/wchar.csp";
 import "libc/stdio.csp";
+import "libc/time.csp";
 
 namespace x {
     fn puts(str: &char) {
@@ -24,12 +25,26 @@ fn va_test(x: i32, y: ...) {
     printf("%d\n", x³ `add` z²);
 }
 
+fn delay(seconds: i32)
+{
+    let start: time_t;
+    let current: time_t;
+
+    time(&start);
+    time(&current);
+
+    while((current-start) < seconds)
+        time(&current);
+}
+
 fn main(argc: i32, argv: &&char): i32 {
     program_data = {"Hello World", 0x00}: data;
 
     va_test(3, 5);
 
     x::puts((&program_data).msg);
+
+    delay(1);
 
     <- 0;
 }

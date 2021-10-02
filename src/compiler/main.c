@@ -309,8 +309,11 @@ void transpile_c(ASTProg_T* ast, char* target, Action_T action, bool print_c, bo
     c_gen_code(&cg, target);
 
     if(action == AC_RUN)
+    {
         run_c_code(&cg, target);
-    
+        remove(target);
+    }
+
     free(cg.buf);
 }
 
