@@ -10,7 +10,7 @@
     {                                 \
         va_list copy;                 \
         va_copy(copy, custom_args);   \
-        fn(ast, copy);   \
+        fn(ast, copy);                \
     }
 
 static void ast_obj(ASTIteratorList_T* list, ASTObj_T* obj, va_list custom_args);
@@ -86,19 +86,18 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
 {
     if(!node)
         return;
+    list_fn(list->node_start_fns[node->kind], node, custom_args);
 
     switch(node->kind)
     {
         case ND_NOOP:
         case ND_BREAK:
         case ND_CONTINUE:
-            list_fn(list->node_fns[ND_NOOP], node, custom_args);
             break;
     
         case ND_ID:
             if(node->data_type)
                 ast_type(list, node->data_type, custom_args);
-            list_fn(list->node_fns[ND_NOOP], node, custom_args);
             break;
     
         case ND_INT:
@@ -110,7 +109,6 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
         case ND_CHAR:
         case ND_STR:
         case ND_NIL:
-            list_fn(list->node_fns[node->kind], node, custom_args);
             break;
         
         // x op y
@@ -138,7 +136,6 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
             ast_node(list, node->right, custom_args);
             if(node->data_type) 
                 ast_type(list, node->data_type, custom_args);
-            list_fn(list->node_fns[node->kind], node, custom_args);
             break;
         
         // op x
@@ -150,7 +147,6 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
             ast_node(list, node->left, custom_args);
             if(node->data_type) 
                 ast_type(list, node->data_type, custom_args);
-            list_fn(list->node_fns[node->kind], node, custom_args);
             break;
         
         // x op
@@ -159,13 +155,11 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
             ast_node(list, node->right, custom_args);
             if(node->data_type) 
                 ast_type(list, node->data_type, custom_args);
-            list_fn(list->node_fns[node->kind], node, custom_args);
             break;
         
         case ND_CLOSURE:
             ast_node(list, node->expr, custom_args);
             ast_type(list, node->data_type, custom_args);
-            list_fn(list->node_fns[ND_CLOSURE], node, custom_args);
             break;
 
         case ND_CALL:
@@ -174,7 +168,6 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
                 ast_type(list, node->data_type, custom_args);
             for(size_t i = 0; i < node->args->size; i++)
                 ast_node(list, node->args->items[i], custom_args);
-            list_fn(list->node_fns[ND_CALL], node, custom_args);
             break;
 
         case ND_INDEX:
@@ -182,14 +175,12 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
             ast_node(list, node->expr, custom_args);
             if(node->data_type) 
                 ast_type(list, node->data_type, custom_args);
-            list_fn(list->node_fns[ND_INDEX], node, custom_args);
             break;
 
         case ND_CAST:
             ast_node(list, node->left, custom_args);
             if(node->data_type) 
                 ast_type(list, node->data_type, custom_args);
-            list_fn(list->node_fns[ND_CAST], node, custom_args);
             break;
 
         case ND_LEN:
@@ -197,13 +188,13 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
             ast_node(list, node->expr, custom_args);
             if(node->data_type) 
                 ast_type(list, node->data_type, custom_args);
-            list_fn(list->node_fns[ND_SIZEOF], node, custom_args);
             break;
 
         case ND_BLOCK:
+            for(size_t i = 0; i < node->locals->size; i++)
+                ast_obj(list, node->locals->items[i], custom_args);
             for(size_t i = 0; i < node->stmts->size; i++)
                 ast_node(list, node->stmts->items[i], custom_args);
-            list_fn(list->node_fns[node->kind], node, custom_args);
             break;
 
         case ND_IF:
@@ -211,12 +202,10 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
         case ND_WHILE:
             ast_node(list, node->condition, custom_args);
             ast_node(list, node->body, custom_args);
-            list_fn(list->node_fns[node->kind], node, custom_args);
             break;
 
         case ND_LOOP:
             ast_node(list, node->body, custom_args);
-            list_fn(list->node_fns[ND_LOOP], node, custom_args);
             break;
 
         case ND_FOR:
@@ -227,7 +216,6 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
             if(node->expr)
                 ast_node(list, node->expr, custom_args);
             ast_node(list, node->body, custom_args);
-            list_fn(list->node_fns[ND_FOR], node, custom_args);
             break;
 
         case ND_MATCH:
@@ -235,12 +223,10 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
             for(size_t i = 0; i < node->cases->size; i++)
                 ast_node(list, node->cases->items[i], custom_args);
             ast_node(list, node->body, custom_args);
-            list_fn(list->node_fns[ND_LOOP], node, custom_args);
             break;
 
         case ND_RETURN:
             ast_node(list, node->return_val, custom_args);
-            list_fn(list->node_fns[ND_RETURN], node, custom_args);
             break;
 
         case ND_VA_ARG:
@@ -248,7 +234,6 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
         case ND_EXPR_STMT:
         case ND_ASM:
             ast_node(list, node->expr, custom_args);
-            list_fn(list->node_fns[node->kind], node, custom_args);
             break;
 
         case ND_LAMBDA:
@@ -256,7 +241,6 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
                 ast_obj(list, node->args->items[i], custom_args);
             ast_type(list, node->data_type, custom_args);
             ast_node(list, node->body, custom_args);
-            list_fn(list->node_fns[ND_LAMBDA], node, custom_args);
             break;
 
         case ND_ARRAY:
@@ -265,26 +249,25 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
                 ast_node(list, node->args->items[i], custom_args);
             if(node->data_type)
                 ast_type(list, node->data_type, custom_args);
-            list_fn(list->node_fns[ND_ARRAY], node, custom_args);
             break;
 
         case ND_STRUCT_MEMBER:
             ast_id(list, true, node->id, custom_args);
             ast_type(list, node->data_type, custom_args);
-            list_fn(list->node_fns[ND_STRUCT_MEMBER], node, custom_args);
             break;
 
         case ND_ENUM_MEMBER:
             ast_id(list, true, node->id, custom_args);
             if(node->expr)
                 ast_node(list, node->expr, custom_args);
-            list_fn(list->node_fns[ND_ENUM_MEMBER], node, custom_args);
             break;
         
         default:
             // ignore
             break;
     }
+
+    list_fn(list->node_end_fns[node->kind], node, custom_args);
 }
 
 static void ast_type(ASTIteratorList_T* list, ASTType_T* type, va_list custom_args)

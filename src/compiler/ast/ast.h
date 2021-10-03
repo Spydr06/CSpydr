@@ -19,7 +19,7 @@ typedef enum {
     ND_NOOP,
 
     // identifiers
-    ND_ID,            // x
+    ND_ID,      // x
 
     // literals
     ND_INT,     // 0

@@ -33,12 +33,16 @@ static Validator_T* init_validator(Validator_T* v)
 }
 
 static void begin_obj_scope(Validator_T* v, List_T* objs);
+static void scope_add_obj(Validator_T* v, ASTObj_T* obj);
+static inline void begin_scope(Validator_T* v);
 static inline void end_scope(Validator_T* v);
 
 // iterator functions
+
 // id
 static void id_use(ASTIdentifier_T* id, va_list args);
 static void id_def(ASTIdentifier_T* id, va_list args);
+
 // obj
 static void fn_start(ASTObj_T* fn, va_list args);
 static void fn_end(ASTObj_T* fn, va_list args);
@@ -53,12 +57,21 @@ static void local_end(ASTObj_T* local, va_list args);
 static void fn_arg_start(ASTObj_T* arg, va_list args);
 static void fn_arg_end(ASTObj_T* arg, va_list args);
 
+// node
+static void block_start(ASTNode_T* block, va_list args);
+static void block_end(ASTNode_T* block, va_list args);
+
 // iterator configuration
 static ASTIteratorList_T main_iterator_list = 
 {
-    .node_fns = 
+    .node_start_fns = 
     {
+        [ND_BLOCK] = block_start,
+    },
 
+    .node_end_fns = 
+    {
+        [ND_BLOCK] = block_end,
     },
 
     .type_fns = 
@@ -109,47 +122,47 @@ static ASTObj_T* search_in_scope(VScope_T* scope, char* id)
         if(strcmp(obj->id->callee, id) == 0)
             return obj;
     }
-
-    if(scope->prev)
-        return search_in_scope(scope->prev, id);
     return NULL;
 }
 
 static void begin_obj_scope(Validator_T* v, List_T* objs)
 {
-    if(!objs)
-        return;
-
-    VScope_T* scope = malloc(sizeof(VScope_T));
-
-    scope->prev = v->current_scope;
-    v->current_scope = scope;
-    scope->objs = init_list(sizeof(ASTObj_T*));
+    begin_scope(v);
 
     for(size_t i = 0; i < objs->size; i++)
-    {
-        ASTObj_T* obj = objs->items[i];
-        ASTObj_T* found = search_in_scope(scope, obj->id->callee);
-        if(found)
-        {
-            throw_error(ERR_REDEFINITION, obj->id->tok, "redefinition of %s `%s`.\nfirst defined in " COLOR_BOLD_WHITE "%s " COLOR_RESET "at line " COLOR_BOLD_WHITE "%lld" COLOR_RESET " as %s.", 
-                obj_kind_to_str(obj->kind), obj->id->callee, 
-                found->tok->source->short_path ? found->tok->source->short_path : found->tok->source->path, 
-                found->tok->line + 1,
-                obj_kind_to_str(found->kind)
-            );
-            exit(1);
-        }
-        list_push(scope->objs, obj);
-    }
+        scope_add_obj(v, objs->items[i]);
+}
+
+static inline void begin_scope(Validator_T* v)
+{
+    VScope_T* scope = malloc(sizeof(VScope_T));
+    scope->objs = init_list(sizeof(ASTObj_T*));
+    scope->prev = v->current_scope;
+    v->current_scope = scope;
 }
 
 static inline void end_scope(Validator_T* v)
 {
     VScope_T* scope = v->current_scope;
-    free_list(scope->objs);
     v->current_scope = scope->prev;
+    free_list(scope->objs);
     free(scope);
+}
+
+static void scope_add_obj(Validator_T* v, ASTObj_T* obj)
+{
+    ASTObj_T* found = search_in_scope(v->current_scope, obj->id->callee);
+    if(found)
+    {
+        throw_error(ERR_REDEFINITION, obj->id->tok, "redefinition of %s `%s`.\nfirst defined in " COLOR_BOLD_WHITE "%s " COLOR_RESET "at line " COLOR_BOLD_WHITE "%lld" COLOR_RESET " as %s.", 
+            obj_kind_to_str(obj->kind), obj->id->callee, 
+            found->tok->source->short_path ? found->tok->source->short_path : found->tok->source->path, 
+            found->tok->line + 1,
+            obj_kind_to_str(found->kind)
+        );
+        exit(1);
+    }
+    list_push(v->current_scope->objs, obj);
 }
 
 // id
@@ -169,11 +182,13 @@ static void id_use(ASTIdentifier_T* id, va_list args)
 static void fn_start(ASTObj_T* fn, va_list args)
 {
     GET_VALIDATOR(args);
+    begin_scope(v);
 }
 
 static void fn_end(ASTObj_T* fn, va_list args)
 {
     GET_VALIDATOR(args);
+    end_scope(v);
 }
 
 static void namespace_start(ASTObj_T* namespace, va_list args)
@@ -210,7 +225,8 @@ static void global_end(ASTObj_T* global, va_list args)
 
 static void local_start(ASTObj_T* local, va_list args)
 {
-
+    GET_VALIDATOR(args);
+    scope_add_obj(v, local);
 }
 
 static void local_end(ASTObj_T* local, va_list args)
@@ -226,4 +242,18 @@ static void fn_arg_start(ASTObj_T* arg, va_list args)
 static void fn_arg_end(ASTObj_T* arg, va_list args)
 {
 
+}
+
+// node
+
+static void block_start(ASTNode_T* block, va_list args)
+{
+    GET_VALIDATOR(args);
+    begin_scope(v);
+}
+
+static void block_end(ASTNode_T* block, va_list args)
+{
+    GET_VALIDATOR(args);
+    end_scope(v);
 }

@@ -3,7 +3,7 @@ import "libc/stdio.csp";
 import "libc/time.csp";
 
 namespace x {
-    fn putss(str: &char) {
+    fn puts(str: &char) {
         puts(str);
     }
 }
@@ -42,7 +42,7 @@ fn main(argc: i32, argv: &&char): i32 {
 
     va_test(3, 5);
 
-    x::putss((&program_data).msg);
+    x::puts((&program_data).msg);
 
     <- 0;
 }

@@ -11,7 +11,9 @@ typedef void (*ASTIdIteratorFn_T)(ASTIdentifier_T* id, va_list custom_args);
 
 typedef struct AST_ITERATOR_LIST_STRUCT
 {
-    ASTNodeIteratorFn_T node_fns[ND_KIND_LEN];
+    ASTNodeIteratorFn_T node_start_fns[ND_KIND_LEN];
+    ASTNodeIteratorFn_T node_end_fns[ND_KIND_LEN];
+
     ASTTypeIteratorFn_T type_fns[TY_KIND_LEN];
 
     ASTObjIteratorFn_T obj_start_fns[OBJ_KIND_LEN];
