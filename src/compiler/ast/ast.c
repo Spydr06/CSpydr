@@ -148,7 +148,7 @@ const char* obj_kind_to_str(ASTObjKind_T kind)
         case OBJ_FUNCTION:
             return "function";
         case OBJ_TYPEDEF:
-            return "typedef";
+            return "type";
         case OBJ_LOCAL: 
             return "local variable";
         case OBJ_GLOBAL:

@@ -5,7 +5,13 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#define list_fn(fn, ast, ...) if(fn && ast) fn(ast, __VA_ARGS__)
+#define list_fn(fn, ast, custom_args) \
+    if(fn && ast)                     \
+    {                                 \
+        va_list copy;                 \
+        va_copy(copy, custom_args);   \
+        fn(ast, copy);   \
+    }
 
 static void ast_obj(ASTIteratorList_T* list, ASTObj_T* obj, va_list custom_args);
 static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_args);
