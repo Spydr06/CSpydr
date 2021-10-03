@@ -9,22 +9,10 @@
 
 #define GET_VALIDATOR(va) Validator_T* v = va_arg(va, Validator_T*)
 
-typedef enum VSCOPE_KIND_ENUM
-{
-    V_MAIN,      // main scope (global)
-    V_NAMESPACE, // scope in a namespace
-    V_FUNCTION,  // scope in a function (arguments, etc.)
-    V_BLOCK,     // scope in a block
-    V_FOR,       // scope in a for loop
-    V_LAMBDA,    // scope in a lambda expression
-
-} VScopeKind_T;
-
 // validator structs
 typedef struct VALIDATOR_SCOPE_STRUCT VScope_T;
 struct VALIDATOR_SCOPE_STRUCT
 {
-    VScopeKind_T kind;
     VScope_T* prev;
     List_T* objs;
 } __attribute__((packed));
@@ -217,7 +205,7 @@ static void global_start(ASTObj_T* global, va_list args)
 
 static void global_end(ASTObj_T* global, va_list args)
 {
-    
+
 }
 
 static void local_start(ASTObj_T* local, va_list args)
