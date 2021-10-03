@@ -8,6 +8,10 @@ namespace x {
     }
 }
 
+namespace x {
+    
+}
+
 type data: struct {
     msg: &char,
     exit: i8

@@ -838,18 +838,40 @@ static ASTObj_T* parse_global(Parser_T* p)
     return global;
 }
 
-static ASTObj_T* parse_namespace(Parser_T* p)
+static ASTObj_T* find_namespace(List_T* objs, char* callee)
+{
+    for(size_t i = 0; i < objs->size; i++)
+    {
+        ASTObj_T* obj = objs->items[i];
+        if(obj->kind == OBJ_NAMESPACE && strcmp(obj->id->callee, callee) == 0)
+            return obj;
+    }
+    return NULL;
+}
+
+static void parse_namespace(Parser_T* p, List_T* objs)
 {
     ASTObj_T* namespace = init_ast_obj(OBJ_NAMESPACE, p->tok);
     parser_advance(p); // skip the "namespace" token
-
     namespace->id = parse_simple_identifier(p);
 
-    // initialize the namespace's object list
-    namespace->objs = init_list(sizeof(struct AST_OBJ_STRUCT));
-    ast_mem_add_list(namespace->objs);
+    // if there is already a namespace with this name in the current scope, add the new objs to it rather than creating a new namespace
+    ASTObj_T* found = find_namespace(objs, namespace->id->callee);
+    if(found)
+    {
+        namespace = found; // the previous namespace will be deleted by ast_mem.c later
+    }
+    else
+    {
+        // initialize the namespace's object list
+        namespace->objs = init_list(sizeof(struct AST_OBJ_STRUCT));
+        ast_mem_add_list(namespace->objs);
+        
+        list_push(objs, namespace);
+    }
 
-    if(tok_is(p, TOKEN_SEMICOLON)) // if the namespace has a semicolon directly after its name, it exists in the whole file
+    // FIXME: will not work, if the namespace is added to another one in another file
+    /*if(tok_is(p, TOKEN_SEMICOLON)) // if the namespace has a semicolon directly after its name, it exists in the whole file
     {
         parser_advance(p);
         const char* namespace_file = namespace->tok->source->path;
@@ -859,19 +881,15 @@ static ASTObj_T* parse_namespace(Parser_T* p)
             parse_obj(p, namespace->objs);
         }
 
-        return namespace;
-    }
+        return;
+    }*/
     
     // if the namespace has a { directly after its name, it exists in the current scope
     parser_consume(p, TOKEN_LBRACE, "expect either `{` or `;` after namespace declaration");
 
     while(!tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF))
-    {
         parse_obj(p, namespace->objs);
-    }
     parser_consume(p, TOKEN_RBRACE, "expect `}` after namespace scope");
-
-    return namespace;
 }
 
 static void parse_obj(Parser_T* p, List_T* obj_list)
@@ -892,7 +910,7 @@ static void parse_obj(Parser_T* p, List_T* obj_list)
                 parse_extern(p, obj_list);
                 break;
             case TOKEN_NAMESPACE:
-                list_push(obj_list, parse_namespace(p));
+                parse_namespace(p, obj_list);
                 break;
             default:
                 throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect [import, type, let, const, fn]", p->tok->value);
