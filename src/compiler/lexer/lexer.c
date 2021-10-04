@@ -94,6 +94,7 @@ const struct {
     {"~", TOKEN_TILDE},
     {",", TOKEN_COMMA},
     {";", TOKEN_SEMICOLON},
+    {";", TOKEN_SEMICOLON}, // greek question mark (;)
     {"_", TOKEN_UNDERSCORE},
     {"::", TOKEN_STATIC_MEMBER},
     {":", TOKEN_COLON},
