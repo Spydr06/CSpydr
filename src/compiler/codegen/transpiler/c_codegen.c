@@ -360,35 +360,41 @@ static void c_gen_array_brackets(CCodegenData_T* cg, ASTType_T* ty)
         c_gen_array_brackets(cg, ty->base);
 }
 
-static void c_gen_fn_arg_list(CCodegenData_T* cg, List_T* args, bool has_va_list)
+static bool c_gen_fn_arg_list(CCodegenData_T* cg, List_T* args)
 {
     if(args->size == 0) 
     {
         print(cg, "void");
-        return;
+        return false;
     }
     for(size_t i = 0; i < args->size; i++)
     {
         ASTObj_T* arg = args->items[i];
+     
         char* callee = c_gen_identifier(cg, arg->id);
-        if(arg->data_type->kind == TY_LAMBDA)
-            c_gen_type(cg, arg->data_type, callee);
-        else
-        {   
-            c_gen_type(cg, arg->data_type, "");
-            print(cg, " %s", callee);
+
+        if(arg->kind == OBJ_FN_ARG)
+        {
+            if(arg->data_type->kind == TY_LAMBDA)
+                c_gen_type(cg, arg->data_type, callee);
+            else
+            {   
+                c_gen_type(cg, arg->data_type, "");
+                print(cg, " %s", callee);
+            }
+
+            if(arg->data_type->kind == TY_ARR)
+                c_gen_array_brackets(cg, arg->data_type);
+
+            print(cg, "%s", i < args->size - 1 ? "," : "");
         }
-
-        if(arg->data_type->kind == TY_ARR)
-            c_gen_array_brackets(cg, arg->data_type);
-
-        print(cg, "%s", i < args->size - 1 ? "," : "");
+        else if(arg->kind == OBJ_VA_LIST)
+        {
+            print(cg, "...");
+            return true;    // va lists are always the last argument
+        }
     }
-
-    if(has_va_list)
-    {
-        print(cg, ",...");
-    }
+    return false;
 }
 
 static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
@@ -419,7 +425,7 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
             c_gen_type(cg, obj->return_type, "");
             print(cg, " %s(", obj_callee);
             if(obj->args)
-                c_gen_fn_arg_list(cg, obj->args, obj->va_name);
+                c_gen_fn_arg_list(cg, obj->args);
             println(cg, ");");
             break;
         case OBJ_TYPEDEF:
@@ -458,10 +464,10 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
 
 static void c_gen_va_list_init(CCodegenData_T* cg, ASTObj_T* fn)
 {
-    char* va_id = c_gen_identifier(cg, fn->va_name);
+    char* va_id = c_gen_identifier(cg, ((ASTObj_T*) fn->args->items[fn->args->size - 1])->id);
     println(cg, "va_list %s;", va_id);
 
-    char* last_arg_id = c_gen_identifier(cg, ((ASTObj_T*)fn->args->items[fn->args->size - 1])->id);
+    char* last_arg_id = c_gen_identifier(cg, ((ASTObj_T*)fn->args->items[fn->args->size - 2])->id);
     println(cg, "va_start(%s, %s);", va_id, last_arg_id);
 }
 
@@ -479,22 +485,26 @@ static void c_gen_obj(CCodegenData_T* cg, ASTObj_T* obj)
     switch(obj->kind)
     {
         case OBJ_FUNCTION:
-            c_gen_type(cg, obj->return_type, "");
-            print(cg, " %s(", c_gen_identifier(cg, obj->id));
-            if(obj->args)
-                c_gen_fn_arg_list(cg, obj->args, obj->va_name);
-            println(cg, "){");
+            {
+                c_gen_type(cg, obj->return_type, "");
+                print(cg, " %s(", c_gen_identifier(cg, obj->id));
 
-            if(obj->va_name)
-                c_gen_va_list_init(cg, obj);
+                bool has_va_list = false;
 
-            c_gen_stmt(cg, obj->body);
+                if(obj->args)
+                    has_va_list = c_gen_fn_arg_list(cg, obj->args);
+                println(cg, "){");
 
-            if(obj->va_name)
-                c_gen_va_list_end(cg, obj->va_name);
+                if(has_va_list)
+                    c_gen_va_list_init(cg, obj);
 
-            println(cg, "}");
-            break;
+                c_gen_stmt(cg, obj->body);
+
+                if(has_va_list)
+                    c_gen_va_list_end(cg, ((ASTObj_T*)obj->args->items[obj->args->size - 1])->id);
+
+                println(cg, "}");
+            } break;
         case OBJ_NAMESPACE:
             for(size_t i = 0; i < obj->objs->size; i++)
             {
@@ -856,7 +866,7 @@ static void c_gen_lambda_fn(CCodegenData_T* cg, ASTNode_T* lambda)
     c_gen_type(cg, lambda->data_type, "");
     print(cg, " %s(", c_gen_identifier(cg, lambda->id));
 
-    c_gen_fn_arg_list(cg, lambda->args, NULL);
+    c_gen_fn_arg_list(cg, lambda->args);
 
     println(cg, "){");
     c_gen_stmt(cg, lambda->body);

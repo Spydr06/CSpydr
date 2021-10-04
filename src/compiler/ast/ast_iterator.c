@@ -72,7 +72,7 @@ static void ast_obj(ASTIteratorList_T* list, ASTObj_T* obj, va_list custom_args)
         case OBJ_GLOBAL:
             ast_id(list, true, obj->id, custom_args);
             ast_type(list, obj->data_type, custom_args);
-            ast_node(list, obj->value, custom_args);
+            //ast_node(list, obj->value, custom_args);
             break;
 
         default:
@@ -98,6 +98,7 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
         case ND_ID:
             if(node->data_type)
                 ast_type(list, node->data_type, custom_args);
+            ast_id(list, false, node->id, custom_args);
             break;
     
         case ND_INT:

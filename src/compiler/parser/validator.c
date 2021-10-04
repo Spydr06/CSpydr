@@ -56,10 +56,13 @@ static void local_start(ASTObj_T* local, va_list args);
 static void local_end(ASTObj_T* local, va_list args);
 static void fn_arg_start(ASTObj_T* arg, va_list args);
 static void fn_arg_end(ASTObj_T* arg, va_list args);
+static void va_list_start(ASTObj_T* va, va_list args);
+static void va_list_end(ASTObj_T* va, va_list args);
 
 // node
 static void block_start(ASTNode_T* block, va_list args);
 static void block_end(ASTNode_T* block, va_list args);
+static void call(ASTNode_T* call, va_list args);
 
 // iterator configuration
 static ASTIteratorList_T main_iterator_list = 
@@ -72,6 +75,7 @@ static ASTIteratorList_T main_iterator_list =
     .node_end_fns = 
     {
         [ND_BLOCK] = block_end,
+        [ND_CALL] = call,
     },
 
     .type_fns = 
@@ -86,7 +90,8 @@ static ASTIteratorList_T main_iterator_list =
         [OBJ_TYPEDEF] = typedef_start,
         [OBJ_GLOBAL] = global_start,
         [OBJ_LOCAL] = local_start,
-        [OBJ_FN_ARG] = fn_arg_start
+        [OBJ_FN_ARG] = fn_arg_start,
+        [OBJ_VA_LIST] = va_list_start,
     },
 
     .obj_end_fns = 
@@ -96,7 +101,8 @@ static ASTIteratorList_T main_iterator_list =
         [OBJ_TYPEDEF] = typedef_end,
         [OBJ_GLOBAL] = global_end,
         [OBJ_LOCAL] = local_end,
-        [OBJ_FN_ARG] = fn_arg_end
+        [OBJ_FN_ARG] = fn_arg_end,
+        [OBJ_VA_LIST] = va_list_end,
     },
 
     .id_def_fn = id_def,
@@ -116,13 +122,24 @@ void validate_ast(ASTProg_T* ast)
 
 static ASTObj_T* search_in_scope(VScope_T* scope, char* id)
 {
-    for(int i = 0; i < scope->objs->size; i++)
+    for(size_t i = 0; i < scope->objs->size; i++)
     {
         ASTObj_T* obj = scope->objs->items[i];
         if(strcmp(obj->id->callee, id) == 0)
             return obj;
     }
     return NULL;
+}
+
+static ASTObj_T* search_identifier(VScope_T* scope, ASTIdentifier_T* id)
+{
+    if(!scope || !id)
+        return NULL;
+
+    ASTObj_T* found = search_in_scope(scope, id->callee);
+    if(found)
+        return found;
+    return search_identifier(scope->prev, id);
 }
 
 static void begin_obj_scope(Validator_T* v, List_T* objs)
@@ -169,12 +186,14 @@ static void scope_add_obj(Validator_T* v, ASTObj_T* obj)
 
 static void id_def(ASTIdentifier_T* id, va_list args)
 {
-    GET_VALIDATOR(args);
 }
 
 static void id_use(ASTIdentifier_T* id, va_list args)
 {
     GET_VALIDATOR(args);
+    ASTObj_T* found = search_identifier(v->current_scope, id);
+    if(!found)
+        throw_error(ERR_UNDEFINED, id->tok, "undefined identifier `%s`.", id->callee);
 }
 
 // obj
@@ -225,21 +244,31 @@ static void global_end(ASTObj_T* global, va_list args)
 
 static void local_start(ASTObj_T* local, va_list args)
 {
-    GET_VALIDATOR(args);
-    scope_add_obj(v, local);
+   
 }
 
 static void local_end(ASTObj_T* local, va_list args)
 {
-
 }
 
 static void fn_arg_start(ASTObj_T* arg, va_list args)
 {
-
+    GET_VALIDATOR(args);
+    scope_add_obj(v, arg);
 }
 
 static void fn_arg_end(ASTObj_T* arg, va_list args)
+{
+
+}
+
+static void va_list_start(ASTObj_T* va, va_list args)
+{
+    GET_VALIDATOR(args);
+    scope_add_obj(v, va);
+}
+
+static void va_list_end(ASTObj_T* va, va_list args)
 {
 
 }
@@ -249,11 +278,15 @@ static void fn_arg_end(ASTObj_T* arg, va_list args)
 static void block_start(ASTNode_T* block, va_list args)
 {
     GET_VALIDATOR(args);
-    begin_scope(v);
+    begin_obj_scope(v, block->locals);
 }
 
 static void block_end(ASTNode_T* block, va_list args)
 {
     GET_VALIDATOR(args);
     end_scope(v);
+}
+
+static void call(ASTNode_T* call, va_list args)
+{
 }

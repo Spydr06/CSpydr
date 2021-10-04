@@ -697,30 +697,28 @@ static void parse_extern(Parser_T* p, List_T* objs)
     list_push(objs, parse_extern_def(p));    
 }
 
-static struct ARG_LIST_RES
+List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok)
 {
-    List_T* arg_list;
-    ASTIdentifier_T* va_name;
-} parse_argument_list(Parser_T* p, TokenType_T end_tok)
-{
-    struct ARG_LIST_RES return_struct;
-    return_struct.arg_list = init_list(sizeof(ASTObj_T*));
-    return_struct.va_name = NULL;
+    List_T* arg_list = init_list(sizeof(ASTObj_T*));
 
     while(p->tok->type != end_tok)
     {
         if(parser_peek(p, 2)->type == TOKEN_VA_LIST)
         {
-            return_struct.va_name = parse_simple_identifier(p);
-
+            ASTIdentifier_T* va_id = parse_simple_identifier(p);
             parser_consume(p, TOKEN_COLON, "expect `:` after argument name");
+        
+            ASTObj_T* va_obj = init_ast_obj(OBJ_VA_LIST, p->tok);
             parser_consume(p, TOKEN_VA_LIST, "expect `...` for variable length arguments");
+            va_obj->id = va_id;
 
-            if(return_struct.arg_list->size == 0)
+            if(arg_list->size == 0)
                 throw_error(ERR_MISC, p->tok, "cannot have a va_list as the only argument in a function");
 
             if(tok_is(p, TOKEN_COMMA))
                 throw_error(ERR_SYNTAX_ERROR, p->tok, "a va_list has to be the last argument in a function");
+
+            list_push(arg_list, va_obj);
         
             break;
         }
@@ -731,14 +729,14 @@ static struct ARG_LIST_RES
             parser_consume(p, TOKEN_COLON, "expect `:` after argument name");
 
             arg->data_type = parse_type(p);
-            list_push(return_struct.arg_list, arg);
+            list_push(arg_list, arg);
 
             if(p->tok->type != end_tok)
                 parser_consume(p, TOKEN_COMMA, "expect `,` between arguments");
         }
     }
 
-    return return_struct;
+    return arg_list;
 }
 
 static ASTNode_T* parse_stmt(Parser_T* p);
@@ -780,10 +778,7 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
 
     parser_consume(p, TOKEN_LPAREN, "expect `(` after function name");
 
-    struct ARG_LIST_RES arg_res = parse_argument_list(p, TOKEN_RPAREN);
-    fn->args = arg_res.arg_list;
-    fn->va_name = arg_res.va_name;
-
+    fn->args = parse_argument_list(p, TOKEN_RPAREN);
     ast_mem_add_list(fn->args);
 
     parser_consume(p, TOKEN_RPAREN, "expect `)` after function arguments");

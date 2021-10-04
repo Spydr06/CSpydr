@@ -142,6 +142,7 @@ typedef enum {
     OBJ_FN_ARG,
     OBJ_TYPEDEF,
     OBJ_NAMESPACE,
+    OBJ_VA_LIST,  // only for the validator
 
     OBJ_KIND_LEN
 } ASTObjKind_T;
@@ -257,8 +258,6 @@ struct AST_OBJ_STRUCT
     ASTNode_T* value;
 
     // functions
-    ASTIdentifier_T* va_name;
-
     ASTType_T* return_type;
     List_T* args;           // list of ASTObj_Ts
     ASTNode_T* body;
