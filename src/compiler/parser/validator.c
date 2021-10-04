@@ -120,7 +120,7 @@ void validate_ast(ASTProg_T* ast)
     end_scope(&v);
 }
 
-static ASTObj_T* search_in_scope(VScope_T* scope, char* id)
+static ASTObj_T* search_in_current_scope(VScope_T* scope, char* id)
 {
     for(size_t i = 0; i < scope->objs->size; i++)
     {
@@ -131,15 +131,42 @@ static ASTObj_T* search_in_scope(VScope_T* scope, char* id)
     return NULL;
 }
 
+static ASTObj_T* search_in_scope(VScope_T* scope, char* id)
+{
+    if(!scope)
+        return NULL;
+
+    ASTObj_T* found = search_in_current_scope(scope, id);
+    if(found)
+        return found;
+    return search_in_scope(scope->prev, id);
+}
+
 static ASTObj_T* search_identifier(VScope_T* scope, ASTIdentifier_T* id)
 {
     if(!scope || !id)
         return NULL;
 
-    ASTObj_T* found = search_in_scope(scope, id->callee);
-    if(found)
-        return found;
-    return search_identifier(scope->prev, id);
+    if(!id->outer)
+    {
+        ASTObj_T* found = search_in_current_scope(scope, id->callee);
+        if(found)
+            return found;
+        return search_identifier(scope->prev, id);
+    }
+    else {
+        ASTObj_T* outer = search_in_scope(scope, id->outer->callee);
+        if(!outer || !outer->objs)
+            return NULL;
+        
+        for(size_t i = 0; i < outer->objs->size; i++)
+        {
+            ASTObj_T* current = outer->objs->items[i];
+            if(strcmp(current->id->callee, id->callee) == 0)
+                return current;
+        }
+        return NULL;
+    }
 }
 
 static void begin_obj_scope(Validator_T* v, List_T* objs)
@@ -168,7 +195,7 @@ static inline void end_scope(Validator_T* v)
 
 static void scope_add_obj(Validator_T* v, ASTObj_T* obj)
 {
-    ASTObj_T* found = search_in_scope(v->current_scope, obj->id->callee);
+    ASTObj_T* found = search_in_current_scope(v->current_scope, obj->id->callee);
     if(found)
     {
         throw_error(ERR_REDEFINITION, obj->id->tok, "redefinition of %s `%s`.\nfirst defined in " COLOR_BOLD_WHITE "%s " COLOR_RESET "at line " COLOR_BOLD_WHITE "%lld" COLOR_RESET " as %s.", 
