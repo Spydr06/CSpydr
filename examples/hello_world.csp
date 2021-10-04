@@ -48,5 +48,5 @@ fn main(argc: i32, argv: &&char): i32 {
 
     x::puts("d");
 
-    <- !!0;
+    <- 0;
 }

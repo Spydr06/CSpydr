@@ -5,7 +5,8 @@
 
 extern char* get_absolute_path(char* relative_path);
 extern char* get_path_from_file(char* file_path);
-char* get_home_directory();
+extern char* get_home_directory();
+extern bool make_dir(char* path);
 
 #if defined(__linux__) || defined(__linux)
     #include "linux/linux_platform.h"

@@ -173,25 +173,26 @@ static void run_compiler(CCodegenData_T* cg, const char* target_bin)
 static void write_code(CCodegenData_T* cg, const char* target_bin)
 {
     char* homedir = get_home_directory();
+    char cache_dir[BUFSIZ];
 
-    const char* mkdir_tmp = "mkdir -p %s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS;
-    char* mkdir_cmd = calloc(strlen(homedir) + strlen(mkdir_tmp) + 1, sizeof(char));
-    sprintf(mkdir_cmd, mkdir_tmp, homedir);
+    memset(cache_dir, '\0', sizeof cache_dir);
+    sprintf(cache_dir, "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS, homedir);
 
-    free(sh(mkdir_cmd));
+    if(make_dir(cache_dir))
+    {
+        LOG_ERROR("error creating cache directory `" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "`.\n");
+        exit(1);
+    }
 
-    const char* file_tmp = "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.c";
-    char* c_file_path = calloc(strlen(homedir) + strlen(file_tmp) + strlen(target_bin) + 1, sizeof(char));
-    sprintf(c_file_path, file_tmp, homedir, target_bin);
+    char c_file_path[BUFSIZ * 2];
+    memset(c_file_path, '\0', sizeof c_file_path);
+    sprintf(c_file_path, "%s" DIRECTORY_DELIMS "%s.c", cache_dir, target_bin);
 
     fclose(cg->code_buffer);
 
     FILE* out = open_file(c_file_path);
     fwrite(cg->buf, cg->buf_len, 1, out);
     fclose(out);
-
-    free(c_file_path);
-    free(mkdir_cmd);
 }
 
 void run_c_code(CCodegenData_T* cg, const char* bin)
@@ -448,7 +449,7 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
                     strcat(new_name, "__csp_");
 
                 strcat(new_name, obj_callee);
-                strcat(new_name, "_");
+                strcat(new_name, "__csp_");
 
                 strcat(new_name, member_callee);
 
@@ -909,7 +910,7 @@ static char* c_gen_identifier(CCodegenData_T* cg, ASTIdentifier_T* id)
     for(size_t i = path->size - 1; i > 0; i--)
     {
         cat_id(callee, path->items[i]);
-        strcat(callee, "_");
+        strcat(callee, "__csp_");
     }
     cat_id(callee, path->items[0]);
 
