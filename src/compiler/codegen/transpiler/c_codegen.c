@@ -23,7 +23,7 @@ char* cc_flags = DEFAULT_CC_FLAGS;
 
 const char* default_header_code =
     "#include<stdarg.h>\n"
-    "typedef char bool;\n"
+    "typedef _Bool bool;\n"
     "#define true ((bool) 1)\n"
     "#define false ((bool) 0)\n"
     "#define NULL ((void*) 0)\n"
