@@ -443,6 +443,8 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
                 ASTObj_T* namespace_member = obj->objs->items[i];
 
                 char new_name[BUFSIZ];
+                memset(new_name, '\0', sizeof new_name);
+
                 char* member_callee = c_gen_identifier(cg, namespace_member->id);
 
                 if(namespace_member->kind != OBJ_NAMESPACE) 

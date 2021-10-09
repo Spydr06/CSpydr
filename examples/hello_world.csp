@@ -2,14 +2,11 @@ import "libc/wchar.csp";
 import "libc/stdio.csp";
 import "libc/time.csp";
 
-namespace x {
+namespace utils {
+    fn add(a: i32, b: i32): i32 ret a + b;
     fn puts(str: &char) {
         puts(str);
     }
-}
-
-namespace x {
-    
 }
 
 type data: struct {
@@ -19,14 +16,10 @@ type data: struct {
 
 let program_data: data;
 
-fn add(a: i32, b: i32): i32 {
-    <- a + b;
-}
-
 fn va_test(x: i32, y: ...) {
     let z: i32 = va_arg y: i32;
 
-    printf("%d\n", x³ `add` z²);
+    printf("%d\n", x `utils::add` z);
 }
 
 fn delay(seconds: i32)
@@ -36,7 +29,6 @@ fn delay(seconds: i32)
 
     time(&start);
     time(&current);
-
     while((current-start) < seconds)
         time(&current);
 }
@@ -46,7 +38,7 @@ fn main(argc: i32, argv: &&char): i32 {
 
     va_test(3, 5);
 
-    x::puts("d");
+    utils::puts("d");
 
     <- 0;
 }

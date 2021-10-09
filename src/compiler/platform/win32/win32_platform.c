@@ -13,7 +13,7 @@ char* get_path_from_file(char* file_path)
     _splitpath_s(path, NULL, 0, dir, sizeof(dir), NULL, 0, NULL, 0);
     return dir;
 }
-int make_dir(char* path)
+bool make_dir(char* path)
 {
     // TODO: to be implemented
     return 0;

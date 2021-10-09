@@ -398,10 +398,7 @@ static ASTIdentifier_T* __parse_identifier(Parser_T* p, ASTIdentifier_T* outer, 
     id->outer = outer;
     parser_consume(p, TOKEN_ID, "expect identifier");
 
-    if(is_simple)
-        return id; // if the id is "simple", it can't have any inner members defined with . or ::
-
-    if(tok_is(p, TOKEN_STATIC_MEMBER))
+    if(tok_is(p, TOKEN_STATIC_MEMBER) && !is_simple)
     {
         if(parser_peek(p, 1)->type == TOKEN_LT)
            return id; // :: followed by < would be a generic in a functon or -call 
@@ -410,8 +407,7 @@ static ASTIdentifier_T* __parse_identifier(Parser_T* p, ASTIdentifier_T* outer, 
         id->kind = OBJ_NAMESPACE;  // only namespaces can have static members
         return __parse_identifier(p, id, false);
     }
-    else
-        return id;
+    return id;
 }
 
 #define parse_identifier(p) __parse_identifier(p, NULL, false)
@@ -858,11 +854,11 @@ static void parse_namespace(Parser_T* p, List_T* objs)
     }
     else
     {
+        list_push(objs, namespace);
+
         // initialize the namespace's object list
         namespace->objs = init_list(sizeof(struct AST_OBJ_STRUCT));
         ast_mem_add_list(namespace->objs);
-        
-        list_push(objs, namespace);
     }
 
     // FIXME: will not work, if the namespace is added to another one in another file
@@ -883,8 +879,11 @@ static void parse_namespace(Parser_T* p, List_T* objs)
     parser_consume(p, TOKEN_LBRACE, "expect either `{` or `;` after namespace declaration");
 
     while(!tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF))
+    {
+        p->cur_fn = NULL;
         parse_obj(p, namespace->objs);
-    parser_consume(p, TOKEN_RBRACE, "expect `}` after namespace scope");
+    }
+    parser_consume(p, TOKEN_RBRACE, "expect `}` at end of namespace");
 }
 
 static void parse_obj(Parser_T* p, List_T* obj_list)
@@ -942,12 +941,12 @@ static ASTNode_T* parse_return(Parser_T* p)
 {
     ASTNode_T* ret = init_ast_node(ND_RETURN, p->tok);
 
-    parser_consume(p, TOKEN_RETURN, "expect `ret` or `<-` to return");
+    parser_consume(p, TOKEN_RETURN, "expect `ret` or `<-` to return from function");
 
     if(!tok_is(p, TOKEN_SEMICOLON))
     {
         if(p->cur_fn->return_type->kind == TY_VOID)
-            throw_error(ERR_TYPE_CAST_WARN, ret->tok, "cannot return a value from a function with type `void`, expect `;`");
+            throw_error(ERR_TYPE_CAST_WARN, ret->tok, "cannot return value from function with type `void`, expect `;`");
 
         ASTNode_T* cast = init_ast_node(ND_CAST, p->tok);
         cast->left = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
@@ -1645,9 +1644,10 @@ static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left)
 static ASTNode_T* parse_infix_call_expr(Parser_T* p)
 {
     ASTNode_T* infix_id = init_ast_node(ND_ID, p->tok);
-    infix_id->id = init_ast_identifier(p->tok, p->tok->value);
 
-    parser_consume(p, TOKEN_INFIX_CALL, "expect infix call name for infix function call");
+    parser_consume(p, TOKEN_INFIX_CALL, "expect infix call name before infix function call");
+    infix_id->id = parse_identifier(p);
+    parser_consume(p, TOKEN_INFIX_CALL, "expect infix call name after infix function call");
 
     return infix_id;
 }

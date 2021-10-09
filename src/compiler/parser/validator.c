@@ -220,7 +220,7 @@ static void id_use(ASTIdentifier_T* id, va_list args)
     GET_VALIDATOR(args);
     ASTObj_T* found = search_identifier(v->current_scope, id);
     if(!found)
-        throw_error(ERR_UNDEFINED, id->tok, "undefined identifier `%s`.", id->callee);
+        throw_error(ERR_SYNTAX_WARNING, id->tok, "undefined identifier `%s`.", id->callee);
 }
 
 // obj

@@ -7,7 +7,7 @@
 typedef enum TOKEN_TYPE {
     TOKEN_ID,           // names, types, etc.
     TOKEN_MACRO_CALL,   // foo!, bar!()
-    TOKEN_INFIX_CALL,   // x `foo` y
+    TOKEN_INFIX_CALL,   // `
 
     TOKEN_INT,          // 0, 3, 5, etc.
     TOKEN_FLOAT,        // 4.2, 3.14, etc.
