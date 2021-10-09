@@ -19,4 +19,9 @@ bool make_dir(char* path)
     return 0;
 }
 
+extern int subprocess(const char* p_name, const char* arg, void (*callback_fns[__EXIT_KIND_LEN])(void))
+{
+    #error "Implement this"
+}
+
 #endif

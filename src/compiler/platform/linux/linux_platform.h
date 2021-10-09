@@ -22,5 +22,8 @@ char* get_path_from_file(char* file_path);
 
 bool make_dir(char* path);
 
+int subprocess(const char* p_name, char* const* p_arg, bool print_exit_msg);
+
+
 #endif
 #endif

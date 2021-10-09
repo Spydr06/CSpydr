@@ -13,11 +13,6 @@
 #include "../../platform/platform_bindings.h"
 #include "../../ast/mem/ast_mem.h"
 
-#ifdef __linux__
-    #include <unistd.h>
-    #include <sys/wait.h>
-#endif
-
 char* cc = DEFAULT_CC;
 char* cc_flags = DEFAULT_CC_FLAGS;
 
@@ -156,26 +151,31 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
 
 static void run_compiler(CCodegenData_T* cg, const char* target_bin)
 {
-    char* homedir = get_home_directory();
+    char c_source_file[BUFSIZ] = {'\0'};
+    sprintf(c_source_file, "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.c", get_home_directory(), target_bin);
 
-    static char* compiler_cmd_tmp = "%s %s %s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.c -o %s";
-    char* compiler_cmd = calloc(strlen(cc)+ strlen(cc_flags) + strlen(compiler_cmd_tmp) + strlen(homedir) + strlen(target_bin) * 2 + 1, sizeof(char));
-    sprintf(compiler_cmd, compiler_cmd_tmp, cc, cc_flags, homedir, target_bin, target_bin);
+    char* args[] = // TODO: enable cc_flags again
+    {
+        cc,
+        c_source_file,
+        "-o",
+        (char*) target_bin,
+        NULL
+    };
 
-    char* feedback = sh(compiler_cmd);
-    if(!cg->silent)
-        LOG_INFO_F("%s", feedback);
-    free(feedback);
+    int exit_code = subprocess(cc, args, false);
 
-    free(compiler_cmd);
+    if(exit_code != 0)
+    {
+        LOG_ERROR_F("error compiling code using %s. (exit code %d)\n", cc, exit_code);
+        exit(1);
+    }
 }
 
 static void write_code(CCodegenData_T* cg, const char* target_bin)
 {
     char* homedir = get_home_directory();
-    char cache_dir[BUFSIZ];
-
-    memset(cache_dir, '\0', sizeof cache_dir);
+    char cache_dir[BUFSIZ] = {'\0'};
     sprintf(cache_dir, "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS, homedir);
 
     if(make_dir(cache_dir))
@@ -184,8 +184,7 @@ static void write_code(CCodegenData_T* cg, const char* target_bin)
         exit(1);
     }
 
-    char c_file_path[BUFSIZ * 2];
-    memset(c_file_path, '\0', sizeof c_file_path);
+    char c_file_path[BUFSIZ * 2] = {'\0'};
     sprintf(c_file_path, "%s" DIRECTORY_DELIMS "%s.c", cache_dir, target_bin);
 
     fclose(cg->code_buffer);
@@ -205,43 +204,7 @@ void run_c_code(CCodegenData_T* cg, const char* bin)
     memset(cmd, '\0', sizeof cmd);
     sprintf(cmd, cmd_tmp, bin);
 
-#ifdef __linux__
-    // fork the current process and execute the generated executable
-    pid_t pid = fork();
-
-    if(pid < 0) 
-    {
-        LOG_ERROR_F("could not create subprocess for %s. <error code %d>\n", bin, pid);
-        return;
-    }
-
-    if(pid == 0 && execlp(cmd, "", (char*) 0) == -1)
-    {
-        LOG_ERROR_F("error executing %s\n", bin);
-        return;
-    }
-
-    int pid_status;
-    if(waitpid(pid, &pid_status, 0) == -1)
-    {
-        LOG_ERROR_F("error getting status of child process %d\n", pid);
-        return; // return here, to free all memory
-    }
-
-    // print exit messages
-    if(WIFEXITED(pid_status))
-        LOG_INFO_F(COLOR_RESET "[%s terminated with exit code %d]\n", bin, WEXITSTATUS(pid_status));
-    else if(WIFSIGNALED(pid_status))
-        LOG_INFO_F(COLOR_RESET "[%s killed by signal %s (%d)]\n", bin, strsignal(WTERMSIG(pid_status)), WTERMSIG(pid_status));
-    else if(WIFSTOPPED(pid_status))
-        LOG_INFO_F(COLOR_RESET "[%s stopped by signal %s (%d)\n", bin, strsignal(WSTOPSIG(pid_status)), WSTOPSIG(pid_status));
-#ifdef WCOREDUMP
-    else if(WCOREDUMP(pid_status))
-        LOG_INFO_F(COLOR_RESET "[%s core dumped]\n", bin);
-#endif
-#else
-    system(cmd);
-#endif
+    subprocess(cmd, (char* const[]){cmd, NULL}, !cg->silent);
 }
 
 static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)

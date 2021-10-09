@@ -10,7 +10,6 @@
 SrcFile_T* read_file(const char* path);
 void write_file(const char* path, char* buffer);
 FILE *open_file(char *path);
-char* sh(const char* cmd);
 
 bool file_exists(char* file);
 bool file_is_readable(char* file);
