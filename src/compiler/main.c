@@ -81,8 +81,8 @@ const char* version_text = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE
 const struct { char* as_str; Action_T ac; } action_table[AC_UNDEF] = {
     {"build", AC_BUILD},
     {"run",   AC_RUN},
-    {"repl",  AC_REPL},
     {"debug", AC_DEBUG},
+    {"repl",  AC_REPL},
 };
 
 // declaration of the functions used below
@@ -123,7 +123,7 @@ int main(int argc, char* argv[])
     }
 
     // if there are 2 args, check for --help, --info or --version flags
-    if(argc == 2)
+    if(argv[1][0] == '-')
         evaluate_info_flags(argv[1]);
 
     // get the action to perform

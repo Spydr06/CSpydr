@@ -204,7 +204,7 @@ void run_c_code(CCodegenData_T* cg, const char* bin)
     memset(cmd, '\0', sizeof cmd);
     sprintf(cmd, cmd_tmp, bin);
 
-    subprocess(cmd, (char* const[]){cmd, NULL}, !cg->silent);
+    last_exit_code = subprocess(cmd, (char* const[]){cmd, NULL}, !cg->silent);
 }
 
 static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
