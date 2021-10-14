@@ -165,15 +165,27 @@ static Macro_T* parse_macro_def(Preprocessor_T* pp, size_t* i)
         next = pp->tokens->items[(*i)++];
     }
 
-    if(next->type != TOKEN_MACRO_BEGIN)
-        throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `|:` to begin the macro body", next->value);
+    if(next->type != TOKEN_LBRACE)
+        throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `{` to begin the macro body", next->value);
     free_token(next);
 
-    for(next = pp->tokens->items[(*i)++]; next->type != TOKEN_EOF && next->type != TOKEN_MACRO_END; next = pp->tokens->items[(*i)++])
+    size_t depth = 0;
+    for(next = pp->tokens->items[(*i)++]; next->type != TOKEN_EOF; next = pp->tokens->items[(*i)++])
+    {
+        if(next->type == TOKEN_LBRACE)
+            depth++;
+        else if(next->type == TOKEN_RBRACE)
+        {
+            if(depth > 0)
+                depth--; // the `}` belongs to an expression or statement
+            else
+                break; // we found the closing `}` of the macro body
+        }
         list_push(macro->replacing_tokens, next);
+    }
 
-    if(next->type != TOKEN_MACRO_END)
-        throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `:|` to begin the macro body", next->value);
+    if(next->type != TOKEN_RBRACE)
+        throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `}` to begin the macro body", next->value);
     free_token(next);
 
     return macro;

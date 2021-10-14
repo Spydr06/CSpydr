@@ -2,7 +2,7 @@
 
 import "libc/wchar.csp";
 
-macro WEOF |: (0xffffffff) :|
+macro WEOF { (0xffffffff) }
 
 type wctrans_t: const &i32;
 type wctype_t: u64;

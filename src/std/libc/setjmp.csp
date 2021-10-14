@@ -1,6 +1,6 @@
 # a basic implementation of the libc setjmp.h header for the CSpydr programming language
 
-macro _SIGSET_NWORDS |: (1024 / 64) :|
+macro _SIGSET_NWORDS { (1024 / 64) }
 
 type __jmp_buf: i64[8];
 type __sigset_t: struct {

@@ -27,12 +27,12 @@ type lconv: struct {
     int_n_sign_posn: char
 };
 
-macro LC_ALL |: nil :|
-macro LC_COLLATE |: nil :|
-macro LC_CTYPE |: nil :|
-macro LC_MONETARY |: nil :|
-macro LC_NUMERIC |: nil :|
-macro LC_TIME |: nil :|
+macro LC_ALL { nil }
+macro LC_COLLATE { nil }
+macro LC_CTYPE { nil }
+macro LC_MONETARY { nil }
+macro LC_NUMERIC { nil }
+macro LC_TIME { nil }
 
 extern fn setlocale(category: i32, locale: const &char): &char;
 extern fn localeconv(): lconv;

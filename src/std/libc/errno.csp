@@ -1,8 +1,8 @@
 # a basic implementation of the libc errno.h header for the CSpydr programming language
 
-macro EDOM |: 1 :|
-macro EILSEQ |: 1 :|
-macro ERANGE |: 1 :|
+macro EDOM { 1 }
+macro EILSEQ { 1 }
+macro ERANGE { 1 }
 
 extern fn __errno_location(): &i32;
-macro errno() |: (*__errno_location()) :|
+macro errno() { (*__errno_location()) }

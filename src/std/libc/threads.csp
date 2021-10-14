@@ -2,13 +2,13 @@
 
 import "libc/time.csp";
 
-macro thread_local |: _Thread_local :|
+macro thread_local { _Thread_local }
 
-macro ONCE_FLAG_INIT |: {0} :|
-macro TSS_DTOR_ITERATIONS |: 4 :|
+macro ONCE_FLAG_INIT { {0} }
+macro TSS_DTOR_ITERATIONS { 4 }
 
-macro __SIZEOF_PTHREAD_COND_T |: 48 :|
-macro __SIZEOF_PTHREAD_MUTEX_T |: 40 :|
+macro __SIZEOF_PTHREAD_COND_T { 48 }
+macro __SIZEOF_PTHREAD_MUTEX_T { 40 }
 
 type cnd_t: struct {
     __size: i8[__SIZEOF_PTHREAD_COND_T!]

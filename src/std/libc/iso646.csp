@@ -1,13 +1,13 @@
 # a basic implementation of the libc iso646.h header for the CSpydr programming language
 
-macro and |: && :|
-macro and_eq |: &= :|
-macro bitand |: & :|
-macro bitor |: | :|
-macro compl |: ~ :|
-macro not |: ! :|
-macro not_eq |: != :|
-macro or |: || :|
-macro or_eq |: |= :|
-macro xor |: ^ :|
-macro xor_eq |: ^= :|
+macro and { && }
+macro and_eq { &= }
+macro bitand { & }
+macro bitor { | }
+macro compl { ~ }
+macro not { ! }
+macro not_eq { != }
+macro or { || }
+macro or_eq { |= }
+macro xor { ^ }
+macro xor_eq { ^= }

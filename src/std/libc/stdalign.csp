@@ -1,7 +1,7 @@
 # a basic implementation of the libc stdalign.h header for the CSpydr programming language
 
-macro alignas |: _Alignas :|
-macro alignof |: _Alignof :|
+macro alignas { _Alignas }
+macro alignof { _Alignof }
 
-macro __alignas_is_defined |: :|
-macro __alignof_is_defiend |: :|
+macro __alignas_is_defined { }
+macro __alignof_is_defiend { }
