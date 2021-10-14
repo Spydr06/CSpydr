@@ -47,9 +47,6 @@ typedef enum TOKEN_TYPE {
     TOKEN_TILDE,        // ~
     TOKEN_VA_LIST,      // ...
 
-    TOKEN_MACRO_BEGIN,  // |:
-    TOKEN_MACRO_END,    // :|
-
     TOKEN_INC,          // ++
     TOKEN_DEC,          // --
 

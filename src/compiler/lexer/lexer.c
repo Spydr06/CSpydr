@@ -72,8 +72,6 @@ const struct {
     {">>", TOKEN_RSHIFT},
     {"||", TOKEN_OR},
     {"|=", TOKEN_BIT_OR_ASSIGN},
-    {"|:", TOKEN_MACRO_BEGIN},
-    {":|", TOKEN_MACRO_END},
     {"|", TOKEN_BIT_OR},
     {"==", TOKEN_EQ},
     {"=>", TOKEN_ARROW},
