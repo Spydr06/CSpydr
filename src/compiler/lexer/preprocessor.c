@@ -52,7 +52,7 @@ static Macro_T* init_macro(Token_T* tok)
     mac->tok = tok;
     mac->replacing_tokens = init_list(sizeof(struct TOKEN_STRUCT*));
     mac->argc = 0;
-    mac->used = true;
+    mac->used = false;
 
     return mac;
 }
@@ -64,9 +64,8 @@ static void free_macro(Macro_T* mac)
     for(u_int8_t i = 0; i < mac->argc; i++)
         free_token(mac->args[i]);
     
-    if(!mac->used)
-        for(size_t i = 0; i < mac->replacing_tokens->size; i++)
-            free_token(mac->replacing_tokens->items[i]);
+    /*for(size_t i = 0; i < mac->replacing_tokens->size; i++)
+        free_token(mac->replacing_tokens->items[i]);*/
 
     free_token(mac->tok);
     free(mac);
@@ -200,6 +199,17 @@ static Macro_T* find_macro(Preprocessor_T* pp, char* callee)
             return mac;
     }
     return NULL;
+}
+
+static int find_macro_arg(Macro_T* mac, char* callee)
+{
+    for(u_int8_t i = 0; i < mac->argc; i++)
+    {
+        Token_T* tok = mac->args[i];
+        if(tok && strcmp(tok->value, callee) == 0)
+            return i;
+    }
+    return -1;
 }
 
 static char* get_full_import_path(char* origin, Token_T* import_file)
@@ -354,14 +364,18 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
             macro->used = true;
 
             for(size_t i = 0; i < macro->replacing_tokens->size; i++)
-                list_push(token_stage_3, macro->replacing_tokens->items[i]);
+            {
+                Token_T* tok = macro->replacing_tokens->items[i];
+                list_push(token_stage_3, dupl_token(tok));
+            }
             continue;
         }
         list_push(token_stage_3, tok);
     }
 
-    free_list(pp.tokens);
-    free_list(token_stage_2);
+
+    free_list(pp.tokens);     // free from stage 0 & 1
+    free_list(token_stage_2); // free from stage 1
     free_preprocessor(&pp);
     return token_stage_3;
 }
