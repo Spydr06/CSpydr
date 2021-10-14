@@ -7,6 +7,8 @@
     #define __CSP_GLOBAL extern
 #endif
 
+#include <stdbool.h>
+
 // all global variables, that the compiler needs
 
 #define DEFAULT_COMPILE_TYPE CT_TRANSPILE
@@ -15,5 +17,9 @@
 
 int __CSP_GLOBAL ct;
 int __CSP_GLOBAL fs;
+
+bool __CSP_GLOBAL silent;
+bool __CSP_GLOBAL print_llvm;
+bool __CSP_GLOBAL print_c;
 
 #endif

@@ -14,11 +14,10 @@
 #include <string.h>
 
 // compiler includes
-#include "ast/mem/ast_mem.h"
+#include "io/repl/repl.h"
+#include "toolchain.h"
 #include "io/io.h"
 #include "io/log.h"
-#include "list.h"
-#include "parser/parser.h"
 #include "codegen/llvm/llvm_codegen.h"
 #include "codegen/transpiler/c_codegen.h"
 #include "platform/platform_bindings.h"
@@ -30,7 +29,7 @@
 #define CSPYDR_GIT_REPOSITORY "https://github.com/spydr06/cspydr.git"
 #define CSPYDR_GIT_DEVELOPER "https://github.com/spydr06"
 
-const char* usage_text = COLOR_BOLD_WHITE "Usage:" COLOR_RESET " cspydr [run, build, debug] <input file> [<flags>]\n"
+const char* usage_text = COLOR_BOLD_WHITE "Usage:" COLOR_RESET " cspydr [run, build, debug, repl] [<input file> <flags>]\n"
                          "       cspydr [--help, --info, --version]\n";
 
 // this text gets shown if -i or --info is used
@@ -79,38 +78,16 @@ const char* version_text = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE
                           "\n"
                           "For more information type -i.\n";
 
-typedef enum ACTION_ENUM
-{
-    AC_BUILD,
-    AC_RUN,
-    AC_DEBUG,
-    AC_UNDEF
-} Action_T;
-
-typedef enum COMPILE_TYPE_ENUM
-{
-    CT_LLVM,
-    CT_TRANSPILE,
-    CT_TO_XML,
-} CompileType_T;
-
 const struct { char* as_str; Action_T ac; } action_table[AC_UNDEF] = {
     {"build", AC_BUILD},
     {"run",   AC_RUN},
+    {"repl",  AC_REPL},
     {"debug", AC_DEBUG},
 };
 
 // declaration of the functions used below
 extern const char* get_cspydr_version();
 extern const char* get_cspydr_build();
-
-// generate the ast from the source file (lexing, preprocessing, parsing)
-void generate_ast(ASTProg_T* ast, char* path, char* target, bool silent);
-
-// generate the output code (c, llvm, xml)
-void generate_llvm(ASTProg_T*, char* target, Action_T action, bool print_llvm, bool silent);
-void transpile_c(ASTProg_T*, char* target, Action_T action, bool print_c, bool silent);
-void parse_to_xml(ASTProg_T*, char* target, Action_T action, bool silent);
 
 static inline bool streq(char* a, char* b)
 {
@@ -151,7 +128,7 @@ int main(int argc, char* argv[])
 
     // get the action to perform
     Action_T action = AC_UNDEF;
-    CompileType_T ct = DEFAULT_COMPILE_TYPE;
+    ct = DEFAULT_COMPILE_TYPE;
     for(int i = 0; i < AC_UNDEF; i++)
         if(streq(argv[1], action_table[i].as_str))
             action = action_table[i].ac;
@@ -159,23 +136,30 @@ int main(int argc, char* argv[])
     {
         LOG_ERROR_F("[Error] Unknown action \"%s\", expect [build, run, debug]\n", argv[1]);
     }
-
+    
     // declare the input/output files
     char* output_file = DEFAULT_OUTPUT_FILE;
-    char* input_file = argv[2];
-    if(!file_exists(input_file))
+    char* input_file;
+
+    if(action == AC_REPL)
     {
-        LOG_ERROR_F("[Error] Error opening file \"%s\": No such file or directory\n", input_file);
-        exit(1);
+        // remove the first two flags form argc/argv
+        argc -= 2;
+        argv += 2;
     }
+    else
+    {
+        input_file = argv[2];
+        if(!file_exists(input_file))
+        {
+            LOG_ERROR_F("[Error] Error opening file \"%s\": No such file or directory\n", input_file);
+            exit(1);
+        }
 
-    // remove the first three flags form argc/argv
-    argc -= 3;
-    argv += 3;
-
-    bool print_llvm = false;
-    bool print_c = false;
-    bool silent = false;
+        // remove the first three flags form argc/argv
+        argc -= 3;
+        argv += 3;
+    }
 
     // get all the other flags
     for(int i = 0; i < argc; i++)
@@ -231,94 +215,15 @@ int main(int argc, char* argv[])
         }
     }
 
-    ASTProg_T ast; 
-    generate_ast(&ast, input_file, output_file, silent);
-
-    switch(ct)
+    if(action == AC_REPL)
+        repl();
+    else
     {
-        case CT_LLVM:
-            generate_llvm(&ast, output_file, action, print_llvm, silent);
-            break;
-        case CT_TRANSPILE:
-            transpile_c(&ast, output_file, action, print_c, silent);
-            break;
-        case CT_TO_XML:
-            parse_to_xml(&ast, output_file, action, silent);
-            break;
-        default:
-            LOG_ERROR_F("[Error] Unknown compile type %d!\n", ct);
-            return 1;
+        compile(input_file, output_file, action);
     }
-
-    ast_free();
 
     if(!streq(cc_flags, DEFAULT_CC_FLAGS))
         free(cc_flags);
 
     return 0;
-}
-
-void generate_ast(ASTProg_T* ast, char* path, char* target, bool silent)
-{
-    List_T* files = init_list(sizeof(struct SRC_FILE_STRUCT*));
-    list_push(files, read_file(path));
-
-    parse(ast, files, silent);
-    //optimize(ast);
-
-    for(size_t i = 0; i < files->size; i++) 
-        free_srcfile(files->items[i]);
-    free_list(files);
-}
-
-// sets up and runs the compilation pipeline using LLVM
-void generate_llvm(ASTProg_T* ast, char* target, Action_T action, bool print_llvm, bool silent)
-{
-    LLVMCodegenData_T cg;
-    init_llvm_cg(&cg, ast);
-    cg.silent = silent;
-    llvm_gen_code(&cg);
-
-    if(print_llvm)
-        llvm_print_code(&cg);
-
-    switch(action)
-    {
-        case AC_BUILD:
-            llvm_emit_code(&cg, target);
-            break;
-        case AC_RUN:
-            llvm_run_code(&cg);
-            break;
-        case AC_DEBUG:
-            // TODO:
-            break;
-        default:
-            LOG_ERROR_F("Unrecognized action of type [%d], exit\n", action);
-            exit(1);
-    }
-    free_llvm_cg(&cg);
-}
-
-void transpile_c(ASTProg_T* ast, char* target, Action_T action, bool print_c, bool silent)
-{
-    CCodegenData_T cg;
-    init_c_cg(&cg, ast);
-    cg.print_c = print_c;
-    cg.silent = silent;
-    c_gen_code(&cg, target);
-
-    if(action == AC_RUN)
-    {
-        run_c_code(&cg, target);
-        remove(target);
-    }
-
-    free(cg.buf);
-}
-
-void parse_to_xml(ASTProg_T* ast, char* target, Action_T action, bool silent)
-{
-    LOG_OK_F(COLOR_BOLD_GREEN "  Emitting " COLOR_RESET "  AST as XML to \"%s\"\n", target);
-    //ast_to_xml(ast, target);
 }
