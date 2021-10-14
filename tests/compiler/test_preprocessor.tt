@@ -29,14 +29,14 @@ PREPROCESSOR_TEST_FUNC(test_preprocessing_simple_file, "fn main(): i32 {}",
     TEST_ASSERT(((Token_T*) tokens->items[8])->type == TOKEN_EOF);
 )
 
-PREPROCESSOR_TEST_FUNC(test_processing_simple_macro, "macro foo |: bar :| foo!",
+PREPROCESSOR_TEST_FUNC(test_processing_simple_macro, "macro foo { bar } foo!",
     TEST_ASSERT(tokens->size == 2);
 
     TEST_ASSERT(((Token_T*) tokens->items[0])->type == TOKEN_ID);
     TEST_ASSERT(((Token_T*) tokens->items[1])->type == TOKEN_EOF);
 )
 
-PREPROCESSOR_TEST_FUNC(test_preprocessing_two_macros, "macro foo |: bar :| \nmacro bar |: 4 :| bar! foo!",
+PREPROCESSOR_TEST_FUNC(test_preprocessing_two_macros, "macro foo { bar } \nmacro bar { 4 } bar! foo!",
     TEST_ASSERT(tokens->size == 3);
 
     TEST_ASSERT(((Token_T*) tokens->items[0])->type == TOKEN_INT);
