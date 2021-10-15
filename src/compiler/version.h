@@ -11,7 +11,7 @@
     #define CSPYDR_VERSION_W "r"
 #endif
 
-const char* get_cspydr_build();
+void get_cspydr_build(char* dest);
 const char* get_cspydr_version();
 
 #endif

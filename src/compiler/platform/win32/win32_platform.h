@@ -5,6 +5,7 @@
 
 #include <windows.h>
 #include <stdbool.h>
+#include <conio.h>
 
 // the default output file used for code generation
 #define DEFAULT_OUTPUT_FILE "a.exe"

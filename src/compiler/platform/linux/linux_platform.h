@@ -15,6 +15,8 @@
 #define CACHE_DIR ".cache/cspydr"
 #define STD_DIR "/usr/share/cspydr/std"
 
+#define clrscr() printf("\e[1;1H\e[2J")
+
 char* get_home_directory();
 
 char* get_absolute_path(char* relative_path);

@@ -13,6 +13,7 @@ void ast_free(void)
             free(allocs[i]);
 
         vector_free(allocs);
+        allocs = NULL;
     }
     if(lists)
     {
@@ -20,6 +21,7 @@ void ast_free(void)
             free_list(lists[i]);
 
         vector_free(lists);
+        lists = NULL;
     }
 }
 

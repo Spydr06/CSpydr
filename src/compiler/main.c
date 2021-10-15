@@ -21,6 +21,7 @@
 #include "codegen/llvm/llvm_codegen.h"
 #include "codegen/transpiler/c_codegen.h"
 #include "platform/platform_bindings.h"
+#include "version.h"
 //#include "ast/xml.h"
 
 // default texts, which get shown if you enter help, info or version flags
@@ -85,10 +86,6 @@ const struct { char* as_str; Action_T ac; } action_table[AC_UNDEF] = {
     {"repl",  AC_REPL},
 };
 
-// declaration of the functions used below
-extern const char* get_cspydr_version();
-extern const char* get_cspydr_build();
-
 static inline bool streq(char* a, char* b)
 {
     return strcmp(a, b) == 0;
@@ -96,12 +93,15 @@ static inline bool streq(char* a, char* b)
 
 static void evaluate_info_flags(char* argv)
 {
+    char csp_version[32];
+    get_cspydr_version(csp_version);
+
     if(streq(argv, "-h") || streq(argv, "--help"))
         printf(help_text, usage_text);
     else if(streq(argv, "-i") || streq(argv, "--info"))
-        printf(info_text, get_cspydr_version(), get_cspydr_build());
+        printf(info_text, get_cspydr_version(), csp_version);
     else if(streq(argv, "-v") || streq(argv, "--version"))
-        printf(version_text, get_cspydr_version(), get_cspydr_build());
+        printf(version_text, get_cspydr_version(), csp_version);
     else
     {
         LOG_ERROR_F("unknown or wrong used flag \"%s\", type \"cspydr --help\" to get help.", argv);
