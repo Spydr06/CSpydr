@@ -5,6 +5,10 @@ import "libc/time.csp";
 macro message(arg1, arg2) { "Hello, World!\n" }
 macro print_ln(str) { printf("%s\n", str) }
 
+#[
+    new multiline comments!
+]#
+
 namespace utils {
     fn add(a: i32, b: i32): i32 ret a + b;
     fn puts(str: &char) {

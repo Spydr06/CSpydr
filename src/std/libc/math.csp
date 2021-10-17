@@ -24,14 +24,14 @@ macro isnormal { __builtin_isnormal   }
 macro signbit  { __builtin_signbit    }
 
 # TODO: implement these macros when the compiler supports macro arguments
-##
+#[
 macro isgreater(x, y)      { ((x) > (y))              }
 macro isgreaterequal(x, y) { ((x) >= (y))             }
 macro isless(x, y)         { ((x) < (y))              }
 macro islessequal(x, y)    { ((x) <= (y))             }
 macro islessgreater(x, y)  { ((x) < (y) || (x) > (y)) }
 macro isunordered(x, y)    { TODO:                    }
-##
+]#
 
 type float_t: f32;
 type double_t: f64;

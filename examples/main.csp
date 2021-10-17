@@ -30,7 +30,7 @@ fn main(argc: i32, argv: &&char): i32 {
 }
 
 # Some plans for generics:
-##fn generic_test<T>() {
+#[fn generic_test<T>() {
     let x: T = 0;
     printf("typeof t: %s\n", typeof T);
 }
@@ -48,9 +48,9 @@ fn new_pair<K, V>(key: K, val: V): Pair {
     return pair;
 }
 
-##
+]#
 
 # Idea for macro argument implementation:
-##
+#[
 macro x(a, b) |: printf("-> $a is %d\n-> $b is %d", $a, $b) :|
-##
+]#
