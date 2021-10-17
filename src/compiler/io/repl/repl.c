@@ -161,8 +161,8 @@ static void handle_edit(char* input)
 
 #ifdef __linux
     char* editor = getenv("EDITOR");
-
-    if(strcmp(editor, "") == 0)
+    
+    if(!editor)
         editor = DEFAULT_EDITOR;
 #elif defined(_WIN32)
     char* editor = "notepad"
