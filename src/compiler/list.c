@@ -25,3 +25,13 @@ void free_list(List_T* list)
     vector_free(list->items);
     free(list);
 }
+
+void list_insert(List_T* list, size_t pos, void* item)
+{
+    vector_insert(&list->items, pos, item);
+}
+
+void list_remove(List_T* list, size_t pos)
+{
+    vector_remove(list->items, pos);
+}
