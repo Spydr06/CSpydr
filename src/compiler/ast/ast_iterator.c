@@ -132,20 +132,29 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
         case ND_BIT_OR:
         case ND_BIT_AND:
         case ND_ASSIGN:
-        case ND_MEMBER:
             ast_node(list, node->left, custom_args);
             ast_node(list, node->right, custom_args);
             if(node->data_type) 
                 ast_type(list, node->data_type, custom_args);
             break;
-        
+
+        // x.y
+        case ND_MEMBER:
+            ast_node(list, node->left, custom_args);
+            if(node->data_type) 
+            {
+                ast_node(list, node->right, custom_args);
+                ast_type(list, node->data_type, custom_args);
+            }
+            break;
+
         // op x
         case ND_NEG:
         case ND_BIT_NEG:
         case ND_NOT:
         case ND_REF:
         case ND_DEREF:
-            ast_node(list, node->left, custom_args);
+            ast_node(list, node->right, custom_args);
             if(node->data_type) 
                 ast_type(list, node->data_type, custom_args);
             break;
@@ -153,7 +162,7 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
         // x op
         case ND_INC:
         case ND_DEC:
-            ast_node(list, node->right, custom_args);
+            ast_node(list, node->left, custom_args);
             if(node->data_type) 
                 ast_type(list, node->data_type, custom_args);
             break;

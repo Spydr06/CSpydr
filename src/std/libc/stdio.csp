@@ -26,6 +26,12 @@ type FILE: struct _IO_FILE;
 
 type off_t: i64;
 
+# originally from libc/wchar.csp
+type mbstate_t: struct {
+    count: i32,
+    wchb: i32[4]
+};
+
 type fpos_t: struct {
     pos: off_t,
     state: mbstate_t

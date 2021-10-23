@@ -45,7 +45,7 @@ fn main(argc: i32, argv: &&char): i32 {
 
     va_test(3, 5);
 
-    utils::puts("Hello, World!");
+    utils::puts((&program_data).msg);
 
     <- 0;
 }

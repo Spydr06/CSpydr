@@ -7,11 +7,6 @@ import "libc/stdarg.csp";
 
 macro WEOF { (0xffffffff : wint_t) }
 
-type mbstate_t: struct {
-    count: i32,
-    wchb: i32[4]
-};
-
 type wint_t: u32;
 
 extern {

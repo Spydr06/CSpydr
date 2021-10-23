@@ -52,9 +52,9 @@ typedef enum
     POSTFIX    =  8, // x++, x--
     PREFIX     =  9, // -x, !x
     POWER      = 10, // x²
-    MEMBER     = 11, // x.y
-    CALL       = 12, // x(y)
-    INDEX      = 13, // x[y]
+    INDEX      = 11, // x[y]
+    MEMBER     = 12, // x.y
+    CALL       = 13, // x(y)
     CLOSURE    = 14, // (x + y) * z
     CAST       = 15, // x:i32
     HIGHEST    = 16,
@@ -704,7 +704,7 @@ List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok)
             ASTIdentifier_T* va_id = parse_simple_identifier(p);
             parser_consume(p, TOKEN_COLON, "expect `:` after argument name");
         
-            ASTObj_T* va_obj = init_ast_obj(OBJ_VA_LIST, p->tok);
+            ASTObj_T* va_obj = init_ast_obj(OBJ_FN_ARG, p->tok);
             parser_consume(p, TOKEN_VA_LIST, "expect `...` for variable length arguments");
             va_obj->id = va_id;
 
@@ -713,6 +713,8 @@ List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok)
 
             if(tok_is(p, TOKEN_COMMA))
                 throw_error(ERR_SYNTAX_ERROR, p->tok, "a va_list has to be the last argument in a function");
+
+            va_obj->data_type = primitives[TY_VA_LIST];
 
             list_push(arg_list, va_obj);
         
@@ -785,6 +787,8 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
         fn->return_type = parse_type(p);
     } else
         fn->return_type = primitives[TY_VOID];
+
+    fn->data_type = primitives[TY_FN];
 
     return fn;
 }
@@ -1598,11 +1602,9 @@ static ASTNode_T* parse_sizeof(Parser_T* p)
     parser_consume(p, TOKEN_SIZEOF, "expect `sizeof` keyword");
 
     // detect weather sizeof is called from an type, variable or array
-    if(tok_is(p, TOKEN_STAR) || tok_is(p, TOKEN_LBRACKET) || tok_is(p, TOKEN_STRUCT) || tok_is(p, TOKEN_ENUM))
         size_of->data_type = parse_type(p);
-    else
         // we still don't know if a typedef was passed. We simply parse it as an expression and evaluate it later in the optimizer
-        size_of->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+//        size_of->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
     
     return size_of;
 }
@@ -1637,6 +1639,9 @@ static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left)
 
     member->left = left;
     member->right = parse_expr(p, MEMBER, TOKEN_SEMICOLON);
+
+    if(member->right->kind != ND_ID)
+        throw_error(ERR_SYNTAX_ERROR, member->right->tok, "expect identifier");
 
     return member;
 }

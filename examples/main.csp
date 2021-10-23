@@ -1,12 +1,12 @@
 # a basic test program used for developing this programming language 
 
-##
+#[
 @derive(compile_type, transpile)
 @derive(include_dirs, {
     "./examples",
     "std"
 })
-##
+]#
 
 import "libc/wchar.csp"; 
 import "string.csp";
@@ -14,7 +14,7 @@ import "vec.csp";
 import "libc/stdio.csp";
 import "libc/stdlib.csp";
 
-macro message() |: init_str("Hello World") :|
+macro message() { init_str("Hello World") }
 
 fn main(argc: i32, argv: &&char): i32 {   
     let string: str = message!;

@@ -127,6 +127,8 @@ typedef enum {
     TY_ENUM,
 
     TY_LAMBDA,
+    TY_FN,
+    TY_VA_LIST,
     TY_TUPLE,
     TY_TEMPLATE,
 
@@ -142,7 +144,6 @@ typedef enum {
     OBJ_FN_ARG,
     OBJ_TYPEDEF,
     OBJ_NAMESPACE,
-    OBJ_VA_LIST,  // only for the validator
 
     OBJ_KIND_LEN
 } ASTObjKind_T;

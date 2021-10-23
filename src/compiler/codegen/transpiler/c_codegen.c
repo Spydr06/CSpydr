@@ -337,7 +337,12 @@ static bool c_gen_fn_arg_list(CCodegenData_T* cg, List_T* args)
      
         char* callee = c_gen_identifier(cg, arg->id);
 
-        if(arg->kind == OBJ_FN_ARG)
+        if(arg->data_type->kind == TY_VA_LIST)
+        {
+            print(cg, "...");
+            return true;    // va lists are always the last argument
+        }
+        else
         {
             if(arg->data_type->kind == TY_LAMBDA)
                 c_gen_type(cg, arg->data_type, callee);
@@ -351,11 +356,6 @@ static bool c_gen_fn_arg_list(CCodegenData_T* cg, List_T* args)
                 c_gen_array_brackets(cg, arg->data_type);
 
             print(cg, "%s", i < args->size - 1 ? "," : "");
-        }
-        else if(arg->kind == OBJ_VA_LIST)
-        {
-            print(cg, "...");
-            return true;    // va lists are always the last argument
         }
     }
     return false;

@@ -54,7 +54,7 @@ fn str_length(s: str): usize {
 }
 
 fn str_eq(a: str, b: str): bool {
-    <- strcmp(str_lit(a), str_lit(b)) == 0  ;
+    <- strcmp(str_lit(a), str_lit(b)) == 0;
 }
 
 fn str_append(s: str, c: char) {
