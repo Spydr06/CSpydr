@@ -646,7 +646,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             break;
         case ND_MEMBER:
             c_gen_expr(cg, node->left);
-            print(cg, "->"); // TODO: automatically switch between `->` and `.`
+            print(cg, node->is_ptr ? "->" : ".");
             c_gen_expr(cg, node->right);
             break;
         case ND_INDEX:

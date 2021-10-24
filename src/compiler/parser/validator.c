@@ -693,6 +693,7 @@ static void member(ASTNode_T* member, va_list args)
     }
 
     member->data_type = found->data_type;
+    member->is_ptr = is_ptr(v, member->left->data_type);
 }
 
 static void bin_operation(ASTNode_T* op, va_list args)

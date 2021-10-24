@@ -20,6 +20,7 @@ ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok)
 
     node->is_constant = false;
     node->is_default_case = false;
+    node->is_ptr = false;
 
     node->locals = NULL;
     node->data_type = NULL;
