@@ -23,6 +23,7 @@ typedef struct VALIDATOR_STRUCT
     VScope_T* current_scope;
     int scope_depth;
     ASTObj_T* current_function;
+    bool main_function_found;
 } Validator_T;
 
 // validator struct functions
@@ -170,6 +171,12 @@ void validate_ast(ASTProg_T* ast)
     ast_iterate(&main_iterator_list, ast, &v);
 
     end_scope(&v);
+
+    if(!v.main_function_found)
+    {
+        LOG_ERROR("[ERROR]: mssing entrypoint; no `main` function declared");
+        exit(1);
+    }
 }
 
 static ASTObj_T* search_in_current_scope(VScope_T* scope, char* id)
@@ -416,6 +423,43 @@ static void id_use(ASTIdentifier_T* id, va_list args)
 
 // obj
 
+static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
+{
+    ASTType_T* return_type = expand_typedef(v, main_fn->return_type);
+    if(return_type->kind != TY_I32)
+    {
+        throw_error(ERR_TYPE_ERROR, main_fn->return_type->tok, "expect type `i32` as return type for function `main`");
+        return;
+    }
+    
+    switch(main_fn->args->size)
+    {
+        case 0:
+            return;
+        
+        case 2:
+            // check the types of the two arguments
+            {
+                ASTType_T* arg0_type = expand_typedef(v, ((ASTObj_T*)main_fn->args->items[0])->data_type);
+                if(arg0_type->kind != TY_I32)
+                {
+                    throw_error(ERR_TYPE_ERROR, ((ASTObj_T*)main_fn->args->items[0])->data_type->tok, "expect first argument of function `main` to be `i32`");
+                    return;
+                }
+
+                ASTType_T* arg1_type = expand_typedef(v, ((ASTObj_T*)main_fn->args->items[1])->data_type);
+                if(arg1_type->kind != TY_PTR || arg1_type->base->kind != TY_PTR || arg1_type->base->base->kind != TY_CHAR)
+                {
+                    throw_error(ERR_TYPE_ERROR, ((ASTObj_T*)main_fn->args->items[1])->data_type->tok, "expect first argument of function `main` to be `&&char`");
+                    return;
+                }
+            } break;
+
+        default:
+            throw_error(ERR_MISC, main_fn->tok, "expect 0 or 2 arguments for function `main`, got %ld", main_fn->args->size);
+    }
+}
+
 static void fn_start(ASTObj_T* fn, va_list args)
 {
     GET_VALIDATOR(args);
@@ -426,6 +470,13 @@ static void fn_start(ASTObj_T* fn, va_list args)
 static void fn_end(ASTObj_T* fn, va_list args)
 {
     GET_VALIDATOR(args);
+
+    if(strcmp(fn->id->callee, "main") == 0)
+    {
+        v->main_function_found = true;
+        check_main_fn(v, fn);
+    }
+
     end_scope(v);
     v->current_function = NULL;
 }
