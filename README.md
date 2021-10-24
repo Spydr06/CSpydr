@@ -24,7 +24,7 @@ A list of all the features, that are/will be implemented.
 - [x] lexing symbols
 - [x] parsing an AST
 - [x] validating the code (happens during parsing)
-- [ ] type evaluator
+- [x] type evaluator
 - [ ] type validator
 - [x] function validation
 - [x] CLI and error handling
