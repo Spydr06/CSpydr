@@ -291,6 +291,7 @@ void init_ast_prog(ASTProg_T* prog, const char* main_file_path, const char* targ
 void free_ast_prog(ASTProg_T* prog);
 
 const char* obj_kind_to_str(ASTObjKind_T kind);
+const char* type_kind_to_str(ASTTypeKind_T kind);
 
 void merge_ast_progs(ASTProg_T* dest, ASTProg_T* src);
 

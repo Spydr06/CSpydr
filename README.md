@@ -98,7 +98,7 @@ import "libc/stdio.csp";
 
 fn main(argv: i32, argc: &&char): i32
 {
-    let message: &char = "Hello, World!";
+    let message = "Hello, World!";
     puts(message);
 
     <- 0;

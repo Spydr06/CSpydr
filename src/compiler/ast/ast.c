@@ -160,3 +160,98 @@ const char* obj_kind_to_str(ASTObjKind_T kind)
             return "<undefined ASTObj_T kind>";
     }
 }
+
+const char* type_kind_to_str(ASTTypeKind_T kind)
+{
+    switch (kind) {
+        case TY_I8:
+            return "i8";
+        case TY_I16:
+            return "i16";
+        case TY_I32:
+            return "i32";
+        case TY_I64:
+            return "i64";
+        case TY_U8:
+            return "u8";
+        case TY_U16:
+            return "u16";
+        case TY_U32:
+            return "u32";
+        case TY_U64:
+            return "u64";
+        case TY_F32:
+            return "f32";
+        case TY_F64:
+            return "f64";
+        case TY_F80:
+            return "f80";
+        case TY_BOOL:
+            return "bool";
+        case TY_VOID:
+            return "void";
+        case TY_CHAR:
+            return "char";
+        case TY_PTR:
+            return "&";
+        case TY_ARR:
+            return "[]";
+        case TY_STRUCT:
+        case TY_OPAQUE_STRUCT:
+            return "struct";
+            return "struct";
+        case TY_ENUM:
+            return "enum";
+        case TY_LAMBDA:
+        case TY_FN:
+            return "fn";
+        case TY_VA_LIST:
+            return "va list";
+        case TY_TUPLE:
+            return "tuple";
+        case TY_TEMPLATE:
+            return "<template>";
+        case TY_UNDEF:
+            return "<undefined>";
+        default:
+            return "<undefined ASTType_T kind>";
+    }
+}
+
+void ast_type_to_str(char* dest, ASTType_T* type)
+{
+    switch(type->kind)
+    {
+        case TY_I8:
+        case TY_I16:
+        case TY_I32:
+        case TY_I64:
+        case TY_U8:
+        case TY_U16:
+        case TY_U32:
+        case TY_U64:
+        case TY_F32:
+        case TY_F64:
+        case TY_F80:
+        case TY_BOOL:
+        case TY_VOID:
+        case TY_CHAR:
+            strcat(dest, type_kind_to_str(type->kind));
+            break;
+        
+        case TY_PTR:
+            strcat(dest, "&");
+            ast_type_to_str(dest, type->base);
+            break;
+        
+        case TY_ARR:
+            ast_type_to_str(dest, type->base);
+            strcat(dest, "[]");
+            break;
+
+        case TY_TEMPLATE:
+        case TY_UNDEF:
+            strcat(dest, type->id->callee);
+            break;
+    }
+}
