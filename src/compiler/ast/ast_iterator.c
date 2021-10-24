@@ -72,7 +72,7 @@ static void ast_obj(ASTIteratorList_T* list, ASTObj_T* obj, va_list custom_args)
         case OBJ_GLOBAL:
             ast_id(list, true, obj->id, custom_args);
             ast_type(list, obj->data_type, custom_args);
-            //ast_node(list, obj->value, custom_args);
+            ast_node(list, obj->value, custom_args);
             break;
 
         default:

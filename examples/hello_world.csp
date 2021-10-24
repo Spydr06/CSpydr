@@ -40,10 +40,14 @@ fn delay(seconds: i32)
         time(&current);
 }
 
+let automatic_type = "x";
+
 fn main(argc: i32, argv: &&char): i32 {
     program_data = {"Hello World", 0x00}: data;
 
     va_test(3, 5);
+
+    let automatic_type_local = 0;
 
     utils::puts((&program_data).msg);
 

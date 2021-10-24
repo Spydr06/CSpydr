@@ -714,7 +714,7 @@ List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok)
             if(tok_is(p, TOKEN_COMMA))
                 throw_error(ERR_SYNTAX_ERROR, p->tok, "a va_list has to be the last argument in a function");
 
-            va_obj->data_type = primitives[TY_VA_LIST];
+            va_obj->data_type = (ASTType_T*) primitives[TY_VA_LIST];
 
             list_push(arg_list, va_obj);
         
@@ -786,9 +786,9 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
         parser_advance(p);
         fn->return_type = parse_type(p);
     } else
-        fn->return_type = primitives[TY_VOID];
+        fn->return_type = (ASTType_T*) primitives[TY_VOID];
 
-    fn->data_type = primitives[TY_FN];
+    fn->data_type = (ASTType_T*) primitives[TY_FN];
 
     return fn;
 }
@@ -817,16 +817,26 @@ static ASTObj_T* parse_global(Parser_T* p)
         throw_error(ERR_SYNTAX_ERROR, p->tok, "expect `let` keyword for variable definition");
     
     global->id = parse_simple_identifier(p);
-    parser_consume(p, TOKEN_COLON, "expect `:` after variable name");
 
-    global->data_type = parse_type(p);
-
-    if(tok_is(p, TOKEN_ASSIGN))
+    if(tok_is(p, TOKEN_COLON))
     {
-        parser_advance(p);
+        parser_consume(p, TOKEN_COLON, "expect `:` after variable name");
+        global->data_type = parse_type(p);
+
+        if(tok_is(p, TOKEN_ASSIGN))
+        {
+            parser_advance(p);
+            global->value = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+            /*if(!global->value->is_constant)
+                throw_error(ERR_UNDEFINED, p->tok, "assigned value unknown at compile-time");*/
+        }
+    }
+    else
+    {
+        global->data_type = NULL;
+
+        parser_consume(p, TOKEN_ASSIGN, "expect assignment `=` after typeless variable definition");
         global->value = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
-        /*if(!global->value->is_constant)
-            throw_error(ERR_UNDEFINED, p->tok, "assigned value unknown at compile-time");*/
     }
     
     parser_consume(p, TOKEN_SEMICOLON, "expect `;` after variable definition");
@@ -951,11 +961,7 @@ static ASTNode_T* parse_return(Parser_T* p)
     {
         if(p->cur_fn->return_type->kind == TY_VOID)
             throw_error(ERR_TYPE_CAST_WARN, ret->tok, "cannot return value from function with type `void`, expect `;`");
-
-        ASTNode_T* cast = init_ast_node(ND_CAST, p->tok);
-        cast->left = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
-        cast->data_type = p->cur_fn->return_type;
-        ret->return_val = cast;
+        ret->return_val = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
     }
     parser_consume(p, TOKEN_SEMICOLON, "expect `;` after return statement");
 
@@ -1115,26 +1121,38 @@ static ASTNode_T* parse_local(Parser_T* p)
     else
         throw_error(ERR_SYNTAX_ERROR, p->tok, "expect `let` keyword for variable definition");
     
-    
     ASTNode_T* id = init_ast_node(ND_ID, p->tok);
     local->id = parse_simple_identifier(p);
     id->id = local->id;
     
-    parser_consume(p, TOKEN_COLON, "expect `:` after variable name");
-
-    local->data_type = parse_type(p);
-    
     ASTNode_T* value = init_ast_node(ND_NOOP, p->tok);
 
-    if(tok_is(p, TOKEN_ASSIGN))
+    if(tok_is(p, TOKEN_COLON))
+    {
+        parser_consume(p, TOKEN_COLON, "expect `:` after variable name");
+
+        local->data_type = parse_type(p);
+
+        if(tok_is(p, TOKEN_ASSIGN))
+        {
+            ASTNode_T* assignment = init_ast_node(ND_ASSIGN, p->tok);
+            parser_advance(p);
+            assignment->left = id; 
+            assignment->right = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+            value = assignment;
+        }
+    }
+    else
     {
         ASTNode_T* assignment = init_ast_node(ND_ASSIGN, p->tok);
-        parser_advance(p);
-        assignment->left = id; 
+        parser_consume(p, TOKEN_ASSIGN, "expect assignment `=` after typeless variable declaration");
+        assignment->left = id;
         assignment->right = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
         value = assignment;
+
+        local->value = assignment->right;
     }
-    
+
     parser_consume(p, TOKEN_SEMICOLON, "expect `;` after variable definition");
 
     if(!p->cur_block || p->cur_block->kind != ND_BLOCK)
@@ -1337,7 +1355,7 @@ static ASTNode_T* parse_bool_lit(Parser_T* p)
     parser_advance(p);
 
     if(!bool_lit->data_type)
-        bool_lit->data_type = primitives[TY_BOOL];
+        bool_lit->data_type = (ASTType_T*) primitives[TY_BOOL];
 
     return bool_lit;
 }
@@ -1348,7 +1366,7 @@ static ASTNode_T* parse_nil_lit(Parser_T* p)
     parser_advance(p);
 
     if(!nil_lit->data_type)
-        nil_lit->data_type = &(ASTType_T){.kind = TY_PTR, .is_primitive = true, .size = VOID_S, .base = primitives[TY_VOID]};
+        nil_lit->data_type = (ASTType_T*) void_ptr_type;
 
     return nil_lit;
 }
@@ -1373,6 +1391,7 @@ static ASTNode_T* parse_str_lit(Parser_T* p)
     ASTNode_T* str_lit = init_ast_node(ND_STR, p->tok);
     str_lit->str_val = str_lit->tok->value;
     str_lit->is_constant = true;
+    str_lit->data_type = (ASTType_T*) char_ptr_type;
     parser_consume(p, TOKEN_STRING, "expect string literal (\"abc\", \"wxyz\", ...)");
     return str_lit;
 }
@@ -1474,7 +1493,7 @@ static ASTNode_T* parse_bool_op(Parser_T* p, ASTNode_T* left)
     infix->left = left;
     infix->right = parse_expr(p, expr_parse_fns[infix->tok->type].prec, TOKEN_EOF);
 
-    infix->data_type = primitives[TY_BOOL]; // set the data type, since == != > >= < <= will always result in booleans
+    infix->data_type = (ASTType_T*) primitives[TY_BOOL]; // set the data type, since == != > >= < <= will always result in booleans
 
     return infix;
 }

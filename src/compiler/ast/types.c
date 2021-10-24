@@ -11,7 +11,7 @@ ASTNode_T* constant_literals[TOKEN_EOF] = { // sets value literals, who are alwa
     [TOKEN_NIL]   = &(ASTNode_T){.kind = ND_NIL, .int_val = 0,       .is_constant = true},
 };
 
-ASTType_T* primitives[NUM_TYPES] = {    // sets the primitive data types, who are always the same to save memory
+const ASTType_T* primitives[NUM_TYPES] = {    // sets the primitive data types, who are always the same to save memory
     [TY_I8]  = &(ASTType_T){.kind = TY_I8,    .is_primitive = true, .size = I8_S},
     [TY_I16] = &(ASTType_T){.kind = TY_I16,   .is_primitive = true, .size = I16_S},
     [TY_I32] = &(ASTType_T){.kind = TY_I32,   .is_primitive = true, .size = I32_S},
@@ -109,6 +109,30 @@ const bool type_compatibility_map[NUM_TYPES][NUM_TYPES] = {
     [TY_OPAQUE_STRUCT] = {0,0,0, 0,   0,  0,   0,   0,   0,   0,   0,   0,    0,    0,    0,   0,     1,      1,             0,     0,     0,     0,        0},
 };
 
+const ASTType_T* char_ptr_type = &(ASTType_T)
+{
+    .kind = TY_PTR,
+    .size = PTR_S, 
+    .base = &(ASTType_T)
+    {
+        .kind = TY_CHAR,
+        .is_primitive = true,
+        .size = CHAR_S
+    }
+};
+
+const ASTType_T* void_ptr_type = &(ASTType_T)
+{
+    .kind = TY_PTR,
+    .size = PTR_S,
+    .base = &(ASTType_T)
+    {
+        .kind = TY_VOID,
+        .is_primitive = true,
+        .size = VOID_S
+    }
+};
+
 ASTTypeKind_T get_datatype_from_str(char* str)
 {
     for(int i = 0; i < NUM_TYPES; i++)
@@ -120,7 +144,7 @@ ASTTypeKind_T get_datatype_from_str(char* str)
 
 ASTType_T* get_primitive_type(char* type)
 {
-    ASTType_T* prim = primitives[get_datatype_from_str(type)];
+    const ASTType_T* prim = primitives[get_datatype_from_str(type)];
 
     if(prim) 
     {

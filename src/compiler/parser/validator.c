@@ -22,6 +22,7 @@ typedef struct VALIDATOR_STRUCT
 {
     VScope_T* current_scope;
     int scope_depth;
+    ASTObj_T* current_function;
 } Validator_T;
 
 // validator struct functions
@@ -59,33 +60,28 @@ static void fn_arg_start(ASTObj_T* arg, va_list args);
 static void fn_arg_end(ASTObj_T* arg, va_list args);
 
 // node
+// statements
 static void block_start(ASTNode_T* block, va_list args);
 static void block_end(ASTNode_T* block, va_list args);
+static void return_end(ASTNode_T* ret, va_list args);
+// expressions
 static void call(ASTNode_T* call, va_list args);
 static void identifier(ASTNode_T* id, va_list args);
 static void closure(ASTNode_T* closure, va_list args);
 static void reference(ASTNode_T* ref, va_list args);
 static void dereference(ASTNode_T* deref, va_list args);
 static void member(ASTNode_T* member, va_list args);
-
 static void bin_operation(ASTNode_T* op, va_list args);
 static void modulo(ASTNode_T* mod, va_list args);
-
 static void negate(ASTNode_T* neg, va_list args);
 static void bitwise_negate(ASTNode_T* neg, va_list args);
 static void not(ASTNode_T* not, va_list args);
-
 static void equals(ASTNode_T* equals, va_list args);
 static void lt_gt(ASTNode_T* lt_gt, va_list args);
 static void and_or(ASTNode_T* and_or, va_list args);
-
 static void bitwise_op(ASTNode_T* op, va_list args);
-
 static void inc_dec(ASTNode_T* op, va_list args);
-
-// "index" was taken by string.h
-static void index_(ASTNode_T* index, va_list args);
-
+static void index_(ASTNode_T* index, va_list args); // "index" was taken by string.h
 static void cast(ASTNode_T* cast, va_list args);
 
 // iterator configuration
@@ -98,8 +94,12 @@ static ASTIteratorList_T main_iterator_list =
 
     .node_end_fns = 
     {
-        [ND_ID] = identifier,
+        // statements
         [ND_BLOCK] = block_end,
+        [ND_RETURN] = return_end,
+
+        // expressions
+        [ND_ID] = identifier,
         [ND_CALL] = call,
         [ND_CLOSURE] = closure,
         [ND_REF] = reference,
@@ -340,6 +340,7 @@ static bool is_number(Validator_T* v, ASTType_T* type)
         case TY_F32:
         case TY_F64:
         case TY_F80:
+        case TY_CHAR:
             return true;
 
         default:
@@ -419,12 +420,14 @@ static void fn_start(ASTObj_T* fn, va_list args)
 {
     GET_VALIDATOR(args);
     begin_scope(v);
+    v->current_function = fn;
 }
 
 static void fn_end(ASTObj_T* fn, va_list args)
 {
     GET_VALIDATOR(args);
     end_scope(v);
+    v->current_function = NULL;
 }
 
 static void namespace_start(ASTObj_T* namespace, va_list args)
@@ -456,16 +459,34 @@ static void global_start(ASTObj_T* global, va_list args)
 
 static void global_end(ASTObj_T* global, va_list args)
 {
+    if(!global->data_type)
+    {
+        if(!global->value->data_type)
+        {
+            throw_error(ERR_TYPE_ERROR, global->value->tok, "could not resolve datatype for `%s`", global->id->callee);
+            return;
+        }
 
+        global->data_type = global->value->data_type;
+    }
 }
 
 static void local_start(ASTObj_T* local, va_list args)
 {
-   
 }
 
 static void local_end(ASTObj_T* local, va_list args)
 {
+    if(!local->data_type)
+    {
+        if(!local->value->data_type)
+        {
+            throw_error(ERR_TYPE_ERROR, local->value->tok, "could not resolve datatype for `%s`", local->id->callee);
+            return;
+        }
+
+        local->data_type = local->value->data_type;
+    }
 }
 
 static void fn_arg_start(ASTObj_T* arg, va_list args)
@@ -480,6 +501,7 @@ static void fn_arg_end(ASTObj_T* arg, va_list args)
 }
 
 // node
+// statements
 
 static void block_start(ASTNode_T* block, va_list args)
 {
@@ -492,6 +514,20 @@ static void block_end(ASTNode_T* block, va_list args)
     GET_VALIDATOR(args);
     end_scope(v);
 }
+
+static void return_end(ASTNode_T* ret, va_list args)
+{
+    GET_VALIDATOR(args);
+    if(!v->current_function)
+    {
+        throw_error(ERR_SYNTAX_ERROR, ret->tok, "unexpected return statement outside of function");
+        return;
+    }
+
+    // type checking already done in the parser
+}
+
+// expressions
 
 static void call(ASTNode_T* call, va_list args)
 {
@@ -642,12 +678,12 @@ static void bitwise_negate(ASTNode_T* neg, va_list args)
 static void not(ASTNode_T* not, va_list args)
 {
 
-    not->data_type = primitives[TY_BOOL];
+    not->data_type = (ASTType_T*) primitives[TY_BOOL];
 }
 
 static void equals(ASTNode_T* equals, va_list args)
 {
-    equals->data_type = primitives[TY_BOOL];
+    equals->data_type = (ASTType_T*) primitives[TY_BOOL];
 }
 
 static void lt_gt(ASTNode_T* op, va_list args)
@@ -666,7 +702,7 @@ static void lt_gt(ASTNode_T* op, va_list args)
         return;
     }
 
-    op->data_type = primitives[TY_BOOL];
+    op->data_type = (ASTType_T*) primitives[TY_BOOL];
 }
 
 static void and_or(ASTNode_T* op, va_list args)

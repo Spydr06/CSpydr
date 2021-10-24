@@ -29,12 +29,14 @@ struct StrTypeIdx {
 };
 extern const struct StrTypeIdx str_type_map[NUM_TYPES];
 
-extern ASTType_T* primitives[NUM_TYPES];
+extern const ASTType_T* primitives[NUM_TYPES];
 
 extern const int type_byte_size_map[NUM_TYPES];
 extern ASTNode_T* constant_literals[TOKEN_EOF];
 
 extern const bool type_cast_map[NUM_TYPES][NUM_TYPES];
+extern const ASTType_T* char_ptr_type;
+extern const ASTType_T* void_ptr_type;
 
 ASTTypeKind_T get_datatype_from_str(char* str);
 ASTType_T* get_primitive_type(char* type);
