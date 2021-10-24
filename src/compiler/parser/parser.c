@@ -1561,6 +1561,10 @@ static List_T* parse_call_templates(Parser_T* p)
 static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left)
 {
     ASTNode_T* call = init_ast_node(ND_CALL, p->tok);
+
+    if(left->kind != ND_ID)
+        throw_error(ERR_SYNTAX_ERROR, p->tok, "can only call identifiers");
+
     call->expr = left;  // the expression to call
 
     if(tok_is(p, TOKEN_LT))

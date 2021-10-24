@@ -22,7 +22,7 @@ fn init_str(string: &char): str {
     let s: str = malloc(sizeof str_s);
 
     if string != nil {
-        let length: usize = strlen(string);
+        let length = strlen(string);
         s.alloc = length + 1;
         s.data = malloc(s.alloc);
         memcpy(s.data, string, length);

@@ -531,6 +531,40 @@ static void return_end(ASTNode_T* ret, va_list args)
 
 static void call(ASTNode_T* call, va_list args)
 {
+    GET_VALIDATOR(args);
+
+    ASTObj_T* called_obj = search_identifier(v->current_scope, call->expr->id);
+    if(!called_obj)
+    {
+        throw_error(ERR_UNDEFINED, call->expr->tok, "undefined identifier `%s`");
+        return;
+    }
+
+    switch(called_obj->kind)
+    {
+        case OBJ_FUNCTION:
+            {
+                call->data_type = called_obj->return_type;
+                // todo: add argument checking
+            } break;
+        
+        case OBJ_GLOBAL:
+        case OBJ_LOCAL:
+        case OBJ_FN_ARG:
+            {
+                if(called_obj->data_type->kind != TY_LAMBDA)
+                {
+                    throw_error(ERR_TYPE_ERROR, call->expr->tok, "can only call variables of lambda type, got `%d`", called_obj->data_type->kind);
+                    return;
+                }
+
+                call->data_type = called_obj->data_type->base;
+            } break;
+        
+        default:
+            throw_error(ERR_TYPE_ERROR, call->expr->tok, "cannot call %s `%s`", obj_kind_to_str(called_obj->kind), called_obj->id->callee);
+            return;
+    }
 }
 
 static void identifier(ASTNode_T* id, va_list args)

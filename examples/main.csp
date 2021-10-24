@@ -17,7 +17,7 @@ import "libc/stdlib.csp";
 macro message() { init_str("Hello World") }
 
 fn main(argc: i32, argv: &&char): i32 {   
-    let string: str = message!;
+    let string = message!;
     str_append(string, '!');
 
     puts(str_lit(string));
