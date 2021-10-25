@@ -702,13 +702,13 @@ static void bin_operation(ASTNode_T* op, va_list args)
 
     if(!is_number(v, op->left->data_type) && !is_ptr(v, op->left->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->left->tok, "expect integer or pointer type");
+        throw_error(ERR_TYPE_ERROR, op->tok, "expect integer or pointer type on left argument");
         return;
     }
 
     if(!is_number(v, op->right->data_type) && !is_ptr(v, op->right->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->right->tok, "expect integer or pointer type");
+        throw_error(ERR_TYPE_ERROR, op->tok, "expect integer or pointer type on right argument");
         return;
     }
 
@@ -721,13 +721,13 @@ static void modulo(ASTNode_T* mod, va_list args)
 
     if(!is_integer(v, mod->left->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, mod->left->tok, "expect integer type for modulo operation");
+        throw_error(ERR_TYPE_ERROR, mod->tok, "expect integer type for modulo operation");
         return;
     }
 
     if(!is_integer(v, mod->right->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, mod->right->tok, "expect integer type for modulo operation");
+        throw_error(ERR_TYPE_ERROR, mod->tok, "expect integer type for modulo operation");
         return;
     }
 
@@ -740,7 +740,7 @@ static void negate(ASTNode_T* neg, va_list args)
 
     if(!is_number(v, neg->left->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, neg->left->tok, "can only do bitwise operations on integer types");
+        throw_error(ERR_TYPE_ERROR, neg->tok, "can only do bitwise operations on integer types");
         return;
     }
 
@@ -754,7 +754,7 @@ static void bitwise_negate(ASTNode_T* neg, va_list args)
 
     if(!is_integer(v, neg->right->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, neg->right->tok, "expect integer type for bitwise negation");
+        throw_error(ERR_TYPE_ERROR, neg->tok, "expect integer type for bitwise negation");
         return;
     }
 
@@ -763,7 +763,6 @@ static void bitwise_negate(ASTNode_T* neg, va_list args)
 
 static void not(ASTNode_T* not, va_list args)
 {
-
     not->data_type = (ASTType_T*) primitives[TY_BOOL];
 }
 
@@ -778,13 +777,13 @@ static void lt_gt(ASTNode_T* op, va_list args)
 
     if(!is_number(v, op->left->data_type) && !is_ptr(v, op->left->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->left->tok, "expect integer or pointer type");
+        throw_error(ERR_TYPE_ERROR, op->tok, "expect integer or pointer type");
         return;
     }
 
     if(!is_number(v, op->right->data_type) && !is_ptr(v, op->right->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->right->tok, "expect integer or pointer type");
+        throw_error(ERR_TYPE_ERROR, op->tok, "expect integer or pointer type");
         return;
     }
 
@@ -797,13 +796,13 @@ static void and_or(ASTNode_T* op, va_list args)
 
     if(!is_bool(v, op->left->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->left->tok, "expect boolean type");
+        throw_error(ERR_TYPE_ERROR, op->tok, "expect boolean type");
         return;
     }
 
     if(!is_bool(v, op->right->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->right->tok, "expect boolean type");
+        throw_error(ERR_TYPE_ERROR, op->tok, "expect boolean type");
         return;
     }
 
@@ -816,13 +815,13 @@ static void bitwise_op(ASTNode_T* op, va_list args)
 
     if(!is_integer(v, op->left->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->left->tok, "can only do bitwise operations on integer types");
+        throw_error(ERR_TYPE_ERROR, op->tok, "can only do bitwise operations on integer types");
         return;
     }
 
     if(!is_integer(v, op->right->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->right->tok, "can only do bitwise operations with integer types");
+        throw_error(ERR_TYPE_ERROR, op->tok, "can only do bitwise operations with integer types");
         return;
     }
 
@@ -835,7 +834,7 @@ static void inc_dec(ASTNode_T* op, va_list args)
 
     if(!is_number(v, op->left->data_type) && !is_ptr(v, op->left->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->left->tok, "expect a number type");
+        throw_error(ERR_TYPE_ERROR, op->tok, "expect a number type");
         return;
     }
 
@@ -853,13 +852,13 @@ static void index_(ASTNode_T* index, va_list args)
 
     if(left_type->kind != TY_ARR && left_type->kind != TY_PTR)
     {
-        throw_error(ERR_TYPE_ERROR, index->left->tok, "cannot get an index value; wrong type");
+        throw_error(ERR_TYPE_ERROR, index->tok, "cannot get an index value; wrong type");
         return;
     }
 
     if(!is_integer(v, index->expr->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, index->expr->tok, "expect an integer type");
+        throw_error(ERR_TYPE_ERROR, index->tok, "expect an integer type");
         return;
     }
 
