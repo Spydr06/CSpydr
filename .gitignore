@@ -75,5 +75,6 @@ a.out.c
 *.cmake
 CMakeCache.txt
 Makefile*
+install_manifest.txt
 CMakeFiles/
 bin/
