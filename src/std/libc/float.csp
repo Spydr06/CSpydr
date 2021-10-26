@@ -1,41 +1,41 @@
 # a basic implementation of the libc float.h header for the CSpydr programming language
 
 # TODO: all of these macros are highly platform- and compiler-dependant. I will rewrite them in the near future.
-macro FLT_RADIX |: 2 :|
+macro FLT_RADIX { 2 }
 
-macro FLT_MANT_DIG |: 24 :|
-macro DBL_MANT_DIG |: 53 :|
-macro LDBL_MANT_DIG |: 64 :|
+macro FLT_MANT_DIG { 24 }
+macro DBL_MANT_DIG { 53 }
+macro LDBL_MANT_DIG { 64 }
 
-macro FLT_DIG |: 6 :|
-macro DBL_DIG |: 15 :|
-macro LDBL_DIG |: 18 :|
+macro FLT_DIG { 6 }
+macro DBL_DIG { 15 }
+macro LDBL_DIG { 18 }
 
-macro FLT_MIN_EXP |: (-125) :|
-macro DBL_MIN_EXP |: (-1021) :|
-macro LDBL_MIN_EXP |: (-16381) :|
+macro FLT_MIN_EXP { (-125) }
+macro DBL_MIN_EXP { (-1021) }
+macro LDBL_MIN_EXP { (-16381) }
 
-macro FLT_MIN_10_EXP |: (-37) :|
-macro DBL_MIN_10_EXP |: (-307) :|
-macro LDBL_MIN_10_EXP |: (-4931) :|
+macro FLT_MIN_10_EXP { (-37) }
+macro DBL_MIN_10_EXP { (-307) }
+macro LDBL_MIN_10_EXP { (-4931) }
 
-macro FLT_MAX_EXP |: 128 :|
-macro DBL_MAX_EXP |: 1024 :|
-macro LDBL_MAX_EXP |: 4932 :|
+macro FLT_MAX_EXP { 128 }
+macro DBL_MAX_EXP { 1024 }
+macro LDBL_MAX_EXP { 4932 }
 
-macro FLT_MAX_10_EXP |: 38 :|
-macro DBL_MAX_10_EXP |: 308 :|
-macro LDBL_MAX_10_EXP |: 16384 :|
+macro FLT_MAX_10_EXP { 38 }
+macro DBL_MAX_10_EXP { 308 }
+macro LDBL_MAX_10_EXP { 16384 }
 
 # TODO: build implementations for following macros (currently through the C Compiler)
-macro FLT_MAX |: __FLT_MAX__ :|
-macro DBL_MAX |: __DBL_MAX__ :|
-macro LDBL_MAX |: __LDBL_MAX__ :|
+macro FLT_MAX { __FLT_MAX__ }
+macro DBL_MAX { __DBL_MAX__ }
+macro LDBL_MAX { __LDBL_MAX__ }
 
-macro FLT_EPSILON |: __FLT_EPSILON__ :|
-macro DBL_EPSILON |: __DBL_EPSILON__ :|
-macro LDBL_EPSILON |: __LDBL_EPSILON__ :|
+macro FLT_EPSILON { __FLT_EPSILON__ }
+macro DBL_EPSILON { __DBL_EPSILON__ }
+macro LDBL_EPSILON { __LDBL_EPSILON__ }
 
-macro FLT_MIN |: __FLT_MIN__ :|
-macro DBL_MIN |: __DBL_MIN__ :|
-macro LDBL_MIN |: __LDBL_MIN__ :|
+macro FLT_MIN { __FLT_MIN__ }
+macro DBL_MIN { __DBL_MIN__ }
+macro LDBL_MIN { __LDBL_MIN__ }
