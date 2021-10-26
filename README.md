@@ -69,6 +69,7 @@ cd ./cspydr
 ```bash
 cmake .
 make
+sudo make install
 ```
 
 ## Usage
