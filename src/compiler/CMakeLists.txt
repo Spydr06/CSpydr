@@ -13,3 +13,5 @@ set_target_properties(cspc PROPERTIES LINKER_LANGUAGE C)
 # build the main executable
 add_executable(cspydr main.c)
 target_link_libraries(cspydr cspc)
+
+install(PROGRAMS ${PROJECT_SOURCE_DIR}/bin/cspydr DESTINATION bin)

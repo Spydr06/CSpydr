@@ -13,3 +13,5 @@ add_subdirectory(src/compiler)
 add_subdirectory(lib)
 # compiler tests
 add_subdirectory(tests/compiler)
+# cspydr standard library
+add_subdirectory(src/std)
