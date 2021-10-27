@@ -118,6 +118,7 @@ int main(int argc, char* argv[])
 {
     atexit(llvm_exit_hook);
 
+    exec_name = argv[0]; // save the execution name for later use
     if(argc == 1)
     {
         LOG_ERROR_F("[Error] Too few arguments given.\n" COLOR_RESET "%s", usage_text);

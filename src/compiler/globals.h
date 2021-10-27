@@ -26,4 +26,6 @@ bool __CSP_GLOBAL silent;
 bool __CSP_GLOBAL print_llvm;
 bool __CSP_GLOBAL print_c;
 
+char __CSP_GLOBAL* exec_name;
+
 #endif

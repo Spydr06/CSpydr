@@ -18,7 +18,8 @@ namespace utils {
 
 type data: struct {
     msg: &char,
-    exit: i8
+    exit: i8,
+    exit: i64
 };
 
 let program_data: data;

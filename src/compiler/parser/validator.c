@@ -85,6 +85,10 @@ static void inc_dec(ASTNode_T* op, va_list args);
 static void index_(ASTNode_T* index, va_list args); // "index" was taken by string.h
 static void cast(ASTNode_T* cast, va_list args);
 
+//types
+static void struct_type(ASTType_T* s_type, va_list args);
+static void enum_type(ASTType_T* e_type, va_list args);
+
 // iterator configuration
 static ASTIteratorList_T main_iterator_list = 
 {
@@ -100,62 +104,63 @@ static ASTIteratorList_T main_iterator_list =
         [ND_RETURN] = return_end,
 
         // expressions
-        [ND_ID] = identifier,
-        [ND_CALL] = call,
+        [ND_ID]      = identifier,
+        [ND_CALL]    = call,
         [ND_CLOSURE] = closure,
-        [ND_REF] = reference,
-        [ND_DEREF] = dereference,
-        [ND_MEMBER] = member,
-        [ND_ADD] = bin_operation,
-        [ND_SUB] = bin_operation,
-        [ND_MUL] = bin_operation,
-        [ND_DIV] = bin_operation,
-        [ND_MOD] = modulo,
-        [ND_NEG] = negate,
+        [ND_REF]     = reference,
+        [ND_DEREF]   = dereference,
+        [ND_MEMBER]  = member,
+        [ND_ADD]     = bin_operation,
+        [ND_SUB]     = bin_operation,
+        [ND_MUL]     = bin_operation,
+        [ND_DIV]     = bin_operation,
+        [ND_MOD]     = modulo,
+        [ND_NEG]     = negate,
         [ND_BIT_NEG] = bitwise_negate,
-        [ND_NOT] = not,
-        [ND_EQ] = equals,
-        [ND_NE] = equals,
-        [ND_LT] = lt_gt,
-        [ND_LE] = lt_gt,
-        [ND_GT] = lt_gt,
-        [ND_GE] = lt_gt,
-        [ND_AND] = and_or,
-        [ND_OR] = and_or,
-        [ND_XOR] = and_or,
-        [ND_LSHIFT] = bitwise_op,
-        [ND_RSHIFT] = bitwise_op,
-        [ND_BIT_OR] = bitwise_op,
+        [ND_NOT]     = not,
+        [ND_EQ]      = equals,
+        [ND_NE]      = equals,
+        [ND_LT]      = lt_gt,
+        [ND_LE]      = lt_gt,
+        [ND_GT]      = lt_gt,
+        [ND_GE]      = lt_gt,
+        [ND_AND]     = and_or,
+        [ND_OR]      = and_or,
+        [ND_XOR]     = and_or,
+        [ND_LSHIFT]  = bitwise_op,
+        [ND_RSHIFT]  = bitwise_op,
+        [ND_BIT_OR]  = bitwise_op,
         [ND_BIT_AND] = bitwise_op,
-        [ND_INC] = inc_dec,
-        [ND_DEC] = inc_dec,
-        [ND_INDEX] = index_,
-        [ND_CAST] = cast,
+        [ND_INC]     = inc_dec,
+        [ND_DEC]     = inc_dec,
+        [ND_INDEX]   = index_,
+        [ND_CAST]    = cast,
     },
 
     .type_fns = 
     {
-
+        [TY_STRUCT] = struct_type,
+        [TY_ENUM]   = enum_type,
     },
 
     .obj_start_fns = 
     {
-        [OBJ_FUNCTION] = fn_start,
+        [OBJ_FUNCTION]  = fn_start,
         [OBJ_NAMESPACE] = namespace_start,
-        [OBJ_TYPEDEF] = typedef_start,
-        [OBJ_GLOBAL] = global_start,
-        [OBJ_LOCAL] = local_start,
-        [OBJ_FN_ARG] = fn_arg_start,
+        [OBJ_TYPEDEF]   = typedef_start,
+        [OBJ_GLOBAL]    = global_start,
+        [OBJ_LOCAL]     = local_start,
+        [OBJ_FN_ARG]    = fn_arg_start,
     },
 
     .obj_end_fns = 
     {
-        [OBJ_FUNCTION] = fn_end,
+        [OBJ_FUNCTION]  = fn_end,
         [OBJ_NAMESPACE] = namespace_end,
-        [OBJ_TYPEDEF] = typedef_end,
-        [OBJ_GLOBAL] = global_end,
-        [OBJ_LOCAL] = local_end,
-        [OBJ_FN_ARG] = fn_arg_end,
+        [OBJ_TYPEDEF]   = typedef_end,
+        [OBJ_GLOBAL]    = global_end,
+        [OBJ_LOCAL]     = local_end,
+        [OBJ_FN_ARG]    = fn_arg_end,
     },
 
     .id_def_fn = id_def,
@@ -186,6 +191,17 @@ static ASTObj_T* search_in_current_scope(VScope_T* scope, char* id)
         ASTObj_T* obj = scope->objs->items[i];
         if(strcmp(obj->id->callee, id) == 0)
             return obj;
+    }
+    return NULL;
+}
+
+static ASTNode_T* search_node_in_current_scope(VScope_T* scope, char* id)
+{
+    for(size_t i = 0; i < scope->objs->size; i++)
+    {
+        ASTNode_T* node = scope->objs->items[i];
+        if(strcmp(node->id->callee, id) == 0)
+            return node;
     }
     return NULL;
 }
@@ -269,6 +285,23 @@ static void scope_add_obj(Validator_T* v, ASTObj_T* obj)
     list_push(v->current_scope->objs, obj);
 }
 
+// only used for enum/struct members
+static void scope_add_node(Validator_T* v, ASTNode_T* node)
+{
+    ASTNode_T* found = search_node_in_current_scope(v->current_scope, node->id->callee);
+    if(found)
+    {
+        throw_error(ERR_REDEFINITION, node->id->tok, 
+            "redefinition of member `%s`.\nfirst defined in " COLOR_BOLD_WHITE "%s " COLOR_RESET "at line " COLOR_BOLD_WHITE "%lld" COLOR_RESET, 
+            node->id->callee, 
+            found->tok->source->short_path ? found->tok->source->short_path : found->tok->source->path, 
+            found->tok->line + 1
+        );
+        exit(1);
+    }
+    list_push(v->current_scope->objs, node); // use the default obj list
+}
+
 static ASTType_T* expand_typedef(Validator_T* v, ASTType_T* type)
 {
     if(type->kind != TY_UNDEF)
@@ -348,6 +381,7 @@ static bool is_number(Validator_T* v, ASTType_T* type)
         case TY_F64:
         case TY_F80:
         case TY_CHAR:
+        case TY_ENUM: // enums get at the moment treated as numbers to support operations
             return true;
 
         default:
@@ -374,6 +408,8 @@ static bool is_integer(Validator_T* v, ASTType_T* type)
         case TY_U16: 
         case TY_U32:
         case TY_U64:
+        case TY_CHAR:
+        case TY_ENUM:
             return true;
 
         default: 
@@ -868,4 +904,26 @@ static void index_(ASTNode_T* index, va_list args)
 static void cast(ASTNode_T* cast, va_list args)
 {
     //todo: check, if type conversion is valid and safe
+}
+
+static void struct_type(ASTType_T* s_type, va_list args)
+{
+    GET_VALIDATOR(args);
+    begin_scope(v);
+
+    for(size_t i = 0; i < s_type->members->size; i++)
+        scope_add_node(v, s_type->members->items[i]);
+
+    end_scope(v);
+}
+
+static void enum_type(ASTType_T* e_type, va_list args)
+{
+    GET_VALIDATOR(args);
+    begin_scope(v);
+
+    for(size_t i = 0; i < e_type->members->size; i++)
+        scope_add_node(v, e_type->members->items[i]);
+
+    end_scope(v);
 }
