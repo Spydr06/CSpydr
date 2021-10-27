@@ -1,5 +1,5 @@
 /*
-    THE CSPYDR PROGRAMMING LANGUAGE COMPILER
+    CSPC - THE CSPYDR PROGRAMMING LANGUAGE COMPILER
     This is the main file and entry point to the compiler.
 
     This compiler and all components of CSpydr, except external dependencies (LLVM, acutest, ...), are licensed under the MIT license.
@@ -30,11 +30,13 @@
 #define CSPYDR_GIT_REPOSITORY "https://github.com/spydr06/cspydr.git"
 #define CSPYDR_GIT_DEVELOPER "https://github.com/spydr06"
 
-const char* usage_text = COLOR_BOLD_WHITE "Usage:" COLOR_RESET " cspydr [run, build, debug, repl] [<input file> <flags>]\n"
+#define CSPC_HELP_COMMAND "cspc --help"
+
+const char* usage_text = COLOR_BOLD_WHITE "Usage:" COLOR_RESET " cspc [run, build, debug, repl] [<input file> <flags>]\n"
                          "       cspydr [--help, --info, --version]\n";
 
 // this text gets shown if -i or --info is used
-const char* info_text = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE COMPILER **\n" COLOR_RESET
+const char* info_text = COLOR_BOLD_YELLOW "** CSPC - THE CSPYDR PROGRAMMING LANGUAGE COMPILER **\n" COLOR_RESET
                        COLOR_BOLD_WHITE "Version:" COLOR_RESET " %s\n"
                        COLOR_BOLD_WHITE "Build:" COLOR_RESET " %s\n"
                        "\n"
@@ -134,7 +136,7 @@ int main(int argc, char* argv[])
             action = action_table[i].ac;
     if(action == AC_UNDEF)
     {
-        LOG_ERROR_F("[Error] Unknown action \"%s\", expect [build, run, debug]\n", argv[1]);
+        LOG_ERROR_F("[Error] Unknown action \"%s\", expect [build, run, debug, repl]\n", argv[1]);
     }
     
     // declare the input/output files
@@ -210,7 +212,7 @@ int main(int argc, char* argv[])
             ct = CT_TO_XML;
         else
         {
-            LOG_ERROR_F("[Error] Unknown flag \"%s\", type \"cspydr --help\" to get help.\n", argv[i]);
+            LOG_ERROR_F("[Error] Unknown flag \"%s\", type \"" CSPC_HELP_COMMAND "\" to get help.\n", argv[i]);
             exit(1);
         }
     }

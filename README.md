@@ -17,7 +17,7 @@ CSpydr is a low-level, static typed, compiled programming language inspired by R
 
 A list of all the features, that are/will be implemented.
 
-##### Compiler features:
+##### cspc Compiler features:
 - [ ] LLVM compiler -> under construction
 - [ ] Assembly compiler
 - [x] C transpiler
@@ -30,7 +30,7 @@ A list of all the features, that are/will be implemented.
 - [x] CLI and error handling
 - [x] memory management
 
-##### Language features:
+##### CSpydr Language features:
 - [x] functions
 - [x] function arguments 
 - [x] global/local variables
@@ -51,7 +51,7 @@ A list of all the features, that are/will be implemented.
 - [x] tuples
 - [ ] generics in functions and structs
 
-##### Standard library features
+##### CSpydr Standard library features
 - [x] basic `c17` `libc`-header implementation
 - [ ] control- and safety-structs and -functions (like in Rust)
 - [ ] llvm-c implementation
@@ -69,6 +69,10 @@ cd ./cspydr
 ```bash
 cmake .
 make
+```
+
+To install CSpydr with all of it's components (cspc - The CSpydr Compiler and the CSpydr Standard Library), enter this command (as root):
+```bash
 sudo make install
 ```
 
@@ -76,16 +80,16 @@ sudo make install
 
 To compile a CSpydr program use the following command:
 ```bash
-cspydr build <your file>
+cspc build <your file>
 ```
 To directly run a program use this command:
 ```bash
-cspydr run <your file>
+cspc run <your file>
 ```
 
 Get help using this command:
 ```bash
-cspydr --help
+cspc --help
 ```
 
 ## The CSpydr Syntax
@@ -107,7 +111,7 @@ fn main(argv: i32, argc: &&char): i32
 
 Running this program is as easy as entering the following command:
 ```bash
-cspydr run hello-world.csp
+cspc run hello-world.csp
 ```
 
 *(I will write a proper documentation in the future!)*

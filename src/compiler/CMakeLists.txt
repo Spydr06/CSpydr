@@ -6,12 +6,15 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 file(GLOB_RECURSE compiler_source *.c)
 list(REMOVE_ITEM compiler_source "main.c")
 
-add_library(cspc ${compiler_source})
-target_link_libraries(cspc LINK_PUBLIC LittleXML c-vector llvm-c)
-set_target_properties(cspc PROPERTIES LINKER_LANGUAGE C)
+add_library(libcsp ${compiler_source})
+target_link_libraries(libcsp LINK_PUBLIC LittleXML c-vector llvm-c)
+set_target_properties(libcsp PROPERTIES LINKER_LANGUAGE C)
 
 # build the main executable
-add_executable(cspydr main.c)
-target_link_libraries(cspydr cspc)
+add_executable(cspc main.c)
+target_link_libraries(cspc libcsp)
 
-install(PROGRAMS ${PROJECT_SOURCE_DIR}/bin/cspydr DESTINATION bin)
+install(PROGRAMS ${PROJECT_SOURCE_DIR}/bin/cspydr 
+        DESTINATION bin
+        RENAME "cspc"
+)
