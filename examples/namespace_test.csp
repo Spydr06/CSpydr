@@ -1,0 +1,10 @@
+namespace foo {
+    type bar: i32;
+}
+
+let x: foo::bar;
+
+fn main(): i32
+{
+    
+}

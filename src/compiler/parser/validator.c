@@ -16,6 +16,7 @@ struct VALIDATOR_SCOPE_STRUCT
 {
     VScope_T* prev;
     List_T* objs;
+    ASTIdentifier_T* id;
 } __attribute__((packed));
 
 typedef struct VALIDATOR_STRUCT 
@@ -35,9 +36,9 @@ static Validator_T* init_validator(Validator_T* v)
     return v;
 }
 
-static void begin_obj_scope(Validator_T* v, List_T* objs);
+static void begin_obj_scope(Validator_T* v, ASTIdentifier_T* id, List_T* objs);
 static void scope_add_obj(Validator_T* v, ASTObj_T* obj);
-static inline void begin_scope(Validator_T* v);
+static inline void begin_scope(Validator_T* v, ASTIdentifier_T* id);
 static inline void end_scope(Validator_T* v);
 
 // iterator functions
@@ -172,7 +173,7 @@ void validate_ast(ASTProg_T* ast)
     Validator_T v;
     init_validator(&v);
 
-    begin_obj_scope(&v, ast->objs);
+    begin_obj_scope(&v, NULL, ast->objs);
     ast_iterate(&main_iterator_list, ast, &v);
 
     end_scope(&v);
@@ -244,19 +245,20 @@ static ASTObj_T* search_identifier(VScope_T* scope, ASTIdentifier_T* id)
     }
 }
 
-static void begin_obj_scope(Validator_T* v, List_T* objs)
+static void begin_obj_scope(Validator_T* v, ASTIdentifier_T* id, List_T* objs)
 {
-    begin_scope(v);
+    begin_scope(v, id);
 
     for(size_t i = 0; i < objs->size; i++)
         scope_add_obj(v, objs->items[i]);
 }
 
-static inline void begin_scope(Validator_T* v)
+static inline void begin_scope(Validator_T* v, ASTIdentifier_T* id)
 {
     VScope_T* scope = malloc(sizeof(VScope_T));
     scope->objs = init_list(sizeof(ASTObj_T*));
     scope->prev = v->current_scope;
+    scope->id = id;
     v->current_scope = scope;
 }
 
@@ -455,6 +457,17 @@ static void id_use(ASTIdentifier_T* id, va_list args)
     ASTObj_T* found = search_identifier(v->current_scope, id);
     if(!found)
         throw_error(ERR_SYNTAX_WARNING, id->tok, "undefined identifier `%s`.", id->callee);
+
+    id->outer = found->id->outer;
+}
+
+static void gen_id_path(VScope_T* v, ASTIdentifier_T* id)
+{
+    if(!v || !v->id)
+        return;
+
+    id->outer = v->id;
+    gen_id_path(v->prev, id->outer);
 }
 
 // obj
@@ -499,7 +512,7 @@ static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
 static void fn_start(ASTObj_T* fn, va_list args)
 {
     GET_VALIDATOR(args);
-    begin_scope(v);
+    begin_scope(v, fn->id);
     v->current_function = fn;
 }
 
@@ -514,13 +527,16 @@ static void fn_end(ASTObj_T* fn, va_list args)
     }
 
     end_scope(v);
+
+    gen_id_path(v->current_scope, fn->id);
+
     v->current_function = NULL;
 }
 
 static void namespace_start(ASTObj_T* namespace, va_list args)
 {
     GET_VALIDATOR(args);
-    begin_obj_scope(v, namespace->objs);
+    begin_obj_scope(v, namespace->id, namespace->objs);
 }
 
 static void namespace_end(ASTObj_T* namespace, va_list args)
@@ -536,7 +552,9 @@ static void typedef_start(ASTObj_T* tydef, va_list args)
 
 static void typedef_end(ASTObj_T* tydef, va_list args)
 {
+    GET_VALIDATOR(args);
 
+    gen_id_path(v->current_scope, tydef->id);
 }
 
 static void global_start(ASTObj_T* global, va_list args)
@@ -546,6 +564,8 @@ static void global_start(ASTObj_T* global, va_list args)
 
 static void global_end(ASTObj_T* global, va_list args)
 {
+    GET_VALIDATOR(args);
+
     if(!global->data_type)
     {
         if(!global->value->data_type)
@@ -556,6 +576,8 @@ static void global_end(ASTObj_T* global, va_list args)
 
         global->data_type = global->value->data_type;
     }
+
+    gen_id_path(v->current_scope, global->id);
 }
 
 static void local_start(ASTObj_T* local, va_list args)
@@ -593,7 +615,7 @@ static void fn_arg_end(ASTObj_T* arg, va_list args)
 static void block_start(ASTNode_T* block, va_list args)
 {
     GET_VALIDATOR(args);
-    begin_obj_scope(v, block->locals);
+    begin_obj_scope(v, NULL, block->locals);
 }
 
 static void block_end(ASTNode_T* block, va_list args)
@@ -909,7 +931,7 @@ static void cast(ASTNode_T* cast, va_list args)
 static void struct_type(ASTType_T* s_type, va_list args)
 {
     GET_VALIDATOR(args);
-    begin_scope(v);
+    begin_scope(v, NULL);
 
     for(size_t i = 0; i < s_type->members->size; i++)
         scope_add_node(v, s_type->members->items[i]);
@@ -920,7 +942,7 @@ static void struct_type(ASTType_T* s_type, va_list args)
 static void enum_type(ASTType_T* e_type, va_list args)
 {
     GET_VALIDATOR(args);
-    begin_scope(v);
+    begin_scope(v, NULL);
 
     for(size_t i = 0; i < e_type->members->size; i++)
         scope_add_node(v, e_type->members->items[i]);

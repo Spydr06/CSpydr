@@ -163,7 +163,7 @@ static void run_compiler(CCodegenData_T* cg, const char* target_bin)
         NULL
     };
 
-    int exit_code = subprocess(cc, args, false);
+    int exit_code = subprocess(args[0], args, false);
 
     if(exit_code != 0)
     {
@@ -402,26 +402,7 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
             break;
         case OBJ_NAMESPACE:
             for(size_t i = 0; i < obj->objs->size; i++)
-            {
-                ASTObj_T* namespace_member = obj->objs->items[i];
-
-                char new_name[BUFSIZ];
-                memset(new_name, '\0', sizeof new_name);
-
-                char* member_callee = c_gen_identifier(cg, namespace_member->id);
-
-                if(namespace_member->kind != OBJ_NAMESPACE) 
-                    strcat(new_name, "__csp_");
-
-                strcat(new_name, obj_callee);
-                strcat(new_name, "__csp_");
-
-                strcat(new_name, member_callee);
-
-                strcpy(member_callee, new_name);
-
-                c_gen_obj_decl(cg, namespace_member);     
-            }
+                c_gen_obj_decl(cg, obj->objs->items[i]);
             break;
         default:
             break;
