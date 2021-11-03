@@ -44,12 +44,13 @@ A list of all the features, that are/will be implemented.
 - [x] `sizeof` keyword (currently called through the C interface)
 - [x] different loop types: `for`, `while` and `loop`
 - [x] macros (without arguments)
-- [ ] namespaces -> under construction
+- [x] namespaces
 - [x] public functions, globals, types and struct members
 - [ ] functions inside of structs
 - [x] lambda expressions (not asynchronous)
 - [x] tuples
 - [ ] generics in functions and structs
+- [ ] templates in fuctions and structs
 
 ##### CSpydr Standard library features
 - [x] basic `c17` `libc`-header implementation
