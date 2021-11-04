@@ -66,6 +66,8 @@ static void fn_arg_end(ASTObj_T* arg, va_list args);
 static void block_start(ASTNode_T* block, va_list args);
 static void block_end(ASTNode_T* block, va_list args);
 static void return_end(ASTNode_T* ret, va_list args);
+static void for_start(ASTNode_T* _for, va_list args);
+static void for_end(ASTNode_T* _for, va_list args);
 // expressions
 static void call(ASTNode_T* call, va_list args);
 static void identifier(ASTNode_T* id, va_list args);
@@ -96,6 +98,7 @@ static ASTIteratorList_T main_iterator_list =
     .node_start_fns = 
     {
         [ND_BLOCK] = block_start,
+        [ND_FOR] = for_start,
     },
 
     .node_end_fns = 
@@ -103,6 +106,7 @@ static ASTIteratorList_T main_iterator_list =
         // statements
         [ND_BLOCK] = block_end,
         [ND_RETURN] = return_end,
+        [ND_FOR] = for_end,
 
         // expressions
         [ND_ID]      = identifier,
@@ -634,6 +638,18 @@ static void return_end(ASTNode_T* ret, va_list args)
     }
 
     // type checking already done in the parser
+}
+
+static void for_start(ASTNode_T* _for, va_list args)
+{
+    GET_VALIDATOR(args);
+    begin_obj_scope(v, NULL, _for->locals);
+}
+
+static void for_end(ASTNode_T* _for, va_list args)
+{
+    GET_VALIDATOR(args);
+    end_scope(v);
 }
 
 // expressions

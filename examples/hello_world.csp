@@ -49,5 +49,10 @@ fn main(argc: i32, argv: &&char): i32 {
 
     utils::puts(program_data.msg);
 
+    for let i = 0; i < 10; i++;
+    {
+        printf("%d\n", i);
+    }
+
     <- 0;
 }

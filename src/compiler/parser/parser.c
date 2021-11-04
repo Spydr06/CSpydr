@@ -1015,18 +1015,15 @@ static ASTNode_T* parse_for(Parser_T* p)
 
     parser_consume(p, TOKEN_FOR, "expect `for` for a for loop statement");
 
+    loop->locals = init_list(sizeof(struct AST_OBJ_STRUCT*));
+    ast_mem_add_list(loop->locals);
+
     size_t num_locals = p->cur_block->locals->size;
     if(!tok_is(p, TOKEN_SEMICOLON))
     {
         ASTNode_T* init_stmt = parse_stmt(p);
         if(init_stmt->kind != ND_EXPR_STMT)
             throw_error(ERR_SYNTAX_ERROR, init_stmt->tok, "can only have expression-like statements in for-loop initializer");
-        if(p->cur_block->locals->size != num_locals)
-        {
-            // the before statement was a local definition, which is allowed
-            p->cur_block->locals->size = num_locals;
-            loop->counter_var = p->cur_block->locals->items[num_locals];
-        }
         loop->init_stmt = init_stmt;
     } 
     else
