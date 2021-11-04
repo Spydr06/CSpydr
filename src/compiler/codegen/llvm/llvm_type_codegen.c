@@ -1,17 +1,32 @@
 #include "llvm_codegen.h"
+#include <llvm-c/Core.h>
 
 LLVMTypeRef llvm_gen_type(LLVMCodegenData_T* cg, ASTType_T* ty)
 {
     switch(ty->kind)
     {
-        case TY_I8: case TY_I16: case TY_I32: case TY_I64:
-        case TY_U8: case TY_U16: case TY_U32: case TY_U64:
-            return LLVMIntType(ty->size << 3);
+        case TY_I8: 
+            return LLVMInt8Type();
+        case TY_I16: 
+            return LLVMInt16Type();
+        case TY_I32: 
+            return LLVMInt32Type();
+        case TY_I64:
+            return LLVMInt64Type();
+        case TY_U8: 
+            return LLVMInt8Type();
+        case TY_U16: 
+            return LLVMInt16Type();
+        case TY_U32: 
+            return LLVMInt32Type();
+        case TY_U64:
+            return LLVMInt64Type();
+            
         case TY_F32:
             return LLVMFloatType();
         case TY_F64:
+        case TY_F80:
             return LLVMDoubleType();
-            return NULL;
         case TY_BOOL:
             return LLVMInt1Type();
         case TY_CHAR:

@@ -1,17 +1,9 @@
 # a program to test the llvm frontend
-import "libc/time.csp";
-import "libc/wchar.csp";
-import "libc/stdio.csp";
-import "libc/math.csp";
+extern fn puts(s: &char): i32;
 
-fn main(): i32 {
-    let rawtime: time_t;
-    let timeinfo: &struct tm;
-
-    time(&rawtime);
-    timeinfo = localtime(&rawtime); 
-
-    puts(asctime(timeinfo));
+fn main(argc: i32, argv: &&char): i32
+{   
+    puts("Hello World!");
 
     <- 0;
 }

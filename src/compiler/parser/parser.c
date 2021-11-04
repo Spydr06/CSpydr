@@ -1379,7 +1379,10 @@ static ASTNode_T* parse_char_lit(Parser_T* p)
         char_lit->str_val = strdup((char[]){'\\', p->tok->value[1], '\0'});
     else 
         char_lit->str_val = strdup((char[]){p->tok->value[0], '\0'});
+    
     char_lit->is_constant = true; 
+    char_lit->data_type = (ASTType_T*) primitives[TY_CHAR];
+
     parser_consume(p, TOKEN_CHAR, "expect char literal ('a', 'b', ...)");
     
     ast_mem_add_ptr(char_lit->str_val);
