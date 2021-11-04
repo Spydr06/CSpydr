@@ -25,7 +25,7 @@ A list of all the features, that are/will be implemented.
 - [x] parsing an AST
 - [x] validating the code (happens during parsing)
 - [x] type evaluator
-- [ ] type validator
+- [x] type validator
 - [x] function validation
 - [x] CLI and error handling
 - [x] memory management
