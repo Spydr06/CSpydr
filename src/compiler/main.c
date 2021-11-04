@@ -28,12 +28,13 @@
 // links to me, the creator of CSpydr
 // please be nice and don't change them without any reason. You may add yourself to the credits, if you changed something
 #define CSPYDR_GIT_REPOSITORY "https://github.com/spydr06/cspydr.git"
-#define CSPYDR_GIT_DEVELOPER "https://github.com/spydr06"
+#define CSPYDR_GIT_DEVELOPER  "https://github.com/spydr06"
+#define CSPYDR_SUBREDDIT      "https://reddit.com/r/cspydr"
 
 #define CSPC_HELP_COMMAND "cspc --help"
 
 const char* usage_text = COLOR_BOLD_WHITE "Usage:" COLOR_RESET " cspc [run, build, debug, repl] [<input file> <flags>]\n"
-                         "       cspydr [--help, --info, --version]\n";
+                         "       cspc [--help, --info, --version]\n";
 
 // this text gets shown if -i or --info is used
 const char* info_text = COLOR_BOLD_YELLOW "** CSPC - THE CSPYDR PROGRAMMING LANGUAGE COMPILER **\n" COLOR_RESET
@@ -57,6 +58,7 @@ const char* help_text = "%s"
                        "  build    Builds a cspydr program to a binary to execute.\n"
                        "  run      Builds, then runs a cspydr program directly.\n"
                        "  debug    Runs a cspydr program with special debug tools. [!!NOT IMPLEMENTED YET!!]\n"
+                       "  repl     Opens the cspydr REPL console.\n"
                        COLOR_BOLD_WHITE "Options:\n" COLOR_RESET
                        "  -h, --help             Displays this help text and quits.\n"
                        "  -v, --version          Displays the version of CSpydr and quits.\n"
@@ -72,7 +74,8 @@ const char* help_text = "%s"
                        "      --from-xml         Instructs the compiler to construct a AST directly from a XML file (debug!!)\n"
                        "      --to-xml           Instructs the compiler to parse the AST to a XML file (debug!!)\n"
                        "\n"
-                       "If you are unsure, what CSpydr is (or how to use it), please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n";
+                       "If you are unsure, what CSpydr is (or how to use it), please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n"
+                       /*"Help and community support: " CSPYDR_SUBREDDIT ".\n"*/;
 
 // this text gets shown if -v or --version is used
 const char* version_text = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE COMPILER **\n" COLOR_RESET
