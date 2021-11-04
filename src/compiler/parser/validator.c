@@ -851,13 +851,13 @@ static void lt_gt(ASTNode_T* op, va_list args)
 
     if(!is_number(v, op->left->data_type) && !is_ptr(v, op->left->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->tok, "expect integer or pointer type");
+        throw_error(ERR_TYPE_ERROR, op->tok, "expect integer or pointer type on left argument");
         return;
     }
 
     if(!is_number(v, op->right->data_type) && !is_ptr(v, op->right->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->tok, "expect integer or pointer type");
+        throw_error(ERR_TYPE_ERROR, op->tok, "expect integer or pointer type on right argument");
         return;
     }
 

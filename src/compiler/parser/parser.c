@@ -1018,6 +1018,9 @@ static ASTNode_T* parse_for(Parser_T* p)
     loop->locals = init_list(sizeof(struct AST_OBJ_STRUCT*));
     ast_mem_add_list(loop->locals);
 
+    ASTNode_T* prev_block = p->cur_block;
+    p->cur_block = loop;
+
     size_t num_locals = p->cur_block->locals->size;
     if(!tok_is(p, TOKEN_SEMICOLON))
     {
@@ -1038,6 +1041,8 @@ static ASTNode_T* parse_for(Parser_T* p)
     parser_advance(p);
 
     loop->body = parse_stmt(p);
+
+    p->cur_block = prev_block;
 
     return loop; 
 }
@@ -1151,8 +1156,8 @@ static ASTNode_T* parse_local(Parser_T* p)
     }
 
     parser_consume(p, TOKEN_SEMICOLON, "expect `;` after variable definition");
-
-    if(!p->cur_block || p->cur_block->kind != ND_BLOCK)
+                                                            // ND_FOR only for the for loop initializer
+    if(!p->cur_block || (p->cur_block->kind != ND_BLOCK && p->cur_block->kind != ND_FOR))
         throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot define a local variable outside a block statement");
     list_push(p->cur_block->locals, local);
     return value;

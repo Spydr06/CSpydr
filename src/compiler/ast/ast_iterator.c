@@ -224,6 +224,8 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
             break;
 
         case ND_FOR:
+            for(size_t i = 0; i < node->locals->size; i++)
+                ast_obj(list, node->locals->items[i], custom_args);
             if(node->init_stmt)
                 ast_node(list, node->init_stmt, custom_args);
             if(node->condition)

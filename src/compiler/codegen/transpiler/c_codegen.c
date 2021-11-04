@@ -745,14 +745,13 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
             c_gen_stmt(cg, node->body);
             break;
         case ND_FOR:
+            println(cg, "{");
+            for(size_t i = 0; i < node->locals->size; i++)
+                c_gen_local(cg, node->locals->items[i]);
+            
             print(cg, "for(");
             if(node->init_stmt) 
             {    
-                if(node->counter_var)
-                {
-                    c_gen_type(cg, node->counter_var->data_type, "");
-                    print(cg, " ");
-                }
                 c_gen_stmt(cg, node->init_stmt);
             } 
             else
@@ -766,6 +765,8 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, ")");
 
             c_gen_stmt(cg, node->body);
+            
+            println(cg, "}");
             break;
         case ND_EXPR_STMT:
             c_gen_expr(cg, node->expr);
