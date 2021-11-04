@@ -14,7 +14,7 @@ set_target_properties(libcsp PROPERTIES LINKER_LANGUAGE C)
 add_executable(cspc main.c)
 target_link_libraries(cspc libcsp)
 
-install(PROGRAMS ${PROJECT_SOURCE_DIR}/bin/cspydr 
+install(PROGRAMS ${PROJECT_SOURCE_DIR}/bin/cspc 
         DESTINATION bin
         RENAME "cspc"
 )
