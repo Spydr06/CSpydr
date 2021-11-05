@@ -2,6 +2,7 @@
 
 import "libc/stddef.csp";
 import "types.csp";
+import "gl/gl.csp";
 
 macro GLFW_VERSION_MAJOR    { 3 }
 macro GLFW_VERSION_MINOR    { 4 }

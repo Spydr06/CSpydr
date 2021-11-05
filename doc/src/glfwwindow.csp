@@ -1,12 +1,10 @@
 import "glfw/glfw3.csp";
 
 fn main(): i32 {
-    let window: &GLFWwindow;
-
     if !glfwInit()
         <- -1;
     
-    window = glfwCreateWindow(640, 480, "CSpydr+GLFW Window!", nil, nil);
+    let window = glfwCreateWindow(640, 480, "CSpydr+GLFW Window!", nil, nil);
     if !window {
         glfwTerminate();
         <- -1;
@@ -15,6 +13,13 @@ fn main(): i32 {
     glfwMakeContextCurrent(window);
 
     while !glfwWindowShouldClose(window) {
+        glClear(GL_COLOR_BUFFER_BIT!);
+        glClearColor(0.1, 0.1, 0.2, 0.0);
+
+        draw();
+
+        glFlush();
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
@@ -22,4 +27,12 @@ fn main(): i32 {
     glfwTerminate();
 
     <- 0;
+}
+
+fn draw() {
+    glBegin(GL_POLYGON!);
+    glColor3f(1, 0, 0); glVertex3f(-0.6, -0.75, 0.5);
+    glColor3f(0, 1, 0); glVertex3f(0.6, -0.75, 0);
+    glColor3f(0, 0, 1); glVertex3f(0, 0.75, 0);
+    glEnd();
 }
