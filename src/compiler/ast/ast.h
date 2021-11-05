@@ -257,6 +257,7 @@ struct AST_OBJ_STRUCT
     // variables
     bool is_constant : 1;
     bool is_extern : 1;
+    bool referenced : 1;
 
     ASTType_T* data_type;
     ASTNode_T* value;

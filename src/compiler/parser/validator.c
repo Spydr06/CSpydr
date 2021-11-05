@@ -499,6 +499,7 @@ static void id_use(ASTIdentifier_T* id, va_list args)
     }
 
     id->outer = found->id->outer;
+    found->referenced = true;
 }
 
 static void gen_id_path(VScope_T* v, ASTIdentifier_T* id)
@@ -514,13 +515,15 @@ static void gen_id_path(VScope_T* v, ASTIdentifier_T* id)
 
 static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
 {
+    main_fn->referenced = true;
+
     ASTType_T* return_type = expand_typedef(v, main_fn->return_type);
     if(return_type->kind != TY_I32)
     {
         throw_error(ERR_TYPE_ERROR, main_fn->return_type->tok, "expect type `i32` as return type for function `main`");
         return;
     }
-    
+
     switch(main_fn->args->size)
     {
         case 0:

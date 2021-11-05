@@ -378,6 +378,9 @@ static bool c_gen_fn_arg_list(CCodegenData_T* cg, List_T* args)
 
 static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
 {
+    if(!obj->referenced && obj->kind != OBJ_NAMESPACE && obj->kind != OBJ_TYPEDEF)
+        return;
+
     if(obj->is_extern)
         print(cg, "extern ");
 
@@ -441,7 +444,7 @@ static void c_gen_va_list_end(CCodegenData_T* cg, ASTIdentifier_T* id)
 
 static void c_gen_obj(CCodegenData_T* cg, ASTObj_T* obj)
 {
-    if(obj->is_extern)
+    if(obj->is_extern || (!obj->referenced && obj->kind != OBJ_NAMESPACE && obj->kind != OBJ_TYPEDEF))
         return;
 
     switch(obj->kind)

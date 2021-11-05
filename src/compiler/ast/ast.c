@@ -102,6 +102,7 @@ ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok)
     obj->templates = NULL;
 
     obj->is_constant = false;
+    obj->referenced = false;
 
     ast_mem_add_ptr(obj->tok);
 
