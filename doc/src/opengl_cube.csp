@@ -1,0 +1,105 @@
+import "gl/glu.csp";
+import "glfw/glfw3.csp";
+
+import "libc/stdio.csp";
+import "libc/string.csp";
+
+let theta_y = 0.0;
+let theta_x = 0.0;
+
+const vertices: GLfloat[90] = [
+        -1, -1, -1,   -1, -1,  1,   -1,  1,  1,   -1,  1, -1,
+         1, -1, -1,    1, -1,  1,    1,  1,  1,    1,  1, -1,
+        -1, -1, -1,   -1, -1,  1,    1, -1,  1,    1, -1, -1,
+        -1,  1, -1,   -1,  1,  1,    1,  1,  1,    1,  1, -1,
+        -1, -1, -1,   -1,  1, -1,    1,  1, -1,    1, -1, -1,
+        -1, -1,  1,   -1,  1,  1,    1,  1,  1,    1, -1,  1
+    ];
+
+const colors: GLfloat[90] = [
+        0, 0, 0,   0, 0, 1,   0, 1, 1,   0, 1, 0,
+        1, 0, 0,   1, 0, 1,   1, 1, 1,   1, 1, 0,
+        0, 0, 0,   0, 0, 1,   1, 0, 1,   1, 0, 0,
+        0, 1, 0,   0, 1, 1,   1, 1, 1,   1, 1, 0,
+        0, 0, 0,   0, 1, 0,   1, 1, 0,   1, 0, 0,
+        0, 0, 1,   0, 1, 1,   1, 1, 1,   1, 0, 1
+    ];
+
+fn init_glfw_window(res_x: const i32, res_y: const i32): &GLFWwindow
+{
+    if(!glfwInit()) {
+        fprintf(stderr, "failed to initialize GLFW\n");
+        <- nil;
+    }
+    glfwWindowHint(GLFW_SAMPLES!, 4); # 4x antialiasing
+
+    let window = glfwCreateWindow(res_x, res_y, "OpenGL Cube", nil, nil);
+    if(!window) {
+        fprintf(stderr, "failed to open GLFW window\n");
+        glfwTerminate();
+        <- nil;
+    }
+
+    glfwMakeContextCurrent(window);
+    
+    glEnable(GL_DEPTH_TEST!);
+    glDepthFunc(GL_LEQUAL!);
+    glDisable(GL_CULL_FACE!);
+    glCullFace(GL_BACK!);
+
+    <- window;
+}
+
+fn drawCube()
+{
+    glRotatef(theta_y++, 0, 1, 0);
+    glRotatef(theta_x++, 1, 0, 0);
+
+    glEnableClientState(GL_VERTEX_ARRAY!);
+    glEnableClientState(GL_COLOR_ARRAY!);
+    glVertexPointer(3, GL_FLOAT!, 0, vertices);
+    glColorPointer(3, GL_FLOAT!, 0, colors);
+
+    glDrawArrays(GL_QUADS!, 0, 24);
+
+    glDisableClientState(GL_COLOR_ARRAY!);
+    glDisableClientState(GL_VERTEX_ARRAY!);
+}
+
+fn display(window: &GLFWwindow)
+{
+    while !glfwWindowShouldClose(window) {
+        let window_w: GLint;
+        let window_h: GLint;
+
+        glfwGetWindowSize(window, &window_w, &window_h);
+        glViewport(0, 0, window_w, window_h);
+
+        glClearColor(0.0, 0.0, 0.0, 1.0);
+        glClear(GL_COLOR_BUFFER_BIT! | GL_DEPTH_BUFFER_BIT!);
+
+        glMatrixMode(GL_PROJECTION_MATRIX!);
+        glLoadIdentity();
+
+        gluPerspective( 60, window_w: f64 / window_h: f64, 0.1, 100);
+
+        glMatrixMode(GL_MODELVIEW_MATRIX!);
+        glTranslatef(0, 0, -5);
+
+        drawCube();
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+}
+
+fn main(): i32
+{
+    let window = init_glfw_window(1024, 620);
+    if(window)
+        display(window);
+
+    glfwDestroyWindow(window);
+    glfwTerminate();
+    <- 0;
+}

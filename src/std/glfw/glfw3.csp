@@ -581,6 +581,7 @@ extern
     fn glfwSetWindowTitle(window: &GLFWwindow, title: const &char);
     fn glfwSetWindowIcon(window: &GLFWwindow, count: i32, images: const &GLFWimage);
     fn glfwGetWindowPos(window: &GLFWwindow, xpos: &i32, ypos: &i32);
+    fn glfwGetWindowSize(window: &GLFWwindow, width: &i32, height: &i32);
     fn glfwSetWindowPos(window: &GLFWwindow, xpos: i32, ypos: i32);
     fn glfwSetWindowSizeLimits(window: &GLFWwindow, minwidth: i32, minheight: i32, maxwidth: i32, maxheight: i32);
     fn glfwSetWindowAspectRatio(window: &GLFWwindow, numer: i32, denom: i32);

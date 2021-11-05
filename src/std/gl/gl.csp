@@ -894,4 +894,16 @@ extern {
     fn glRectiv(v1: const &GLint, v2: const &GLint);
     fn glRectsv(v1: const &GLshort, v2: const &GLshort);
 
+    # Vertex Arrays (1.1)
+    fn glVertexPointer(size: GLint, kind: GLenum, stride: GLsizei, ptr: const &GLvoid);
+    fn glNormalPointer(kind: GLenum, stride: GLsizei, ptr: const &GLvoid);
+    fn glColorPointer(size: GLint, kind: GLenum, stride: GLsizei, ptr: const &GLvoid);
+    fn glIndexPointer(kind: GLenum, stride: GLsizei, ptr: const &GLvoid);
+    fn glTexCoordPointer(size: GLint, kind: GLenum, stride: GLsizei, ptr: const &GLvoid);
+    fn glEdgeFlagPointer(stride: GLsizei, ptr: const &GLvoid);
+    fn glGetPointerv(pname: GLenum, params: &&GLvoid);
+    fn glArrayElement(i: GLint);
+    fn glDrawArrays(mode: GLenum, first: GLint, count: GLsizei);
+    fn glDrawElements(mode: GLenum, count: GLsizei, kind: GLenum, indices: const &GLvoid);
+    fn glInterleavedArrays(format: GLenum, stride: GLsizei, pointer: const &GLvoid);
 }

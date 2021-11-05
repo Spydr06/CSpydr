@@ -43,7 +43,7 @@ fn delay(seconds: i32)
 
     time(&start);
     time(&current);
-    while((current-start) < seconds)
+    while (current-start) < seconds
         time(&current);
 }
 
