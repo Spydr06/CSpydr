@@ -95,7 +95,6 @@ typedef enum {
 
     ND_LAMBDA,    // |x, y| => {}
 
-    ND_ENUM_MEMBER,    // enum members
     ND_STRUCT_MEMBER,  // struct members
 
     ND_KIND_LEN
@@ -144,6 +143,7 @@ typedef enum {
     OBJ_FN_ARG,
     OBJ_TYPEDEF,
     OBJ_NAMESPACE,
+    OBJ_ENUM_MEMBER,
 
     OBJ_KIND_LEN
 } ASTObjKind_T;

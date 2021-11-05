@@ -1,5 +1,4 @@
 # rule110.csp
-import "libc/wchar.csp";
 import "libc/stdio.csp";
 
 macro board_cap { 100 }

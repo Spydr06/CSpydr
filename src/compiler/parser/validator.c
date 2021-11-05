@@ -68,6 +68,8 @@ static void block_end(ASTNode_T* block, va_list args);
 static void return_end(ASTNode_T* ret, va_list args);
 static void for_start(ASTNode_T* _for, va_list args);
 static void for_end(ASTNode_T* _for, va_list args);
+static void case_end(ASTNode_T* _case, va_list args);
+
 // expressions
 static void call(ASTNode_T* call, va_list args);
 static void identifier(ASTNode_T* id, va_list args);
@@ -107,6 +109,7 @@ static ASTIteratorList_T main_iterator_list =
         [ND_BLOCK] = block_end,
         [ND_RETURN] = return_end,
         [ND_FOR] = for_end,
+        [ND_CASE] = case_end,
 
         // expressions
         [ND_ID]      = identifier,
@@ -222,6 +225,18 @@ static ASTObj_T* search_in_scope(VScope_T* scope, char* id)
     return search_in_scope(scope->prev, id);
 }
 
+static ASTObj_T* search_id_in_enum(ASTType_T* e_type, ASTIdentifier_T* id)
+{
+    for(size_t i = 0; i < e_type->members->size; i++)
+    {
+        ASTObj_T* member = e_type->members->items[i];
+        if(strcmp(member->id->callee, id->callee) == 0)
+            return member;
+    }
+
+    return NULL;
+}
+
 static ASTObj_T* search_identifier(VScope_T* scope, ASTIdentifier_T* id)
 {
     if(!scope || !id)
@@ -235,15 +250,35 @@ static ASTObj_T* search_identifier(VScope_T* scope, ASTIdentifier_T* id)
         return search_identifier(scope->prev, id);
     }
     else {
-        ASTObj_T* outer = search_in_scope(scope, id->outer->callee);
-        if(!outer || !outer->objs)
+        ASTObj_T* outer = search_identifier(scope, id->outer);
+        if(!outer)
             return NULL;
-        
-        for(size_t i = 0; i < outer->objs->size; i++)
+
+        switch(outer->kind)
         {
-            ASTObj_T* current = outer->objs->items[i];
-            if(strcmp(current->id->callee, id->callee) == 0)
-                return current;
+            case OBJ_NAMESPACE:
+                for(size_t i = 0; i < outer->objs->size; i++)
+                {
+                    ASTObj_T* current = outer->objs->items[i];
+                    if(strcmp(current->id->callee, id->callee) == 0)
+                        return current;
+                }
+                break;
+            case OBJ_TYPEDEF:
+                switch (outer->data_type->kind) {
+                    case TY_ENUM:
+                    {
+                        ASTObj_T* enum_member = search_id_in_enum(outer->data_type, id);
+                        if(enum_member)
+                            return enum_member;
+                    } break; 
+                    default:
+                        break;
+                }
+                throw_error(ERR_UNDEFINED, id->outer->tok, "type `%s` has no member called `%s`", outer->id->callee, id->callee);
+                break;
+            default:
+                break;
         }
         return NULL;
     }
@@ -459,8 +494,9 @@ static void id_use(ASTIdentifier_T* id, va_list args)
 {
     GET_VALIDATOR(args);
     ASTObj_T* found = search_identifier(v->current_scope, id);
-    if(!found)
-        throw_error(ERR_SYNTAX_WARNING, id->tok, "undefined identifier `%s`.", id->callee);
+    if(!found) {
+        throw_error(ERR_UNDEFINED, id->tok, "undefined identifier `%s`.", id->callee);
+    }
 
     id->outer = found->id->outer;
 }
@@ -551,7 +587,12 @@ static void namespace_end(ASTObj_T* namespace, va_list args)
 
 static void typedef_start(ASTObj_T* tydef, va_list args)
 {
-
+    if(tydef->data_type->kind == TY_ENUM)
+        for(size_t i = 0; i < tydef->data_type->members->size; i++)
+        {
+            ASTObj_T* member = tydef->data_type->members->items[i];
+            member->id->outer = tydef->id;
+        }
 }
 
 static void typedef_end(ASTObj_T* tydef, va_list args)
@@ -640,6 +681,10 @@ static void return_end(ASTNode_T* ret, va_list args)
     // type checking already done in the parser
 }
 
+static void case_end(ASTNode_T* _case, va_list args)
+{
+}
+
 static void for_start(ASTNode_T* _for, va_list args)
 {
     GET_VALIDATOR(args);
@@ -696,10 +741,11 @@ static void identifier(ASTNode_T* id, va_list args)
 {
     GET_VALIDATOR(args);
 
+    printf("searching for %s::%s\n", id->id->outer ? id->id->outer->callee : "@", id->id->callee);
     ASTObj_T* refferred_obj = search_identifier(v->current_scope, id->id);
     if(!refferred_obj)
     {
-        throw_error(ERR_SYNTAX_WARNING, id->id->tok, "undefined identifier `%s`", id->id->callee);
+        throw_error(ERR_SYNTAX_WARNING, id->id->tok, "refferring to undefined identifier `%s`", id->id->callee);
         return;
     }
 
@@ -709,6 +755,7 @@ static void identifier(ASTNode_T* id, va_list args)
         case OBJ_LOCAL:
         case OBJ_FUNCTION:
         case OBJ_FN_ARG:
+        case OBJ_ENUM_MEMBER:
             break;
         
         default:
@@ -776,13 +823,13 @@ static void bin_operation(ASTNode_T* op, va_list args)
 
     if(!is_number(v, op->left->data_type) && !is_ptr(v, op->left->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->tok, "expect integer or pointer type on left argument");
+        throw_error(ERR_TYPE_ERROR, op->tok, "left: expect integer or pointer type");
         return;
     }
 
     if(!is_number(v, op->right->data_type) && !is_ptr(v, op->right->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->tok, "expect integer or pointer type on right argument");
+        throw_error(ERR_TYPE_ERROR, op->tok, "right: expect integer or pointer type");
         return;
     }
 
@@ -795,13 +842,13 @@ static void modulo(ASTNode_T* mod, va_list args)
 
     if(!is_integer(v, mod->left->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, mod->tok, "expect integer type for modulo operation");
+        throw_error(ERR_TYPE_ERROR, mod->tok, "left: expect integer type for modulo operation");
         return;
     }
 
     if(!is_integer(v, mod->right->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, mod->tok, "expect integer type for modulo operation");
+        throw_error(ERR_TYPE_ERROR, mod->tok, "right: expect integer type for modulo operation");
         return;
     }
 
@@ -851,13 +898,13 @@ static void lt_gt(ASTNode_T* op, va_list args)
 
     if(!is_number(v, op->left->data_type) && !is_ptr(v, op->left->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->tok, "expect integer or pointer type on left argument");
+        throw_error(ERR_TYPE_ERROR, op->tok, "left: expect integer or pointer type");
         return;
     }
 
     if(!is_number(v, op->right->data_type) && !is_ptr(v, op->right->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->tok, "expect integer or pointer type on right argument");
+        throw_error(ERR_TYPE_ERROR, op->tok, "right: expect integer or pointer type");
         return;
     }
 
@@ -889,13 +936,13 @@ static void bitwise_op(ASTNode_T* op, va_list args)
 
     if(!is_integer(v, op->left->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->tok, "can only do bitwise operations on integer types");
+        throw_error(ERR_TYPE_ERROR, op->tok, "left: can only do bitwise operations on integer types");
         return;
     }
 
     if(!is_integer(v, op->right->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->tok, "can only do bitwise operations with integer types");
+        throw_error(ERR_TYPE_ERROR, op->tok, "right: can only do bitwise operations with integer types");
         return;
     }
 
@@ -926,13 +973,13 @@ static void index_(ASTNode_T* index, va_list args)
 
     if(left_type->kind != TY_ARR && left_type->kind != TY_PTR)
     {
-        throw_error(ERR_TYPE_ERROR, index->tok, "cannot get an index value; wrong type");
+        throw_error(ERR_TYPE_ERROR, index->tok, "left: cannot get an index value; wrong type");
         return;
     }
 
     if(!is_integer(v, index->expr->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, index->tok, "expect an integer type");
+        throw_error(ERR_TYPE_ERROR, index->tok, "index: expect an integer type");
         return;
     }
 
@@ -943,6 +990,8 @@ static void cast(ASTNode_T* cast, va_list args)
 {
     //todo: check, if type conversion is valid and safe
 }
+
+// types
 
 static void struct_type(ASTType_T* s_type, va_list args)
 {
@@ -958,10 +1007,7 @@ static void struct_type(ASTType_T* s_type, va_list args)
 static void enum_type(ASTType_T* e_type, va_list args)
 {
     GET_VALIDATOR(args);
-    begin_scope(v, NULL);
-
-    for(size_t i = 0; i < e_type->members->size; i++)
-        scope_add_node(v, e_type->members->items[i]);
+    begin_obj_scope(v, NULL, e_type->members);
 
     end_scope(v);
 }

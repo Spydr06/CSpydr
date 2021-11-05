@@ -157,6 +157,8 @@ const char* obj_kind_to_str(ASTObjKind_T kind)
             return "function argument";
         case OBJ_NAMESPACE:
             return "namespace";
+        case OBJ_ENUM_MEMBER:
+            return "enum member";
         default:
             return "<undefined ASTObj_T kind>";
     }

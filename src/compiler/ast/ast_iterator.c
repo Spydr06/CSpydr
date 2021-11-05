@@ -236,6 +236,7 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
             break;
 
         case ND_MATCH:
+            ast_node(list, node->condition, custom_args);
             ast_node(list, node->body, custom_args);
             for(size_t i = 0; i < node->cases->size; i++)
                 ast_node(list, node->cases->items[i], custom_args);
@@ -271,12 +272,6 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
         case ND_STRUCT_MEMBER:
             ast_id(list, true, node->id, custom_args);
             ast_type(list, node->data_type, custom_args);
-            break;
-
-        case ND_ENUM_MEMBER:
-            ast_id(list, true, node->id, custom_args);
-            if(node->expr)
-                ast_node(list, node->expr, custom_args);
             break;
         
         default:

@@ -457,26 +457,27 @@ static ASTType_T* parse_struct_type(Parser_T* p)
 static ASTType_T* parse_enum_type(Parser_T* p)
 {
     ASTType_T* enum_type = init_ast_type(TY_ENUM, p->tok);
+
     parser_consume(p, TOKEN_ENUM, "expect `enum` keyword for enum type");
     parser_consume(p, TOKEN_LBRACE, "expect `{` after enum keyword");
-    enum_type->members = init_list(sizeof(struct AST_NODE_STRUCT*));
+
+    enum_type->members = init_list(sizeof(struct AST_OBJ_STRUCT*));
     ast_mem_add_list(enum_type->members);
 
     for(int i = 0; !tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF); i++)
     {
-        ASTNode_T* member = init_ast_node(ND_ENUM_MEMBER, p->tok);
-        member->int_val = i;
+        ASTObj_T* member = init_ast_obj(OBJ_ENUM_MEMBER, p->tok);
+        //member->int_val = i;
         member->id = parse_simple_identifier(p);
-
         list_push(enum_type->members, member);
 
         if(tok_is(p, TOKEN_ASSIGN))
         {
             parser_advance(p);
             
-            member->expr = parse_expr(p, LOWEST, TOKEN_COMMA);
-            if(!member->expr->is_constant)
-                throw_error(ERR_CONST_ASSIGN, member->expr->tok, "cannot assign non-constant value to enum member");
+            member->value = parse_expr(p, LOWEST, TOKEN_COMMA);
+            if(!member->value->is_constant)
+                throw_error(ERR_CONST_ASSIGN, member->value->tok, "cannot assign non-constant value to enum member");
         }
 
         if(!tok_is(p, TOKEN_RBRACE))

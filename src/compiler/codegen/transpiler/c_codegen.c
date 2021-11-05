@@ -73,6 +73,8 @@ static void print(CCodegenData_T* cg, char* fmt, ...)
     va_end(va);
 }
 
+static void c_gen_typedefs(CCodegenData_T* cg, ASTObj_T* obj);
+
 static char* c_gen_identifier(CCodegenData_T* cg, ASTIdentifier_T* id);
 
 static void write_code(CCodegenData_T* cg, const char* target_bin);
@@ -100,7 +102,7 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
      * the order of functions, typedefs, global
      * variables, etc. does not matter in CSpydr.
      * Therefore we have to "sort" all the different
-     * Sections of a program and emit them seperately.
+     * sections of a program and emit them seperately.
      */
 
     println(cg, (char*) default_header_code);
@@ -108,21 +110,7 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
     // generate typedefs
     for(size_t i = 0; i < cg->ast->objs->size; i++)
     {
-        ASTObj_T* obj = cg->ast->objs->items[i];
-        if(obj->kind == OBJ_TYPEDEF)
-        {
-            print(cg, "typedef ");
-            char* callee = c_gen_identifier(cg, obj->id);
-            if(obj->data_type->kind == TY_STRUCT)
-                print(cg, "struct %s", callee);
-            else
-                c_gen_type(cg, obj->data_type, callee);
-            
-            if(obj->data_type->kind == TY_LAMBDA)
-                println(cg, ";");
-            else
-                println(cg, " %s;", callee);
-        }
+        c_gen_typedefs(cg, cg->ast->objs->items[i]);
     }
 
     // declare all tuple structs
@@ -218,9 +206,8 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
     if(ty->is_complex)
         print(cg, "_Complex ");
 
-    if(ty->is_atomic) {
+    if(ty->is_atomic)
         print(cg, "_Atomic ");
-    }
 
     if(primitive_to_c_type[ty->kind])
         print(cg, "%s", primitive_to_c_type[ty->kind]);
@@ -257,12 +244,12 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
 
                 for(size_t i = 0; i < ty->members->size; i++)
                 {   
-                    ASTNode_T* member = ty->members->items[i];
+                    ASTObj_T* member = ty->members->items[i];
                     char* callee = c_gen_identifier(cg, member->id);
-                    if(member->expr)
+                    if(member->value)
                     {
                         print(cg, "%s=", callee);
-                        c_gen_expr(cg, member->expr);
+                        c_gen_expr(cg, member->value);
                         print(cg, ",");
                     } else
                         print(cg, "%s,", callee);
@@ -322,6 +309,32 @@ static void c_gen_array_brackets(CCodegenData_T* cg, ASTType_T* ty)
 
     if(ty->base && ty->base->kind == TY_ARR)
         c_gen_array_brackets(cg, ty->base);
+}
+
+static void c_gen_typedefs(CCodegenData_T* cg, ASTObj_T* obj)
+{
+    switch(obj->kind)
+    {
+        case OBJ_TYPEDEF:
+            print(cg, "typedef ");
+            char* callee = c_gen_identifier(cg, obj->id);
+            if(obj->data_type->kind == TY_STRUCT)
+                print(cg, "struct %s", callee);
+            else
+                c_gen_type(cg, obj->data_type, callee);
+        
+            if(obj->data_type->kind == TY_LAMBDA)
+                println(cg, ";");
+            else
+                println(cg, " %s;", callee);
+            break;
+        case OBJ_NAMESPACE:
+            for(size_t i = 0; i < obj->objs->size; i++)
+                c_gen_typedefs(cg, obj->objs->items[i]);
+            break;
+        default:   
+            break;
+    }
 }
 
 static bool c_gen_fn_arg_list(CCodegenData_T* cg, List_T* args)
