@@ -1,0 +1,25 @@
+import "glfw/glfw3.csp";
+
+fn main(): i32 {
+    let window: &GLFWwindow;
+
+    if !glfwInit()
+        <- -1;
+    
+    window = glfwCreateWindow(640, 480, "CSpydr+GLFW Window!", nil, nil);
+    if !window {
+        glfwTerminate();
+        <- -1;
+    }
+
+    glfwMakeContextCurrent(window);
+
+    while !glfwWindowShouldClose(window) {
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    glfwTerminate();
+
+    <- 0;
+}

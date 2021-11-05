@@ -1,0 +1,679 @@
+# a basic implementation for the glfw3 header file (made to link with -lglfw and -lGL)
+
+import "libc/stddef.csp";
+import "types.csp";
+
+macro GLFW_VERSION_MAJOR    { 3 }
+macro GLFW_VERSION_MINOR    { 4 }
+macro GLFW_VERSION_REVISION { 0 }
+
+macro GLFW_TRUE  { 1 }
+macro GLFW_FALSE { 0 }
+
+# key or mouse button was released
+macro GLFW_RELEASE { 0 }
+# key or mouse button was pressed
+macro GLFW_PRESS   { 1 }
+# key or mouse button was held down until it repeated
+macro GLFW_REPEAT  { 2 }
+
+# joystick hat states
+macro GLFW_HAT_CENTERED   { 0 }
+macro GLFW_HAT_UP         { 1 }
+macro GLFW_HAT_RIGHT      { 2 }
+macro GLFW_HAT_DOWN       { 4 }
+macro GLFW_HAT_LEFT       { 8 }
+macro GLFW_HAT_RIGHT_UP   { (2 | 1) }
+macro GLFW_HAT_RIGHT_DOWN { (2 | 4) }
+macro GLFW_HAT_LEFT_UP    { (8 | 1) }
+macro GLFW_HAT_LEFT_DOWN  { (8 | 4) }
+
+# the unknown key
+macro GLFW_KEY_UNKNOWN { -1 }
+# printable keys
+macro GLFW_KEY_SPACE         { 32 }
+macro GLFW_KEY_APOSTROPHE    { 39 }  # '
+macro GLFW_KEY_COMMA         { 44 }  # , 
+macro GLFW_KEY_MINUS         { 45 }  # - 
+macro GLFW_KEY_PERIOD        { 46 }  # . 
+macro GLFW_KEY_SLASH         { 47 }  # / 
+macro GLFW_KEY_0             { 48 }
+macro GLFW_KEY_1             { 49 }
+macro GLFW_KEY_2             { 50 }
+macro GLFW_KEY_3             { 51 }
+macro GLFW_KEY_4             { 52 }
+macro GLFW_KEY_5             { 53 }
+macro GLFW_KEY_6             { 54 }
+macro GLFW_KEY_7             { 55 }
+macro GLFW_KEY_8             { 56 }
+macro GLFW_KEY_9             { 57 }
+macro GLFW_KEY_SEMICOLON     { 59 }  # ; 
+macro GLFW_KEY_EQUAL         { 61 }  # = 
+macro GLFW_KEY_A             { 65 }
+macro GLFW_KEY_B             { 66 }
+macro GLFW_KEY_C             { 67 }
+macro GLFW_KEY_D             { 68 }
+macro GLFW_KEY_E             { 69 }
+macro GLFW_KEY_F             { 70 }
+macro GLFW_KEY_G             { 71 }
+macro GLFW_KEY_H             { 72 }
+macro GLFW_KEY_I             { 73 }
+macro GLFW_KEY_J             { 74 }
+macro GLFW_KEY_K             { 75 }
+macro GLFW_KEY_L             { 76 }
+macro GLFW_KEY_M             { 77 }
+macro GLFW_KEY_N             { 78 }
+macro GLFW_KEY_O             { 79 }
+macro GLFW_KEY_P             { 80 }
+macro GLFW_KEY_Q             { 81 }
+macro GLFW_KEY_R             { 82 }
+macro GLFW_KEY_S             { 83 }
+macro GLFW_KEY_T             { 84 }
+macro GLFW_KEY_U             { 85 }
+macro GLFW_KEY_V             { 86 }
+macro GLFW_KEY_W             { 87 }
+macro GLFW_KEY_X             { 88 }
+macro GLFW_KEY_Y             { 89 }
+macro GLFW_KEY_Z             { 90 }
+macro GLFW_KEY_LEFT_BRACKET  { 91 }  # [ 
+macro GLFW_KEY_BACKSLASH     { 92 }  # \ 
+macro GLFW_KEY_RIGHT_BRACKET { 93 }  # ] 
+macro GLFW_KEY_GRAVE_ACCENT  { 96 }  # ` 
+macro GLFW_KEY_WORLD_1       { 161 } # non-US #1 
+macro GLFW_KEY_WORLD_2       { 162 } # non-US #2 
+
+# Function keys 
+macro GLFW_KEY_ESCAPE        { 256 }
+macro GLFW_KEY_ENTER         { 257 }
+macro GLFW_KEY_TAB           { 258 }
+macro GLFW_KEY_BACKSPACE     { 259 }
+macro GLFW_KEY_INSERT        { 260 }
+macro GLFW_KEY_DELETE        { 261 }
+macro GLFW_KEY_RIGHT         { 262 }
+macro GLFW_KEY_LEFT          { 263 }
+macro GLFW_KEY_DOWN          { 264 }
+macro GLFW_KEY_UP            { 265 }
+macro GLFW_KEY_PAGE_UP       { 266 }
+macro GLFW_KEY_PAGE_DOWN     { 267 }
+macro GLFW_KEY_HOME          { 268 }
+macro GLFW_KEY_END           { 269 }
+macro GLFW_KEY_CAPS_LOCK     { 280 }
+macro GLFW_KEY_SCROLL_LOCK   { 281 }
+macro GLFW_KEY_NUM_LOCK      { 282 }
+macro GLFW_KEY_PRINT_SCREEN  { 283 }
+macro GLFW_KEY_PAUSE         { 284 }
+macro GLFW_KEY_F1            { 290 }
+macro GLFW_KEY_F2            { 291 }
+macro GLFW_KEY_F3            { 292 }
+macro GLFW_KEY_F4            { 293 }
+macro GLFW_KEY_F5            { 294 }
+macro GLFW_KEY_F6            { 295 }
+macro GLFW_KEY_F7            { 296 }
+macro GLFW_KEY_F8            { 297 }
+macro GLFW_KEY_F9            { 298 }
+macro GLFW_KEY_F10           { 299 }
+macro GLFW_KEY_F11           { 300 }
+macro GLFW_KEY_F12           { 301 }
+macro GLFW_KEY_F13           { 302 }
+macro GLFW_KEY_F14           { 303 }
+macro GLFW_KEY_F15           { 304 }
+macro GLFW_KEY_F16           { 305 }
+macro GLFW_KEY_F17           { 306 }
+macro GLFW_KEY_F18           { 307 }
+macro GLFW_KEY_F19           { 308 }
+macro GLFW_KEY_F20           { 309 }
+macro GLFW_KEY_F21           { 310 }
+macro GLFW_KEY_F22           { 311 }
+macro GLFW_KEY_F23           { 312 }
+macro GLFW_KEY_F24           { 313 }
+macro GLFW_KEY_F25           { 314 }
+macro GLFW_KEY_KP_0          { 320 }
+macro GLFW_KEY_KP_1          { 321 }
+macro GLFW_KEY_KP_2          { 322 }
+macro GLFW_KEY_KP_3          { 323 }
+macro GLFW_KEY_KP_4          { 324 }
+macro GLFW_KEY_KP_5          { 325 }
+macro GLFW_KEY_KP_6          { 326 }
+macro GLFW_KEY_KP_7          { 327 }
+macro GLFW_KEY_KP_8          { 328 }
+macro GLFW_KEY_KP_9          { 329 }
+macro GLFW_KEY_KP_DECIMAL    { 330 }
+macro GLFW_KEY_KP_DIVIDE     { 331 }
+macro GLFW_KEY_KP_MULTIPLY   { 332 }
+macro GLFW_KEY_KP_SUBTRACT   { 333 }
+macro GLFW_KEY_KP_ADD        { 334 }
+macro GLFW_KEY_KP_ENTER      { 335 }
+macro GLFW_KEY_KP_EQUAL      { 336 }
+macro GLFW_KEY_LEFT_SHIFT    { 340 }
+macro GLFW_KEY_LEFT_CONTROL  { 341 }
+macro GLFW_KEY_LEFT_ALT      { 342 }
+macro GLFW_KEY_LEFT_SUPER    { 343 }
+macro GLFW_KEY_RIGHT_SHIFT   { 344 }
+macro GLFW_KEY_RIGHT_CONTROL { 345 }
+macro GLFW_KEY_RIGHT_ALT     { 346 }
+macro GLFW_KEY_RIGHT_SUPER   { 347 }
+macro GLFW_KEY_MENU          { 348 }
+
+const GLFW_KEY_LAST = GLFW_KEY_MENU!;
+
+# mod keys
+macro GLFW_MOD_SHIFT     { 0x0001 }
+macro GLFW_MOD_CONTROL   { 0x0002 }
+macro GLFW_MOD_ALT       { 0x0004 }
+macro GLFW_MOD_SUPER     { 0x0008 }
+macro GLFW_MOD_CAPS_LOCK { 0x0010 }
+macro GLFW_MOD_NUM_LOCK  { 0x0020 }
+
+# mouse buttons
+macro GLFW_MOUSE_BUTTON_1 { 0 }
+macro GLFW_MOUSE_BUTTON_2 { 1 }
+macro GLFW_MOUSE_BUTTON_3 { 2 }
+macro GLFW_MOUSE_BUTTON_4 { 3 }
+macro GLFW_MOUSE_BUTTON_5 { 4 }
+macro GLFW_MOUSE_BUTTON_6 { 5 }
+macro GLFW_MOUSE_BUTTON_7 { 6 }
+macro GLFW_MOUSE_BUTTON_8 { 7 }
+macro GLFW_MOUSE_BUTTON_LAST   { 7 }
+macro GLFW_MOUSE_BUTTON_LEFT   { 0 }
+macro GLFW_MOUSE_BUTTON_RIGHT  { 1 }
+macro GLFW_MOUSE_BUTTON_MIDDLE { 2 }
+
+# joystick buttons
+macro GLFW_JOYSTICK_1    { 0 }
+macro GLFW_JOYSTICK_2    { 1 }
+macro GLFW_JOYSTICK_3    { 2 }
+macro GLFW_JOYSTICK_4    { 3 }
+macro GLFW_JOYSTICK_5    { 4 }
+macro GLFW_JOYSTICK_6    { 5 }
+macro GLFW_JOYSTICK_7    { 6 }
+macro GLFW_JOYSTICK_8    { 7 }
+macro GLFW_JOYSTICK_9    { 8 }
+macro GLFW_JOYSTICK_10   { 9 }
+macro GLFW_JOYSTICK_11   { 10 }
+macro GLFW_JOYSTICK_12   { 11 }
+macro GLFW_JOYSTICK_13   { 12 }
+macro GLFW_JOYSTICK_14   { 13 }
+macro GLFW_JOYSTICK_15   { 14 }
+macro GLFW_JOYSTICK_16   { 15 }
+macro GLFW_JOYSTICK_LAST { 15 }
+
+# GamePad buttons
+macro GLFW_GAMEPAD_BUTTON_A            { 0 }
+macro GLFW_GAMEPAD_BUTTON_B            { 1 }
+macro GLFW_GAMEPAD_BUTTON_X            { 2 }
+macro GLFW_GAMEPAD_BUTTON_Y            { 3 }
+macro GLFW_GAMEPAD_BUTTON_LEFT_BUMPER  { 4 }
+macro GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER { 5 }
+macro GLFW_GAMEPAD_BUTTON_BACK         { 6 }
+macro GLFW_GAMEPAD_BUTTON_START        { 7 }
+macro GLFW_GAMEPAD_BUTTON_GUIDE        { 8 }
+macro GLFW_GAMEPAD_BUTTON_LEFT_THUMB   { 9 }
+macro GLFW_GAMEPAD_BUTTON_RIGHT_THUMB  { 10 }
+macro GLFW_GAMEPAD_BUTTON_DPAD_UP      { 11 }
+macro GLFW_GAMEPAD_BUTTON_DPAD_RIGHT   { 12 }
+macro GLFW_GAMEPAD_BUTTON_DPAD_DOWN    { 13 }
+macro GLFW_GAMEPAD_BUTTON_DPAD_LEFT    { 14 }
+macro GLFW_GAMEPAD_BUTTON_LAST         { 14 }
+
+macro GLFW_GAMEPAD_BUTTON_CROSS    { 0 }
+macro GLFW_GAMEPAD_BUTTON_CIRCLE   { 1 }
+macro GLFW_GAMEPAD_BUTTON_SQUARE   { 2 }
+macro GLFW_GAMEPAD_BUTTON_TRIANGLE { 3 }
+
+# GamePad axes
+macro GLFW_GAMEPAD_AXIS_LEFT_X        { 0 }
+macro GLFW_GAMEPAD_AXIS_LEFT_Y        { 1 }
+macro GLFW_GAMEPAD_AXIS_RIGHT_X       { 2 }
+macro GLFW_GAMEPAD_AXIS_RIGHT_Y       { 3 }
+macro GLFW_GAMEPAD_AXIS_LEFT_TRIGGER  { 4 }
+macro GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER { 5 }
+macro GLFW_GAMEPAD_AXIS_LAST          { 6 }
+
+# no error has occurred
+macro GLFW_NO_ERROR { 0 }
+# GLFW has not been initialized
+macro GLFW_NOT_INITIALIZED { 0x00010001 }
+# no context is current for this thread
+macro GLFW_NO_CURRENT_CONTEXT { 0x00010002 }
+# one of the arguments to the function was an invalid enum value
+macro GLFW_INVALID_ENUM { 0x00010003 }
+# one of the arguments to the function was an invalid value
+macro GLFW_INVALID_VALUE { 0x00010004 }
+# a memory allocation failed
+macro GLFW_OUT_OF_MEMORY { 0x00010004 }
+# GLFW could not find support for the requested API on the system
+macro GLFW_API_UNAVAILABLE { 0x00010006 }
+# a platform-specific error occurred that does not match any of the more specific categories
+macro GLFW_VERSION_UNAVAILABLE { 0x00010007 }
+# the requested format is not supported or available
+macro GLFW_PLATFORM_ERROR { 0x00010008 }
+# the requested format is not supported or available
+macro GLFW_FORMAT_UNAVAILABLE { 0x00010009 }
+# the specified window does not have an OpenGL or OpenGL ES context
+macro GLFW_NO_WINDOW_CONTEXT { 0x0001000A }
+# the specified cursor shape is not available
+macro GLFW_CURSOR_UNAVAILABLE { 0x0001000B }
+# the requested feature is not provided by the platform
+macro GLFW_FEATURE_UNAVAILABLE { 0x0001000C }
+# the requested feature is not implemented for the platform
+macro GLFW_FEATURE_UNIMPLEMENTED { 0x0001000D }
+# platform unavailable or no matching platform was found
+macro GLFW_PLATFORM_UNAVAILABLE { 0x0001000E }
+
+# window
+# input focus window hint and attribute
+macro GLFW_FOCUSED { 0x00020001 }
+# window iconification window attribute
+macro GLFW_ICONIFIED { 0x00020002 }
+# window resize-ability window hint and attribute
+macro GLFW_RESIZABLE { 0x00020003 }
+# window visibility window hint and attribute
+macro GLFW_VISIBLE { 0x00020004 }
+# window decoration window hint and attribute
+macro GLFW_DECORATED { 0x00020005 }
+# window auto-iconification window hint and attribute
+macro GLFW_AUTO_ICONIFY { 0x00020006 }
+# window decoration window hint and attribute
+macro GLFW_FLOATING { 0x00020007 }
+# window maximization window hint and attribute
+macro GLFW_MAXIMZED { 0x00020008 }
+# cursor centering window hint
+macro GLFW_CENTER_CURSOR { 0x00020009 }
+# window framebuffer transparency hint and attribute
+macro GLFW_TRANSPARENT_FRAMEBUFFER { 0x0002000A }
+# mouse cursor hover window attribute
+macro GLFW_HOVERED { 0x0002000B }
+# input focus on calling show window hint and attribute
+macro GLFW_FOCUS_ON_SHOW { 0x0002000C }
+# mouse input transparency window hint and attribute
+macro GLFW_MOUSE_PASSSTHROUGH { 0x0002000D }
+
+# framebuffer
+# framebuffer bit depth hint
+macro GLFW_RED_BITS         { 0x00021001 }
+macro GLFW_GREEN_BITS       { 0x00021002 }
+macro GLFW_BLUE_BITS        { 0x00021003 }
+macro GLFW_ALPHA_BITS       { 0x00021004 }
+macro GLFW_DEPTH_BITS       { 0x00021005 }
+macro GLFW_STENCIL_BITS     { 0x00021006 }
+macro GLFW_ACCUM_RED_BITS   { 0x00021007 }
+macro GLFW_ACCUM_GREEN_BITS { 0x00021008 }
+macro GLFW_BLUE_BITS        { 0x00021009 }
+macro GLFW_ACCUM_ALPHA_BITS { 0x0002100A }
+# framebuffer auxiliary buffer hint
+macro GLFW_AUX_BUFFERS { 0x0002100B }
+# OpenGL stereoscopic rendering hint
+macro GLFW_STEREO { 0x0002100C }
+# framebuffer MSAA samples hint
+macro GLFW_SAMPLES { 0x0002100D }
+# framebuffer sRGB hint
+macro GLFW_SRGB_CAPABLE { 0x0002100E }
+# monitor refresh rate hint
+macro GLFW_REFRESH_RATE { 0x0002100F }
+# framebuffer double buffering hint and attribute
+macro GLFW_DOUBLEBUFFER { 0x0021010 }
+
+# context
+# context client API hint and attribute
+macro GLFW_CLIENT_API { 0x00022001 }
+# context client API major version hint and attribute
+macro GLFW_CONTEXT_VERSION_MAJOR { 0x00022002 }
+# context client API minor version hint and attribute
+macro GLFW_CONTEXT_VERSION_MINOR { 0x00022003 }
+# context client API revision number hint and attribute
+macro GLFW_CONTEXT_REVISION { 0x00022004 }
+# context robustness hint and attribute
+macro GLFW_CONTEXT_ROBUSTNESS { 0x00022005 }
+# OpenGL forward-compatibility hint and attribute
+macro GLFW_OPENGL_FORWARD_COMPAT { 0x00022006 }
+# debug mode context hint and attribute
+macro GLFW_CONTEXT_DEBUG { 0x00022007 }
+# legacy name for compatibility
+macro GLFW_OPENGL_DEBUG_CONTEXT { 0x0022007 }
+# OpenGL profile hint and attribute
+macro GLFW_OPENGL_PROFILE { 0x00022008 }
+# context flush-on-release hint and attribute
+macro GLFW_CONTEXT_RELEASE_BEHAVIOR { 0x00022009 }
+# context error suppression hint and attribute
+macro GLFW_CONTEXT_NO_ERROR { 0x0002200A }
+# context creation API hint and attribute
+macro GLFW_CONTEXT_CREATION_API { 0x0002200B }
+# window content area scaling window
+macro GLFW_SCALE_TO_MONITOR { 0x0002200C }
+# macOS specific:
+macro GLFW_COCOA_RETINA_FRAMEBUFFER { 0x00023001 }
+macro GLFW_COCOA_FRAME_NAME         { 0x00023002 }
+macro GLFW_COCOA_GRAPHICS_SWITCHING { 0x00023003 }
+# X11 specific:
+macro GLFW_X11_CLASS_NAME    { 0x00024001 }
+macro GLFW_X11_INSTANCE_NAME { 0x00024002 }
+# Win32 specific:
+macro GLFW_WIN32_KEYBOARD_MENU { 0x00025001 }
+
+macro GLFW_NO_API                 { 0 }
+macro GLFW_OPENGL_API             { 0x00030001 }
+macro GLFW_OPENGL_ES_API          { 0x00030002 }
+
+macro GLFW_NO_ROBUSTNESS          { 0 }
+macro GLFW_NO_RESET_NOTIFICATION  { 0x00031001 }
+macro GLFW_LOSE_CONTEXT_ON_RESET  { 0x00031002 }
+
+macro GLFW_OPENGL_ANY_PROFILE     { 0 }
+macro GLFW_OPENGL_CORE_PROFILE    { 0x00032001 }
+macro GLFW_OPENGL_COMPAT_PROFILE  { 0x00032002 }
+
+macro GLFW_CURSOR                 { 0x00033001 }
+macro GLFW_STICKY_KEYS            { 0x00033002 }
+macro GLFW_STICKY_MOUSE_BUTTONS   { 0x00033003 }
+macro GLFW_LOCK_KEY_MODS          { 0x00033004 }
+macro GLFW_RAW_MOUSE_MOTION       { 0x00033005 }
+
+macro GLFW_CURSOR_NORMAL          { 0x00034001 }
+macro GLFW_CURSOR_HIDDEN          { 0x00034002 }
+macro GLFW_CURSOR_DISABLED        { 0x00034003 }
+
+macro GLFW_ANY_RELEASE_BEHAVIOR   { 0 }
+macro GLFW_RELEASE_BEHAVIOR_FLUSH { 0x00035001 }
+macro GLFW_RELEASE_BEHAVIOR_NONE  { 0x00035002 }
+
+macro GLFW_NATIVE_CONTEXT_API     { 0x00036001 }
+macro GLFW_EGL_CONTEXT_API        { 0x00036002 }
+macro GLFW_OSMESA_CONTEXT_API     { 0x00036003 }
+
+macro GLFW_ANGLE_PLATFORM_TYPE_NONE     { 0x00037001 }
+macro GLFW_ANGLE_PLATFORM_TYPE_OPENGL   { 0x00037002 }
+macro GLFW_ANGLE_PLATFORM_TYPE_OPENGLES { 0x00037003 }
+macro GLFW_ANGLE_PLATFORM_TYPE_D3D9     { 0x00037004 }
+macro GLFW_ANGLE_PLATFORM_TYPE_D3D11    { 0x00037005 }
+macro GLFW_ANGLE_PLATFORM_TYPE_VULKAN   { 0x00037007 }
+macro GLFW_ANGLE_PLATFORM_TYPE_METAL    { 0x00037008 }
+
+# cursors
+# the regular arrow cursor shape
+macro GLFW_ARROW_CURSOR { 0x00036001 }
+# the text input I-beam cursor shape
+macro GLFW_IBEAM_CURSOR { 0x00036002 }
+# the crosshair cursor shape
+macro GLFW_CROSSHAIR_CURSOR { 0x00035003 }
+# the pointing hand cursor shape
+macro GLFW_POINTING_HAND_CURSOR { 0x00036004 }
+# the horizontal resize/move arrow shape
+macro GLFW_RESIZE_EW_CURSOR { 0x00036005 }
+# the vertical resize/move arrow shape
+macro GLFW_RESIZE_NS_CURSOR { 0x00036006 }
+# the top-left to bottom-right diagonal resize/move arrow shape
+macro GLFW_RESIZE_NWSE_CUSROR { 0x00036007 }
+# the top-right to bottom-left diagonal resize/move arrow shape
+macro GLFW_RESIZE_NESW_CURSOR { 0x00036008 }
+# the omni-directional resize/move cursor shape
+macro GLFW_RESIZE_ALL_CURSOR { 0x00036009 }
+# the operation-not-allowed shape
+macro GLFW_NOT_ALLOWED_CURSOR { 0x0003600A }
+# legacy name for compatibility
+macro GLFW_HRESIZE_CURSOR { 0x00036005 }
+macro GLFW_VRESIZE_CURSOR { 0x00036006 }
+macro GLFW_HAND_CURSOR    { 0x0036004 }
+
+macro GLFW_CONNECTED    { 0x00040001 }
+macro GLFW_DISCONNECTED { 0x00040002 }
+
+# platform
+# joystick hat buttons
+macro GLFW_JOYSTICK_HAT_BUTTONS { 0x00050001 }
+# ANGLE rendering backend init hint
+macro GLFW_ANGLE_PLATFORM_TYPE { 0x00050001 }
+# platform selection init hint
+macro GLFW_PLATFORM { 0x00050003 }
+# macOS specific:
+macro GLFW_COCOA_CHDIR_RESOURCES { 0x00051001 }
+macro GLFW_COCOA_MENUBAR { 0x00051002 }
+# X11 specific:
+macro GLFW_X11_XCB_VULKAN_SURFACE { 0x00052001 }
+
+# init
+# hint value that enables automatic platform selection
+macro GLFW_ANY_PLATFORM     { 0x00060000 }
+macro GLFW_PLATFORM_WIN32   { 0x00060001 }
+macro GLFW_PLATFORM_COCOA   { 0x00060002 }
+macro GLFW_PLATFORM_WAYLAND { 0x00060003 }
+macro GLFW_PLATFORM_X11     { 0x00060004 }
+macro GLFW_PLATFORM_NULL    { 0x00060005 }
+
+macro GLFW_DONT_CARE { (-1) }
+
+# data types and function callbacks
+
+type GLFWglproc: fn<void>();
+type GLFWvkproc: fn<void>();
+
+# base structures
+type GLFWmonitor: struct GLFWmonitor;
+type GLFWwindow: struct GLFWwindow;
+type GLFWcursor: struct GLFWcursor;
+
+# memory allocation
+type GLFWallocatefun:   fn<&void>(u64, &void);
+type GLFWreallocatefun: fn<&void>(&void, u64, &void);
+type GLFWdeallocatefun: fn<&void>(&void, &void);
+
+type GLFWerrorfun: fn<void>(i32, const &char);
+
+# window callback types
+type GLFWwindowposfun:          fn<void>(&GLFWwindow, i32, i32);
+type GLFWwindowsizefun:         fn<void>(&GLFWwindow, i32, i32);
+type GLFWwindowclosefun:        fn<void>(&GLFWwindow);
+type GLFWwindowrefreshfun:      fn<void>(&GLFWwindow);
+type GLFWwindowfocusfun:        fn<void>(&GLFWwindow, i32);
+type GLFWwindowiconifyfun:      fn<void>(&GLFWwindow, i32);
+type GLFWwindowmaximizefun:     fn<void>(&GLFWwindow, i32);
+type GLFWframebuffersizefun:    fn<void>(&GLFWwindow, i32, i32);
+type GLFWwindowcontentscalefun: fn<void>(&GLFWwindow, f32, f32);
+type GLFWmousebuttonfun:        fn<void>(&GLFWwindow, i32, i32, i32);
+type GLFWcursorposfun:          fn<void>(&GLFWwindow, f64, f64);
+type GLFWcursorenterfun:        fn<void>(&GLFWwindow, i32);
+type GLFWscrollfun:             fn<void>(&GLFWwindow, f64, f64);
+type GLFWkeyfun:                fn<void>(&GLFWwindow, i32, i32, i32, i32);
+type GLFWcharfun:               fn<void>(&GLFWwindow, u32);
+type GLFWcharmodsfun:           fn<void>(&GLFWwindow, u32, i32);
+type GLFWdropfun:               fn<void>(&GLFWwindow, i32, const &char);
+
+# monitor callback types
+type GLFWmonitorfun: fn<void>(&GLFWmonitor, i32);
+
+# joystick callback types
+type GLFWjoystickfun: fn<void>(i32, i32);
+
+# struct implementations
+# this describes a single video mode
+type GLFWvidmode: struct
+{
+    width:  i32,
+    height: i32,
+
+    redBits:   i32,
+    greenBits: i32,
+    blueBits:  i32,
+
+    refreshRate: i32
+};
+
+# this describes the gamma ramp for a monitor
+type GLFWgammaramp: struct
+{
+    red: u16,
+    green: u16,
+    blue: u16,
+    size: u32
+};
+
+# this describes a single 2D image.  See the documentation for each related function what the expected pixel format is.
+type GLFWimage: struct
+{
+    width: i32,
+    height: i32,
+    pixels: &u8
+};
+
+# this describes the input state of a gamepad
+type GLFWgamepadstate: struct
+{
+    buttons: u8[15],
+    axes: f32[6]
+};
+
+# glfw allocator type
+type GLFWallocator: struct
+{
+    allocate: GLFWallocatefun,
+    reallocate: GLFWreallocatefun,
+    deallocate: GLFWdeallocatefun,
+    user: &void
+};
+
+#[
+*** GLFW API functions ***
+]#
+
+extern
+{
+    fn glfwInit(): i32;
+    fn glfwTerminate();
+    fn glfwInitHint(hint: i32, value: i32);
+    fn glfwInitAllocator(allocator: const &GLFWallocator);
+    
+    fn glfwGetVersion(major: &i32, minor: &i32, rev: &i32);
+    fn glfwGetVersionString(): const &char;
+
+    fn glfwGetError(description: const &&char): i32;
+    fn glfwSetErroCallback(callback: GLFWerrorfun): GLFWerrorfun;
+
+    fn glfwGetPlatform(): i32;
+    fn glfwPlatformSupported(platform: i32): i32;
+
+    fn glfwGetMonitors(count: &i32): &&GLFWmonitor;
+    fn glfwGetPrimaryMonitor(): &GLFWmonitor;
+    fn glfwGetMonitorPos(monitor: &GLFWmonitor, xpos: &i32, ypos: &i32);
+    fn glfwGetMonitorWorkarea(monitor: &GLFWmonitor, xpos: &i32, ypos: &i32, width: &i32, height: &i32);
+    fn glfwGetMonitorPhysicalSize(monitpr: &GLFWmonitor, widthMM: &i32, heightMM: &i32);
+    fn glfwGetMonitorContentScale(monitor: &GLFWmonitor, xscale: &f32, yscale: &f32);
+    fn glfwGetMonitorName(monitor: &GLFWmonitor): const &char;
+    fn glfwSetMonitorUserPointer(monitor: &GLFWmonitor, pointer: &void);
+    fn glfwSetMonitorCallback(callback: GLFWmonitorfun): GLFWmonitorfun;
+
+    fn glfwGetVideoModes(monitor: &GLFWmonitor, count: &i32): const &GLFWvidmode;
+    fn glfwGetVideoMode(monitor: &GLFWmonitor): const &GLFWvidmode;
+    
+    fn glfwSetGamma(monitor: &GLFWmonitor, gamma: f32);
+    fn glfwGetGammaRamp(monitor: &GLFWmonitor): const &GLFWgammaramp;
+    fn glfwSetGammaRamp(monitor: &GLFWmonitor, ramp: const &GLFWgammaramp);
+
+    fn glfwDefaultWindowHints();
+    fn glfwWindowHint(hint: i32, value: i32);
+    fn glfwWindowHintString(hint: i32, value: const &char);
+    fn glfwCreateWindow(width: i32, height: i32, title: const &char, monitor: &GLFWmonitor, share: &GLFWwindow): &GLFWwindow;
+    fn glfwDestroyWindow(window: &GLFWwindow);
+    fn glfwWindowShouldClose(window: &GLFWwindow): i32;
+    fn glfwSetWindowShouldClose(window: &GLFWwindow, value: i32);
+    fn glfwSetWindowTitle(window: &GLFWwindow, title: const &char);
+    fn glfwSetWindowIcon(window: &GLFWwindow, count: i32, images: const &GLFWimage);
+    fn glfwGetWindowPos(window: &GLFWwindow, xpos: &i32, ypos: &i32);
+    fn glfwSetWindowPos(window: &GLFWwindow, xpos: i32, ypos: i32);
+    fn glfwSetWindowSizeLimits(window: &GLFWwindow, minwidth: i32, minheight: i32, maxwidth: i32, maxheight: i32);
+    fn glfwSetWindowAspectRatio(window: &GLFWwindow, numer: i32, denom: i32);
+    fn glfwSetWindowSize(window: &GLFWwindow, widht: i32, height: i32);
+    fn glfwGetFramebufferSize(window: &GLFWwindow, width: &i32, height: &i32);
+    fn glfwGetWindowFrameSize(window: &GLFWwindow, left: &i32, top: &i32, right: &i32, bottom: &i32);
+    fn glfwGetWindowContentScaale(window: &GLFWwindow, xscale: &f32, yscale: &f32);
+    fn glfwGetWindowOpacity(window: &GLFWwindow): f32;
+    fn glfwSetWindowOpacity(window: &GLFWwindow, opacity: f32);
+    fn glfwIconifyWindow(window: &GLFWwindow);
+    fn glfwRestoreWindow(window: &GLFWwindow);
+    fn glfwMaximizeWindow(window: &GLFWwindow);
+    fn glfwShowWindow(window: &GLFWwindow);
+    fn glfwHideWindow(window: &GLFWwindow);
+    fn glfwFocusWindow(window: &GLFWwindow);
+    fn glfwRequestWindowAttention(window: &GLFWwindow);
+
+    fn glfwGetWindowMonitor(window: &GLFWwindow): &GLFWmonitor;
+    fn glfwSetWindowMonitor(window: &GLFWwindow, monitor: &GLFWmonitor, xpos: i32, ypos: i32, width: i32, height: i32, refreshRate: i32);
+    
+    fn glfwGetWindowAttrib(window: &GLFWwindow, attrib: i32): i32;
+    fn glfwSetWIndowAttrib(window: &GLFWwindow, attrib: i32, value: i32);
+    fn glfwSetWindowUserPointer(window: &GLFWwindow, pointer: &void);
+    fn glfwGetWindowUserPointer(window: &GLFWwindow): &void;
+
+    fn glfwSetWindowPosCallback(widow: &GLFWwindow, callback: GLFWwindowposfun): GLFWwindowposfun;
+    fn glfwSetWindowSizeCallback(window: &GLFWwindow, callback: GLFWwindowsizefun): GLFWwindowsizefun;
+    fn glfwSetWindowCloseCallback(window: &GLFWwindow, callback: GLFWwindowclosefun): GLFWwindowclosefun;
+    fn glfwSetWindowRefreshCallback(window: &GLFWwindow, callback: GLFWwindowrefreshfun): GLFWwindowrefreshfun;
+    fn glfwSetWindowFocusCallback(window: &GLFWwindow, callback: GLFWwindowfocusfun): GLFWwindowfocusfun;
+    fn glfwSetWindowIconifyCallback(window: &GLFWwindow, callback: GLFWwindowiconifyfun): GLFWwindowiconifyfun;
+    fn glfwSetWindowMaximizeCallback(window: &GLFWwindow, callback: GLFWwindowmaximizefun): GLFWwindowmaximizefun;
+    fn glfwSetFramebufferSizeCallback(window: &GLFWwindow, callback: GLFWframebuffersizefun): GLFWframebuffersizefun;
+    fn glfwSetWindowContentScaleCallback(window: &GLFWwindow, callback: GLFWwindowcontentscalefun): GLFWwindowcontentscalefun;
+    
+    fn glfwPollEvents();
+    fn glfwWaitEvents();
+    fn glfwWatiEventsTimeout(timeout: f64);
+    fn glfwPostEmptyEvent();
+
+    fn glfwGetInputMode(window: &GLFWwindow, mode: i32): i32;
+    fn glfwSetInputMode(window: &GLFWwindow, mode: i32, value: i32);
+
+    fn glfwRawMouseMotionSupported();
+    fn glfwGetKeyName(key: i32, scancode: i32): const &char;
+    fn glfwGetKeyScancode(key: i32): i32;
+    fn glfwGetKey(window: &GLFWwindow, key: i32): i32;
+    fn glfwGetMouseButton(window: &GLFWwindow, button: i32): i32;
+    fn glfwGetCursorPos(window: &GLFWwindow, xpos: &f64, ypos: f64);
+    fn glfwSetCursorPos(window: &GLFWwindow, xpos: f64, ypos: f64);
+
+    fn glfwCreateCursor(image: const &GLFWimage, xhot: i32, yhot: i32);
+    fn glfwCreateStandardCursor(shape: i32): &GLFWcursor;
+    fn glfwDestroyCursor(cursor: &GLFWcursor);
+    fn glfwSetCursor(window: &GLFWwindow, cursor: &GLFWcursor);
+
+    fn glfwSetKeyCallback(window: &GLFWwindow, callback: GLFWkeyfun): GLFWkeyfun;
+    fn glfwSetCharCallback(window: &GLFWwindow, callback: GLFWcharfun): GLFWcharfun;
+    fn glfwSetCharModsCallback(window: &GLFWwindow, callback: GLFWcharmodsfun): GLFWcharmodsfun;
+    fn glfwSetMouseButtonCallback(window: &GLFWwindow, callback: GLFWmousebuttonfun): GLFWmousebuttonfun;
+    fn glfwSetCursorPosCallback(window: &GLFWwindow, callback: GLFWcursorposfun): GLFWcursorposfun;
+    fn glfwSetCursorEnterCallback(window: &GLFWwindow, callback: GLFWcursorenterfun): GLFWcursorenterfun;
+    fn glfwSetScrollCallback(window: &GLFWwindow, callback: GLFWscrollfun): GLFWscrollfun;
+    fn glfwSetDropCallback(window: &GLFWwindow, callback: GLFWdropfun): GLFWdropfun;
+
+    fn glfwJoystickPresent(jid: i32): i32;
+    fn glfwGetJoystickAxes(jid: i32, count: &i32): const &f32;
+    fn glfwGetJoystickButtons(jid: i32, count: &i32): const &u8;
+    fn glfwGetJoystickHats(jid: i32, count: &i32): const &u8;
+    fn glfwGetJoystickName(jid: i32): const &char;
+    fn glfwGetJoystickGUID(jid: i32): const &char;
+    fn glfwSetJoystickUserPointer(jid: i32, pointer: &void);
+    fn glfwGetJoystickUserPointer(jid: i32): &void;
+    fn glfwJoystickIsGamepad(jid: i32): i32;
+
+    fn glfwSetJoystickCallback(callback: GLFWjoystickfun): GLFWjoystickfun;
+
+    fn glfwUpdateGamepadMappings(string: const &char): i32;
+    fn glfwGetGamepadName(jid: i32): const &char;
+    fn glfwGetGamepadState(jid: i32, state: &GLFWgamepadstate): i32;
+    
+    fn glfwSetClipboardString(window: &GLFWwindow, string: const &char);
+    fn glfwGetClipboardString(window: &GLFWwindow): const &char;
+    
+    fn glfwGetTime(): f64;
+    fn glfwSetTime(time: f64);
+    fn glfwGetTimerValue(): u64;
+    fn glfwGetTimerFrequency(): u64;
+    
+    fn glfwMakeContextCurrent(window: &GLFWwindow);
+    fn glfwGetCurrentContext(): &GLFWwindow;
+    fn glfwSwapBuffers(window: &GLFWwindow);
+    fn glfwSwapInterval(interval: i32);
+
+    fn glfwExtensionSupported(extension: const &char): i32;
+    fn glfwGetProcAddress(procname: const &char): GLFWglproc;
+    fn glfwVulkanSupported(): i32;
+    fn glfwGetRequiredInstanceExtensions(count: &u32): const &&char;
+
+}

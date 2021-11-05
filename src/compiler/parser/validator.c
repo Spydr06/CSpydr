@@ -858,7 +858,7 @@ static void negate(ASTNode_T* neg, va_list args)
 {
     GET_VALIDATOR(args);
 
-    if(!is_number(v, neg->left->data_type))
+    if(!is_number(v, neg->right->data_type))
     {
         throw_error(ERR_TYPE_ERROR, neg->tok, "can only do bitwise operations on integer types");
         return;

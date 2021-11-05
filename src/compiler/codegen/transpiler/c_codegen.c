@@ -148,6 +148,8 @@ static void run_compiler(CCodegenData_T* cg, const char* target_bin)
         c_source_file,
         "-o",
         (char*) target_bin,
+        "-lglfw",
+        "-lGL",
         NULL
     };
 
