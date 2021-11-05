@@ -741,7 +741,6 @@ static void identifier(ASTNode_T* id, va_list args)
 {
     GET_VALIDATOR(args);
 
-    printf("searching for %s::%s\n", id->id->outer ? id->id->outer->callee : "@", id->id->callee);
     ASTObj_T* refferred_obj = search_identifier(v->current_scope, id->id);
     if(!refferred_obj)
     {
