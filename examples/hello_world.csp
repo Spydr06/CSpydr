@@ -11,7 +11,7 @@ macro print_ln(str) { printf("%s\n", str) }
 
 namespace utils {
     fn add(a: i32, b: i32): i32 ret a + b;
-    fn puts(str: &char) {
+    fn putstr(str: &char) {
         puts(str);
     }
 
@@ -52,7 +52,7 @@ fn main(argc: i32, argv: &&char): i32 {
 
     va_test(3, 4 + true: u8);
 
-    utils::puts(program_data.msg);
+    utils::putstr(program_data.msg);
 
     for let i = utils::zero; i < 10; i++;
         match i % 2 {

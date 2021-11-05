@@ -8,6 +8,7 @@
 #endif
 
 #include <stdbool.h>
+#include "list.h"
 
 // all global variables, that the compiler needs
 
@@ -27,5 +28,10 @@ bool __CSP_GLOBAL print_llvm;
 bool __CSP_GLOBAL print_c;
 
 char __CSP_GLOBAL* exec_name;
+
+__CSP_GLOBAL List_T* compiler_flags;
+
+__CSP_GLOBAL void globals_exit_hook(void);
+__CSP_GLOBAL void init_globals(void);
 
 #endif

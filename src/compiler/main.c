@@ -11,6 +11,7 @@
 */
 
 // std includes
+#include <stdlib.h>
 #include <string.h>
 
 // compiler includes
@@ -119,6 +120,8 @@ static void evaluate_info_flags(char* argv)
 // entry point
 int main(int argc, char* argv[])
 {
+    init_globals();
+    atexit(globals_exit_hook);
     atexit(llvm_exit_hook);
 
     exec_name = argv[0]; // save the execution name for later use
@@ -202,14 +205,8 @@ int main(int argc, char* argv[])
         }
         else if(streq(arg, "--cc-flags"))
         {
-            char* flags = calloc(1, sizeof(char));
             for(i++; i < argc; i++)
-            {
-                flags = realloc(flags, (strlen(flags) + strlen(argv[i]) + 2) * sizeof(char));
-                strcat(flags, argv[i]);
-                strcat(flags, " ");
-            }
-            cc_flags = flags;
+                list_push(compiler_flags, argv[i]);
             break;
         }
         else if(streq(arg, "--to-xml"))

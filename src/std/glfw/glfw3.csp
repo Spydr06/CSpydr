@@ -1,5 +1,8 @@
 # a basic implementation for the glfw3 header file (made to link with -lglfw and -lGL)
 
+# link with the glfw shared library
+[link("glfw")]
+
 import "libc/stddef.csp";
 import "types.csp";
 import "gl/gl.csp";

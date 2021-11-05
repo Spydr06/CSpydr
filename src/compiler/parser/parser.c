@@ -340,6 +340,7 @@ static ASTType_T* get_compatible_tuple(Parser_T* p, ASTType_T* tuple)
 /////////////////////////////////
 
 static void parse_obj(Parser_T* p, List_T* obj_list);
+static void parse_compiler_directives(Parser_T* p);
 
 void parse(ASTProg_T* ast, List_T* files, bool is_silent)
 {
@@ -375,6 +376,9 @@ void parse(ASTProg_T* ast, List_T* files, bool is_silent)
                 parser_consume(&parser, TOKEN_STRING, "expect file to import as string");
                 parser_consume(&parser, TOKEN_SEMICOLON, "expect `;` after import statement");
                 break;
+            case TOKEN_LBRACKET:
+                parse_compiler_directives(&parser);
+                break;
             default: 
                 parse_obj(&parser, ast->objs);
         }
@@ -386,6 +390,43 @@ void parse(ASTProg_T* ast, List_T* files, bool is_silent)
 
     // check the ast for validity
     validate_ast(ast);
+}
+
+/////////////////////////////////
+// Compiler Directives Parser  //
+/////////////////////////////////+
+
+static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value)
+{
+    if(streq(field->value, "link"))
+    {
+        char* link_flag = calloc(strlen(value) + 3, sizeof(char));
+        sprintf(link_flag, "-l%s", value);
+        ast_mem_add_ptr(link_flag);
+
+        list_push(compiler_flags, link_flag);
+    }
+    else
+        throw_error(ERR_SYNTAX_WARNING, field, "undefined compiler directive `%s`", field->value);
+}
+
+static void parse_compiler_directives(Parser_T* p)
+{
+    parser_consume(p, TOKEN_LBRACKET, "expect `[` for compiler directive");
+
+    Token_T* field_token = dupl_token(p->tok);
+    parser_consume(p, TOKEN_ID, "expect compiler directive identifier");
+    parser_consume(p, TOKEN_LPAREN, "expect `(` after identifier");
+
+    char value[__CSP_MAX_TOKEN_SIZE] = { '\0' };
+    strcpy(value, p->tok->value);
+    parser_consume(p, TOKEN_STRING, "expect value as string");
+    parser_consume(p, TOKEN_RPAREN, "expect `)` after value");
+    parser_consume(p, TOKEN_RBRACKET, "expect `]` after compiler directive");
+
+    eval_compiler_directive(p, field_token, value);
+
+    free_token(field_token);
 }
 
 /////////////////////////////////

@@ -7,7 +7,6 @@ List_T* init_list(size_t item_size)
     List_T* list = malloc(sizeof(struct LIST_STRUCT));
     list->size = 0;
     list->item_size = 0;
-
     list->items = vector_create();
 
     return list;
@@ -16,7 +15,6 @@ List_T* init_list(size_t item_size)
 void list_push(List_T* list, void* item)
 {
     list->size++;
-
     vector_add(&list->items, item);
 }
 
@@ -28,10 +26,12 @@ void free_list(List_T* list)
 
 void list_insert(List_T* list, size_t pos, void* item)
 {
+    list->size++;
     vector_insert(&list->items, pos, item);
 }
 
 void list_remove(List_T* list, size_t pos)
 {
+    list->size--;
     vector_remove(list->items, pos);
 }

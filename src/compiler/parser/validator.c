@@ -712,6 +712,7 @@ static void call(ASTNode_T* call, va_list args)
         throw_error(ERR_UNDEFINED, call->expr->tok, "undefined identifier `%s`");
         return;
     }
+    called_obj->referenced = true;
 
     switch(called_obj->kind)
     {

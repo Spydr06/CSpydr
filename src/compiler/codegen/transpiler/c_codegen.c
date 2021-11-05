@@ -3,6 +3,7 @@
 #include "../../io/log.h"
 #include "../../io/io.h"
 #include "../../error/error.h"
+#include "../../globals.h"
 
 #include <llvm-c/Target.h>
 #include <stdio.h>
@@ -142,7 +143,7 @@ static void run_compiler(CCodegenData_T* cg, const char* target_bin)
     char c_source_file[BUFSIZ] = {'\0'};
     sprintf(c_source_file, "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.c", get_home_directory(), target_bin);
 
-    char* args[] = // TODO: enable cc_flags again
+    /*char* args[] = // TODO: enable cc_flags again
     {
         cc,
         c_source_file,
@@ -151,9 +152,19 @@ static void run_compiler(CCodegenData_T* cg, const char* target_bin)
         "-lglfw",
         "-lGL",
         NULL
-    };
+    };*/
+    List_T* args = init_list(sizeof(char*));
+    list_push(args, cc);
+    list_push(args, c_source_file);
+    list_push(args, "-o");
+    list_push(args, (void*) target_bin);
+    
+    for(size_t i = 0; i < compiler_flags->size; i++)
+        list_push(args, compiler_flags->items[i]);
+    
+    list_push(args, NULL);
 
-    int exit_code = subprocess(args[0], args, false);
+    int exit_code = subprocess(args->items[0], (char* const*) args->items, false);
 
     if(exit_code != 0)
     {
