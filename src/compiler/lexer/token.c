@@ -1,4 +1,5 @@
 #include "token.h"
+#include "../ast/mem/ast_mem.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -17,12 +18,9 @@ Token_T* init_token(char* value, unsigned int line, unsigned int pos, TokenType_
     strcpy(token->value, value);
     token->source = source;
 
-    return token;
-}
+    ast_mem_add_ptr(token);
 
-void free_token(Token_T* token)
-{
-    free(token);
+    return token;
 }
 
 char* token_to_str(Token_T* token)
@@ -33,9 +31,4 @@ char* token_to_str(Token_T* token)
     sprintf(buffer, template, token->type, token->value, token->line, token->pos);
 
     return buffer;
-}
-
-Token_T* dupl_token(Token_T* tok)
-{
-    return init_token(tok->value, tok->line, tok->pos, tok->type, tok->source);
 }

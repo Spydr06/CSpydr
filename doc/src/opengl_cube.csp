@@ -7,7 +7,7 @@ import "libc/string.csp";
 let theta_y = 0.0;
 let theta_x = 0.0;
 
-const vertices: GLfloat[90] = [
+const vertices: GLfloat[] = [
         -1, -1, -1,   -1, -1,  1,   -1,  1,  1,   -1,  1, -1,
          1, -1, -1,    1, -1,  1,    1,  1,  1,    1,  1, -1,
         -1, -1, -1,   -1, -1,  1,    1, -1,  1,    1, -1, -1,
@@ -16,7 +16,7 @@ const vertices: GLfloat[90] = [
         -1, -1,  1,   -1,  1,  1,    1,  1,  1,    1, -1,  1
     ];
 
-const colors: GLfloat[90] = [
+const colors: GLfloat[] = [
         0, 0, 0,   0, 0, 1,   0, 1, 1,   0, 1, 0,
         1, 0, 0,   1, 0, 1,   1, 1, 1,   1, 1, 0,
         0, 0, 0,   0, 0, 1,   1, 0, 1,   1, 0, 0,

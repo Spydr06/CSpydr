@@ -10,7 +10,7 @@ ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok)
 {
     ASTNode_T* node = ast_malloc(sizeof(struct AST_NODE_STRUCT));
     node->kind = kind;
-    node->tok = dupl_token(tok);
+    node->tok = tok;
     node->is_default_case = false;
     node->is_constant = false;
 
@@ -39,20 +39,17 @@ ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok)
     node->args = NULL;
     node->template_types = NULL;
 
-    ast_mem_add_ptr(node->tok);
-
     return node;
 }
 
 ASTIdentifier_T* init_ast_identifier(Token_T* tok, char callee[__CSP_MAX_TOKEN_SIZE])
 {
     ASTIdentifier_T* id = ast_malloc(sizeof(struct AST_IDENTIFIER_STRUCT));
-    id->tok = dupl_token(tok);
+    id->tok = tok;
     id->outer = NULL;
     id->kind = -1;
 
-    strcpy(id->callee, callee);
-    ast_mem_add_ptr(id->tok);
+    strcpy(id->callee, callee);;
 
     return id;
 }
@@ -65,8 +62,7 @@ ASTType_T* init_ast_type(ASTTypeKind_T kind, Token_T* tok)
 
     if(tok) 
     {
-        type->tok = dupl_token(tok);
-        ast_mem_add_ptr(type->tok);
+        type->tok = tok;
     }
 
     type->size = type_byte_size_map[kind];
@@ -91,7 +87,7 @@ ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok)
 {
     ASTObj_T* obj = ast_malloc(sizeof(struct AST_OBJ_STRUCT));
     obj->kind = kind;
-    obj->tok = dupl_token(tok);
+    obj->tok = tok;
     obj->is_extern = false;
 
     obj->data_type = NULL;
@@ -103,8 +99,6 @@ ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok)
 
     obj->is_constant = false;
     obj->referenced = false;
-
-    ast_mem_add_ptr(obj->tok);
 
     return obj;
 }

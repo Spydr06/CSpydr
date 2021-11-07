@@ -434,8 +434,6 @@ static Token_T* lexer_get_char(Lexer_T* lexer)
     if(lexer->c != '\'')
     {
         throw_error(ERR_SYNTAX_ERROR,  &(Token_T){.line = lexer->line, .pos = lexer->pos, .source = lexer->file}, "unterminated char literal, expect `'`");
-        free_token(token);
-
         return init_token("EOF", lexer->line, lexer->pos, TOKEN_EOF, lexer->file); 
     }
     lexer_advance(lexer);

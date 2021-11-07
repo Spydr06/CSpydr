@@ -60,14 +60,8 @@ static Macro_T* init_macro(Token_T* tok)
 static void free_macro(Macro_T* mac)
 {
     free_list(mac->replacing_tokens);
-
-    for(u_int8_t i = 0; i < mac->argc; i++)
-        free_token(mac->args[i]);
-    
     /*for(size_t i = 0; i < mac->replacing_tokens->size; i++)
         free_token(mac->replacing_tokens->items[i]);*/
-
-    free_token(mac->tok);
     free(mac);
 }
 
@@ -131,10 +125,7 @@ static Macro_T* parse_macro_def(Preprocessor_T* pp, size_t* i)
 
      next = pp->tokens->items[(*i)++];    
     if(next->type == TOKEN_LPAREN)
-    {
-        free_token(next);
-        
-
+    {   
         // TODO: evaluate arguments
 
         for(next = pp->tokens->items[(*i)++]; next->type != TOKEN_EOF && next->type != TOKEN_RPAREN; next = pp->tokens->items[(*i)++]) 
@@ -154,19 +145,17 @@ static Macro_T* parse_macro_def(Preprocessor_T* pp, size_t* i)
 
             if(next->type != TOKEN_COMMA)
                 throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `,` between macro arguments", next->value);
-            
-            free_token(next);
         }
 
         if(next->type != TOKEN_RPAREN)
             throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `)` after macro arguments", next->value);
-        free_token(next);
+
         next = pp->tokens->items[(*i)++];
     }
 
     if(next->type != TOKEN_LBRACE)
         throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `{` to begin the macro body", next->value);
-    free_token(next);
+
 
     size_t depth = 0;
     for(next = pp->tokens->items[(*i)++]; next->type != TOKEN_EOF; next = pp->tokens->items[(*i)++])
@@ -185,7 +174,6 @@ static Macro_T* parse_macro_def(Preprocessor_T* pp, size_t* i)
 
     if(next->type != TOKEN_RBRACE)
         throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `}` to begin the macro body", next->value);
-    free_token(next);
 
     return macro;
 }
@@ -294,8 +282,7 @@ static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
     Token_T* tok;
     for(tok = lexer_next_token(&import_lexer); tok->type != TOKEN_EOF; tok = lexer_next_token(&import_lexer))  
         push_tok(pp, tok);
-
-    free_token(tok); // free the EOF token
+    
     list_push(pp->files, import_file);
 }
 
@@ -339,7 +326,6 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
         tok = pp.tokens->items[i];
         if(tok->type == TOKEN_MACRO)
         {
-            free_token(tok);
             list_push(pp.macros, parse_macro_def(&pp, &i));
             continue;
         }
@@ -360,13 +346,12 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
             Macro_T* macro = find_macro(&pp, tok->value);
             if(!macro)
                 throw_error(ERR_UNDEFINED, tok, "unedefined macro `%s`", tok->value);
-            free_token(tok);
             macro->used = true;
 
             for(size_t i = 0; i < macro->replacing_tokens->size; i++)
             {
                 Token_T* tok = macro->replacing_tokens->items[i];
-                list_push(token_stage_3, dupl_token(tok));
+                list_push(token_stage_3, tok);
             }
             continue;
         }

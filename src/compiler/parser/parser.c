@@ -244,12 +244,11 @@ static void init_parser(Parser_T* parser, List_T* tokens)
 
 static void free_parser(Parser_T* p)
 {
-    free_token(p->tok);
+    // nothing to do here
 }
 
 static inline Token_T* parser_advance(Parser_T* p)
 {
-    free_token(p->tok);
     p->tok = p->tokens->items[++p->token_i];
     return p->tok;
 }
@@ -414,7 +413,7 @@ static void parse_compiler_directives(Parser_T* p)
 {
     parser_consume(p, TOKEN_LBRACKET, "expect `[` for compiler directive");
 
-    Token_T* field_token = dupl_token(p->tok);
+    Token_T* field_token = p->tok;
     parser_consume(p, TOKEN_ID, "expect compiler directive identifier");
     parser_consume(p, TOKEN_LPAREN, "expect `(` after identifier");
 
@@ -425,8 +424,6 @@ static void parse_compiler_directives(Parser_T* p)
     parser_consume(p, TOKEN_RBRACKET, "expect `]` after compiler directive");
 
     eval_compiler_directive(p, field_token, value);
-
-    free_token(field_token);
 }
 
 /////////////////////////////////
@@ -634,7 +631,7 @@ static ASTType_T* parse_type(Parser_T* p)
                     const char* tuple_tmp = "__csp_tuple_%ld__";
                     char callee[__CSP_MAX_TOKEN_SIZE];
                     sprintf(callee, tuple_tmp, p->cur_tuple_id++);
-                    type->id = init_ast_identifier(dupl_token(type->tok), callee);
+                    type->id = init_ast_identifier(type->tok, callee);
                 
                     list_push(p->root_ref->tuple_structs, type);
                 }
@@ -1436,10 +1433,20 @@ static ASTNode_T* parse_char_lit(Parser_T* p)
 static ASTNode_T* parse_str_lit(Parser_T* p)
 {
     ASTNode_T* str_lit = init_ast_node(ND_STR, p->tok);
-    str_lit->str_val = str_lit->tok->value;
+    str_lit->str_val = strdup(p->tok->value);
     str_lit->is_constant = true;
     str_lit->data_type = (ASTType_T*) char_ptr_type;
     parser_consume(p, TOKEN_STRING, "expect string literal (\"abc\", \"wxyz\", ...)");
+
+    while(tok_is(p, TOKEN_STRING)) // expressions like `"h" "e" "l" "l" "o"` get grouped together to `"hello"`
+    {
+        str_lit->str_val = realloc(str_lit->str_val, (strlen(str_lit->str_val ) + strlen(p->tok->value) + 1) * sizeof(char));
+        strcat(str_lit->str_val, p->tok->value);
+        parser_advance(p);
+    }
+
+    ast_mem_add_ptr(str_lit->str_val);
+
     return str_lit;
 }
 
@@ -1500,7 +1507,7 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p)
     char callee[__CSP_MAX_TOKEN_SIZE];
     sprintf(callee, callee_tmp, p->cur_lambda_id++);
     
-    lambda_lit->id = init_ast_identifier(dupl_token(lambda_lit->tok), callee);
+    lambda_lit->id = init_ast_identifier(lambda_lit->tok, callee);
 
     list_push(p->root_ref->lambda_literals, lambda_lit);
 
