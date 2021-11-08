@@ -89,6 +89,7 @@ static void bitwise_op(ASTNode_T* op, va_list args);
 static void inc_dec(ASTNode_T* op, va_list args);
 static void index_(ASTNode_T* index, va_list args); // "index" was taken by string.h
 static void cast(ASTNode_T* cast, va_list args);
+static void assignment(ASTNode_T* assign, va_list args);
 
 //types
 static void struct_type(ASTType_T* s_type, va_list args);
@@ -143,6 +144,7 @@ static ASTIteratorList_T main_iterator_list =
         [ND_DEC]     = inc_dec,
         [ND_INDEX]   = index_,
         [ND_CAST]    = cast,
+        [ND_ASSIGN]  = assignment,
     },
 
     .type_fns = 
@@ -992,6 +994,48 @@ static void index_(ASTNode_T* index, va_list args)
 static void cast(ASTNode_T* cast, va_list args)
 {
     //todo: check, if type conversion is valid and safe
+}
+
+static void assignment(ASTNode_T* assign, va_list args)
+{
+    GET_VALIDATOR(args);
+
+    switch(assign->left->kind)
+    {
+        case ND_MEMBER:
+        case ND_INDEX:
+        case ND_DEREF:
+        case ND_REF:
+            // todo: implement checking for constant types
+            break;
+        case ND_ID: 
+        {
+            ASTObj_T* assigned_obj = search_in_scope(v->current_scope, assign->left->id->callee);
+            if(!assigned_obj)
+                return;
+
+            switch(assigned_obj->kind)
+            {
+                case OBJ_GLOBAL:
+                case OBJ_LOCAL:
+                case OBJ_FN_ARG:
+                    if(assigned_obj->is_constant)
+                        throw_error(ERR_CONST_ASSIGN, assigned_obj->tok, "cannot assign a value to constant %s `%s`", obj_kind_to_str(assigned_obj->kind), assigned_obj->id->callee);
+
+                    break;
+
+                case OBJ_FUNCTION:
+                case OBJ_NAMESPACE:
+                case OBJ_ENUM_MEMBER:
+                case OBJ_TYPEDEF:
+                default:
+                    throw_error(ERR_MISC, assign->tok, "cannot assign value to %s `%s`", obj_kind_to_str(assigned_obj->kind), assigned_obj->id->callee);
+            }
+        } break;
+
+        default:
+            throw_error(ERR_MISC, assign->left->tok, "cannot assign value to `%s`", assign->left->tok->value);
+    }
 }
 
 // types
