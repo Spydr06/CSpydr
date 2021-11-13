@@ -84,7 +84,9 @@ typedef enum {
     ND_WHILE,   // while x {}
     ND_FOR,     // for let i: i32 = 0; i < x; i++ {}
     ND_MATCH,   // match x {}
+    ND_MATCH_TYPE, // match type T {}
     ND_CASE,    // x => {} !!only in match statements!!
+    ND_CASE_TYPE, // i32 => {}
     ND_RETURN,  // ret x;
     ND_EXPR_STMT, // "executable" expressions
     ND_BREAK,     // break;

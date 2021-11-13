@@ -1104,6 +1104,53 @@ static ASTNode_T* parse_case(Parser_T* p)
     return case_stmt;
 }
 
+static ASTNode_T* parse_type_case(Parser_T* p)
+{
+    ASTNode_T* case_stmt = init_ast_node(ND_CASE_TYPE, p->tok);
+
+    if(tok_is(p, TOKEN_UNDERSCORE))
+    {
+        parser_advance(p);
+        case_stmt->is_default_case = true;
+    }
+    else
+        case_stmt->data_type = parse_type(p);
+    
+    parser_consume(p, TOKEN_ARROW, "expect `=>` after case condition");
+    case_stmt->body = parse_stmt(p);
+
+    return case_stmt;
+}
+
+static ASTNode_T* parse_type_match(Parser_T* p, ASTNode_T* match)
+{
+    parser_advance(p);
+
+    match->kind = ND_MATCH_TYPE;
+    match->data_type = parse_type(p);
+
+    parser_consume(p, TOKEN_LBRACE, "expect `{` after match condition");
+
+    while(!tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF))
+    {
+        ASTNode_T* case_stmt = parse_type_case(p);
+
+        if(case_stmt->is_default_case)
+        {
+            if(match->default_case)
+                throw_error(ERR_REDEFINITION, p->tok, "redefinition of default case `_`.");
+            
+            match->default_case = case_stmt;
+            continue;
+        }
+
+        list_push(match->cases, case_stmt);
+    }
+
+    parser_consume(p, TOKEN_RBRACE, "expect `}` after match condition");
+    return match;
+}
+
 static ASTNode_T* parse_match(Parser_T* p)
 {
     ASTNode_T* match = init_ast_node(ND_MATCH, p->tok);
@@ -1111,6 +1158,9 @@ static ASTNode_T* parse_match(Parser_T* p)
     match->default_case = NULL;
 
     parser_consume(p, TOKEN_MATCH, "expect `match` keyword to match an expression");
+
+    if(tok_is(p, TOKEN_TYPE))
+        return parse_type_match(p, match);
 
     match->condition = parse_expr(p, LOWEST, TOKEN_LBRACE);
     

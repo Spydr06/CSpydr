@@ -833,6 +833,13 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
             c_gen_expr(cg, node->expr);
             println(cg, ");");
             break;
+        case ND_MATCH_TYPE:
+            if(node->body)
+                c_gen_stmt(cg, node->body);
+            else if(node->default_case)
+                c_gen_stmt(cg, node->default_case->body);
+            break;
+
         default:
             break;
     }

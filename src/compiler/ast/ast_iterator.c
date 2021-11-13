@@ -219,6 +219,19 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
             ast_node(list, node->body, custom_args);
             break;
 
+        case ND_CASE_TYPE:
+            ast_type(list, node->data_type, custom_args);
+            ast_node(list, node->body, custom_args);
+            break;
+        
+        case ND_MATCH_TYPE:
+            ast_type(list, node->data_type, custom_args);
+            ast_node(list, node->body, custom_args);
+            for(size_t i = 0; i < node->cases->size; i++)
+                ast_node(list, node->cases->items[i], custom_args);
+            ast_node(list, node->body, custom_args);
+            break;
+
         case ND_LOOP:
             ast_node(list, node->body, custom_args);
             break;

@@ -69,6 +69,7 @@ static void return_end(ASTNode_T* ret, va_list args);
 static void for_start(ASTNode_T* _for, va_list args);
 static void for_end(ASTNode_T* _for, va_list args);
 static void case_end(ASTNode_T* _case, va_list args);
+static void match_type_end(ASTNode_T* match, va_list args);
 
 // expressions
 static void call(ASTNode_T* call, va_list args);
@@ -111,6 +112,7 @@ static ASTIteratorList_T main_iterator_list =
         [ND_RETURN] = return_end,
         [ND_FOR] = for_end,
         [ND_CASE] = case_end,
+        [ND_MATCH_TYPE] = match_type_end,
 
         // expressions
         [ND_ID]      = identifier,
@@ -486,6 +488,27 @@ static bool is_bool(Validator_T* v, ASTType_T* type)
     return type->kind == TY_BOOL;
 }
 
+static bool types_equal(ASTType_T* t1, ASTType_T* t2)
+{
+    //todo: handle Templates once implemented
+
+    if(t1->kind != t2->kind)
+        return false;
+    
+    switch(t1->kind)
+    {
+        case TY_ARR:
+        case TY_PTR:
+            return types_equal(t1->base, t2->base);
+        
+        case TY_UNDEF:
+            return strcmp(t1->id->callee, t2->id->callee) == 0;
+
+        default:
+            return true;
+    }
+}
+
 // id
 
 static void id_def(ASTIdentifier_T* id, va_list args)
@@ -700,6 +723,17 @@ static void for_end(ASTNode_T* _for, va_list args)
 {
     GET_VALIDATOR(args);
     end_scope(v);
+}
+
+static void match_type_end(ASTNode_T* match, va_list args)
+{
+    for(size_t i = 0; i < match->cases->size; i++)
+    {
+        ASTNode_T* case_stmt = match->cases->items[i];
+
+        if(types_equal(match->data_type, case_stmt->data_type))
+            match->body = case_stmt->body;
+    }
 }
 
 // expressions
