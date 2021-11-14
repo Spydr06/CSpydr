@@ -91,6 +91,7 @@ typedef enum TOKEN_TYPE {
     TOKEN_LET,          // let
     TOKEN_TYPE,         // type
     TOKEN_STRUCT,       // struct
+    TOKEN_UNION,        // union
     TOKEN_ENUM,         // enum
     TOKEN_IMPORT,       // import
     TOKEN_EXTERN,       // extern

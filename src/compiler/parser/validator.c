@@ -846,7 +846,7 @@ static void member(ASTNode_T* member, va_list args)
 {
     if(!member->left->data_type)
     {
-        throw_error(ERR_TYPE_ERROR, member->left->tok, "could not resolve data type for `%s`", member->id->callee);
+        throw_error(ERR_TYPE_CAST_WARN, member->left->tok, "could not resolve data type for `%s`", member->right->id->callee);
         return;
     }
 
@@ -1029,8 +1029,7 @@ static void index_(ASTNode_T* index, va_list args)
         throw_error(ERR_TYPE_ERROR, index->tok, "index: expect an integer type");
         return;
     }
-
-    index->data_type = index->left->data_type->base;
+    index->data_type = left_type->base;
 }   
 
 static void cast(ASTNode_T* cast, va_list args)

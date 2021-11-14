@@ -80,6 +80,7 @@ ASTType_T* init_ast_type(ASTTypeKind_T kind, Token_T* tok)
     type->is_volatile = false;
     type->size = 0;
     type->is_fn = false;
+    type->is_union = false;
 
     return type;
 }

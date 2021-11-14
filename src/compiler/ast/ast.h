@@ -240,6 +240,7 @@ struct AST_TYPE_STRUCT
     bool is_volatile: 1;
     bool is_atomic: 1;
     bool is_fn: 1;
+    bool is_union: 1;
 
     // functions
     List_T* arg_types;  // list of ASTType_Ts

@@ -26,6 +26,7 @@ const struct {
     {"match", TOKEN_MATCH},
     {"type", TOKEN_TYPE},
     {"struct", TOKEN_STRUCT},
+    {"union", TOKEN_UNION},
     {"enum", TOKEN_ENUM},
     {"import", TOKEN_IMPORT},
     {"const", TOKEN_CONST},

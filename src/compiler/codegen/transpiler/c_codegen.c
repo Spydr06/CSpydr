@@ -271,12 +271,12 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
                 print(cg, "}");
                 break;
             case TY_STRUCT:
-                println(cg, "struct %s {", struct_name);
+                println(cg, "%s %s {", ty->is_union ? "union" : "struct", struct_name);
 
                 for(size_t i = 0; i < ty->members->size; i++)
                 {
                     ASTNode_T* member = ty->members->items[i];
-                    c_gen_type(cg, member->data_type, struct_name);
+                    c_gen_type(cg, member->data_type, "");
                     print(cg, " %s", c_gen_identifier(cg, member->id)); 
                     if(member->data_type->kind == TY_ARR)
                         c_gen_array_brackets(cg, member->data_type);

@@ -281,7 +281,7 @@ Token_T* parser_consume(Parser_T* p, TokenType_T type, const char* msg)
 
 static inline bool is_editable(ASTNodeKind_T n)
 {
-    return n == ND_ID || n == ND_INDEX || n == ND_CAST || n == ND_CALL || n == ND_ARRAY || n == ND_STR || n == ND_MEMBER;
+    return n == ND_ID || n == ND_INDEX || n == ND_CAST || n == ND_CALL || n == ND_ARRAY || n == ND_STR || n == ND_MEMBER || n == ND_DEREF;
 }
 
 static inline bool is_executable(ASTNodeKind_T n)
@@ -470,7 +470,13 @@ static ASTType_T* parse_type(Parser_T* p);
 static ASTType_T* parse_struct_type(Parser_T* p)
 {
     ASTType_T* struct_type = init_ast_type(TY_STRUCT, p->tok);
-    parser_consume(p, TOKEN_STRUCT, "expect `struct` keyword for struct type");
+    if(tok_is(p, TOKEN_STRUCT))
+        parser_consume(p, TOKEN_STRUCT, "expect `struct` keyword for struct type");
+    else
+    { 
+        struct_type->is_union = true;
+        parser_consume(p, TOKEN_UNION, "expect `union` keyword for struct type");
+    }
 
     if(tok_is(p, TOKEN_ID))
     {
@@ -601,6 +607,7 @@ static ASTType_T* parse_type(Parser_T* p)
             case TOKEN_FN:
                 type = parse_lambda_type(p);
                 break;
+            case TOKEN_UNION:
             case TOKEN_STRUCT:
                 type = parse_struct_type(p);
                 break;
@@ -1586,7 +1593,7 @@ static ASTNode_T* parse_unary(Parser_T* p)
     ASTNode_T* unary = init_ast_node(unary_ops[p->tok->type], p->tok);
     parser_advance(p);
 
-    unary->right = parse_expr(p, LOWEST, TOKEN_EOF);
+    unary->right = parse_expr(p, LOWEST, TOKEN_ASSIGN);
     return unary;
 }
 
