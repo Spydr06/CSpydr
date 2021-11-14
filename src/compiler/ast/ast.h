@@ -220,6 +220,8 @@ struct AST_IDENTIFIER_STRUCT
 
     char callee[__CSP_MAX_TOKEN_SIZE];
     ASTIdentifier_T* outer;
+
+    bool global_scope : 1;
 } __attribute((packed));
 
 struct AST_TYPE_STRUCT 

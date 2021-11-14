@@ -27,6 +27,8 @@ typedef struct VALIDATOR_STRUCT
     bool main_function_found;
 } Validator_T;
 
+static VScope_T* global_scope;
+
 // validator struct functions
 static Validator_T* init_validator(Validator_T* v)
 {
@@ -185,9 +187,12 @@ void validate_ast(ASTProg_T* ast)
     init_validator(&v);
 
     begin_obj_scope(&v, NULL, ast->objs);
+    global_scope = v.current_scope;
+
     ast_iterate(&main_iterator_list, ast, &v);
 
     end_scope(&v);
+    global_scope = NULL;
 
     if(!v.main_function_found)
     {
@@ -245,6 +250,9 @@ static ASTObj_T* search_identifier(VScope_T* scope, ASTIdentifier_T* id)
 {
     if(!scope || !id)
         return NULL;
+    
+    if(id->global_scope && scope != global_scope)
+        return search_identifier(global_scope, id);
 
     if(!id->outer)
     {

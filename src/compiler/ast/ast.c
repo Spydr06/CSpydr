@@ -48,6 +48,7 @@ ASTIdentifier_T* init_ast_identifier(Token_T* tok, char callee[__CSP_MAX_TOKEN_S
     id->tok = tok;
     id->outer = NULL;
     id->kind = -1;
+    id->global_scope = true;
 
     strcpy(id->callee, callee);;
 

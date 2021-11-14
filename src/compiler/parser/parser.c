@@ -148,6 +148,7 @@ static struct { PrefixParseFn_T pfn; InfixParseFn_T ifn; Precedence_T prec; } ex
     [TOKEN_BIT_AND_ASSIGN] = {NULL, parse_assignment, ASSIGN},
     [TOKEN_BIT_OR_ASSIGN] = {NULL, parse_assignment, ASSIGN},  
     [TOKEN_INFIX_CALL] = {NULL, parse_infix_call, INFIX_CALL},
+    [TOKEN_STATIC_MEMBER] = {parse_id, NULL, LOWEST},
 }; 
 
 static ASTNodeKind_T unary_ops[TOKEN_EOF + 1] = {
@@ -432,8 +433,16 @@ static void parse_compiler_directives(Parser_T* p)
 
 static ASTIdentifier_T* __parse_identifier(Parser_T* p, ASTIdentifier_T* outer, bool is_simple)
 {
+    bool global_scope = false;
+    if(tok_is(p, TOKEN_STATIC_MEMBER) && parser_peek(p, 1)->type == TOKEN_ID)
+    {
+        parser_advance(p);
+        global_scope = true;
+    }
+
     ASTIdentifier_T* id = init_ast_identifier(p->tok, p->tok->value);
     id->outer = outer;
+    id->global_scope = global_scope;
     parser_consume(p, TOKEN_ID, "expect identifier");
 
     if(tok_is(p, TOKEN_STATIC_MEMBER) && !is_simple)
@@ -936,6 +945,14 @@ static void parse_namespace(Parser_T* p, List_T* objs)
         p->cur_fn = NULL;
         parse_obj(p, namespace->objs);
     }
+
+    for(size_t i = 0; i < namespace->objs->size; i++)
+    {
+        ASTObj_T* obj = namespace->objs->items[i];
+        if(!obj->id->outer)
+            obj->id->outer = namespace->id;
+    }
+
     parser_consume(p, TOKEN_RBRACE, "expect `}` at end of namespace");
 }
 

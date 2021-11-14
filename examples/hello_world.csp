@@ -11,8 +11,13 @@ macro print_ln(str) { printf("%s\n", str) }
 
 namespace utils {
     fn add(a: i32, b: i32): i32 ret a + b;
+
     fn putstr(str: &char) {
-        puts(str);
+        ::puts(str); # don't use utils::puts, use the puts function in the global scope
+    }
+
+    fn puts(str: &char, x: i32) {
+
     }
 
     const zero = 0;
