@@ -62,6 +62,7 @@ static void local_start(ASTObj_T* local, va_list args);
 static void local_end(ASTObj_T* local, va_list args);
 static void fn_arg_start(ASTObj_T* arg, va_list args);
 static void fn_arg_end(ASTObj_T* arg, va_list args);
+static void enum_member_end(ASTObj_T* en, va_list args);
 
 // node
 // statements
@@ -97,6 +98,7 @@ static void assignment(ASTNode_T* assign, va_list args);
 //types
 static void struct_type(ASTType_T* s_type, va_list args);
 static void enum_type(ASTType_T* e_type, va_list args);
+static void undef_type(ASTType_T* u_type, va_list args);
 
 // iterator configuration
 static ASTIteratorList_T main_iterator_list = 
@@ -155,6 +157,7 @@ static ASTIteratorList_T main_iterator_list =
     {
         [TY_STRUCT] = struct_type,
         [TY_ENUM]   = enum_type,
+        [TY_UNDEF]   = undef_type,
     },
 
     .obj_start_fns = 
@@ -175,6 +178,7 @@ static ASTIteratorList_T main_iterator_list =
         [OBJ_GLOBAL]    = global_end,
         [OBJ_LOCAL]     = local_end,
         [OBJ_FN_ARG]    = fn_arg_end,
+        [OBJ_ENUM_MEMBER] = enum_member_end,
     },
 
     .id_def_fn = id_def,
@@ -690,6 +694,12 @@ static void fn_arg_end(ASTObj_T* arg, va_list args)
 
 }
 
+static void enum_member_end(ASTObj_T* e_member, va_list args)
+{
+    if(!e_member->value->is_constant)
+        throw_error(ERR_CONST_ASSIGN, e_member->value->tok, "cannot assign non-constant value to enum member");
+}
+
 // node
 // statements
 
@@ -1098,4 +1108,15 @@ static void enum_type(ASTType_T* e_type, va_list args)
     begin_obj_scope(v, NULL, e_type->members);
 
     end_scope(v);
+}
+
+static void undef_type(ASTType_T* u_type, va_list args)
+{
+    GET_VALIDATOR(args);
+
+    ASTObj_T* found = search_identifier(v->current_scope, u_type->id);
+    if(!found)
+        throw_error(ERR_TYPE_ERROR, u_type->tok, "could not find data type named `%s`", u_type->id->callee);
+    
+    u_type->id->outer = found->id->outer;
 }

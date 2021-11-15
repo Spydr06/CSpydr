@@ -520,6 +520,7 @@ static ASTType_T* parse_enum_type(Parser_T* p)
     for(int i = 0; !tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF); i++)
     {
         ASTObj_T* member = init_ast_obj(OBJ_ENUM_MEMBER, p->tok);
+        member->data_type = (ASTType_T*) primitives[TY_I32];
         //member->int_val = i;
         member->id = parse_simple_identifier(p);
         list_push(enum_type->members, member);
@@ -529,8 +530,6 @@ static ASTType_T* parse_enum_type(Parser_T* p)
             parser_advance(p);
             
             member->value = parse_expr(p, LOWEST, TOKEN_COMMA);
-            if(!member->value->is_constant)
-                throw_error(ERR_CONST_ASSIGN, member->value->tok, "cannot assign non-constant value to enum member");
         }
 
         if(!tok_is(p, TOKEN_RBRACE))
