@@ -60,7 +60,7 @@ A list of all the features, that are/will be implemented.
 
 ## Installation
 
-Currently, CSpydr is only available for Linux. Once a first major release is in sight I will create an [AUR](https://aur.archlinux.org/) repository for [Arch Linux](https://archlinux.org/) and port it over to [Windows](https://www.microsoft.com/windows), but at the moment Installation is done via CMake. You also need [*LLVM*](https://llvm.org/docs/GettingStarted.html) to compile CSpydr.
+Currently, CSpydr is only available for Linux. Once a first major release is in sight I will create an [AUR](https://aur.archlinux.org/) repository for [Arch Linux](https://archlinux.org/) and port it over to [Windows](https://www.microsoft.com/windows), but at the moment Installation is done via CMake. You also need [*LLVM-13*](https://llvm.org/docs/GettingStarted.html) to compile CSpydr.
 Finally, enter these commands:
 
 ```bash
