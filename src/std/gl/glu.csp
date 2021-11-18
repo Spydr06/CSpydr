@@ -202,7 +202,7 @@ macro GLU_TESS_WINDING_ABS_GEQ_TWO       { 100134 }
 
 type _GLUfuncptr: fn<void>();
 type GLUnurbs: struct GLUnurbs;
-type GLUqadric: struct GLUquadric;
+type GLUquadric: struct GLUquadric;
 type GLUtesselator: struct GLUtesselator;
 
 extern {
@@ -210,7 +210,7 @@ extern {
     fn gluBeginCurve(nurb: &GLUnurbs);
     fn gluBeginPolygon(tess: &GLUtesselator);
     fn gluBeginSurface(nurb: &GLUnurbs);
-    fn gluBeginTrim(nurb: &GLUnurb);
+    fn gluBeginTrim(nurb: &GLUnurbs);
     fn gluBuild1DMipmapLevels(target: GLenum, internalFormat: GLint, width: GLsizei, kind: GLenum, level: GLint, base: GLint, max: GLint, data: const &void): GLint;
     fn gluBuild1DMipmaps(target: GLenum, internalFormat: GLint, width: GLsizei, format: GLenum, kind: GLenum, data: const &void): GLint;
     fn gluBuild2DMipmapLevels(target: GLenum, internalFormat: GLint, width: GLsizei, height: GLsizei, kind: GLenum, level: GLint, base: GLint, max: GLint, data: const &void): GLint;
@@ -219,7 +219,7 @@ extern {
     fn gluBuild3DMipmaps(target: GLenum, internalFormat: GLint, width: GLsizei, height: GLsizei, depth: GLsizei, format: GLenum, kind: GLenum, data: const &void): GLint;
     fn gluCheckExtension(extName: const &GLubyte, extString: const &GLubyte): GLboolean;
     fn gluCylinder(quad: &GLUquadric, base: GLdouble, top: GLdouble, height: GLdouble, slices: GLint, stacks: GLint);
-    fn gluDeleteNurbsRenderer(nurb: &GLUnurb);
+    fn gluDeleteNurbsRenderer(nurb: &GLUnurbs);
     fn gluDeleteQuadric(quad: &GLUquadric);
     fn gluDeleteTess(tess: &GLUtesselator);
     fn gluDisk(quad: &GLUquadric, inner: GLdouble, outer: GLdouble, slices: GLint, loops: GLint);
@@ -250,7 +250,7 @@ extern {
     fn gluProject(objX: GLdouble, objY: GLdouble, objZ: GLdouble, model: const &GLdouble, proj: const &GLint, winX: &GLdouble, winY: &GLdouble, winZ: &GLdouble): GLint;
     fn gluPwlCurve(nurb: GLUnurbs, count: GLint, data: &GLfloat, stride: GLint, kind: GLenum);
     fn gluQuadricCallback(quad: &GLUquadric, which: GLenum, CallBackFunc: _GLUfuncptr);
-    fn gluQuadricDrawStyle(quad: &GLUqadric, draw: GLenum);
+    fn gluQuadricDrawStyle(quad: &GLUquadric, draw: GLenum);
     fn gluQuadricNormals(quad: &GLUquadric, normal: GLenum);
     fn gluQuadricOrientation(quad: &GLUquadric, orientation: GLenum);
     fn gluScaleImage(format: GLenum, wIn: GLsizei, hIn: GLsizei, typeIn: GLenum, dataIn: const &void, wOut: GLsizei, hOut: GLsizei, typeOut: GLenum, dataOut: &GLvoid): GLint;
