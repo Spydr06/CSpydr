@@ -281,7 +281,7 @@ Token_T* parser_consume(Parser_T* p, TokenType_T type, const char* msg)
 
 static inline bool is_editable(ASTNodeKind_T n)
 {
-    return n == ND_ID || n == ND_INDEX || n == ND_CAST || n == ND_CALL || n == ND_ARRAY || n == ND_STR || n == ND_MEMBER || n == ND_DEREF;
+    return n == ND_ID || n == ND_INDEX || n == ND_CAST || n == ND_CALL || n == ND_ARRAY || n == ND_STR || n == ND_MEMBER || n == ND_DEREF || n == ND_CLOSURE;
 }
 
 static inline bool is_executable(ASTNodeKind_T n)

@@ -1,9 +1,21 @@
-# a program to test the llvm frontend
-extern fn puts(s: &char): i32;
+import "libc/stdio.csp";
+import "stack.csp";
 
 fn main(argc: i32, argv: &&char): i32
 {   
-    puts("Hello World!");
+    let x = 0;
+    let y = 3;
+    let z = 4;
+
+    let my_stack = std::stack::init();
+    
+    std::stack::push(my_stack, &x);
+    std::stack::push(my_stack, &y);
+    std::stack::push(my_stack, &z);
+    printf("stack is: %ld long and has allocated %ld bytes\n", my_stack.size, my_stack.allocated);
+    printf("stack item at index 2 is %d\n", *(std::stack::peek(my_stack, 1): &i32));
+
+    std::stack::free(my_stack);
 
     <- 0;
 }
