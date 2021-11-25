@@ -1,21 +1,27 @@
 import "libc/stdio.csp";
-import "stack.csp";
+import "list.csp";
 
 fn main(argc: i32, argv: &&char): i32
 {   
     let x = 0;
-    let y = 3;
-    let z = 4;
+    let y = 34;
+    let z = 29;
 
-    let my_stack = std::stack::init();
-    
-    std::stack::push(my_stack, &x);
-    std::stack::push(my_stack, &y);
-    std::stack::push(my_stack, &z);
-    printf("stack is: %ld long and has allocated %ld bytes\n", my_stack.size, my_stack.allocated);
-    printf("stack item at index 2 is %d\n", *(std::stack::peek(my_stack, 1): &i32));
+    # Liste erstellen
+    let my_list = std::list::init();
 
-    std::stack::free(my_stack);
+    # Elemente zur Liste hinzufügen
+    std::list::add(my_list, &x);
+    std::list::add(my_list, &z);
+    std::list::add(my_list, &y);
+
+    # Alle Elemente der Liste ausgeben
+    std::list::for_each(my_list, |i: u64, v: &i32| => {
+        printf("my_list[%ld] is %d\n", i, *v);
+    });
+
+    # Liste löschen
+    std::list::free(my_list);
 
     <- 0;
 }

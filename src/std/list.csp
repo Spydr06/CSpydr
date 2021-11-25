@@ -40,6 +40,16 @@ namespace std {
             list.data[list.length - 1] = item;
         }
 
+        # iterate over every item of the list
+        fn for_each(list: &List, lambda: fn<void>(u64, &void))
+            for let i: u64 = 0; i < list.length; i++;
+                lambda(i, list.data[i]);
+
+        # joint two lists together
+        fn join(dest: &List, src: &List) {
+            for let i: u64 = 0; i < src.length; i++
+                add(dest, src.data[i]);
+
         # gets the value at an index
         fn get(list: &List, index: u64): &void {
             if list.length > index
