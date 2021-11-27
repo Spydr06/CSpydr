@@ -171,6 +171,8 @@ static void run_compiler(CCodegenData_T* cg, const char* target_bin)
         LOG_ERROR_F("error compiling code using %s. (exit code %d)\n", cc, exit_code);
         exit(1);
     }
+
+    free_list(args);
 }
 
 static void write_code(CCodegenData_T* cg, const char* target_bin)
