@@ -134,6 +134,7 @@ typedef enum {
     TY_TEMPLATE,
 
     TY_UNDEF,
+    TY_TYPEOF,
     
     TY_KIND_LEN
 } ASTTypeKind_T;

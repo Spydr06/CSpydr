@@ -102,6 +102,7 @@ typedef enum TOKEN_TYPE {
     TOKEN_ATOMIC,       // atomic
     TOKEN_VOLATILE,     // volatile
     TOKEN_SIZEOF,       // sizeof
+    TOKEN_TYPEOF,       // typeof
     TOKEN_WHILE,        // while
     TOKEN_FOR,          // for
     TOKEN_CONTINUE,     // continue

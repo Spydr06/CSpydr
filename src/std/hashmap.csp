@@ -1,0 +1,64 @@
+import "libc/stdlib.csp";
+import "libc/string.csp";
+
+namespace std {
+    type HashMap: struct {
+        length: u64,
+        allocated: u64, 
+        data: &HashPair
+    };
+
+    type HashPair: struct {
+        key: &char,
+        value: &void
+    };
+
+    namespace hashmap {
+        const ALLOC_SIZE = 128;
+
+        fn init(): &::std::HashMap {
+            let map: HashMap = malloc(sizeof HashMap);
+            map.length = 0;
+            map.allocated = 0;
+            map.data = nil;
+
+            <- map;
+        }
+
+        fn add(map: &HashMap, key: &char, value: &void) {
+            map.length++;
+
+            if map.allocated < map.length {
+                if map.allocated == 0 {
+                    map.allocated = ALLOC_SIZE;
+                    map.data = calloc(map.allocated, sizeof HashPair);
+                }
+                else {
+                    map.allocated = map.allocated + ALLOC_SIZE;
+                    map.data = realloc(map.data, map.allocated * sizeof HashPair);
+                }
+            }
+
+            map.data[map.length - 1].key = key;
+            map.data[map.length - 1].value = value;
+        }
+
+        fn add_pair(map: &HashMap, pair: HashPair) 
+            add(map, pair.key, pair.value);
+
+        fn get(map: &HashMap, key: &char) {
+            for let i: u64 = 0; i < map.length; i++; {
+                let pair = map.data[i];
+                if pair.key == key {
+                    
+                }
+            }
+        }
+
+        fn free(map: &HashMap) {
+            if map.allocated > 0
+                ::free(map.data);
+            ::free(map);
+        }
+    }
+}

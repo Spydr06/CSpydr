@@ -652,6 +652,11 @@ static ASTType_T* parse_type(Parser_T* p)
                 }
 
                 break;
+            case TOKEN_TYPEOF:
+                type = init_ast_type(TY_TYPEOF, p->tok);
+                parser_advance(p);
+                type->num_indices = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+                break;
             default:
                 type = init_ast_type(TY_UNDEF, p->tok);
                 type->id = parse_identifier(p);

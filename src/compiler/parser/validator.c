@@ -99,6 +99,7 @@ static void assignment(ASTNode_T* assign, va_list args);
 static void struct_type(ASTType_T* s_type, va_list args);
 static void enum_type(ASTType_T* e_type, va_list args);
 static void undef_type(ASTType_T* u_type, va_list args);
+static void typeof_type(ASTType_T* typeof_type, va_list args);
 
 // iterator configuration
 static ASTIteratorList_T main_iterator_list = 
@@ -157,7 +158,8 @@ static ASTIteratorList_T main_iterator_list =
     {
         [TY_STRUCT] = struct_type,
         [TY_ENUM]   = enum_type,
-        [TY_UNDEF]   = undef_type,
+        [TY_UNDEF]  = undef_type,
+        [TY_TYPEOF] = typeof_type,
     },
 
     .obj_start_fns = 
@@ -843,13 +845,16 @@ static void reference(ASTNode_T* ref, va_list args)
 
 static void dereference(ASTNode_T* deref, va_list args)
 {
-    if(deref->right->data_type->kind != TY_PTR)
+    GET_VALIDATOR(args);
+
+    ASTType_T* right_dt = expand_typedef(v, deref->right->data_type);
+    if(right_dt->kind != TY_PTR)
     {
         throw_error(ERR_TYPE_ERROR, deref->tok, "can only dereference variables with pointer type");
         return;
     }
 
-    deref->data_type = deref->right->data_type->base;
+    deref->data_type = right_dt->base;
 }
 
 static void member(ASTNode_T* member, va_list args)
@@ -1119,4 +1124,15 @@ static void undef_type(ASTType_T* u_type, va_list args)
         throw_error(ERR_TYPE_ERROR, u_type->tok, "could not find data type named `%s`", u_type->id->callee);
     
     u_type->id->outer = found->id->outer;
+}
+
+static void typeof_type(ASTType_T* typeof_type, va_list args)
+{
+    GET_VALIDATOR(args);
+
+    ASTType_T* found = typeof_type->num_indices->data_type;
+    if(!found)
+        throw_error(ERR_TYPE_ERROR, typeof_type->num_indices->tok, "could not resolve data type");
+    
+    *typeof_type = *found;
 }

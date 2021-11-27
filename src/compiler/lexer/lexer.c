@@ -37,6 +37,7 @@ const struct {
     {"macro", TOKEN_MACRO},
     {"namespace", TOKEN_NAMESPACE},
     {"sizeof", TOKEN_SIZEOF},
+    {"typeof", TOKEN_TYPEOF},
     {"break", TOKEN_BREAK},
     {"continue", TOKEN_CONTINUE},
     {"noop", TOKEN_NOOP},

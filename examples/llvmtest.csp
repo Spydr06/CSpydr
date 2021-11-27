@@ -1,27 +1,9 @@
 import "libc/stdio.csp";
-import "list.csp";
 
 fn main(argc: i32, argv: &&char): i32
-{   
-    let x = 0;
-    let y = 34;
-    let z = 29;
-
-    # Liste erstellen
-    let my_list = std::list::init();
-
-    # Elemente zur Liste hinzufügen
-    std::list::add(my_list, &x);
-    std::list::add(my_list, &z);
-    std::list::add(my_list, &y);
-
-    # Alle Elemente der Liste ausgeben
-    std::list::for_each(my_list, |i: u64, v: &i32| => {
-        printf("my_list[%ld] is %d\n", i, *v);
-    });
-
-    # Liste löschen
-    std::list::free(my_list);
+{
+    let x: u16 = 0;
+    let y: (typeof x) = 0;
 
     <- 0;
 }
