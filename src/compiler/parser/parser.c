@@ -1219,10 +1219,17 @@ static ASTNode_T* parse_expr_stmt(Parser_T* p)
     ASTNode_T* stmt = init_ast_node(ND_EXPR_STMT, p->tok);
     stmt->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
 
-    if(!is_executable(stmt->expr->kind))
-        throw_error(ERR_SYNTAX_ERROR, stmt->expr->tok, "cannot treat `%s` as a statement, expect function call, assignment or similar", stmt->expr->tok->value);
-
-    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after expression statement");
+    ASTNode_T* node = stmt->expr;
+retry:
+    if(!is_executable(node->kind))
+        {
+            if(node->kind == ND_CLOSURE) {
+                node = node->expr;
+                goto retry;
+            }
+            throw_error(ERR_SYNTAX_ERROR, stmt->expr->tok, "cannot treat `%s` as a statement, expect function call, assignment or similar", stmt->expr->tok->value);
+        }
+        parser_consume(p, TOKEN_SEMICOLON, "expect `;` after expression statement");
 
     return stmt;
 }
