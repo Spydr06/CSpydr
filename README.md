@@ -43,7 +43,7 @@ A list of all the features, that are/will be implemented.
 - [x] `extern` functions and globals
 - [x] `sizeof` keyword (currently called through the C interface)
 - [x] different loop types: `for`, `while` and `loop`
-- [x] macros (without arguments)
+- [x] macros
 - [x] namespaces
 - [x] public functions, globals, types and struct members
 - [ ] functions inside of structs
