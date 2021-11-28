@@ -4,23 +4,23 @@ import "libc/stddef.csp";
 import "libc/stdarg.csp";
 import "libc/wchar.csp";
 
-macro BUFSIZ { 8192 }
+#macro BUFSIZ { 8192 }
 
-macro _IOFBF { nil }
-macro _IOLBF { nil }
-macro _IONBF { nil }
+#macro _IOFBF { nil }
+#macro _IOLBF { nil }
+#macro _IONBF { nil }
 
-macro EOF { (-1) }
+#macro EOF { (-1) }
 
 # from bits/stdio_lim.h
-macro L_tmpnam { 20 }
-macro FOPEN_MAX { 16 }
-macro FILENAME_MAX { 4096 }
-macro TMP_MAX { 238328 }
+#macro L_tmpnam { 20 }
+#macro FOPEN_MAX { 16 }
+#macro FILENAME_MAX { 4096 }
+#macro TMP_MAX { 238328 }
 
-macro SEEK_CUR { 1 }
-macro SEEK_END { 2 }
-macro SEEK_SET { 0 }
+#macro SEEK_CUR { 1 }
+#macro SEEK_END { 2 }
+#macro SEEK_SET { 0 }
 
 type FILE: struct _IO_FILE;
 

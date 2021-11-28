@@ -1,9 +1,9 @@
 import "libc/stdio.csp";
 
+macro println(string) { printf("%s\n", string) }
+
 fn main(argc: i32, argv: &&char): i32
 {
-    let x: u16 = 0;
-    let y: (typeof x) = 0;
-
+    println!("Hello, World!");
     <- 0;
 }

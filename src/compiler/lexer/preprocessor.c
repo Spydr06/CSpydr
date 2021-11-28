@@ -7,12 +7,22 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <sys/types.h>
+#include <stdint.h>
 
 #include "../io/io.h"
 #include "../io/log.h"
 
-struct PREPROCESSOR_STRUCT 
+#define throw_error(...)          \
+    {                             \
+        printf("\n");             \
+        throw_error(__VA_ARGS__); \
+    }
+
+//
+// Base structs
+//
+
+typedef struct PREPROCESSOR_STRUCT 
 {
     Lexer_T* lex;
     List_T* files;
@@ -22,29 +32,36 @@ struct PREPROCESSOR_STRUCT
     List_T* imports;
 
     bool is_silent;
-};
-
-#define throw_error(...)          \
-    {                             \
-        printf("\n");             \
-        throw_error(__VA_ARGS__); \
-    }
+} Preprocessor_T;
 
 typedef struct MACRO_STRUCT
 {
     Token_T* tok;
     List_T* replacing_tokens;
 
-    u_int8_t argc;
+    uint8_t argc;
     Token_T* args[__CSP_MAX_FN_NUM_ARGS];
-    bool used;
+    bool used : 1;
 } __attribute__((packed)) Macro_T ;
+
+typedef struct MACRO_CALL_STRUCT
+{
+    Token_T* tok;
+    Macro_T* macro;
+
+    uint8_t argc;
+    struct { size_t start_idx, end_idx; } args[__CSP_MAX_FN_NUM_ARGS];
+} __attribute__((packed)) MacroCall_T;
 
 typedef struct IMPORT_STRUCT
 {
     Token_T* tok;
     char* import_path;
 } __attribute__((packed)) Import_T;
+
+//
+// Base functions
+//
 
 static Macro_T* init_macro(Token_T* tok)
 {
@@ -55,6 +72,20 @@ static Macro_T* init_macro(Token_T* tok)
     mac->used = false;
 
     return mac;
+}
+
+static Macro_T* find_macro(Preprocessor_T* pp, char* callee);
+
+static void init_macro_call(Preprocessor_T* pp, MacroCall_T* call, Token_T* tok)
+{
+    call->tok = tok;
+    call->macro = find_macro(pp, tok->value);
+    if(!call->macro)
+        throw_error(ERR_UNDEFINED, tok, "undefined macro `%s`", tok->value);
+    call->macro->used = true;
+
+    call->argc = 0;
+    memset(call->args, 0, sizeof(*call->args));
 }
 
 static void free_macro(Macro_T* mac)
@@ -114,91 +145,9 @@ static inline void push_tok(Preprocessor_T* pp, Token_T* tok)
     list_push(pp->tokens, tok);
 }
 
-static Macro_T* parse_macro_def(Preprocessor_T* pp, size_t* i)
-{    
-    (*i)++; // skip the `macro` token
-
-    Token_T* next = pp->tokens->items[(*i)++];
-    if(next->type != TOKEN_ID)
-        throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect macro name", next->value);
-    Macro_T* macro = init_macro(next);
-
-     next = pp->tokens->items[(*i)++];    
-    if(next->type == TOKEN_LPAREN)
-    {   
-        // TODO: evaluate arguments
-
-        for(next = pp->tokens->items[(*i)++]; next->type != TOKEN_EOF && next->type != TOKEN_RPAREN; next = pp->tokens->items[(*i)++]) 
-        {
-            if(next->type != TOKEN_ID)
-                throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect macro argument name", next->value);
-            if(macro_has_arg(macro, next->value))
-                throw_error(ERR_REDEFINITION, next, "duplicate macro argument `%s`", next->value);
-            if(macro->argc >= __CSP_MAX_FN_NUM_ARGS)
-                throw_error(ERR_MISC, next, "too many macro arguments, maximal argument count is `%d`", __CSP_MAX_FN_NUM_ARGS);
-
-            macro->args[macro->argc++] = next;
-
-            next = pp->tokens->items[(*i)++];
-            if(next->type == TOKEN_RPAREN)
-                break;
-
-            if(next->type != TOKEN_COMMA)
-                throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `,` between macro arguments", next->value);
-        }
-
-        if(next->type != TOKEN_RPAREN)
-            throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `)` after macro arguments", next->value);
-
-        next = pp->tokens->items[(*i)++];
-    }
-
-    if(next->type != TOKEN_LBRACE)
-        throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `{` to begin the macro body", next->value);
-
-
-    size_t depth = 0;
-    for(next = pp->tokens->items[(*i)++]; next->type != TOKEN_EOF; next = pp->tokens->items[(*i)++])
-    {
-        if(next->type == TOKEN_LBRACE)
-            depth++;
-        else if(next->type == TOKEN_RBRACE)
-        {
-            if(depth > 0)
-                depth--; // the `}` belongs to an expression or statement
-            else
-                break; // we found the closing `}` of the macro body
-        }
-        list_push(macro->replacing_tokens, next);
-    }
-
-    if(next->type != TOKEN_RBRACE)
-        throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `}` to begin the macro body", next->value);
-
-    return macro;
-}
-
-static Macro_T* find_macro(Preprocessor_T* pp, char* callee)
-{
-    for(size_t i = 0; i < pp->macros->size; i++)
-    {
-        Macro_T* mac = (Macro_T*) pp->macros->items[i];
-        if(strcmp(mac->tok->value, callee) == 0)
-            return mac;
-    }
-    return NULL;
-}
-
-static int find_macro_arg(Macro_T* mac, char* callee)
-{
-    for(u_int8_t i = 0; i < mac->argc; i++)
-    {
-        Token_T* tok = mac->args[i];
-        if(tok && strcmp(tok->value, callee) == 0)
-            return i;
-    }
-    return -1;
-}
+//
+// Import parsing and lexing
+//
 
 static char* get_full_import_path(char* origin, Token_T* import_file)
 {
@@ -286,6 +235,193 @@ static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
     list_push(pp->files, import_file);
 }
 
+//
+// Macro definition parsing
+//
+
+static Macro_T* parse_macro_def(Preprocessor_T* pp, size_t* i)
+{    
+    (*i)++; // skip the `macro` token
+
+    Token_T* next = pp->tokens->items[(*i)++];
+    if(next->type != TOKEN_ID)
+        throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect macro name", next->value);
+    Macro_T* macro = init_macro(next);
+
+     next = pp->tokens->items[(*i)++];    
+    if(next->type == TOKEN_LPAREN)
+    {   
+        // TODO: evaluate arguments
+
+        for(next = pp->tokens->items[(*i)++]; next->type != TOKEN_EOF && next->type != TOKEN_RPAREN; next = pp->tokens->items[(*i)++]) 
+        {
+            if(next->type != TOKEN_ID)
+                throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect macro argument name", next->value);
+            if(macro_has_arg(macro, next->value))
+                throw_error(ERR_REDEFINITION, next, "duplicate macro argument `%s`", next->value);
+            if(macro->argc >= __CSP_MAX_FN_NUM_ARGS)
+                throw_error(ERR_MISC, next, "too many macro arguments, maximal argument count is `%d`", __CSP_MAX_FN_NUM_ARGS);
+
+            macro->args[macro->argc++] = next;
+
+            next = pp->tokens->items[(*i)++];
+            if(next->type == TOKEN_RPAREN)
+                break;
+
+            if(next->type != TOKEN_COMMA)
+                throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `,` between macro arguments", next->value);
+        }
+
+        if(next->type != TOKEN_RPAREN)
+            throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `)` after macro arguments", next->value);
+
+        next = pp->tokens->items[(*i)++];
+    }
+
+    if(next->type != TOKEN_LBRACE)
+        throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `{` to begin the macro body", next->value);
+
+
+    size_t depth = 0;
+    for(next = pp->tokens->items[(*i)++]; next->type != TOKEN_EOF; next = pp->tokens->items[(*i)++])
+    {
+        if(next->type == TOKEN_LBRACE)
+            depth++;
+        else if(next->type == TOKEN_RBRACE)
+        {
+            if(depth > 0)
+                depth--; // the `}` belongs to an expression or statement
+            else
+                break; // we found the closing `}` of the macro body
+        }
+        list_push(macro->replacing_tokens, next);
+    }
+
+    if(next->type != TOKEN_RBRACE)
+        throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `}` to begin the macro body", next->value);
+
+    return macro;
+}
+
+static Macro_T* find_macro(Preprocessor_T* pp, char* callee)
+{
+    for(size_t i = 0; i < pp->macros->size; i++)
+    {
+        Macro_T* mac = (Macro_T*) pp->macros->items[i];
+        if(strcmp(mac->tok->value, callee) == 0)
+            return mac;
+    }
+    return NULL;
+}
+
+static int find_macro_arg(Macro_T* mac, char* callee)
+{
+    for(uint8_t i = 0; i < mac->argc; i++)
+    {
+        Token_T* tok = mac->args[i];
+        if(tok && strcmp(tok->value, callee) == 0)
+            return i;
+    }
+    return -1;
+}
+
+//
+// Macro call parsing
+//
+
+static void parse_macro_call(Preprocessor_T* pp, MacroCall_T* call, List_T* token_list, size_t* i)
+{
+    init_macro_call(pp, call, token_list->items[*i]);
+
+    Token_T* next = token_list->items[(*i) + 1];
+    switch(next->type)
+    {
+        case TOKEN_LPAREN:
+        case TOKEN_LBRACE:
+        case TOKEN_LBRACKET:
+            {
+                (*i)++;
+
+                TokenType_T opening_paren = next->type;
+                TokenType_T closing_paren = next->type + 1;
+                size_t depth = 0, arg_start = (*i) + 1, arg_end = (*i) + 1;
+                bool has_arg = false;
+
+                while((next = token_list->items[++(*i)])->type != closing_paren || depth != 0)
+                {
+                    if(next->type == opening_paren) depth++;
+                    else if(next->type == closing_paren && depth > 0) depth--;
+                    else if(next->type == TOKEN_COMMA && depth == 0) 
+                    {
+                        if(call->argc >= __CSP_MAX_FN_NUM_ARGS)
+                            throw_error(ERR_SYNTAX_ERROR, next, "too many arguments for macro call");
+
+                        call->args[call->argc].start_idx = arg_start;
+                        call->args[call->argc++].end_idx = arg_end - 1;
+                        arg_start = arg_end = (*i) + 1;
+                    }
+                    else if(next->type == TOKEN_EOF)
+                    {
+                        throw_error(ERR_SYNTAX_ERROR, next, "unexpected end of file, expect closing `%c` after macro call",
+                                    closing_paren == TOKEN_RPAREN ? ')' : closing_paren == TOKEN_RBRACKET ? ']' : '}');
+                    }
+                    else {
+                        arg_end++;
+                        has_arg = true;
+                    }
+                }
+
+                if(has_arg) 
+                {
+                    call->args[call->argc].start_idx = arg_start;
+                    call->args[call->argc++].end_idx = arg_end - 1;
+                }
+            } break;
+        default:
+            break;
+    }
+
+    if(call->argc != call->macro->argc)
+        throw_error(ERR_SYNTAX_ERROR, call->tok, "macro `%s` expects %d argument%s, got %d", 
+                    call->tok->value, call->macro->argc, call->macro->argc == 1 ? "" : "s", call->argc);
+}
+
+//
+// Macro expansion
+//
+
+static void expand_macro_call(Preprocessor_T* pp, MacroCall_T call, List_T* src_list, List_T* dest_list)
+{
+    for(size_t i = 0; i < call.macro->replacing_tokens->size; i++)
+    {
+        Token_T* tok = call.macro->replacing_tokens->items[i];
+
+        switch(tok->type) {
+            case TOKEN_ID:
+            {
+                int arg_idx = find_macro_arg(call.macro, tok->value);
+                if(arg_idx != -1)
+                {
+                    for(size_t j = call.args[arg_idx].start_idx; j <= call.args[arg_idx].end_idx; j++)
+                    {
+                        list_push(dest_list, src_list->items[j]);
+                    }
+                }
+                else
+                    list_push(dest_list, tok);
+            } break;
+
+            default:
+                list_push(dest_list, tok);
+                break;
+        }
+    }
+}
+
+//
+// Main Preprocessor function
+//
+
 List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
 {
     Preprocessor_T pp;
@@ -337,22 +473,21 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
     * Stage 3: expand all macro calls     *
     **************************************/
 
-    List_T* token_stage_3 = init_list(sizeof(struct TOKEN_STRUCT*)); // init a new list for stage 3
+    List_T* token_stage_3 = init_list(sizeof(struct TOKEN_STRUCT*)); //q init a new list for stage 3
     for(size_t i = 0; i < token_stage_2->size; i++)
     {
         tok = token_stage_2->items[i];
         if(tok->type == TOKEN_MACRO_CALL)
         {
-            Macro_T* macro = find_macro(&pp, tok->value);
-            if(!macro)
-                throw_error(ERR_UNDEFINED, tok, "unedefined macro `%s`", tok->value);
-            macro->used = true;
-
+            MacroCall_T macro_call;
+            parse_macro_call(&pp, &macro_call, token_stage_2, &i);
+            expand_macro_call(&pp, macro_call, token_stage_2, token_stage_3);
+/*
             for(size_t i = 0; i < macro->replacing_tokens->size; i++)
             {
                 Token_T* tok = macro->replacing_tokens->items[i];
                 list_push(token_stage_3, tok);
-            }
+            }*/
             continue;
         }
         list_push(token_stage_3, tok);

@@ -5,7 +5,7 @@ import "libc/stdio.csp";
 import "libc/stddef.csp";
 import "libc/stdarg.csp";
 
-macro WEOF { (0xffffffff : wint_t) }
+#macro WEOF { (0xffffffff : wint_t) }
 
 type wint_t: u32;
 
