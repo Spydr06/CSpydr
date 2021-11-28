@@ -15,14 +15,14 @@ macro vec(datatype) {
 # macro to add a value to the vector
 macro vec_add(addr, value) {
     (*(
-        ::std::vec::__internal_add((addr): &&void, sizeof typeof **(addr)): typeof *(addr)
+        ::std::vec::__internal_add((&addr): &&void, sizeof typeof *(addr)): typeof (addr)
     ) = (value))
 }
 
 # macro to insert a value in the vector
 macro vec_insert(addr, pos, value) {
     (*(
-        ::std::vec::__internal_insert((addr): &&void, sizeof typeof **(addr), pos): typeof *(addr)
+        ::std::vec::__internal_insert((&addr): &&void, sizeof typeof *(addr), pos): typeof (addr)
     ) = (value))
 }
 
