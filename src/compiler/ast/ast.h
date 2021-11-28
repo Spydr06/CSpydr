@@ -209,6 +209,9 @@ struct AST_NODE_STRUCT
     bool is_constant: 1;
     ASTNode_T* expr;
 
+    // sizeof
+    ASTType_T* the_type;
+
     // calls, array literals
     List_T* args;   // list of ASTNode_Ts
     List_T* template_types;

@@ -194,10 +194,13 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
             break;
 
         case ND_LEN:
-        case ND_SIZEOF:
             ast_node(list, node->expr, custom_args);
             if(node->data_type) 
                 ast_type(list, node->data_type, custom_args);
+            break;
+
+        case ND_SIZEOF:
+            ast_type(list, node->the_type, custom_args);
             break;
 
         case ND_BLOCK:

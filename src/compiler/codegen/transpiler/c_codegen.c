@@ -701,8 +701,8 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             break;
         case ND_SIZEOF:
             print(cg, "sizeof(");
-            if(node->data_type)
-                c_gen_type(cg, node->data_type, "");
+            if(node->the_type)
+                c_gen_type(cg, node->the_type, "");
             else
                 c_gen_expr(cg, node->expr);
             print(cg, ")");

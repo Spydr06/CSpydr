@@ -1757,7 +1757,8 @@ static ASTNode_T* parse_sizeof(Parser_T* p)
     parser_consume(p, TOKEN_SIZEOF, "expect `sizeof` keyword");
 
     // detect weather sizeof is called from an type, variable or array
-        size_of->data_type = parse_type(p);
+    size_of->the_type = parse_type(p);
+    size_of->data_type = (ASTType_T*) primitives[TY_U64];
         // we still don't know if a typedef was passed. We simply parse it as an expression and evaluate it later in the optimizer
 //        size_of->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
     
