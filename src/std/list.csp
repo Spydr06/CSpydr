@@ -49,6 +49,7 @@ namespace std {
         fn join(dest: &List, src: &List) {
             for let i: u64 = 0; i < src.length; i++;
                 add(dest, src.data[i]);
+        }
 
         # gets the value at an index
         fn get(list: &List, index: u64): &void {

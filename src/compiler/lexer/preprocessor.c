@@ -482,12 +482,6 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
             MacroCall_T macro_call;
             parse_macro_call(&pp, &macro_call, token_stage_2, &i);
             expand_macro_call(&pp, macro_call, token_stage_2, token_stage_3);
-/*
-            for(size_t i = 0; i < macro->replacing_tokens->size; i++)
-            {
-                Token_T* tok = macro->replacing_tokens->items[i];
-                list_push(token_stage_3, tok);
-            }*/
             continue;
         }
         list_push(token_stage_3, tok);

@@ -1,0 +1,9 @@
+#
+# io.csp - Utilities for handling Input/Output in CSpydr
+# Part of the CSpydr standard library
+#
+
+namespace std {
+    namespace io {
+    }
+}

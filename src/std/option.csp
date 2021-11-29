@@ -1,0 +1,55 @@
+#
+# option.csp - Error handling utilities
+# Part of the CSpydr standard library
+#
+
+macro ok(value) {
+    (::std::option::ok(value))
+}
+
+macro err(value) {
+    (::std::option::err(value))
+}
+
+namespace std {
+    type Option: struct {
+        is_err: bool,
+        value: &void
+    };
+
+    namespace option {
+        fn ok(value: &void): ::std::Option {
+            <- {
+                false,
+                value
+            }: Option;
+        }
+
+        fn err(value: &void): ::std::Option {
+            <- {
+                true,
+                value
+            }: Option;
+        }
+
+        fn is_err(opt: Option): bool {
+            <- opt.is_err;
+        }
+
+        fn unwrap(opt: Option): &void {
+            if opt.is_err
+                <- nil;
+            else 
+                <- opt.value;
+        }
+
+        fn unwrap_or(opt: Option, lambda: fn<void>(&void)): &void {
+            if opt.is_err {
+                lambda(opt.value);
+                <- nil;
+            }
+            else 
+                <- opt.value;
+        }
+    }
+}
