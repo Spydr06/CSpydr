@@ -1,5 +1,5 @@
 #
-# stzing.csp - A String datatype
+# string.csp - A String datatype
 # Part of the CSpydr standard library
 #
 
@@ -70,7 +70,7 @@ namespace std {
         #    let alloc_size = (sizeof StringData) + str_data.size + 1; 
         #    let copy: &StringData = ::malloc(alloc_size);
         #    ::memcpy(copy, str_data, alloc_size);
-#
+        #
         #    <- &(copy.buff[0]);
         #}
 

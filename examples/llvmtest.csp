@@ -1,5 +1,6 @@
 import "libc/stdio.csp";
 import "string.csp";
+import "vec.csp";
 
 fn main(argc: i32, argv: &&char): i32
 {
