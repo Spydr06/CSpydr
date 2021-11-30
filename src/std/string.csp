@@ -1,69 +1,92 @@
-# An implementation of a string type
+#
+# stzing.csp - A String datatype
+# Part of the CSpydr standard library
+#
 
-import "types.csp";
 import "libc/stdlib.csp";
 import "libc/string.csp";
+import "vec.csp";
 
-# --- the str_s struct and str typedef ---
-type str_s: struct {
-    data: &char,
-    length: usize,
-    alloc: usize
-};
-type str: &str_s;
-# ----------------------------------------
+# a macro to crate a string
+macro str(chptr) {
+    (::std::string::init(chptr))
+}
 
-# --- a default `nil` type for strings ---
-let str_nil: str = &{"\0", 0, 0}: str_s;
-# ----------------------------------------
+# a macro to concatenate two strings
+macro concat(a, b) {
+    (::std::string::concat(&a, b))
+}
 
-# the initializer function
-fn init_str(string: &char): str {
-    let s: str = malloc(sizeof str_s);
+namespace std {
+    type String: &char;
 
-    if string != nil {
-        let length = strlen(string);
-        s.alloc = length + 1;
-        s.data = malloc(s.alloc);
-        memcpy(s.data, string, length);
-        s.length = length;
+    namespace string {
+        type StringData: struct {
+            alloc: u64,
+            size: u64,
+            buff: char[]
+        };
+
+        fn init(value: String): ::std::String {
+            let str_data: &StringData;
+
+            if value == nil {
+                str_data = ::malloc(sizeof StringData);
+                str_data.alloc = 1;
+                str_data.size = 0;
+            }
+            else {
+                str_data = ::malloc(sizeof StringData + strlen(value) + 1);
+                str_data.alloc = ::strlen(value);
+                str_data.size = ::strlen(value);
+                
+                ::strcpy(str_data.buff, value);
+            }
+            <- &(str_data.buff[0]);
+        }
+
+        fn free(str: String) {
+            ::free(get_data(str));
+        } 
+
+        fn get_data(str: String): &StringData {
+            <- &(str: &StringData)[-1];
+        }
+
+        fn concat(dest: &String, src: String) {
+            let str_data = get_data(*dest);
+
+            str_data.alloc = str_data.alloc + ::strlen(src);
+            str_data.size = str_data.size + ::strlen(src);
+            str_data = ::realloc(str_data, sizeof StringData + str_data.alloc + 1);
+
+            ::strcpy(&(str_data.buff[::strlen(*dest)]), src);
+
+            *dest = &(str_data.buff[0]);
+        }
+
+        #fn copy(str: String): ::std::String {   
+        #    let str_data = get_data(str);
+        #    let alloc_size = (sizeof StringData) + str_data.size + 1; 
+        #    let copy: &StringData = ::malloc(alloc_size);
+        #    ::memcpy(copy, str_data, alloc_size);
+#
+        #    <- &(copy.buff[0]);
+        #}
+
+        fn contains(str: String, substr: String): bool {
+            <- ::strstr(str, substr) != nil;
+        }
+
+        fn split(str: String, delim: String): &::std::String {
+            let str_vec = vec![String];
+
+            let token: &char;
+            while (token = ::strsep(&str, delim)) != nil {
+                vec_add!(str_vec, token);
+            }
+
+            <- str_vec;
+        }
     }
-    else {
-        s.alloc = 1;
-        s.data = malloc(s.alloc);
-        s.data[0] = '\0';
-
-        s.length = 0;
-    }
-
-    <- s;
-}
-
-fn free_str(s: str) {
-    s = s;
-    free(s.data);
-    free(s);
-}
-
-fn str_lit(s: str): &char {
-    <- s.data;
-}
-
-fn str_length(s: str): usize {
-    <- s.length;
-}
-
-fn str_eq(a: str, b: str): bool {
-    <- strcmp(str_lit(a), str_lit(b)) == 0;
-}
-
-fn str_append(s: str, c: char) {
-    s.alloc++;
-    s.data = realloc(s.data, s.alloc);
-
-    s.data[s.length++] = c;
-}
-
-fn str_cpy(s: str): str {
-    <- init_str(s.data);
 }

@@ -28,6 +28,9 @@ extern {
     fn strstr(s1: const &char, s2: const &char): &char;
     fn strtok(s1: &char, s2: const &char): &char;
 
+    # only on glibc platform
+    fn strsep(strp: &&char, delim: const &char): &char;
+
     fn strerror(errnum: i32): &char;
 
     fn strlen(s: const &char): size_t;

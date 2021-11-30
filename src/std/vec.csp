@@ -125,7 +125,7 @@ namespace std {
         fn __internal_copy(vec: &void, type_size: u8): &void {
             let v_data = get_data(vec);
             let alloc_size = sizeof(VecData) + v_data.size * type_size;
-            let copy: VecData = malloc(alloc_size);
+            let copy: &VecData = malloc(alloc_size);
             
             ::memcpy(copy, v_data, alloc_size);
             <- &copy.buff;
