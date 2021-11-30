@@ -1,0 +1,135 @@
+# a basic implementation of the regex.h C header, this needs the GLIBC standard library
+
+type __re_size_t: u32;
+type __re_long_size_t: u64;
+
+type s_reg_t: i64;
+type active_reg_t: u64;
+type reg_syntax_t: u64;
+
+macro RE_BACKSLASH_ESCAPE_IN_LISTS { (1: u64) }
+macro RE_BK_PLUS_QM { (1: u64 << 1) }
+macro RE_CHAR_CLASSES { (1: u64 << 2) }
+macro RE_CONTEXT_INDEP_ANCHORS { (1: u64 << 3) }
+macro RE_CONTEXT_INDEP_OPS { (1: u64 << 4) }
+macro RE_CONTEXT_INVALID_OPS { (1: u64 << 5) }
+macro RE_DOT_NEWLINE { (1: u64 << 6) }
+macro RE_DOT_NOT_NULL { (1: u64 << 7) }
+macro RE_HAT_LISTS_NOT_NEWLINE { (1: u64 << 8) }
+macro RE_INTERVALS { (1: u64 << 9) }
+macro RE_LIMITED_OPS { (1: u64 << 10) }
+macro RE_NEWLINE_ALT { (1: u64 << 11) }
+macro RE_NO_BK_BRACES { (1: u64 << 12) }
+macro RE_NO_BK_PARENS { (1: u64 << 13) }
+macro RE_NO_BK_REFS { (1: u64 << 14) }
+macro RE_NO_BK_VBAR { (1: u64 << 15) }
+macro RE_NO_EMPTY_RANGES { (1: u64 << 16) }
+macro RE_UNMATCHED_RIGHT_PAREN_ORD { (1: u64 << 17) }
+macro RE_NO_POSIX_BACKTRACKING { (1: u64 << 18) }
+macro RE_NO_GNU_OPS { (1: u64 << 19) }
+macro RE_DEBUG { (1: u64 << 20) }
+macro RE_INVALID_INTERVAL_ORD { (1: u64 << 21) }
+macro RE_ICASE { (1: u64 << 22) }
+macro RE_CARET_ANCHORS_HERE { (1: u64 << 23) }
+macro RE_CONTEXT_INVALID_DUP { (1: u64 << 24) }
+macro RE_NO_SUB { (1: u64 << 25) }
+
+macro REG_EXTENDED { 1 }
+macro REG_ICASE { (1 << 1) }
+macro REG_NEWLINE { (1 << 2) }
+macro REG_NOSUB { (1 << 3) }
+
+macro REG_NOTBOL { 1 }
+macro REG_NOTEOL { (1 << 1) }
+macro REG_STARTEND { (1 << 2) }
+
+extern let re_syntax_options: reg_syntax_t;
+
+type reg_errcode_t: enum {
+    ENOSYS = -1,
+    NOERROR,
+    NOMATCH,
+    BADPAT,
+    ECOLLATE,
+    ECTYPE,
+    EESCAPE,
+    ESUBREG,
+    EBRACK,
+    EPAREN,
+    EBRACE,
+    BADBR,
+    ERANGE,
+    ESPACE,
+    BADRPT,
+    EEND,
+    ESIZE,
+    ERPAREN
+};
+
+macro REG_ENOSYS   { (::reg_errcode_t::ENOSYS) }
+macro REG_NOERROR  { (::reg_errcode_t::NOERROR) }
+macro REG_NOMATCH  { (::reg_errcode_t::NOMATCH) }
+macro REG_BADPAT   { (::reg_errcode_t::BADPAT) }
+macro REG_ECOLLATE { (::reg_errcode_t::ECOLLATE) }
+macro REG_ECTYPE   { (::reg_errcode_t::ECTYPE) }
+macro REG_EESCAPE  { (::reg_errcode_t::EESCAPE) }
+macro REG_ESUBREG  { (::reg_errcode_t::ESUBREG) }
+macro REG_EBRACK   { (::reg_errcode_t::EBRACK) }
+macro REG_EPAREN   { (::reg_errcode_t::EPAREN) }
+macro REG_EBRACE   { (::reg_errcode_t::EBRACE) }
+macro REG_BADBR    { (::reg_errcode_t::BADBR) }
+macro REG_ERANGE   { (::reg_errcode_t::ERANGE) }
+macro REG_ESPACE   { (::reg_errcode_t::ESPACE) }
+macro REG_BADRPT   { (::reg_errcode_t::BADRPT) }
+macro REG_EEND     { (::reg_errcode_t::EEND) }
+macro REG_ESIZE    { (::reg_errcode_t::ESIZE) }
+macro REG_ERPAREN  { (::reg_errcode_t::ERPAREN) }
+
+type re_pattern_buffer: struct {
+    buffer: &struct re_dfa_t,
+    allocated: __re_long_size_t,
+    used: __re_long_size_t,
+    syntax: reg_syntax_t,
+    fastmap: &char,
+    re_nsub: u64,
+    can_be_null: bool,
+    regs_allocated: u8,
+    fastmap_accurate: u8,
+    no_sub: bool,
+    not_bol: bool,
+    not_eol: bool,
+    newline_anchor: bool
+};
+
+type regex_t: re_pattern_buffer;
+
+type regoff_t: i32;
+
+type regmatch_t: struct {
+    rm_so: regoff_t,
+    rm_eo: regoff_t
+};
+
+type re_registers: struct
+{
+  num_regs: __re_size_t,
+  start: &regoff_t,
+  end: &regoff_t
+};
+
+extern {
+
+    fn re_set_syntax(syntax: reg_syntax_t): reg_syntax_t;
+    fn re_compile_pattern(pattern: const &char, length: u64, buffer: &re_pattern_buffer): const &char;
+    fn re_compile_fastmap(buffer: &re_pattern_buffer);
+    fn re_search(buffer: &re_pattern_buffer, string: const &char, length: regoff_t, start: regoff_t, ramge: regoff_t, regs: &re_registers): regoff_t;
+    fn re_search_2(buffer: &re_pattern_buffer, string1: const &char, length1: regoff_t, string2: const &char, length2: regoff_t, start: regoff_t, range: regoff_t, regs: &re_registers, stop: regoff_t): regoff_t;
+    fn re_match(buffer: &re_pattern_buffer, string: const &char, length: regoff_t, start: regoff_t, regs: &re_registers): regoff_t;
+
+    # POSIX functions
+    fn regcomp(preg: &regex_t, pattern: const &char, cflags: i32): i32;
+    fn regexec(preg: &regex_t, string: const &char, nmatch: size_t, pmatch: regmatch_t[], eflags: i32): i32;
+    fn regerror(errcode: i32, preg: const &regex_t, errbuf: &char, errbuf_size: size_t): size_t;
+    fn regfree(preg: &regex_t);
+
+}
