@@ -8,6 +8,7 @@
 #include "io/file.h"
 #include "io/log.h"
 #include "io/io.h"
+#include "codegen/asm/asm_codegen.h"
 
 // generate the ast from the source file (lexing, preprocessing, parsing)
 static void generate_ast(ASTProg_T* ast, char* path, char* target, bool silent);
@@ -16,7 +17,7 @@ static void generate_ast(ASTProg_T* ast, char* path, char* target, bool silent);
 static void generate_llvm(ASTProg_T*, char* target, Action_T action, bool print_llvm, bool silent);
 static void transpile_c(ASTProg_T*, char* target, Action_T action, bool print_c, bool silent);
 static void parse_to_xml(ASTProg_T*, char* target, Action_T action, bool silent);
-
+static void generate_asm(ASTProg_T* ast, char* target, Action_T action, bool print_asm, bool silent);
 
 void compile(char* input_file, char* output_file, Action_T action)
 {
@@ -33,6 +34,9 @@ void compile(char* input_file, char* output_file, Action_T action)
             break;
         case CT_TO_XML:
             parse_to_xml(&ast, output_file, action, silent);
+            break;
+        case CT_ASM:
+            generate_asm(&ast, output_file, action, print_c, silent);
             break;
         default:
             LOG_ERROR_F("[Error] Unknown compile type %d!\n", ct);
@@ -100,6 +104,16 @@ static void transpile_c(ASTProg_T* ast, char* target, Action_T action, bool prin
     }
 
     free(cg.buf);
+}
+
+static void generate_asm(ASTProg_T* ast, char* target, Action_T action, bool print_asm, bool silent)
+{
+    ASMCodegenData_T cg;
+    init_asm_cg(&cg, ast);
+    cg.silent = silent;
+    cg.print = print_c;
+
+    asm_gen_code(&cg, target);
 }
 
 static void parse_to_xml(ASTProg_T* ast, char* target, Action_T action, bool silent)

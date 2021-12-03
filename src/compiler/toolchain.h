@@ -5,6 +5,7 @@ typedef enum COMPILE_TYPE_ENUM
 {
     CT_LLVM,
     CT_TRANSPILE,
+    CT_ASM,
     CT_TO_XML,
 } CompileType_T;
 

@@ -192,6 +192,8 @@ int main(int argc, char* argv[])
             ct = CT_TRANSPILE;
         else if(streq(arg, "-l") || streq(arg, "--llvm"))
             ct = CT_LLVM;
+        else if(streq(arg, "-a") || streq(arg, "--asm"))
+            ct = CT_ASM;
         else if(streq(arg, "--silent"))
             silent = true;
         else if(streq(arg, "--cc"))
