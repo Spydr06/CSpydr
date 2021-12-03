@@ -14,6 +14,7 @@ extern char* cc_flags;
 typedef struct C_CODEGEN_DATA_STRUCT
 {
     ASTProg_T* ast;
+    ASTObj_T* current_fn;
 
     bool print_c;
     bool silent;

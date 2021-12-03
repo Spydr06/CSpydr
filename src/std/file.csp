@@ -6,6 +6,7 @@
 import "libc/stdlib.csp";
 import "libc/stdio.csp";
 import "option.csp";
+import "string.csp";
 
 # a macro for quickly reading files from a given path
 macro file(path) {
@@ -75,6 +76,11 @@ namespace std {
 
         fn free(file: &File) {
             ::free(file);
+        }
+
+        fn getstr(file: &File): ::std::String {
+            let buffer: &char = &(file.buff[0]);
+            <- str!(buffer);
         }
     }
 }

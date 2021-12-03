@@ -53,6 +53,7 @@ void init_c_cg(CCodegenData_T* cg, ASTProg_T* ast)
     cg->ast = ast;
     cg->print_c = false;
     cg->silent = false;
+    cg->current_fn = NULL;
 
     cg->code_buffer = open_memstream(&cg->buf, &cg->buf_len);
 }
@@ -464,6 +465,7 @@ static void c_gen_obj(CCodegenData_T* cg, ASTObj_T* obj)
     {
         case OBJ_FUNCTION:
             {
+                cg->current_fn = obj;
                 c_gen_type(cg, obj->return_type, "");
                 print(cg, " %s(", c_gen_identifier(cg, obj->id));
 
@@ -482,6 +484,7 @@ static void c_gen_obj(CCodegenData_T* cg, ASTObj_T* obj)
                     c_gen_va_list_end(cg, ((ASTObj_T*)obj->args->items[obj->args->size - 1])->id);
 
                 println(cg, "}");
+                cg->current_fn = NULL;
             } break;
         case OBJ_NAMESPACE:
             for(size_t i = 0; i < obj->objs->size; i++)
@@ -742,8 +745,13 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
     {       
         case ND_RETURN:
             print(cg, "return ");
-            if(node->return_val)
-                c_gen_expr(cg, node->return_val);
+            if(node->return_val) {
+                print(cg, "(");
+                c_gen_type(cg, cg->current_fn->return_type, "");
+                print(cg, ")");
+
+                c_gen_expr(cg, node->return_val);          
+            }
             println(cg, ";");
             break;
         case ND_BLOCK:

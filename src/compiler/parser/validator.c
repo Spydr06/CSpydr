@@ -142,7 +142,7 @@ static ASTIteratorList_T main_iterator_list =
         [ND_GE]      = lt_gt,
         [ND_AND]     = and_or,
         [ND_OR]      = and_or,
-        [ND_XOR]     = and_or,
+        [ND_XOR]     = bitwise_op,
         [ND_LSHIFT]  = bitwise_op,
         [ND_RSHIFT]  = bitwise_op,
         [ND_BIT_OR]  = bitwise_op,
@@ -867,15 +867,22 @@ static void member(ASTNode_T* member, va_list args)
 
     GET_VALIDATOR(args);
 
-    ASTNode_T* found = find_member_in_type(v, member->left->data_type, member->right);
-
-    if(!found)
+    ASTType_T* tuple_type = NULL;
+    if((tuple_type = expand_typedef(v, member->left->data_type))->kind == TY_TUPLE)
     {
-        throw_error(ERR_TYPE_ERROR, member->tok, "type `%d` has no member named `%s`", member->left->data_type->kind, member->right->id->callee);
-        return;
+        //uint64_t id = strtoll(&(member->right->tok->value[1]), NULL, 10);
+        //member->data_type = tuple_type->arg_types->items[id];
     }
+    else {
+        ASTNode_T* found = find_member_in_type(v, member->left->data_type, member->right);
 
-    member->data_type = found->data_type;
+        if(!found)
+        {
+            throw_error(ERR_TYPE_ERROR, member->tok, "type `%d` has no member named `%s`", member->left->data_type->kind, member->right->id->callee);
+            return;
+        }
+        member->data_type = found->data_type;
+    }
     member->is_ptr = is_ptr(v, member->left->data_type);
 }
 

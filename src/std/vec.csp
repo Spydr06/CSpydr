@@ -36,6 +36,11 @@ macro vec_remove(addr, pos) {
     ::std::vec::__internal_remove((addr): &void, sizeof typeof *(addr), pos)
 }
 
+# macro to copy a vector
+macro vec_copy(addr) {
+    (::std::vec::__internal_copy((addr): &void, sizeof typeof *(addr)): typeof (addr));
+}
+
 namespace std {
     namespace vec {
         type VecData: struct {
@@ -124,7 +129,8 @@ namespace std {
 
         fn __internal_copy(vec: &void, type_size: u8): &void {
             let v_data = get_data(vec);
-            let alloc_size = sizeof(VecData) + v_data.size * type_size;
+            let size = v_data.size;
+            let alloc_size = sizeof(VecData) + size * type_size;
             let copy: &VecData = malloc(alloc_size);
             
             ::memcpy(copy, v_data, alloc_size);
