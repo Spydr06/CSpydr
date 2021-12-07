@@ -1778,6 +1778,7 @@ static ASTNode_T* parse_len(Parser_T* p)
     parser_consume(p, TOKEN_LEN, "expect `len` keyword");
 
     len->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+    len->data_type = (ASTType_T*) primitives[TY_U64];
 
     return len;
 }

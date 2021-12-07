@@ -65,14 +65,9 @@ namespace std {
             *dest = &(str_data.buff[0]);
         }
 
-        #fn copy(str: String): ::std::String {   
-        #    let str_data = get_data(str);
-        #    let alloc_size = (sizeof StringData) + str_data.size + 1; 
-        #    let copy: &StringData = ::malloc(alloc_size);
-        #    ::memcpy(copy, str_data, alloc_size);
-        #
-        #    <- &(copy.buff[0]);
-        #}
+        fn copy(str: String): ::std::String {   
+            <- init(str);
+        }
 
         fn contains(str: String, substr: String): bool {
             <- ::strstr(str, substr) != nil;

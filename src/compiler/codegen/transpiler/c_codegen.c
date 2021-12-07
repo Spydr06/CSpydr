@@ -23,7 +23,7 @@ const char* default_header_code =
     "#define true ((bool) 1)\n"
     "#define false ((bool) 0)\n"
     "#define NULL ((void*) 0)\n"
-    "#define len(n) (n?((unsigned long)(sizeof(n)/sizeof(n[0]))):0)\n"
+    "#define len(n) ((unsigned long)(sizeof(n)/sizeof(n[0])))x\n"
 ;
 
 #define len(n) (n ? ((unsigned long) (sizeof(n) / sizeof(n[0]))) : 0)
@@ -138,6 +138,8 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
     
     run_compiler(cg, target);
 }
+
+typedef int foo[5][5];
 
 static void run_compiler(CCodegenData_T* cg, const char* target_bin)
 {
@@ -339,10 +341,13 @@ static void c_gen_typedefs(CCodegenData_T* cg, ASTObj_T* obj)
             else
                 c_gen_type(cg, obj->data_type, callee);
         
-            if(obj->data_type->kind == TY_LAMBDA)
-                println(cg, ";");
-            else
-                println(cg, " %s;", callee);
+            if(obj->data_type->kind != TY_LAMBDA) {
+                print(cg, " %s", callee);
+            }
+            if(obj->data_type->kind == TY_ARR) {
+                c_gen_array_brackets(cg, obj->data_type);
+            }
+            println(cg, ";");
             break;
         case OBJ_NAMESPACE:
             for(size_t i = 0; i < obj->objs->size; i++)

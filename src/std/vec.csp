@@ -140,5 +140,33 @@ namespace std {
         fn pop(vec: &void) {
             get_data(vec).size--;
         }
+
+        #
+        # i32
+        #
+
+        fn min_i(v: &i32): i32 {
+            <- minmax_i(v)._0;
+        }
+
+        fn max_i(v: &i32): i32 {
+            <- minmax_i(v)._1;
+        }
+
+        fn minmax_i(v: &i32): [i32, i32] {
+            if v == nil ret {0, 0};
+            let v_data = get_data(v: &void);
+            let min = v[0];
+            let max = v[0];
+
+            for let i: u64 = 1; i < v_data.size; i++; {
+                if v[i] < min 
+                    min = v[i];
+                if v[i] > max 
+                    max = v[i];
+            }
+
+            <- {min, max};
+        }
     }
 }
