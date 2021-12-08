@@ -198,7 +198,7 @@ static void lexer_skip_multiline_comment(Lexer_T* lexer)
     lexer_advance(lexer);
     lexer_advance(lexer);
 
-    while(lexer->c != ']' && lexer_peek(lexer, 1) != '#')
+    while(lexer->c != ']' || lexer_peek(lexer, 1) != '#')
     {
         if(lexer->c == '\0')
         {    //end of file
