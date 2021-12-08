@@ -9,15 +9,9 @@
 #include "../lexer/lexer.h"
 #include "../lexer/preprocessor.h"
 
-#include <bits/floatn-common.h>
-#include <string.h>
-#include <stdio.h>
 #include <limits.h>
+#include <string.h>
 #include <float.h>
-
-#ifdef __linux__
-    #include <libgen.h>
-#endif
 
 typedef struct PARSER_STRUCT
 {
@@ -41,33 +35,33 @@ typedef ASTNode_T* (*InfixParseFn_T)(Parser_T* parser, ASTNode_T* left);
 
 typedef enum 
 {
-    LOWEST = 0,
+    LOWEST     = 0,
 
-    INFIX_CALL = 1,
-    ASSIGN = 2,
-    LOGIC_OR = 3,
-    LOGIC_AND = 4,
-    BIT_OR = 5,
-    BIT_XOR = 6,
-    BIT_AND = 7,
-    EQUALS = 8,
-    LT = 9,
-    GT = 9,
-    BIT_SHIFT = 10,
-    PLUS = 11,
-    MINUS = 11,
-    MULT = 12,
-    DIV = 12,
-    MOD = 12,
-    POWER = 13,
-    CAST = 14,
-    CALL = 15,
-    ARRAY = 16,
-    MEMBER = 17,
-    INC = 18,
-    DEC = 18,
+    INFIX_CALL = 1,  // x `y` z
+    ASSIGN     = 2,  // x = y
+    LOGIC_OR   = 3,  // x || y
+    LOGIC_AND  = 4,  // x && y
+    BIT_OR     = 5,  // x | y
+    BIT_XOR    = 6,  // x ^ y
+    BIT_AND    = 7,  // x & y
+    EQUALS     = 8,  // x == y
+    LT         = 9,  // x < y
+    GT         = 9,  // x > y
+    BIT_SHIFT  = 10, // x << y
+    PLUS       = 11, // x + y
+    MINUS      = 11, // x - y
+    MULT       = 12, // x * y
+    DIV        = 12, // x / y
+    MOD        = 12, // x % y
+    POWER      = 13, // x²
+    CAST       = 14, // x: y
+    CALL       = 15, // x(y)
+    ARRAY      = 16, // x[y]
+    MEMBER     = 17, // x.y
+    INC        = 18, // x--
+    DEC        = 18, // x++
 
-    HIGHEST = 19
+    HIGHEST    = 19
 } Precedence_T;
 
 static ASTNode_T* parse_id(Parser_T* p);
