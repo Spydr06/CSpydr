@@ -41,23 +41,33 @@ typedef ASTNode_T* (*InfixParseFn_T)(Parser_T* parser, ASTNode_T* left);
 
 typedef enum 
 {
-    LOWEST     =  0,
-    ASSIGN     =  1, // x = y, x += y
-    INFIX_CALL =  2, // x `foo` y
-    EQUALS     =  3, // ==
-    LTGT       =  4, // < >
-    SUM        =  5, // + -
-    PRODUCT    =  6, // * /
-    ANDOR      =  7, // && ||
-    POSTFIX    =  8, // x++, x--
-    PREFIX     =  9, // -x, !x
-    POWER      = 10, // x²
-    INDEX      = 11, // x[y]
-    MEMBER     = 12, // x.y
-    CALL       = 13, // x(y)
-    CLOSURE    = 14, // (x + y) * z
-    CAST       = 15, // x:i32
-    HIGHEST    = 16,
+    LOWEST = 0,
+
+    INFIX_CALL = 1,
+    ASSIGN = 2,
+    LOGIC_OR = 3,
+    LOGIC_AND = 4,
+    BIT_OR = 5,
+    BIT_XOR = 6,
+    BIT_AND = 7,
+    EQUALS = 8,
+    LT = 9,
+    GT = 9,
+    BIT_SHIFT = 10,
+    PLUS = 11,
+    MINUS = 11,
+    MULT = 12,
+    DIV = 12,
+    MOD = 12,
+    POWER = 13,
+    CAST = 14,
+    CALL = 15,
+    ARRAY = 16,
+    MEMBER = 17,
+    INC = 18,
+    DEC = 18,
+
+    HIGHEST = 19
 } Precedence_T;
 
 static ASTNode_T* parse_id(Parser_T* p);
@@ -105,27 +115,27 @@ static struct { PrefixParseFn_T pfn; InfixParseFn_T ifn; Precedence_T prec; } ex
     [TOKEN_CHAR]     = {parse_char_lit, NULL, LOWEST},
     [TOKEN_STRING]   = {parse_str_lit, NULL, LOWEST},
     [TOKEN_BANG]     = {parse_unary, NULL, LOWEST},
-    [TOKEN_MINUS]    = {parse_unary, parse_num_op, SUM},
+    [TOKEN_MINUS]    = {parse_unary, parse_num_op, MINUS},
     [TOKEN_LPAREN]   = {parse_closure, parse_call, CALL}, 
-    [TOKEN_LBRACKET] = {parse_array_lit, parse_index, INDEX},   
+    [TOKEN_LBRACKET] = {parse_array_lit, parse_index, ARRAY},   
     [TOKEN_LBRACE]   = {parse_struct_lit, NULL, LOWEST}, 
-    [TOKEN_STAR]     = {parse_unary, parse_num_op, PRODUCT},
-    [TOKEN_PERCENT]  = {NULL, parse_num_op, PRODUCT},
+    [TOKEN_STAR]     = {parse_unary, parse_num_op, MULT},
+    [TOKEN_PERCENT]  = {NULL, parse_num_op, DIV},
     [TOKEN_MOD]      = {NULL, parse_assignment, ASSIGN},
-    [TOKEN_REF]      = {parse_unary, parse_bit_op, PRODUCT},
+    [TOKEN_REF]      = {parse_unary, parse_bit_op, BIT_AND},
     [TOKEN_TILDE]    = {parse_unary, NULL, LOWEST},
-    [TOKEN_PLUS]     = {NULL, parse_num_op, SUM},    
-    [TOKEN_SLASH]    = {NULL, parse_num_op, PRODUCT},    
+    [TOKEN_PLUS]     = {NULL, parse_num_op, PLUS},    
+    [TOKEN_SLASH]    = {NULL, parse_num_op, DIV},    
     [TOKEN_EQ]       = {NULL, parse_bool_op, EQUALS}, 
     [TOKEN_NOT_EQ]   = {NULL, parse_bool_op, EQUALS},     
-    [TOKEN_GT]       = {NULL, parse_bool_op, LTGT}, 
-    [TOKEN_GT_EQ]    = {NULL, parse_bool_op, LTGT},    
-    [TOKEN_LT]       = {NULL, parse_bool_op, LTGT}, 
-    [TOKEN_LT_EQ]    = {NULL, parse_bool_op, LTGT},          
-    [TOKEN_OR]       = {NULL, parse_bool_op, ANDOR},
-    [TOKEN_AND]      = {NULL, parse_bool_op, ANDOR}, 
-    [TOKEN_INC]      = {NULL, parse_postfix, POSTFIX},  
-    [TOKEN_DEC]      = {NULL, parse_postfix, POSTFIX},  
+    [TOKEN_GT]       = {NULL, parse_bool_op, GT}, 
+    [TOKEN_GT_EQ]    = {NULL, parse_bool_op, GT},    
+    [TOKEN_LT]       = {NULL, parse_bool_op, LT}, 
+    [TOKEN_LT_EQ]    = {NULL, parse_bool_op, LT},          
+    [TOKEN_OR]       = {NULL, parse_bool_op, LOGIC_OR},
+    [TOKEN_AND]      = {NULL, parse_bool_op, LOGIC_AND}, 
+    [TOKEN_INC]      = {NULL, parse_postfix, INC},  
+    [TOKEN_DEC]      = {NULL, parse_postfix, DEC},  
     [TOKEN_ASSIGN]   = {NULL, parse_assignment, ASSIGN},     
     [TOKEN_ADD]      = {NULL, parse_assignment, ASSIGN},  
     [TOKEN_SUB]      = {NULL, parse_assignment, ASSIGN},  
@@ -138,10 +148,10 @@ static struct { PrefixParseFn_T pfn; InfixParseFn_T ifn; Precedence_T prec; } ex
     [TOKEN_POW_2]    = {NULL, parse_pow_2, POWER},
     [TOKEN_POW_3]    = {NULL, parse_pow_3, POWER},
     [TOKEN_VA_ARG]   = {parse_va_arg, NULL, LOWEST},
-    [TOKEN_BIT_OR]   = {parse_lambda_lit, parse_bit_op, PRODUCT},
-    [TOKEN_LSHIFT]   = {NULL, parse_bit_op, PRODUCT},
-    [TOKEN_RSHIFT]   = {NULL, parse_bit_op, PRODUCT},
-    [TOKEN_XOR]      = {NULL, parse_bit_op, PRODUCT},
+    [TOKEN_BIT_OR]   = {parse_lambda_lit, parse_bit_op, BIT_OR},
+    [TOKEN_LSHIFT]   = {NULL, parse_bit_op, BIT_SHIFT},
+    [TOKEN_RSHIFT]   = {NULL, parse_bit_op, BIT_SHIFT},
+    [TOKEN_XOR]      = {NULL, parse_bit_op, BIT_XOR},
     [TOKEN_LSHIFT_ASSIGN] = {NULL, parse_assignment, ASSIGN},
     [TOKEN_RSHIFT_ASSIGN] = {NULL, parse_assignment, ASSIGN},
     [TOKEN_XOR_ASSIGN] = {NULL, parse_assignment, ASSIGN},

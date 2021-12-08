@@ -83,5 +83,9 @@ namespace std {
 
             <- str_vec;
         }
+
+        fn size(str: String): u64 {
+            <- ::strlen(str);
+        }
     }
 }
