@@ -11,8 +11,6 @@ const char* get_cspydr_version()
 
 void get_cspydr_build(char* dest)
 {
-    const char* buildTmp = "%s";
     const char* buildType = strcmp(CSPYDR_VERSION_W, "d") == 0 ? "debug" : "release";
-
-    sprintf(dest, buildTmp, buildType);
+    sprintf(dest, "%s", buildType);
 }

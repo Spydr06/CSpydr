@@ -99,15 +99,15 @@ static inline bool streq(char* a, char* b)
 
 static void evaluate_info_flags(char* argv)
 {
-    char csp_version[32];
-    get_cspydr_version(csp_version);
-
+    char csp_build[32];
+    get_cspydr_build(csp_build);
+    
     if(streq(argv, "-h") || streq(argv, "--help"))
         printf(help_text, usage_text);
     else if(streq(argv, "-i") || streq(argv, "--info"))
-        printf(info_text, get_cspydr_version(), csp_version);
+        printf(info_text, get_cspydr_version(), csp_build);
     else if(streq(argv, "-v") || streq(argv, "--version"))
-        printf(version_text, get_cspydr_version(), csp_version);
+        printf(version_text, get_cspydr_version(), csp_build);
     else
     {
         LOG_ERROR_F("unknown or wrong used flag \"%s\", type \"cspydr --help\" to get help.", argv);
@@ -214,18 +214,13 @@ int main(int argc, char* argv[])
         else if(streq(arg, "--to-xml"))
             ct = CT_TO_XML;
         else
-        {
-            LOG_ERROR_F("[Error] Unknown flag \"%s\", type \"" CSPC_HELP_COMMAND "\" to get help.\n", argv[i]);
-            exit(1);
-        }
+            evaluate_info_flags(argv[i]);
     }
 
     if(action == AC_REPL)
         repl();
     else
-    {
         compile(input_file, output_file, action);
-    }
 
     if(!streq(cc_flags, DEFAULT_CC_FLAGS))
         free(cc_flags);
