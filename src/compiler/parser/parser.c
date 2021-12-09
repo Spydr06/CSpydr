@@ -21,6 +21,7 @@ typedef struct PARSER_STRUCT
     Token_T* tok;
     ASTNode_T* cur_block;
     ASTObj_T* cur_fn;
+    ASTNode_T* cur_lambda_lit;
 
     size_t cur_lambda_id;
     size_t cur_tuple_id;
@@ -54,12 +55,12 @@ typedef enum
     DIV        = 12, // x / y
     MOD        = 12, // x % y
     POWER      = 13, // x²
-    CAST       = 14, // x: y
-    CALL       = 15, // x(y)
-    ARRAY      = 16, // x[y]
-    MEMBER     = 17, // x.y
-    INC        = 18, // x--
-    DEC        = 18, // x++
+    INC        = 14, // x--
+    DEC        = 14, // x++
+    CAST       = 15, // x: y
+    CALL       = 16, // x(y)
+    ARRAY      = 17, // x[y]
+    MEMBER     = 18, // x.y
 
     HIGHEST    = 19
 } Precedence_T;
@@ -245,6 +246,7 @@ static void init_parser(Parser_T* parser, List_T* tokens)
 
     parser->cur_block = NULL;
     parser->cur_fn = NULL;
+    parser->cur_lambda_lit = NULL;
 }
 
 static void free_parser(Parser_T* p)
@@ -1030,7 +1032,7 @@ static ASTNode_T* parse_return(Parser_T* p)
 
     if(!tok_is(p, TOKEN_SEMICOLON))
     {
-        if(p->cur_fn->return_type->kind == TY_VOID)
+        if((p->cur_fn && p->cur_fn->return_type->kind == TY_VOID))
             throw_error(ERR_TYPE_CAST_WARN, ret->tok, "cannot return value from function with type `void`, expect `;`");
         ret->return_val = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
     }
@@ -1590,6 +1592,9 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p)
         lambda_lit->data_type = parse_type(p);
     parser_consume(p, TOKEN_ARROW, "expect `=>` after lambda return type");
 
+    ASTNode_T* prev_lambda_lit = p->cur_lambda_lit;
+    p->cur_lambda_lit = lambda_lit;
+
     lambda_lit->body = parse_stmt(p);
 
     const char* callee_tmp = "__csp_lambda_lit_%ld__";
@@ -1599,6 +1604,8 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p)
     lambda_lit->id = init_ast_identifier(lambda_lit->tok, callee);
 
     list_push(p->root_ref->lambda_literals, lambda_lit);
+
+    p->cur_lambda_lit = prev_lambda_lit;
 
     return lambda_lit;
 }

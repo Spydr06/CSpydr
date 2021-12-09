@@ -54,6 +54,7 @@ void init_c_cg(CCodegenData_T* cg, ASTProg_T* ast)
     cg->print_c = false;
     cg->silent = false;
     cg->current_fn = NULL;
+    cg->current_lambda = NULL;
 
     cg->code_buffer = open_memstream(&cg->buf, &cg->buf_len);
 }
@@ -138,8 +139,6 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
     
     run_compiler(cg, target);
 }
-
-typedef int foo[5][5];
 
 static void run_compiler(CCodegenData_T* cg, const char* target_bin)
 {
@@ -728,8 +727,12 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, ")");
             break;
         case ND_LAMBDA:
-            print(cg, c_gen_identifier(cg, node->id));
-            break;
+            {
+                ASTNode_T* prev_lambda = cg->current_lambda;
+                cg->current_lambda = node;
+                print(cg, c_gen_identifier(cg, node->id));
+                cg->current_lambda = prev_lambda;
+            } break;
         default:
             throw_error(ERR_MISC, node->tok, "Expressions of type %d are currently not supported", node->kind);
     }
@@ -752,7 +755,9 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, "return ");
             if(node->return_val) {
                 print(cg, "(");
-                c_gen_type(cg, cg->current_fn->return_type, "");
+                if(!cg->current_fn && !cg->current_lambda)
+                    throw_error(ERR_SYNTAX_ERROR, node->tok, "return statement outside of function or lambda");
+                c_gen_type(cg, cg->current_lambda ? cg->current_lambda->data_type : cg->current_fn->return_type, "");
                 print(cg, ")");
 
                 c_gen_expr(cg, node->return_val);          
@@ -862,6 +867,8 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
 
 static void c_gen_lambda_fn(CCodegenData_T* cg, ASTNode_T* lambda)
 {
+    ASTNode_T* prev_lambda = cg->current_lambda;
+    cg->current_lambda = lambda;
     c_gen_type(cg, lambda->data_type, "");
     print(cg, " %s(", c_gen_identifier(cg, lambda->id));
 
@@ -870,6 +877,7 @@ static void c_gen_lambda_fn(CCodegenData_T* cg, ASTNode_T* lambda)
     println(cg, "){");
     c_gen_stmt(cg, lambda->body);
     println(cg, "}");
+    cg->current_lambda = prev_lambda;
 }
 
 static List_T* get_id_path(ASTIdentifier_T* id) {

@@ -15,6 +15,7 @@ typedef struct C_CODEGEN_DATA_STRUCT
 {
     ASTProg_T* ast;
     ASTObj_T* current_fn;
+    ASTNode_T* current_lambda;
 
     bool print_c;
     bool silent;
