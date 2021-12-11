@@ -480,7 +480,13 @@ static Token_T* lexer_get_symbol(Lexer_T* lexer)
             return init_token("EOF", lexer->line, lexer->pos, TOKEN_EOF, lexer->file);
 
         default: {
-            throw_error(ERR_SYNTAX_ERROR, &(Token_T){.line = lexer->line, .pos = lexer->pos, .source = lexer->file}, "unexpected symbol `%c` [id: %d]", lexer->c, lexer->c);
+            if(!lexer->c || lexer->c == -1) 
+            {
+                LOG_ERROR_F(COLOR_BOLD_WHITE "%s" COLOR_RESET " => " COLOR_BOLD_RED "[IO]" COLOR_RESET ": file is empty.\n", lexer->file->path);
+                exit(1);
+            }
+            else
+                throw_error(ERR_SYNTAX_ERROR, init_token(&lexer->c, lexer->line, lexer->pos, TOKEN_ERROR, lexer->file), "unknown token `%c` (id: %d)", lexer->c, lexer->c);
         }
     }
     // satisfy -Wall

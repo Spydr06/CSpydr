@@ -78,7 +78,8 @@ namespace std {
 
             let token: &char;
             while (token = ::strsep(&str, delim)) != nil {
-                vec_add!(str_vec, token);
+                let part = init(token);
+                vec_add!(str_vec, part);
             }
 
             <- str_vec;
