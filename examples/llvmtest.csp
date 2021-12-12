@@ -1,21 +1,6 @@
-import "libc/stdio.csp";
-import "string.csp";
-import "vec.csp";
+extern fn printf(fmt: const &char, x: ...): i32
 
-fn main(argc: i32, argv: &&char): i32
+fn main(): i32
 {
-    let my_string = str!("Hello");
-    concat!(my_string, " World!");
-
-    printf("%s\n", my_string);
-
-    let parts = std::string::split(my_string, " ");
-    for let i: u64 = 0; i < std::vec::size(parts); i++; {
-        puts(parts[i]);
-    }
-
-    std::string::free(my_string);
-    std::vec::free(parts);
-
     <- 0;
 }

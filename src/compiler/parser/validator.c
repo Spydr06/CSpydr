@@ -504,8 +504,6 @@ static bool is_bool(Validator_T* v, ASTType_T* type)
 
 static bool types_equal(ASTType_T* t1, ASTType_T* t2)
 {
-    //todo: handle Templates once implemented
-
     if(t1->kind != t2->kind)
         return false;
     
