@@ -157,10 +157,9 @@ void llvm_run_code(LLVMCodegenData_T *cg)
         LOG_INFO_F("[%s terminated with exit code %d]\n", cg->ast->main_file_path, exit_code);
 }
 
-char* llvm_gen_identifier(LLVMCodegenData_T* cg, ASTIdentifier_T* id)
+inline char* llvm_gen_identifier(LLVMCodegenData_T* cg, ASTIdentifier_T* id)
 {
-    // temporary
-    return id->callee;
+    return gen_identifier(id);
 }
 
 LLVMValueRef find_id(LLVMCodegenData_T* cg, char* callee)

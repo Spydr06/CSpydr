@@ -6,6 +6,9 @@
 
 #include "../lexer/token.h"
 
+#define unreachable() \
+    LOG_ERROR_F("internal error at %s:%d\n", __FILE__, __LINE__)
+
 typedef enum ERROR_TYPE
 {   
     ERR_SYNTAX_ERROR,

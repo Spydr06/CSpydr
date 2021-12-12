@@ -4,8 +4,8 @@
 #include "../../io/io.h"
 #include "../../error/error.h"
 #include "../../globals.h"
+#include "../codegen_utils.h"
 
-#include <llvm-c/Target.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,7 +23,7 @@ const char* default_header_code =
     "#define true ((bool) 1)\n"
     "#define false ((bool) 0)\n"
     "#define NULL ((void*) 0)\n"
-    "#define len(n) ((unsigned long)(sizeof(n)/sizeof(n[0])))x\n"
+    "#define len(n) ((unsigned long)(sizeof(n)/sizeof(n[0])))\n"
 ;
 
 #define len(n) (n ? ((unsigned long) (sizeof(n) / sizeof(n[0]))) : 0)
@@ -78,7 +78,7 @@ static void print(CCodegenData_T* cg, char* fmt, ...)
 
 static void c_gen_typedefs(CCodegenData_T* cg, ASTObj_T* obj);
 
-static char* c_gen_identifier(CCodegenData_T* cg, ASTIdentifier_T* id);
+static inline char* c_gen_identifier(CCodegenData_T* cg, ASTIdentifier_T* id) { return gen_identifier(id); }
 
 static void write_code(CCodegenData_T* cg, const char* target_bin);
 static void run_compiler(CCodegenData_T* cg,  const char* target_bin);
@@ -878,53 +878,4 @@ static void c_gen_lambda_fn(CCodegenData_T* cg, ASTNode_T* lambda)
     c_gen_stmt(cg, lambda->body);
     println(cg, "}");
     cg->current_lambda = prev_lambda;
-}
-
-static List_T* get_id_path(ASTIdentifier_T* id) {
-    List_T* path = init_list(sizeof(struct AST_IDENTIFIER_STRUCT*));
-    list_push(path, id);
-
-    ASTIdentifier_T* outer = id;
-    while(outer->outer)
-    {
-        outer = outer->outer;
-        list_push(path, outer);
-    }
-
-    return path;
-}
-
-static void cat_id(char* callee, ASTIdentifier_T* id)
-{
-    strcat(callee, id->callee);
-}
-
-static char* c_gen_identifier(CCodegenData_T* cg, ASTIdentifier_T* id)
-{
-    if(id->outer == NULL)
-        return id->callee;
-
-    static const char* CSP_PREFIX_STR = "__csp_";
-
-    List_T* path = get_id_path(id);
-
-    size_t len = (BUFSIZ) * path->size + 1;
-    char callee[len];
-    memset(callee, '\0', sizeof callee);
-    strcat(callee, CSP_PREFIX_STR);
-
-    for(size_t i = path->size - 1; i > 0; i--)
-    {
-        cat_id(callee, path->items[i]);
-        strcat(callee, "__csp_");
-    }
-    cat_id(callee, path->items[0]);
-
-    free_list(path);
-
-    char* new_c = calloc(strlen(callee) + 1, sizeof(char));
-    sprintf(new_c, "%s", callee);
-
-    ast_mem_add_ptr(new_c);
-    return new_c;
 }
