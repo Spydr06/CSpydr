@@ -9,7 +9,7 @@ import "libc/string.csp";
 
 # macro to quickly create a new vector
 macro vec(datatype) {
-    std::vec::init(): &datatype;
+    std::vec::init(): &datatype
 }
 
 # macro to add a value to the vector
