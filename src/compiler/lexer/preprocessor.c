@@ -344,14 +344,14 @@ static void parse_macro_call(Preprocessor_T* pp, MacroCall_T* call, List_T* toke
 
                 TokenType_T opening_paren = next->type;
                 TokenType_T closing_paren = next->type + 1;
-                size_t depth = 0, arg_start = (*i) + 1, arg_end = (*i) + 1;
+                int64_t depth = 0, arg_start = (*i) + 1, arg_end = (*i) + 1;
                 bool has_arg = false;
 
                 while((next = token_list->items[++(*i)])->type != closing_paren || depth != 0)
                 {
-                    if(next->type == opening_paren) depth++;
-                    else if(next->type == closing_paren && depth > 0) depth--;
-                    else if(next->type == TOKEN_COMMA && depth == 0) 
+                    if(next->type == TOKEN_LPAREN || next->type == TOKEN_LBRACKET || next->type == TOKEN_LBRACE) depth++;
+                    if((next->type == TOKEN_RPAREN || next->type == TOKEN_RBRACKET || next->type == TOKEN_RBRACE) && depth > 0) depth--;
+                    if(next->type == TOKEN_COMMA && depth == 0) 
                     {
                         if(call->argc >= __CSP_MAX_FN_NUM_ARGS)
                             throw_error(ERR_SYNTAX_ERROR, next, "too many arguments for macro call");
