@@ -1190,6 +1190,7 @@ static ASTNode_T* parse_match(Parser_T* p)
     ASTNode_T* match = init_ast_node(ND_MATCH, p->tok);
     match->cases = init_list(sizeof(struct AST_NODE_STRUCT*));
     match->default_case = NULL;
+    ast_mem_add_list(match->cases);
 
     parser_consume(p, TOKEN_MATCH, "expect `match` keyword to match an expression");
 
