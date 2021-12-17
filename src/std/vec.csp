@@ -103,14 +103,16 @@ namespace std {
 
         fn __internal_insert(addr: &&void, type_size: u8, pos: u64): &void {
             let v_data = get_data(*addr);
-            v_data.size++;
+            let new_length = size(*addr) + 1;
 
             if !has_space(v_data)
-                v_data = realloc(v_data, type_size);
+                v_data = ::std::vec::realloc(v_data, type_size);
 
             ::memmove(&(v_data.buff[(pos + 1) * type_size]),
                     &(v_data.buff[pos * type_size]),
-                    (v_data.size - pos - 1) * type_size);
+                    (v_data.size - pos) * type_size);
+
+            v_data.size = new_length;
             <- &(v_data.buff[pos * type_size]);
         }
 

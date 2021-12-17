@@ -75,7 +75,7 @@ static ASTNode_T* parse_nil_lit(Parser_T* p);
 static ASTNode_T* parse_closure(Parser_T* p);
 
 static ASTNode_T* parse_array_lit(Parser_T* p);
-static ASTNode_T* parse_struct_lit(Parser_T* p);
+static ASTNode_T* parse_struct_lit(Parser_T* p, ASTNode_T* id);
 
 static ASTNode_T* parse_lambda_lit(Parser_T* p);
 
@@ -111,9 +111,9 @@ static struct { PrefixParseFn_T pfn; InfixParseFn_T ifn; Precedence_T prec; } ex
     [TOKEN_STRING]   = {parse_str_lit, NULL, LOWEST},
     [TOKEN_BANG]     = {parse_unary, NULL, LOWEST},
     [TOKEN_MINUS]    = {parse_unary, parse_num_op, MINUS},
-    [TOKEN_LPAREN]   = {parse_closure, parse_call, CALL}, 
+    [TOKEN_LPAREN]   = {parse_closure, NULL, CALL}, 
     [TOKEN_LBRACKET] = {parse_array_lit, parse_index, ARRAY},   
-    [TOKEN_LBRACE]   = {parse_struct_lit, NULL, LOWEST}, 
+    [TOKEN_LBRACE]   = {NULL, NULL, LOWEST}, 
     [TOKEN_STAR]     = {parse_unary, parse_num_op, MULT},
     [TOKEN_PERCENT]  = {NULL, parse_num_op, DIV},
     [TOKEN_MOD]      = {NULL, parse_assignment, ASSIGN},
@@ -131,7 +131,7 @@ static struct { PrefixParseFn_T pfn; InfixParseFn_T ifn; Precedence_T prec; } ex
     [TOKEN_AND]      = {NULL, parse_bool_op, LOGIC_AND}, 
     [TOKEN_INC]      = {NULL, parse_postfix, INC},  
     [TOKEN_DEC]      = {NULL, parse_postfix, DEC},  
-    [TOKEN_ASSIGN]   = {NULL, parse_assignment, ASSIGN},     
+    [TOKEN_ASSIGN]   = {NULL, parse_assignment, ASSIGN},
     [TOKEN_ADD]      = {NULL, parse_assignment, ASSIGN},  
     [TOKEN_SUB]      = {NULL, parse_assignment, ASSIGN},  
     [TOKEN_DIV]      = {NULL, parse_assignment, ASSIGN},  
@@ -1424,7 +1424,16 @@ static ASTNode_T* parse_id(Parser_T* p)
 {
     ASTNode_T* id = init_ast_node(ND_ID, p->tok);
     id->id = parse_identifier(p);
-    return id;
+
+    switch(p->tok->type) 
+    {
+        case TOKEN_LPAREN:
+            return parse_call(p, id);
+        case TOKEN_LBRACE:
+            return parse_struct_lit(p, id);
+        default:
+            return id;
+    }
 }
 
 static ASTNode_T* parse_int_lit(Parser_T* p)
@@ -1552,13 +1561,16 @@ static ASTNode_T* parse_array_lit(Parser_T* p)
     return arr_lit;
 }
 
-static ASTNode_T* parse_struct_lit(Parser_T* p)
+static ASTNode_T* parse_struct_lit(Parser_T* p, ASTNode_T* id)
 {
     ASTNode_T* struct_lit = init_ast_node(ND_STRUCT, p->tok);
     parser_consume(p, TOKEN_LBRACE, "expect `{` for struct literal");
     struct_lit->is_constant = true;
     struct_lit->args = parse_expr_list(p, TOKEN_RBRACE);
     parser_consume(p, TOKEN_RBRACE, "expect `}` after struct literal");
+
+    struct_lit->data_type = init_ast_type(TY_UNDEF, id->tok);
+    struct_lit->data_type->id = id->id;
 
     return struct_lit;
 }

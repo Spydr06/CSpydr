@@ -2,5 +2,6 @@ extern fn printf(fmt: const &char, x: ...): i32
 
 fn main(): i32
 {
+    printf("Hello, World!\n");
     <- 0;
 }

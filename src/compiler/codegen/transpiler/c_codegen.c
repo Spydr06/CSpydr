@@ -687,7 +687,9 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, "}");
             break;
         case ND_STRUCT:
-            print(cg, "{");
+            print(cg, "(");
+            c_gen_type(cg, node->data_type, "");
+            print(cg, "){");
 
             for(size_t i = 0; i < node->args->size; i++)
             {
