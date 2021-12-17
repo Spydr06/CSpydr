@@ -1,6 +1,7 @@
 import "libc/wchar.csp";
 import "libc/stdio.csp";
 import "libc/time.csp";
+import "string.csp";
 
 macro message(arg1, arg2) { "Hello, World!\n" }
 macro print_ln(str) { printf("%s\n", str) }
@@ -54,13 +55,13 @@ fn delay(seconds: i32)
 
 fn main(argc: i32, argv: &&char): i32 {
     program_data = data {
-        "Hello " "World", 
+        "xxxxHello " "World!xxxx", 
         0x00
     };
 
     va_test(3, 4 + true: u8);
 
-    utils::putstr(program_data.msg);
+    utils::putstr(std::string::substr(program_data.msg, 4, 16));
 
     for let i = utils::zero; i < 10; i++;
         match i % 2 {

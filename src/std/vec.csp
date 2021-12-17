@@ -6,6 +6,7 @@
 
 import "libc/stdlib.csp";
 import "libc/string.csp";
+import "tuple.csp";
 
 # macro to quickly create a new vector
 macro vec(datatype) {
@@ -156,7 +157,7 @@ namespace std {
         }
 
         fn minmax_i(v: &i32): [i32, i32] {
-            if v == nil ret {0, 0};
+            if v == nil ret [0, 0];
             let v_data = get_data(v: &void);
             let min = v[0];
             let max = v[0];
@@ -168,7 +169,7 @@ namespace std {
                     max = v[i];
             }
 
-            <- {min, max};
+            <- [min, max];
         }
     }
 }

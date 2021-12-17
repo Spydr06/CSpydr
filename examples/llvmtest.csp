@@ -1,8 +1,6 @@
-extern fn puts(fmt: const &char): i32
+fn sub(a: i32, b: i32): i32 ret a - b;
 
 fn main(): i32
-{
-    #puts("Hello, World!\n");
-    
-    <- 1 + 2;
+{   
+    <- sub(2, 2);
 }

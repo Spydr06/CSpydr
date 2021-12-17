@@ -88,5 +88,20 @@ namespace std {
         fn size(str: String): u64 {
             <- ::strlen(str);
         }
+
+        fn substr(str: String, from: i64, to: i64): ::std::String {
+            if to - from < 0 || to - from >= size(str)
+                 ret nil;
+
+            let ch_arr: &char = malloc((to - from + 2) * sizeof char);
+            for let i: i64 = from; i < to; i++; {
+                ch_arr[i - from] = str[i];
+            }
+            #ch_arr[from - to] = '\0';
+            
+            let sub_str = init(ch_arr);
+            ::free(ch_arr);
+            <- sub_str;
+        }
     }
 }
