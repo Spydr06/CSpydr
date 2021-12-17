@@ -1,7 +1,8 @@
-extern fn printf(fmt: const &char, x: ...): i32
+extern fn puts(fmt: const &char): i32
 
 fn main(): i32
 {
-    printf("Hello, World!\n");
-    <- 0;
+    #puts("Hello, World!\n");
+    
+    <- 1 + 2;
 }

@@ -7,10 +7,10 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# compiler source
-add_subdirectory(src/compiler)
 # library source
 add_subdirectory(lib)
+# compiler source
+add_subdirectory(src/compiler)
 # compiler tests
 add_subdirectory(tests/compiler)
 # cspydr standard library
