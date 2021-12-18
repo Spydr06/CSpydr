@@ -850,11 +850,6 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
             break;
         case ND_NOOP:
             break;
-        case ND_ASM:
-            print(cg, "__asm__(");
-            c_gen_expr(cg, node->expr);
-            println(cg, ");");
-            break;
         case ND_MATCH_TYPE:
             if(node->body)
                 c_gen_stmt(cg, node->body);

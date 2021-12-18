@@ -67,7 +67,7 @@ extern {
     fn sprintf(s: &char, format: const &char, va: ...): i32;
     fn sscanf(s: const &char, format: const &char, va: ...): i32;
 
-    fn vfprintf(stream: &FILE, format: const &char, arg: ...): i32;
+    fn vfprintf(stream: &void, format: const &char, arg: ...): i32;
     fn vfscanf(stream: &FILE, format: const &char, arg: ...): i32;
     fn vprintf(format: const &char, arg: ...): i32;
     fn vscanf(format: const &char, arg: ...): i32;

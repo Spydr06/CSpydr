@@ -108,7 +108,6 @@ typedef enum TOKEN_TYPE {
     TOKEN_CONTINUE,     // continue
     TOKEN_BREAK,        // break
     TOKEN_NOOP,         // noop
-    TOKEN_ASM,          // asm
     TOKEN_LEN,          // len
     TOKEN_VA_ARG,       // va_arg
 

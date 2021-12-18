@@ -266,7 +266,6 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
         case ND_VA_ARG:
             ast_type(list, node->data_type, custom_args);
         case ND_EXPR_STMT:
-        case ND_ASM:
             ast_node(list, node->expr, custom_args);
             break;
 

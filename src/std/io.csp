@@ -3,7 +3,115 @@
 # Part of the CSpydr standard library
 #
 
+import "string.csp";
+import "libc/stdio.csp";
+import "libc/time.csp";
+
+macro print(str) {
+    (::std::io::print(::std::io::stdout, "%s", (str)))
+}
+
+macro println(str) {
+    (::std::io::print(::std::io::stdout, "%s\n", (str)))
+}
+
+macro error(str) {
+    (::std::io::print(::std::io::stderr, "%s", (str))
+}
+
+macro errorln(str) {
+    (::std::io::print(::std::io::stderr, "%s\n", (str))
+}
+
 namespace std {
     namespace io {
+        # the standard constant IO files (inherited through libc)
+        let stdin = ::stdin;
+        let stdout = ::stdout;
+        let stderr = ::stderr;
+
+        fn print(fp: &::FILE, fmt: std::String, args: ...) {
+            ::vfprintf(fp, fmt, args);
+        }
+    }
+
+    namespace log {
+        type Priority: enum {
+            TRACE,
+            DEBUG,
+            INFO,
+            WARN,
+            ERROR,
+            FATAL
+        };
+
+        namespace colors {
+            const RESET   = "\033[0m";
+            const BOLD    = "\033[1m";
+            const BLACK   = "\033[30m";
+            const RED     = "\033[31m";
+            const GREEN   = "\033[32m";
+            const YELLOW  = "\033[33m";
+            const BLUE    = "\033[34m";     
+            const MAGENTA = "\033[35m";     
+            const CYAN    = "\033[36m";     
+            const WHITE   = "\033[37m"; 
+        } 
+
+        let time_date_format = "%H:%M:%S";
+
+        fn trace(fmt: std::String, args: ...) {
+            log(std::io::stdout, Priority::TRACE, nil, fmt, args);
+        }
+
+        fn debug(fmt: std::String, args: ...) {
+
+        }
+
+        fn info(fmt: std::String, args: ...) {
+
+        }
+
+        fn warn(fmt: std::String, args: ...) {
+
+        }
+
+        fn error(fmt: std::String, args: ...) {
+
+        }
+
+        fn fatal(exit_fn: fn<i32>(), fmt: std::String, args: ...) {
+
+        }
+
+        fn log(fp: &::FILE, pr: Priority, exit_fn: fn<i32>(), fmt: std::String, args: ...) {
+            let t: ::time_t;
+            let tmp: &::tm;
+            let time_buff: char[64];
+
+            ::time(&t);
+            tmp = ::localtime(&t);
+            time_buff[::strftime(time_buff, sizeof char * 64, time_date_format, tmp)] = '\0';
+            ::fprintf(fp, "%s ", time_buff);
+
+            match (pr) {
+                Priority::TRACE => ::fprintf(fp, "[TRACE]");
+                Priority::DEBUG => ::fprintf(fp, "[%s%sDEBUG%s]: ", colors::BOLD, colors::BLUE, colors::RESET);
+                Priority::INFO =>  ::fprintf(fp, "[%s%sINFO%s]:  ", colors::BOLD, colors::WHITE, colors::RESET);
+                Priority::WARN =>  ::fprintf(fp, "[%s%sWARN%s]:  ", colors::BOLD, colors::YELLOW, colors::RESET);
+                Priority::ERROR => ::fprintf(fp, "[%s%sERROR%s]: ", colors::BOLD, colors::RED, colors::RESET);
+                Priority::FATAL => ::fprintf(fp, "%s%s[FATAL]: ", colors::BOLD, colors::RED);
+            }
+            ::vfprintf(fp, fmt, args);
+            ::fprintf(fp, "%s\n", colors::RESET);
+            ::fflush(fp);
+
+            if pr == Priority::FATAL && exit_fn != nil
+                ::exit(exit_fn());
+        }
+
+        fn set_time_data_format(fmt: std::String) {
+            time_date_format = fmt;
+        }
     }
 }

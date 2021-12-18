@@ -2,6 +2,7 @@ import "libc/wchar.csp";
 import "libc/stdio.csp";
 import "libc/time.csp";
 import "string.csp";
+import "io.csp";
 
 macro message(arg1, arg2) { "Hello, World!\n" }
 macro print_ln(str) { printf("%s\n", str) }
@@ -73,6 +74,8 @@ fn main(argc: i32, argv: &&char): i32 {
         i32 => puts("Ok");
         _ => puts("Huh?");
     }
+
+    std::log::log(stdout, 5, | | i32 => ret 1;, "lol");
 
     <- 0;
 }

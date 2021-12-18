@@ -91,7 +91,6 @@ typedef enum {
     ND_EXPR_STMT, // "executable" expressions
     ND_BREAK,     // break;
     ND_CONTINUE,  // continue;
-    ND_ASM,       // asm "<assembly code>";
     ND_LEN,       // len x
     ND_VA_ARG,    // va_arg x: i32
 

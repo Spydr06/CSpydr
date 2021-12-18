@@ -1312,16 +1312,6 @@ static ASTNode_T* parse_continue(Parser_T* p)
     return continue_stmt;
 }
 
-static ASTNode_T* parse_asm_stmt(Parser_T* p)
-{
-    ASTNode_T* asm_stmt = init_ast_node(ND_ASM, p->tok);
-    parser_consume(p, TOKEN_ASM, "expect `asm` keyword");
-
-    asm_stmt->expr = parse_str_lit(p);
-
-    return asm_stmt;
-}
-
 static ASTNode_T* parse_stmt(Parser_T* p)
 {
 
@@ -1369,9 +1359,7 @@ static ASTNode_T* parse_stmt(Parser_T* p)
                 parser_advance(p);
                 }
                 return noop;
-            }       
-        case TOKEN_ASM:
-            return parse_asm_stmt(p);
+            }
         default:
             return parse_expr_stmt(p);
     }
