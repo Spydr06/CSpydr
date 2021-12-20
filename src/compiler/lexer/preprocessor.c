@@ -1,4 +1,5 @@
 #include "preprocessor.h"
+#include "stdmacros.h"
 #include "lexer.h"
 #include "token.h"
 #include "../error/error.h"
@@ -34,16 +35,6 @@ typedef struct PREPROCESSOR_STRUCT
     bool is_silent;
 } Preprocessor_T;
 
-typedef struct MACRO_STRUCT
-{
-    Token_T* tok;
-    List_T* replacing_tokens;
-
-    uint8_t argc;
-    Token_T* args[__CSP_MAX_FN_NUM_ARGS];
-    bool used : 1;
-} __attribute__((packed)) Macro_T ;
-
 typedef struct MACRO_CALL_STRUCT
 {
     Token_T* tok;
@@ -63,7 +54,7 @@ typedef struct IMPORT_STRUCT
 // Base functions
 //
 
-static Macro_T* init_macro(Token_T* tok)
+Macro_T* init_macro(Token_T* tok)
 {
     Macro_T* mac = malloc(sizeof(struct MACRO_STRUCT));
     mac->tok = tok;
@@ -127,6 +118,8 @@ void init_preprocessor(Preprocessor_T* pp, Lexer_T* lex)
     pp->tokens = init_list(sizeof(struct TOKEN_STRUCT*));
     
     pp->is_silent = false;
+
+    define_std_macros(pp->macros);
 }
 
 static void free_preprocessor(Preprocessor_T* pp)

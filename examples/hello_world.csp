@@ -79,6 +79,11 @@ fn main(argc: i32, argv: &&char): i32 {
     }
 
     printf("%s at %d\n", getfile!, getline!);
+    printf("cspc version: %s\n", __version__!);
+    printf("compile time: %s\n", __time__!);
+    printf("compile date: %s\n", __date__!);
+    printf("os: %s\n", __system__!);
+    printf("arch: %s\n", __architecture__!);
 
     <- 0;
 }
