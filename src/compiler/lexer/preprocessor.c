@@ -407,6 +407,16 @@ static void expand_macro_call(Preprocessor_T* pp, MacroCall_T call, List_T* src_
                         list_push(dest_list, src_list->items[j]);
                     }
                 }
+                else if(strcmp(tok->value, "__line__") == 0) 
+                {
+                    char linestr[128] = { '\0' };
+                    sprintf(linestr, "%u", call.tok->line + 1);
+                    list_push(dest_list, init_token(linestr, tok->line, tok->pos, TOKEN_INT, tok->source));
+                }
+                else if(strcmp(tok->value, "__file__") == 0)
+                {
+                    list_push(dest_list, init_token((char*) call.tok->source->path, tok->line, tok->pos, TOKEN_STRING, tok->source));
+                }
                 else
                     list_push(dest_list, tok);
             } break;

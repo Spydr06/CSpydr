@@ -451,7 +451,7 @@ static ASTIdentifier_T* __parse_identifier(Parser_T* p, ASTIdentifier_T* outer, 
     id->global_scope = global_scope;
     parser_consume(p, TOKEN_ID, "expect identifier");
 
-    if(tok_is(p, TOKEN_STATIC_MEMBER) && !is_simple)
+    if(tok_is(p, TOKEN_STATIC_MEMBER) && !is_simple && parser_peek(p, 1)->type == TOKEN_ID)
     {
         if(parser_peek(p, 1)->type == TOKEN_LT)
            return id; // :: followed by < would be a generic in a functon or -call 
@@ -1418,8 +1418,9 @@ static ASTNode_T* parse_id(Parser_T* p)
     {
         case TOKEN_LPAREN:
             return parse_call(p, id);
-        case TOKEN_LBRACE:
-            return parse_struct_lit(p, id);
+        case TOKEN_STATIC_MEMBER:
+            if(parser_peek(p, 1)->type == TOKEN_LBRACE)
+                return parse_struct_lit(p, id);
         default:
             return id;
     }
@@ -1552,6 +1553,7 @@ static ASTNode_T* parse_array_lit(Parser_T* p)
 
 static ASTNode_T* parse_struct_lit(Parser_T* p, ASTNode_T* id)
 {
+    parser_consume(p, TOKEN_STATIC_MEMBER, "expect `::` before `{`");
     ASTNode_T* struct_lit = init_ast_node(ND_STRUCT, p->tok);
     parser_consume(p, TOKEN_LBRACE, "expect `{` for struct literal");
     struct_lit->is_constant = true;

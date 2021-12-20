@@ -8,28 +8,23 @@ import "libc/stdio.csp";
 import "libc/time.csp";
 
 macro print(str) {
-    (::std::io::print(::std::io::stdout, "%s", (str)))
+    (::std::io::print(::stdout, "%s", (str)))
 }
 
 macro println(str) {
-    (::std::io::print(::std::io::stdout, "%s\n", (str)))
+    (::std::io::print(::stdout, "%s\n", (str)))
 }
 
 macro error(str) {
-    (::std::io::print(::std::io::stderr, "%s", (str))
+    (::std::io::print(::stderr, "%s", (str))
 }
 
 macro errorln(str) {
-    (::std::io::print(::std::io::stderr, "%s\n", (str))
+    (::std::io::print(::stderr, "%s\n", (str))
 }
 
 namespace std {
     namespace io {
-        # the standard constant IO files (inherited through libc)
-        let stdin = ::stdin;
-        let stdout = ::stdout;
-        let stderr = ::stderr;
-
         fn print(fp: &::FILE, fmt: std::String, args: ...) {
             ::vfprintf(fp, fmt, args);
         }
@@ -61,7 +56,7 @@ namespace std {
         let time_date_format = "%H:%M:%S";
 
         fn trace(fmt: std::String, args: ...) {
-            log(std::io::stdout, Priority::TRACE, nil, fmt, args);
+            log(::stdout, Priority::TRACE, nil, fmt, args);
         }
 
         fn debug(fmt: std::String, args: ...) {
