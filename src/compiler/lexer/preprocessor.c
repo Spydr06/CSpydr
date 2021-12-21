@@ -326,6 +326,9 @@ static void parse_macro_call(Preprocessor_T* pp, MacroCall_T* call, List_T* toke
 {
     init_macro_call(pp, call, token_list->items[*i]);
 
+    if((*i) + 1 >= token_list->size)
+        return;
+
     Token_T* next = token_list->items[(*i) + 1];
     switch(next->type)
     {
@@ -335,12 +338,15 @@ static void parse_macro_call(Preprocessor_T* pp, MacroCall_T* call, List_T* toke
             {
                 (*i)++;
 
+                if((*i) + 1 >= token_list->size)
+                    throw_error(ERR_SYNTAX_ERROR, next, "unexpected end of macro body, expect `)`");
+
                 TokenType_T opening_paren = next->type;
                 TokenType_T closing_paren = next->type + 1;
                 int64_t depth = 0, arg_start = (*i) + 1, arg_end = (*i) + 1;
                 bool has_arg = false;
 
-                while((next = token_list->items[++(*i)])->type != closing_paren || depth != 0)
+                while(((next = token_list->items[++(*i)])->type != closing_paren || depth != 0) && (*i) + 1 < token_list->size)
                 {
                     if(next->type == TOKEN_LPAREN || next->type == TOKEN_LBRACKET || next->type == TOKEN_LBRACE) depth++;
                     if((next->type == TOKEN_RPAREN || next->type == TOKEN_RBRACKET || next->type == TOKEN_RBRACE) && depth > 0) depth--;
@@ -363,6 +369,9 @@ static void parse_macro_call(Preprocessor_T* pp, MacroCall_T* call, List_T* toke
                         has_arg = true;
                     }
                 }
+
+                if((*i) + 1 >= token_list->size && (next->type != closing_paren || depth != 0))
+                    throw_error(ERR_SYNTAX_ERROR, next, "unexpected end of macro body, expect `)`");
 
                 if(has_arg) 
                 {
@@ -412,6 +421,13 @@ static void expand_macro_call(Preprocessor_T* pp, MacroCall_T call, List_T* src_
                 }
                 else
                     list_push(dest_list, tok);
+            } break;
+
+            case TOKEN_MACRO_CALL:
+            {
+                MacroCall_T macro_call;
+                parse_macro_call(pp, &macro_call, call.macro->replacing_tokens, &i);
+                expand_macro_call(pp, macro_call, call.macro->replacing_tokens, dest_list);
             } break;
 
             default:

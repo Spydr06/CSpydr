@@ -7,6 +7,9 @@ import "io.csp";
 macro message(arg1, arg2) { "Hello, World!\n" }
 macro print_ln(str) { printf("%s\n", str) }
 
+macro bar(s) { s }
+macro foo() { bar!("f") }
+
 #[
     new multiline comments!
 ]#
@@ -82,6 +85,7 @@ fn main(argc: i32, argv: &&char): i32 {
     printf("os: %s\n", __system__!);
     printf("arch: %s\n", __architecture__!);
     printf("%s was compiled using %s\n", __main_file__!, __compile_type__!);
+    printf("%s\n", foo!);
 
     <- 0;
 }

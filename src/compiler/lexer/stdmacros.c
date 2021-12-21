@@ -100,7 +100,6 @@ const char* get_time_str(void)
         time_info = localtime(&raw_time);
 
         sprintf(current_time, "%d:%d:%d", time_info->tm_hour, time_info->tm_min, time_info->tm_sec);
-        printf("time is: %s\n", current_time);
     }
 
     return current_time;
