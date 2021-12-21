@@ -21,6 +21,7 @@ static void generate_asm(ASTProg_T* ast, char* target, Action_T action, bool pri
 
 void compile(char* input_file, char* output_file, Action_T action)
 {
+    main_src_file = input_file;
     ASTProg_T ast; 
     generate_ast(&ast, input_file, output_file, silent);
     

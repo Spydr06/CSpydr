@@ -2,6 +2,9 @@
 #include "preprocessor.h"
 #include "../version.h"
 #include "token.h"
+#include "../toolchain.h"
+#include "../globals.h"
+#include "../ast/types.h"
 
 #include <time.h>
 #include <string.h>
@@ -10,6 +13,7 @@
 const char* get_date_str(void);
 const char* get_time_str(void);
 const char* get_compile_type(void);
+const char* get_main_file(void);
 
 char current_time[128] = { '\0' };
 char current_date[128] = { '\0' };
@@ -22,6 +26,7 @@ struct {
     };
     enum {
         INTEGER,
+        ID,
         STRING,
         STRING_FN
     } value_type;
@@ -32,6 +37,8 @@ macros[] = {
     {"__system__", .value = "linux", STRING},
 #elif defined(_WIN32)
     {"__system__", .value = "windows", STRING},
+#else
+    {"__system__", .value = "unknown", STRING},
 #endif
 
 #if defined(__x86_64) || defined(__x86_64__) || defined(_M_X64)
@@ -45,6 +52,11 @@ macros[] = {
     {"__time__", .fn = get_time_str, STRING_FN},
     {"__date__", .fn = get_date_str, STRING_FN},
     {"__compile_type__", .fn = get_compile_type, STRING_FN},
+    {"__main_file__", .fn = get_main_file, STRING_FN},
+
+    {"__file__", .value = "__file__", ID},
+    {"__line__", .value = "__line__", ID},
+
     {NULL, NULL, 0}
 };
 
@@ -60,6 +72,9 @@ void define_std_macros(List_T *macro_list)
         {
             case INTEGER:
                 replacement_token = init_token((char*) macros[i].value, 0, 0, TOKEN_INT, NULL);
+                break;
+            case ID:
+                replacement_token = init_token((char*) macros[i].value, 0, 0, TOKEN_ID, NULL);
                 break;
             case STRING:
                 replacement_token = init_token((char*) macros[i].value, 0, 0, TOKEN_STRING, NULL);
@@ -109,5 +124,22 @@ const char* get_date_str(void)
 
 const char* get_compile_type(void)
 {
-    return ""; // todo: implement this!
+    switch(ct)
+    {
+        case CT_ASM:
+            return "asm";
+        case CT_LLVM:
+            return "llvm";
+        case CT_TRANSPILE:
+            return "transpile";
+        case CT_TO_XML:
+            return "xml";
+        default:
+            return "unknown";
+    }
+}
+
+const char* get_main_file(void)
+{
+    return main_src_file;
 }

@@ -7,9 +7,6 @@ import "io.csp";
 macro message(arg1, arg2) { "Hello, World!\n" }
 macro print_ln(str) { printf("%s\n", str) }
 
-macro getline { __line__ }
-macro getfile { __file__ }
-
 #[
     new multiline comments!
 ]#
@@ -78,12 +75,13 @@ fn main(argc: i32, argv: &&char): i32 {
         _ => puts("Huh?");
     }
 
-    printf("%s at %d\n", getfile!, getline!);
+    printf("%s at %d\n", __file__!, __line__!);
     printf("cspc version: %s\n", __version__!);
     printf("compile time: %s\n", __time__!);
     printf("compile date: %s\n", __date__!);
     printf("os: %s\n", __system__!);
     printf("arch: %s\n", __architecture__!);
+    printf("%s was compiled using %s\n", __main_file__!, __compile_type__!);
 
     <- 0;
 }

@@ -28,6 +28,7 @@ bool __CSP_GLOBAL print_llvm;
 bool __CSP_GLOBAL print_c;
 
 char __CSP_GLOBAL* exec_name;
+char __CSP_GLOBAL* main_src_file;
 
 __CSP_GLOBAL List_T* compiler_flags;
 
