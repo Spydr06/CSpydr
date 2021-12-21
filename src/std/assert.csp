@@ -1,0 +1,37 @@
+#
+# assert.csp - assert debug library
+# part of the cspydr standard library
+#
+
+import "libc/stdio.csp";
+import "io.csp";
+
+macro assert(expr, msg) {
+    {
+        if !(expr) ::std::assert::emit(__file__, __line__, msg);
+    }
+}
+
+macro assert_eq(a, b, msg) {
+    {
+        if (a) != (b) ::std::assert::emit(__file__, __line__, msg);
+    }
+}
+
+namespace std {
+    namespace assert {
+        let enabled = true;
+
+        fn emit(file: &char, line: u64, msg: &char) {
+            if enabled {
+                ::fprintf(::stderr, "%s%s:%lu assert triggered: %s%s%s%s\n", log::colors::RED, file, line, log::colors::RESET, log::colors::BOLD, log::colors::RED, msg);
+                ::exit(1);
+            }
+        }
+
+        fn enable() 
+            enabled = true;
+        fn disable()
+            enabled = false;
+    }
+}

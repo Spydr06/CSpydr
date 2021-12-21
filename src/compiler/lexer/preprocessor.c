@@ -243,9 +243,7 @@ static Macro_T* parse_macro_def(Preprocessor_T* pp, size_t* i)
 
      next = pp->tokens->items[(*i)++];    
     if(next->type == TOKEN_LPAREN)
-    {   
-        // TODO: evaluate arguments
-
+    {
         for(next = pp->tokens->items[(*i)++]; next->type != TOKEN_EOF && next->type != TOKEN_RPAREN; next = pp->tokens->items[(*i)++]) 
         {
             if(next->type != TOKEN_ID)
