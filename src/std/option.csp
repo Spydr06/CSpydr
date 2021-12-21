@@ -19,17 +19,17 @@ namespace std {
 
     namespace option {
         fn ok(value: &void): ::std::Option {
-            <- {
+            <- Option :: {
                 false,
                 value
-            }: Option;
+            };
         }
 
         fn err(value: &void): ::std::Option {
-            <- {
+            <- Option :: {
                 true,
                 value
-            }: Option;
+            };
         }
 
         fn is_err(opt: Option): bool {
