@@ -24,7 +24,7 @@ namespace std {
 
         fn emit(file: &char, line: u64, msg: &char) {
             if enabled {
-                ::fprintf(::stderr, "%s%s:%lu assert triggered: %s%s%s%s\n", log::colors::RED, file, line, log::colors::RESET, log::colors::BOLD, log::colors::RED, msg);
+                ::fprintf(::stderr, "%s%s:%lu assert triggered: %s%s%s%s%s\n", log::colors::RED, file, line, log::colors::RESET, log::colors::BOLD, log::colors::RED, msg, log::colors::RESET);
                 ::exit(1);
             }
         }

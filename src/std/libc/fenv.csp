@@ -16,7 +16,7 @@ type fenv_t: struct {
     __glibc_reserved5: u16,
 
     __mxcsr: u16, # FIXME: only x86_64
-}
+};
 
 type fexcept_t: u16;
 

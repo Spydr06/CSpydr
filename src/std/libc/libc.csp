@@ -1,0 +1,31 @@
+# imports all files for accessing the C standard library
+
+import "assert.csp";
+import "complex.csp";
+import "ctype.csp";
+import "errno.csp";
+import "fenv.csp";
+import "float.csp";
+import "inttypes.csp";
+import "iso646.csp";
+import "limits.csp";
+import "locale.csp";
+import "math.csp";
+import "setjmp.csp";
+import "signal.csp";
+import "stdalign.csp";
+import "stdarg.csp";
+import "stdbool.csp";
+import "stddef.csp";
+import "stdint.csp";
+import "stdio.csp";
+import "stdlib.csp";
+import "stdnoreturn.csp";
+import "string.csp";
+import "tgmath.csp";
+import "threads.csp";
+import "time.csp";
+import "uchar.csp";
+import "wchar.csp";
+import "wctype.csp";
+import "stdatomic.csp";

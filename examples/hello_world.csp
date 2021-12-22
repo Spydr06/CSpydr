@@ -1,9 +1,4 @@
-import "libc/wchar.csp";
-import "libc/stdio.csp";
-import "libc/time.csp";
-import "string.csp";
-import "io.csp";
-import "assert.csp";
+import "stdlib.csp";
 
 macro message(arg1, arg2) { "Hello, World!\n" }
 macro print_ln(str) { printf("%s\n", str) }

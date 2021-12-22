@@ -1,7 +1,9 @@
 # a basic implementation of the libc stdatomic.h header for the CSpydr programming language
 
-import "libc/stdint.csp";
-import "libc/stddef.csp";
+import "stdint.csp";
+import "stddef.csp";
+import "stdint.csp";
+import "wchar.csp";
 
 macro ATOMIC_BOOL_LOCK_FREE { 2 }
 macro ATOMIC_CHAR_LOCK_FREE { 2 }
