@@ -38,38 +38,36 @@ uint64_t hash_64(const char* key)
 
 char* gen_identifier(ASTIdentifier_T* id)
 {
-    if(id->outer == NULL)
-        return id->callee;
-
-    static const char* CSP_PREFIX_STR = "__csp_";
-
-    List_T* path = get_id_path(id);
-
-    size_t len = (BUFSIZ) * path->size + 1;
-    char callee[len];
-    memset(callee, '\0', sizeof callee);
-    strcat(callee, CSP_PREFIX_STR);
-
-    for(size_t i = path->size - 1; i > 0; i--)
+    char* new_c;
+    if(id->outer)
     {
-        cat_id(callee, path->items[i]);
-        strcat(callee, "__csp_");
+        static const char* CSP_PREFIX_STR = "__csp_";
+
+        List_T* path = get_id_path(id);
+
+        size_t len = (BUFSIZ) * path->size + 1;
+        char callee[len];
+        memset(callee, '\0', sizeof callee);
+        strcat(callee, CSP_PREFIX_STR);
+
+        for(size_t i = path->size - 1; i > 0; i--)
+        {
+            cat_id(callee, path->items[i]);
+            strcat(callee, "__csp_");
+        }
+        cat_id(callee, path->items[0]);
+
+        free_list(path);
+
+        new_c = calloc(strlen(callee) + 1, sizeof(char));
+        strcpy(new_c, callee);
     }
-    cat_id(callee, path->items[0]);
-
-    free_list(path);
-
-    char* new_c = calloc(strlen(callee) + 1, sizeof(char));
-    sprintf(new_c, "%s", callee);
-
-    if(false)
+    else
     {
-        if(strlen(new_c) < 20) // bring the string length to the number of digits of UINT64_MAX
-            new_c = realloc(new_c, sizeof(char) * 20);
-        sprintf(new_c, "%lx", hash_64(new_c));
+        new_c = calloc(strlen(id->callee) + 1, sizeof(char));
+        strcpy(new_c, id->callee);
     }
 
-    ast_mem_add_ptr(new_c);
     return new_c;
 }
 

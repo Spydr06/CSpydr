@@ -26,8 +26,6 @@ const char* default_header_code =
     "#define len(n) ((unsigned long)(sizeof(n)/sizeof(n[0])))\n"
 ;
 
-#define len(n) (n ? ((unsigned long) (sizeof(n) / sizeof(n[0]))) : 0)
-
 static const char* primitive_to_c_type[TY_UNDEF + 1] = {
     [TY_I8]  = "signed char" ,
     [TY_I16] = "signed short",
@@ -46,6 +44,57 @@ static const char* primitive_to_c_type[TY_UNDEF + 1] = {
     [TY_BOOL] = "bool",
     [TY_VOID] = "void",
     [TY_CHAR] = "char",
+};
+
+static const char* c_keywords[] = {
+    "auto",
+    "break",
+    "case",
+    "char",
+    "const",
+    "continue",
+    "default",
+    "do",
+    "double",
+    "else",
+    "enum",
+    "extern",
+    "float",
+    "for",
+    "goto",
+    "if",
+    "inline",
+    "int",
+    "long",
+    "register",
+    "restrict",
+    "return",
+    "short",
+    "signed",
+    "sizeof",
+    "static",
+    "struct",
+    "switch",
+    "typedef",
+    "union",
+    "unsigned",
+    "void",
+    "volatile",
+    "while",
+    "_Alignas",
+    "_Alignof",
+    "_Atomic",
+    "_Bool",
+    "_Complex",
+    "_Decimal128",
+    "_Decimal32",
+    "_Decimal64",
+    "_Generic",
+    "_Imaginary",
+    "_Noreturn",
+    "_Static_assert",
+    "_Thread_local",
+    NULL
 };
 
 void init_c_cg(CCodegenData_T* cg, ASTProg_T* ast)
@@ -78,7 +127,7 @@ static void print(CCodegenData_T* cg, char* fmt, ...)
 
 static void c_gen_typedefs(CCodegenData_T* cg, ASTObj_T* obj);
 
-static inline char* c_gen_identifier(CCodegenData_T* cg, ASTIdentifier_T* id) { return gen_identifier(id); }
+static char* c_gen_identifier(CCodegenData_T* cg, ASTIdentifier_T* id);
 
 static void write_code(CCodegenData_T* cg, const char* target_bin);
 static void run_compiler(CCodegenData_T* cg,  const char* target_bin);
@@ -875,4 +924,27 @@ static void c_gen_lambda_fn(CCodegenData_T* cg, ASTNode_T* lambda)
     c_gen_stmt(cg, lambda->body);
     println(cg, "}");
     cg->current_lambda = prev_lambda;
+}
+
+static char* c_gen_identifier(CCodegenData_T* cg, ASTIdentifier_T* id)
+{
+    char* str = gen_identifier(id);
+    
+    bool is_c_keyword = false;
+    for(int i = 0; c_keywords[i]; i++)
+        if(strcmp(str, c_keywords[i]) == 0)
+        {
+            is_c_keyword = true;
+            break;
+        }
+    
+    if(is_c_keyword)
+    {
+        str = realloc(str, strlen(str) + 7);
+        memmove(str + 6, str, strlen(str) + 1);
+        memcpy(str, "__csp_", 6);
+    }
+
+    ast_mem_add_ptr(str);
+    return str;
 }

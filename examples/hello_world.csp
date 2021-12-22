@@ -86,5 +86,7 @@ fn main(argc: i32, argv: &&char): i32 {
     std::assert::disable();
     assert_eq!(7, 5, "TEST");
 
+    let int = 0; # naming variables after C keywords works now
+
     <- 0;
 }
