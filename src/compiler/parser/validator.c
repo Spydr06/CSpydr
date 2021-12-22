@@ -184,7 +184,9 @@ static ASTIteratorList_T main_iterator_list =
     },
 
     .id_def_fn = id_def,
-    .id_use_fn = id_use
+    .id_use_fn = id_use,
+
+    .iterate_over_right_members = false
 };
 
 void validate_ast(ASTProg_T* ast)

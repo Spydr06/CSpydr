@@ -142,10 +142,9 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
         case ND_MEMBER:
             ast_node(list, node->left, custom_args);
             if(node->data_type) 
-            {
-                ast_node(list, node->right, custom_args);
                 ast_type(list, node->data_type, custom_args);
-            }
+            if(list->iterate_over_right_members)
+                ast_node(list, node->right, custom_args);
             break;
 
         // op x

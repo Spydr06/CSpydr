@@ -21,6 +21,8 @@ typedef struct AST_ITERATOR_LIST_STRUCT
     
     ASTIdIteratorFn_T id_def_fn;
     ASTIdIteratorFn_T id_use_fn;
+
+    bool iterate_over_right_members;
 } ASTIteratorList_T;
 
 void ast_iterate(ASTIteratorList_T* list, ASTProg_T* ast, ...);

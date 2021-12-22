@@ -48,8 +48,7 @@ namespace std {
 
         fn get(map: &HashMap, key: &char) {
             for let i: u64 = 0; i < map.length; i++; {
-                let data = map.data;
-                let pair = data[i];
+                let pair = map.data[i];
                 if pair.key == key {
                     
                 }
