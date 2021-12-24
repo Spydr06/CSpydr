@@ -89,7 +89,7 @@ namespace std {
             <- ::strlen(str);
         }
 
-        fn substr(str: String, from: i64, to: i64): ::std::String {
+        fn substr(str: ::std::String, from: i64, to: i64): ::std::String {
             if to - from < 0 || to - from >= size(str)
                  ret nil;
 

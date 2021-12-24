@@ -9,6 +9,7 @@
 #include <string.h>
 
 #define GET_VALIDATOR(va) Validator_T* v = va_arg(va, Validator_T*)
+#define MIN(a, b) (a < b ? a : b)
 
 // validator structs
 typedef struct VALIDATOR_SCOPE_STRUCT VScope_T;
@@ -504,6 +505,32 @@ static bool is_bool(Validator_T* v, ASTType_T* type)
     return type->kind == TY_BOOL;
 }
 
+static bool is_void(Validator_T* v, ASTType_T* type)
+{
+    if(!type)
+        return false;
+
+    if(type->kind == TY_UNDEF)
+        type = expand_typedef(v, type);
+    if(!type)
+        return false;
+    
+    return type->kind == TY_VOID;
+}
+
+static bool is_arr(Validator_T* v, ASTType_T* type)
+{
+    if(!type)
+        return false;
+
+    if(type->kind == TY_UNDEF)
+        type = expand_typedef(v, type);
+    if(!type)
+        return false;
+    
+    return type->kind == TY_ARR;
+}
+
 static bool types_equal(ASTType_T* t1, ASTType_T* t2)
 {
     if(t1->kind != t2->kind)
@@ -755,6 +782,10 @@ static void match_type_end(ASTNode_T* match, va_list args)
             match->body = case_stmt->body;
     }
 }
+static bool compatible(Validator_T* v, ASTType_T* a, ASTType_T* b)
+{
+    return true;
+}
 
 // expressions
 
@@ -775,7 +806,36 @@ static void call(ASTNode_T* call, va_list args)
         case OBJ_FUNCTION:
             {
                 call->data_type = called_obj->return_type;
-                // todo: add argument checking
+
+                bool has_va_list = called_obj->args->size ? 
+                    ((ASTObj_T*) called_obj->args->items[called_obj->args->size - 1])->tok->type == TOKEN_VA_LIST 
+                    : false;
+                if(call->args->size != called_obj->args->size && !has_va_list)
+                    throw_error(ERR_SYNTAX_ERROR, call->tok, "`%s` expects %ld call arguments, got %ld", called_obj->id->callee, called_obj->args->size, call->args->size);
+                else if(call->args->size < called_obj->args->size - 1 && has_va_list)
+                    throw_error(ERR_SYNTAX_ERROR, call->tok, "`%s` expects at least %ld call arguments, got %ld", called_obj->id->callee, called_obj->args->size - 1, call->args->size);
+            
+                for(size_t i = 0; i < MIN(called_obj->args->size, call->args->size); i++)
+                {
+                    ASTObj_T* expected = called_obj->args->items[i];
+                    ASTNode_T* received = call->args->items[i];
+
+                    if(!expected->data_type)
+                    {
+                        throw_error(ERR_TYPE_CAST_WARN, expected->tok, "could not resolve data type for `%s`", expected->tok->value);
+                        continue;
+                    }
+                    if(!received->data_type)
+                    {
+                        //throw_error(ERR_TYPE_CAST_WARN, received->tok, "could not resolve data type for `%s`", received->tok->value);
+                        continue;
+                    }
+                    if(expected->data_type->kind == TY_VA_LIST)
+                        continue; // va_lists get ignored, as the passed datatype is irrelevant
+                    
+                    if(!compatible(v, expected->data_type, received->data_type))
+                        throw_error(ERR_TYPE_ERROR, ((ASTNode_T*) call->args->items[i])->tok, "unexpected data type `%d`, expect `%d`", received->data_type->kind, expected->data_type->kind);
+                }
             } break;
         
         case OBJ_GLOBAL:

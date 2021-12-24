@@ -58,9 +58,9 @@ extern {
     fn clogf(z: complex f32): complex f32;
     fn clogl(z: complex f80): complex f80;
 
-    fn cabs(z: complex f64): complex f64;
-    fn cabsf(z: complex f32): complex f32;
-    fn cabsl(z: complex f80): complex f80;
+    fn cabs(z: complex f64): f64;
+    fn cabsf(z: complex f32): f32;
+    fn cabsl(z: complex f80): f80;
 
     fn cpow(x: complex f64, y: complex f64): complex f64;
     fn cpowf(x: complex f32, y: complex f32): complex f32;
@@ -82,9 +82,9 @@ extern {
     fn CMPLXF(x: f32, y: f32): complex f32;
     fn CMPLXL(x: f80, y: f80): complex f80;
 
-    fn conj(z: complex f64): f64;
-    fn conjf(z: complex f32): f32;
-    fn conjl(z: complex f80): f80;
+    fn conj(z: complex f64): complex f64;
+    fn conjf(z: complex f32): complex f32;
+    fn conjl(z: complex f80): complex f80;
 
     fn cproj(z: complex f64): complex f64;
     fn cprojf(z: complex f32): complex f32;

@@ -25,9 +25,6 @@ macro errorln(str) {
 
 namespace std {
     namespace io {
-        fn print(fp: &::FILE, fmt: std::String, args: ...) {
-            ::vfprintf(fp, fmt, args);
-        }
     }
 
     namespace log {
@@ -52,61 +49,5 @@ namespace std {
             const CYAN    = "\033[36m";     
             const WHITE   = "\033[37m"; 
         } 
-
-        let time_date_format = "%H:%M:%S";
-
-        fn trace(fmt: std::String, args: ...) {
-            log(::stdout, Priority::TRACE, nil, fmt, args);
-        }
-
-        fn debug(fmt: std::String, args: ...) {
-
-        }
-
-        fn info(fmt: std::String, args: ...) {
-
-        }
-
-        fn warn(fmt: std::String, args: ...) {
-
-        }
-
-        fn error(fmt: std::String, args: ...) {
-
-        }
-
-        fn fatal(exit_fn: fn<i32>(), fmt: std::String, args: ...) {
-
-        }
-
-        fn log(fp: &::FILE, pr: Priority, exit_fn: fn<i32>(), fmt: std::String, args: ...) {
-            let t: ::time_t;
-            let tmp: &::tm;
-            let time_buff: char[64];
-
-            ::time(&t);
-            tmp = ::localtime(&t);
-            time_buff[::strftime(time_buff, sizeof char * 64, time_date_format, tmp)] = '\0';
-            ::fprintf(fp, "%s ", time_buff);
-
-            match (pr) {
-                Priority::TRACE => ::fprintf(fp, "[TRACE]");
-                Priority::DEBUG => ::fprintf(fp, "[%s%sDEBUG%s]: ", colors::BOLD, colors::BLUE, colors::RESET);
-                Priority::INFO =>  ::fprintf(fp, "[%s%sINFO%s]:  ", colors::BOLD, colors::WHITE, colors::RESET);
-                Priority::WARN =>  ::fprintf(fp, "[%s%sWARN%s]:  ", colors::BOLD, colors::YELLOW, colors::RESET);
-                Priority::ERROR => ::fprintf(fp, "[%s%sERROR%s]: ", colors::BOLD, colors::RED, colors::RESET);
-                Priority::FATAL => ::fprintf(fp, "%s%s[FATAL]: ", colors::BOLD, colors::RED);
-            }
-            ::vfprintf(fp, fmt, args);
-            ::fprintf(fp, "%s\n", colors::RESET);
-            ::fflush(fp);
-
-            if pr == Priority::FATAL && exit_fn != nil
-                ::exit(exit_fn());
-        }
-
-        fn set_time_data_format(fmt: std::String) {
-            time_date_format = fmt;
-        }
     }
 }

@@ -67,13 +67,13 @@ extern {
     fn sprintf(s: &char, format: const &char, va: ...): i32;
     fn sscanf(s: const &char, format: const &char, va: ...): i32;
 
-    fn vfprintf(stream: &void, format: const &char, arg: ...): i32;
-    fn vfscanf(stream: &FILE, format: const &char, arg: ...): i32;
-    fn vprintf(format: const &char, arg: ...): i32;
-    fn vscanf(format: const &char, arg: ...): i32;
-    fn vsnprintf(s: &char, n: size_t, format: const &char, arg: ...): i32;
-    fn vsprintf(s: &char, format: const &char, arg: ...): i32;
-    fn vsscanf(s: const &char, format: const &char, arg: ...): i32;
+    fn vfprintf(stream: &void, format: const &char, arg: &void): i32;
+    fn vfscanf(stream: &FILE, format: const &char, arg: &void): i32;
+    fn vprintf(format: const &char, arg: &void): i32;
+    fn vscanf(format: const &char, arg: &void): i32;
+    fn vsnprintf(s: &char, n: size_t, format: const &char, arg: &void): i32;
+    fn vsprintf(s: &char, format: const &char, arg: &void): i32;
+    fn vsscanf(s: const &char, format: const &char, arg: &void): i32;
 
     fn fgetc(stream: &FILE): i32;
     fn fgets(s: &char, n: i32, stream: &FILE): &char;
