@@ -117,14 +117,14 @@ typedef enum TOKEN_TYPE {
 
 typedef struct TOKEN_STRUCT {
     char value[__CSP_MAX_TOKEN_SIZE];
-    unsigned int line;
-    unsigned int pos;
+    u32 line;
+    u32 pos;
     TokenType_T type;
 
     SrcFile_T* source;
 } __attribute__((packed)) Token_T;
 
-Token_T* init_token(char* value, unsigned int line, unsigned int position, TokenType_T type, SrcFile_T* source);
+Token_T* init_token(char* value, u32 line, u32 position, TokenType_T type, SrcFile_T* source);
 char* token_to_str(Token_T* token);
 
 #endif

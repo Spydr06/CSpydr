@@ -38,8 +38,8 @@ void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
 
     char* source_file_path = tok->source->short_path ? tok->source->short_path : (char*) tok->source->path;
 
-    unsigned int line = tok->line + 1;
-    unsigned int character = tok->pos + 1;
+    u32 line = tok->line + 1;
+    u32 character = tok->pos + 1;
 
     va_list arg_list;
     va_start(arg_list, format);

@@ -79,7 +79,7 @@ LLVMValueRef llvm_gen_call(LLVMCodegenData_T* cg, ASTNode_T* call)
     for(size_t i = 0; i < argc; i++)
         args[i] = llvm_gen_expr(cg, call->args->items[i]);
 
-    return LLVMBuildCall(cg->llvm_builder, fn, args, (unsigned) argc, "");
+    return LLVMBuildCall(cg->llvm_builder, fn, args, (u32) argc, "");
 }
 
 LLVMValueRef llvm_gen_op(LLVMCodegenData_T* cg, ASTNode_T* op)

@@ -14,20 +14,6 @@
 
 #define INPUT_STREAM stdin
 
-#ifndef __GLIBC__
-char *strsep(char **stringp, const char *delim) 
-{
-    if (*stringp == NULL) { return NULL; }
-    char *token_start = *stringp;
-    *stringp = strpbrk(token_start, delim);
-    if (*stringp) {
-        **stringp = '\0';
-        (*stringp)++;
-    }
-    return token_start;
-}
-#endif
-
 static void print_prompt();
 static void handle_input(char* input);
 
@@ -124,7 +110,7 @@ static void handle_input(char* input)
     {
         input[strlen(input) - 1] = '\0';
 
-        for(int i = 0; commands[i].cmd != NULL; i++)
+        for(i32 i = 0; commands[i].cmd != NULL; i++)
             if(strcmp(input + 1, commands[i].cmd) == 0)
             {
                 commands[i].fn(input);
@@ -175,7 +161,7 @@ static void handle_edit(char* input)
         NULL
     };
 
-    int exit_code;
+    i32 exit_code;
     if((exit_code = subprocess(editor, args, false)) == -1)
         LOG_ERROR_F("Error running `%s` as subprocess (exit code %d)", editor, exit_code);
 }

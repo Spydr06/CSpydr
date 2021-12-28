@@ -118,7 +118,7 @@ static void evaluate_info_flags(char* argv)
 }
 
 // entry point
-int main(int argc, char* argv[])
+i32 main(i32 argc, char* argv[])
 {
     init_globals();
     atexit(globals_exit_hook);
@@ -138,7 +138,7 @@ int main(int argc, char* argv[])
     // get the action to perform
     Action_T action = AC_UNDEF;
     ct = DEFAULT_COMPILE_TYPE;
-    for(int i = 0; i < AC_UNDEF; i++)
+    for(i32 i = 0; i < AC_UNDEF; i++)
         if(streq(argv[1], action_table[i].as_str))
             action = action_table[i].ac;
     if(action == AC_UNDEF)
@@ -171,7 +171,7 @@ int main(int argc, char* argv[])
     }
 
     // get all the other flags
-    for(int i = 0; i < argc; i++)
+    for(i32 i = 0; i < argc; i++)
     {
         char* arg = argv[i];
 

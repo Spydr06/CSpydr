@@ -1,5 +1,5 @@
-#ifndef CSPYDR_TYPES_H
-#define CSPYDR_TYPES_H
+#ifndef CSPYDR_AST_TYPES_H
+#define CSPYDR_AST_TYPES_H
 
 #include "ast.h"
 

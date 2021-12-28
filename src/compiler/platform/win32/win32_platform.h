@@ -23,7 +23,7 @@ char* get_path_from_file(char* file_path);
 
 bool make_dir(char* path);
 
-extern int subprocess(const char* p_name, const int p_argv, const char* p_argc[], void (*callback_fns[__EXIT_KIND_LEN])(void));
+extern i32 subprocess(const char* p_name, const i32 p_argv, const char* p_argc[], void (*callback_fns[__EXIT_KIND_LEN])(void));
 
 #endif
 #endif

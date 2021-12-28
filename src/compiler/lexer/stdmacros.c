@@ -62,7 +62,7 @@ macros[] = {
 
 void define_std_macros(List_T *macro_list)
 {
-    for(int i = 0; macros[i].id; i++)
+    for(i32 i = 0; macros[i].id; i++)
     {
         Token_T* main_token = init_token((char*) macros[i].id, 0, 0, TOKEN_ID, NULL);
         Macro_T* macro = init_macro(main_token);

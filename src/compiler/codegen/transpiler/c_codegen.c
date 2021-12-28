@@ -215,7 +215,7 @@ static void run_compiler(CCodegenData_T* cg, const char* target_bin)
     
     list_push(args, NULL);
 
-    int exit_code = subprocess(args->items[0], (char* const*) args->items, false);
+    i32 exit_code = subprocess(args->items[0], (char* const*) args->items, false);
 
     if(exit_code != 0)
     {
@@ -586,7 +586,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
         case ND_CALL:
             c_gen_expr(cg, node->expr);
             print(cg, "(");
-            for(int i = 0; i < node->args->size; i++)
+            for(size_t i = 0; i < node->args->size; i++)
             {
                 c_gen_expr(cg, node->args->items[i]);
                 print(cg, i < node->args->size - 1 ? "," : "");
@@ -931,7 +931,7 @@ static char* c_gen_identifier(CCodegenData_T* cg, ASTIdentifier_T* id)
     char* str = gen_identifier(id);
     
     bool is_c_keyword = false;
-    for(int i = 0; c_keywords[i]; i++)
+    for(i32 i = 0; c_keywords[i]; i++)
         if(strcmp(str, c_keywords[i]) == 0)
         {
             is_c_keyword = true;

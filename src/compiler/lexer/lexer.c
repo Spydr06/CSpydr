@@ -191,8 +191,8 @@ static void lexer_skip_whitespace(Lexer_T* lexer)
 
 static void lexer_skip_multiline_comment(Lexer_T* lexer)
 {
-    unsigned int start_line = lexer->line;
-    unsigned int start_pos = lexer->pos;
+    u32 start_line = lexer->line;
+    u32 start_pos = lexer->pos;
 
     lexer_advance(lexer);
     lexer_advance(lexer);
@@ -294,7 +294,7 @@ static Token_T* lexer_get_hexadecimal(Lexer_T* lexer)
         lexer_advance(lexer);
     }
 
-    long decimal = strtol(buffer, NULL, 16);
+    i64 decimal = strtol(buffer, NULL, 16);
     sprintf(buffer, "%ld", decimal);
 
     Token_T* token = init_token(buffer, lexer->line, lexer->pos, TOKEN_INT, lexer->file);
@@ -322,7 +322,7 @@ static Token_T* lexer_get_binary(Lexer_T* lexer)
         lexer_advance(lexer);
     }
 
-    long decimal = strtol(buffer, NULL, 2);
+    i64 decimal = strtol(buffer, NULL, 2);
     sprintf(buffer, "%ld", decimal);
 
     Token_T* token = init_token(buffer, lexer->line, lexer->pos, TOKEN_INT, lexer->file);
@@ -444,7 +444,7 @@ static Token_T* lexer_get_char(Lexer_T* lexer)
 
 static Token_T* lexer_get_symbol(Lexer_T* lexer)
 {
-    for(int i = 0; symbols[i].symbol != NULL; i++)
+    for(i32 i = 0; symbols[i].symbol != NULL; i++)
     {
         const char* s = symbols[i].symbol;
         if(strlen(s) == 1 && lexer->c == s[0])

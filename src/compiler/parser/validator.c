@@ -23,7 +23,7 @@ struct VALIDATOR_SCOPE_STRUCT
 typedef struct VALIDATOR_STRUCT 
 {
     VScope_T* current_scope;
-    int scope_depth;
+    i32 scope_depth;
     ASTObj_T* current_function;
     bool main_function_found;
 } Validator_T;

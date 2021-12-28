@@ -16,7 +16,7 @@ SrcFile_T* init_srcfile(List_T* lines, const char* path)
 
 void free_srcfile(SrcFile_T* file)
 {
-    for(int i = 0; i < file->num_lines; i++)
+    for(i32 i = 0; i < file->num_lines; i++)
         free(file->lines->items[i]);
 
     if(file->short_path)
@@ -26,7 +26,7 @@ void free_srcfile(SrcFile_T* file)
     free(file);
 }
 
-char* get_line(SrcFile_T* file, unsigned int line)
+char* get_line(SrcFile_T* file, u32 line)
 {
     if(line >= file->num_lines)
         return NULL;
@@ -34,7 +34,7 @@ char* get_line(SrcFile_T* file, unsigned int line)
     return file->lines->items[line];
 }
 
-unsigned int get_line_len(SrcFile_T* file, unsigned int line)
+u32 get_line_len(SrcFile_T* file, u32 line)
 {
     if(line >= file->num_lines)
         return 0;
@@ -42,7 +42,7 @@ unsigned int get_line_len(SrcFile_T* file, unsigned int line)
     return strlen((char*) file->lines->items[line]);
 }
 
-char get_char(SrcFile_T* file, unsigned int line, unsigned int i)
+char get_char(SrcFile_T* file, u32 line, u32 i)
 {
     if(line >= file->num_lines || i >= get_line_len(file, line))
         return -1;

@@ -8,6 +8,7 @@
 #endif
 
 #include <stdbool.h>
+#include "util.h"
 #include "list.h"
 
 // all global variables, that the compiler needs
@@ -18,10 +19,10 @@
 
 #define __CSP_MAX_REPL_CMD_LEN (BUFSIZ * 8)
 
-int __CSP_GLOBAL ct;
-int __CSP_GLOBAL fs;
+i32 __CSP_GLOBAL ct;
+i32 __CSP_GLOBAL fs;
 
-int __CSP_GLOBAL last_exit_code;
+i32 __CSP_GLOBAL last_exit_code;
 
 bool __CSP_GLOBAL silent;
 bool __CSP_GLOBAL print_llvm;

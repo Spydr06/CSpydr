@@ -24,9 +24,9 @@ static List_T* get_id_path(ASTIdentifier_T* id) {
     return path;
 }
 
-uint64_t hash_64(const char* key)
+u64 hash_64(const char* key)
 {
-    uint64_t h = 525201411107845655ull;
+    u64 h = 525201411107845655ull;
     for (;*key;++key) {
         h ^= *key;
         h *= 0x5bd1e9955bd1e995;
@@ -94,7 +94,7 @@ bool is_unsigned(ASTType_T* ty)
 }
 
 // Round up `n` to the nearest multiple of `align`.
-int align_to(int n, int align) 
+i32 align_to(i32 n, i32 align) 
 {
     return (n + align - 1) / align * align;
 }

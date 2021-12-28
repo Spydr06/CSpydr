@@ -162,11 +162,11 @@ struct AST_NODE_STRUCT
 
     // literals
     union {
-        int int_val;
-        long long_val;
-        long long llong_val;
-        float float_val;
-        double double_val;
+        i32 int_val;
+        i64 long_val;
+        i128 llong_val;
+        f32 float_val;
+        f64 double_val;
         bool bool_val;
         char* str_val;  // also used for chars
     };
@@ -233,7 +233,7 @@ struct AST_TYPE_STRUCT
     Token_T* tok;
 
     ASTType_T* base;
-    int size;
+    i32 size;
 
     ASTIdentifier_T* id;
 

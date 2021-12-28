@@ -31,13 +31,13 @@ char* get_home_directory()
 
 bool make_dir(char* path)
 {
-    int error = mkdir(path, 0777);
+    i32 error = mkdir(path, 0777);
     if(!error || (error && errno == EEXIST))
         return 0;
     return 1;
 }
 
-int subprocess(const char* p_name, char* const* p_arg, bool print_exit_msg)
+i32 subprocess(const char* p_name, char* const* p_arg, bool pri32_exit_msg)
 {
     pid_t pid = fork();
 
@@ -53,14 +53,14 @@ int subprocess(const char* p_name, char* const* p_arg, bool print_exit_msg)
         return -1;
     }
 
-    int pid_status;
+    i32 pid_status;
     if(waitpid(pid, &pid_status, 0) == -1)
     {
         LOG_ERROR_F("error getting status of child process %d\n", pid);
         return -1;
     }
 
-    if(print_exit_msg)
+    if(pri32_exit_msg)
     {
         if(WIFEXITED(pid_status))
             LOG_INFO_F(COLOR_RESET "[%s terminated with exit code %d]\n", p_name, WEXITSTATUS(pid_status));

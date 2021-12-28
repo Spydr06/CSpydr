@@ -7,7 +7,7 @@
 #include <string.h>
 #include <stdio.h>
 
-Token_T* init_token(char* value, unsigned int line, unsigned int pos, TokenType_T type, SrcFile_T* source)
+Token_T* init_token(char* value, u32 line, u32 pos, TokenType_T type, SrcFile_T* source)
 {
     Token_T* token = calloc(1, sizeof(struct TOKEN_STRUCT));
 

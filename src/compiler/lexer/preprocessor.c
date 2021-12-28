@@ -40,7 +40,7 @@ typedef struct MACRO_CALL_STRUCT
     Token_T* tok;
     Macro_T* macro;
 
-    uint8_t argc;
+    u8 argc;
     struct { size_t start_idx, end_idx; } args[__CSP_MAX_FN_NUM_ARGS];
 } __attribute__((packed)) MacroCall_T;
 
@@ -89,7 +89,7 @@ static void free_macro(Macro_T* mac)
 
 static bool macro_has_arg(Macro_T* macro, char* callee)
 {
-    for(u_int8_t i = 0; i < macro->argc; i++)
+    for(u8 i = 0; i < macro->argc; i++)
         if(strcmp(callee, macro->args[i]->value) == 0)
             return true;
     return false;
@@ -399,7 +399,7 @@ static void expand_macro_call(Preprocessor_T* pp, MacroCall_T call, List_T* src_
         switch(tok->type) {
             case TOKEN_ID:
             {
-                int arg_idx = find_macro_arg(call.macro, tok->value);
+                i32 arg_idx = find_macro_arg(call.macro, tok->value);
                 if(arg_idx != -1)
                 {
                     for(size_t j = call.args[arg_idx].start_idx; j <= call.args[arg_idx].end_idx; j++)

@@ -260,7 +260,7 @@ static inline Token_T* parser_advance(Parser_T* p)
     return p->tok;
 }
 
-static inline Token_T* parser_peek(Parser_T* p, int level)
+static inline Token_T* parser_peek(Parser_T* p, i32 level)
 {
     if(p->token_i + level >= p->tokens->size)
         return NULL;
@@ -523,7 +523,7 @@ static ASTType_T* parse_enum_type(Parser_T* p)
     enum_type->members = init_list(sizeof(struct AST_OBJ_STRUCT*));
     ast_mem_add_list(enum_type->members);
 
-    for(int i = 0; !tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF); i++)
+    for(i32 i = 0; !tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF); i++)
     {
         ASTObj_T* member = init_ast_obj(OBJ_ENUM_MEMBER, p->tok);
         member->data_type = (ASTType_T*) primitives[TY_I32];
@@ -1430,17 +1430,17 @@ static ASTNode_T* parse_int_lit(Parser_T* p)
 {
     ASTNode_T* lit = init_ast_node(ND_INT, p->tok);
     parser_consume(p, TOKEN_INT, "expect integer literal (0, 1, 2, ...)");
-    long long num = atoll(lit->tok->value);
+    i128 num = atoll(lit->tok->value);
     if(num <= INT_MAX)
     {
         lit->kind = ND_INT;
-        lit->int_val = (int) num;
+        lit->int_val = (i32) num;
         lit->data_type = get_primitive_type("i32");
     }
     else if(num <= LONG_MAX)
     {
         lit->kind = ND_LONG;
-        lit->long_val = (long) num;
+        lit->long_val = (i64) num;
         lit->data_type = get_primitive_type("i64");
     }
     else
@@ -1458,7 +1458,7 @@ static ASTNode_T* parse_float_lit(Parser_T* p)
 {
     ASTNode_T* lit = init_ast_node(ND_FLOAT, p->tok);
     parser_consume(p, TOKEN_FLOAT, "expect float literal (0, 1, 2.3, ...)");
-    double num; 
+    f64 num; 
     sscanf(lit->tok->value, "%lf", &num); 
 
     if(num <= FLT_MAX)

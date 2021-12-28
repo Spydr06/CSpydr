@@ -188,7 +188,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         list_push(args, obj_file);
         list_push(args, NULL);
 
-        int exit_code = subprocess(args->items[0], (char* const*) args->items, false);
+        i32 exit_code = subprocess(args->items[0], (char* const*) args->items, false);
 
         free_list(args);
         if(exit_code != 0)
@@ -226,7 +226,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         list_push(args, "--no-as-needed");
         list_push(args, NULL);
 
-        int exit_code = subprocess(args->items[0], (char* const*) args->items, false);
+        i32 exit_code = subprocess(args->items[0], (char* const*) args->items, false);
         
         free_list(args);
         if(exit_code != 0)
@@ -309,7 +309,7 @@ static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs)
     }
 }
 
-static int get_type_id(ASTType_T *ty) {
+static i32 get_type_id(ASTType_T *ty) {
     switch (ty->kind) {
         case TY_I8:
         case TY_CHAR:
@@ -339,9 +339,9 @@ static int get_type_id(ASTType_T *ty) {
     }
 }
 
-static uint64_t asm_count(void) 
+static u64 asm_count(void) 
 {
-    static uint64_t i = 1;
+    static u64 i = 1;
     return i++;
 }
 
@@ -364,7 +364,7 @@ static void asm_pushf(ASMCodegenData_T* cg)
     cg->depth++;
 }
 
-static void asm_popf(ASMCodegenData_T* cg, int reg) 
+static void asm_popf(ASMCodegenData_T* cg, i32 reg) 
 {
     println(cg, "  movsd (%%rsp), %%xmm%d", reg);
     println(cg, "  add $8, %%rsp");
@@ -372,7 +372,7 @@ static void asm_popf(ASMCodegenData_T* cg, int reg)
 }
 
 
-static char *reg_dx(int sz) 
+static char *reg_dx(i32 sz) 
 {
     switch (sz) {
         case 1: return "%dl";
@@ -384,7 +384,7 @@ static char *reg_dx(int sz)
     return 0;
 }
 
-static char *reg_ax(int sz) 
+static char *reg_ax(i32 sz) 
 {
     switch (sz) {
         case 1: return "%al";
@@ -436,8 +436,8 @@ static void asm_gen_cast(ASMCodegenData_T* cg, ASTType_T* from, ASTType_T* to)
         return;
     }
 
-    int t1 = get_type_id(from);
-    int t2 = get_type_id(to);
+    i32 t1 = get_type_id(from);
+    i32 t2 = get_type_id(to);
 
     if(cast_table[t1][t2])
         println(cg, "  %s", cast_table[t1][t2]);
@@ -449,7 +449,7 @@ static void asm_store(ASMCodegenData_T* cg, ASTType_T *ty) {
 
     switch (ty->kind) {
         case TY_STRUCT:
-            for (int i = 0; i < ty->size; i++) {
+            for (i32 i = 0; i < ty->size; i++) {
                 println(cg, "  mov %d(%%rax), %%r8b", i);
                 println(cg, "  mov %%r8b, %d(%%rdi)", i);
             }
