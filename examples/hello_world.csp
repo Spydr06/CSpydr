@@ -56,7 +56,7 @@ fn delay(seconds: i32)
 fn main(argc: i32, argv: &&char): i32 {
     program_data = data :: {
         "xxxxHello " "World!xxxx", 
-        0x00
+        utils::zero
     };
 
     va_test(3, 4 + true: u8);
@@ -87,6 +87,17 @@ fn main(argc: i32, argv: &&char): i32 {
     assert_eq!(7, 5, "TEST");
 
     let int = 0; # naming variables after C keywords works now
+    let int_vec = vec![i32];
+    vec_add!(int_vec, 1);
+    vec_add!(int_vec, 2);
+    vec_add!(int_vec, 3);
+
+    vec_foreach!{
+        int_vec, i, v, 
+        printf("int_vec[%ld] = %d;\n", i, v);
+    }
+
+    vec_free!(int_vec);
 
     <- int;
 }

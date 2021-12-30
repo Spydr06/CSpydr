@@ -8,6 +8,7 @@
 #include "../platform/platform_bindings.h"
 #include "../lexer/lexer.h"
 #include "../lexer/preprocessor.h"
+#include "../toolchain.h"
 
 #include <limits.h>
 #include <string.h>
@@ -216,6 +217,18 @@ static ASTNodeKind_T infix_ops[TOKEN_EOF + 1] = {
     [TOKEN_INC] = ND_INC,   // technically postfix operators, but get treated like infix ops internally
     [TOKEN_DEC] = ND_DEC    // technically postfix operators, but get treated like infix ops internally
 };
+
+static ASTObj_T alloca_bottom = {
+            .kind = OBJ_LOCAL,
+            .id = &(ASTIdentifier_T) {
+                .callee = "__alloca_size__"
+            },
+            .data_type = &(ASTType_T){
+                .size = sizeof(void*)
+            },
+            .align = sizeof(void*),
+            .offset = 0
+        };
 
 static inline PrefixParseFn_T get_PrefixParseFn_T(TokenType_T tt)
 {
@@ -858,12 +871,36 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
     return fn;
 }
 
+static void collect_locals(ASTNode_T* block, List_T* locals)
+{
+    for(size_t i = 0; i < block->locals->size; i++)
+        list_push(locals, block->locals->items[i]);
+    
+    for(size_t i = 0; i < block->stmts->size; i++)
+    {
+        ASTNode_T* stmt = block->stmts->items[i];
+        if(stmt->kind == ND_BLOCK)
+            collect_locals(block, locals);
+    }
+}
+
 static ASTObj_T* parse_fn(Parser_T* p)
 {
     ASTObj_T* fn = parse_fn_def(p);
 
+    if(ct == CT_ASM)
+        fn->alloca_bottom = &alloca_bottom;
     p->cur_fn = fn;
     fn->body = parse_stmt(p);
+
+    if(ct == CT_ASM)
+    {
+        fn->objs = init_list(sizeof(struct AST_OBJ_STRUCT*));
+        ast_mem_add_list(fn->objs);
+
+        if(fn->body->kind == ND_BLOCK)
+            collect_locals(fn->body, fn->objs);
+    }   
 
     return fn;
 }

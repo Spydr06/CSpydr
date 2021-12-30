@@ -90,6 +90,9 @@ ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok)
     ASTObj_T* obj = ast_malloc(sizeof(struct AST_OBJ_STRUCT));
     obj->kind = kind;
     obj->tok = tok;
+    obj->offset = 0;
+    obj->stack_size = 0;
+    obj->align = 0;
     obj->is_extern = false;
 
     obj->data_type = NULL;

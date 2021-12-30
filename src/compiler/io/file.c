@@ -10,13 +10,14 @@ SrcFile_T* init_srcfile(List_T* lines, const char* path)
     file->path = path;
     file->num_lines = file->lines->size;
     file->short_path = NULL;
+    file->file_no = 0;
 
     return file;
 }
 
 void free_srcfile(SrcFile_T* file)
 {
-    for(i32 i = 0; i < file->num_lines; i++)
+    for(size_t i = 0; i < file->num_lines; i++)
         free(file->lines->items[i]);
 
     if(file->short_path)

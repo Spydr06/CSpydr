@@ -300,6 +300,8 @@ static void ast_type(ASTIteratorList_T* list, ASTType_T* type, va_list custom_ar
 {
     if(!type)
         return;
+    
+    list_fn(list->type_begin, type, custom_args);
 
     switch(type->kind)
     {
@@ -374,6 +376,8 @@ static void ast_type(ASTIteratorList_T* list, ASTType_T* type, va_list custom_ar
             // ignore
             break;
     }
+
+    list_fn(list->type_end, type, custom_args);
 }
 
 static void ast_id(ASTIteratorList_T* list, bool is_definition, ASTIdentifier_T* id, va_list custom_args)

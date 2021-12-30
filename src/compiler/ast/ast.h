@@ -261,6 +261,9 @@ struct AST_OBJ_STRUCT
     Token_T* tok;
 
     ASTIdentifier_T* id;
+    i32 offset;
+    i32 stack_size;
+    i32 align;
 
     // variables
     bool is_constant : 1;
@@ -275,6 +278,8 @@ struct AST_OBJ_STRUCT
     List_T* args;           // list of ASTObj_Ts
     ASTNode_T* body;
     List_T* templates;
+    ASTObj_T* alloca_size;
+    ASTObj_T* alloca_bottom;
 
     // namespaces
     List_T* objs;

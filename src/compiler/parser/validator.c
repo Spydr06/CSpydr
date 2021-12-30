@@ -4,6 +4,7 @@
 #include "../list.h"
 #include "../error/error.h"
 #include "../io/log.h"
+#include "constexpr.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -101,6 +102,9 @@ static void struct_type(ASTType_T* s_type, va_list args);
 static void enum_type(ASTType_T* e_type, va_list args);
 static void undef_type(ASTType_T* u_type, va_list args);
 static void typeof_type(ASTType_T* typeof_type, va_list args);
+static void type_begin(ASTType_T* type, va_list args);
+static void type_end(ASTType_T* type, va_list args);
+static i32 get_type_size(Validator_T* v, ASTType_T* type);
 
 // iterator configuration
 static ASTIteratorList_T main_iterator_list = 
@@ -186,6 +190,9 @@ static ASTIteratorList_T main_iterator_list =
 
     .id_def_fn = id_def,
     .id_use_fn = id_use,
+
+    .type_begin = type_begin,
+    .type_end = type_end,
 
     .iterate_over_right_members = false
 };
@@ -690,6 +697,8 @@ static void global_end(ASTObj_T* global, va_list args)
 
         global->data_type = global->value->data_type;
     }
+    // fixme: evaluate seperately for structs and unions
+    global->align = global->data_type->size;
 
     gen_id_path(v->current_scope, global->id);
 }
@@ -710,6 +719,8 @@ static void local_end(ASTObj_T* local, va_list args)
 
         local->data_type = local->value->data_type;
     }
+    // fixme: evaluate seperately for structs and unions
+    local->align = local->data_type->size;
 }
 
 static void fn_arg_start(ASTObj_T* arg, va_list args)
@@ -720,7 +731,7 @@ static void fn_arg_start(ASTObj_T* arg, va_list args)
 
 static void fn_arg_end(ASTObj_T* arg, va_list args)
 {
-
+    arg->align = arg->data_type->size;
 }
 
 static void enum_member_end(ASTObj_T* e_member, va_list args)
@@ -1202,4 +1213,55 @@ static void typeof_type(ASTType_T* typeof_type, va_list args)
         throw_error(ERR_TYPE_ERROR, typeof_type->num_indices->tok, "could not resolve data type");
     
     *typeof_type = *found;
+}
+
+static void type_begin(ASTType_T* type, va_list args)
+{
+
+}
+
+static void type_end(ASTType_T* type, va_list args)
+{
+    GET_VALIDATOR(args);
+    type->size = get_type_size(v, expand_typedef(v, type));
+}
+
+static i32 get_type_size(Validator_T* v, ASTType_T* type)
+{
+    switch(type->kind)
+    {
+        case TY_I8:
+        case TY_U8:
+        case TY_CHAR:
+            return sizeof(char);
+        case TY_I16:
+        case TY_U16:
+            return sizeof(short);
+        case TY_I32:
+        case TY_U32:
+        case TY_ENUM:
+            return sizeof(int);
+        case TY_I64:
+        case TY_U64:
+            return sizeof(long);
+        case TY_F32:
+            return sizeof(float);
+        case TY_F64:
+            return sizeof(double);
+        case TY_F80:
+            return sizeof(long double);
+        case TY_VOID:
+            return sizeof(void);
+        case TY_PTR:
+            return sizeof(void*);
+        case TY_TYPEOF:
+            return get_type_size(v, expand_typedef(v, type->num_indices->data_type));
+        case TY_UNDEF:
+            return get_type_size(v, expand_typedef(v, type));
+        case TY_ARR:
+            if(type->num_indices)
+                return get_type_size(v, type->base) * const_i64(type->num_indices);
+            else
+                return sizeof(void*);
+    }
 }

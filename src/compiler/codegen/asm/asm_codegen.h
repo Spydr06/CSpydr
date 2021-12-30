@@ -15,6 +15,7 @@ typedef struct ASM_CODEGEN_DATA_STRUCT
     FILE* code_buffer;
 
     ASTObj_T* current_fn;
+    char* current_fn_name;
     size_t depth;
 } ASMCodegenData_T;
 

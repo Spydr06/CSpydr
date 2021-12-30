@@ -5,8 +5,13 @@
 #include "../../platform/platform_bindings.h"
 #include "../codegen_utils.h"
 #include "../../error/error.h"
+#include "../../ast/mem/ast_mem.h"
 
 #include <stdio.h>
+#include <assert.h>
+
+#define GP_MAX 6
+#define FP_MAX 8
 
 static char *argreg8[] = {"%dil", "%sil", "%dl", "%cl", "%r8b", "%r9b"};
 static char *argreg16[] = {"%di", "%si", "%dx", "%cx", "%r8w", "%r9w"};
@@ -103,7 +108,11 @@ static void generate_files(ASMCodegenData_T* cg);
 static void asm_gen_file_descriptors(ASMCodegenData_T* cg);
 static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs);
 static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs);
-static void asm_assign_lvar_offsets(ASMCodegenData_T* cg);
+static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs);
+static bool asm_has_flonum(ASTType_T* ty, i32 lo, i32 hi, i32 offset);
+static void asm_store_fp(ASMCodegenData_T* cg, i32 r, i32 offset, i32 sz);
+static void asm_store_gp(ASMCodegenData_T* cg, i32 r, i32 offset, i32 sz);
+static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node);
 
 void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast)
 {
@@ -113,23 +122,18 @@ void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast)
 
     cg->code_buffer = open_memstream(&cg->buf, &cg->buf_len);
     cg->current_fn = NULL;
+    cg->current_fn_name = NULL;
     cg->depth = 0;
 }
 
-static void println(ASMCodegenData_T* cg, char* fmt, ...)
+__attribute((format(printf, 2, 3)))
+static void asm_println(ASMCodegenData_T* cg, char* fmt, ...)
 {
     va_list va;
     va_start(va, fmt);
     vfprintf(cg->code_buffer, fmt, va);
     va_end(va);
     fprintf(cg->code_buffer, "\n");
-}
-
-static void print(ASMCodegenData_T* cg, char* fmt, ...)
-{
-    va_list va;
-    va_start(va, fmt);
-    vfprintf(cg->code_buffer, fmt, va);
 }
 
 static void write_code(ASMCodegenData_T* cg, const char* target_bin)
@@ -163,7 +167,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
 
     // generate the assembly code
     asm_gen_file_descriptors(cg);
-    asm_assign_lvar_offsets(cg);
+    asm_assign_lvar_offsets(cg, cg->ast->objs);
     asm_gen_data(cg, cg->ast->objs);
     asm_gen_text(cg, cg->ast->objs);
 
@@ -180,17 +184,16 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
     
     // run the assembler
     {
-        List_T* args = init_list(sizeof(char*));
-        list_push(args, "as");
-        list_push(args, "-c");
-        list_push(args, asm_source_file);
-        list_push(args, "-o");
-        list_push(args, obj_file);
-        list_push(args, NULL);
+        const char* args[] = {
+            "as",
+            "-c",
+            asm_source_file,
+            "-o",
+            obj_file,
+            NULL
+        };
+        i32 exit_code = subprocess(args[0], (char* const*) args, false);
 
-        i32 exit_code = subprocess(args->items[0], (char* const*) args->items, false);
-
-        free_list(args);
         if(exit_code != 0)
         {
             LOG_ERROR_F("error assembling code. (exit code %d)\n", exit_code);
@@ -205,30 +208,38 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
             LOG_OK_F(COLOR_BOLD_BLUE "  Linking    " COLOR_BOLD_WHITE "%s" COLOR_RESET "\n", target);
         }
 
-        List_T* args = init_list(sizeof(char*));
-        list_push(args, "ld");
-        list_push(args, "-o");
-        list_push(args, (void*) target);
-        list_push(args, "-m");
-        list_push(args, "elf_x86_64");
-        list_push(args, "-L/usr/lib/x86_64-linux-gnu");
-        list_push(args, "-L/usr/lib64");
-        list_push(args, "-L/lib64");
-        list_push(args, "-L/usr/lib/x86_64-linux-gnu");
-        list_push(args, "-L/usr/lib/x86_64-pc-linux-gnu");
-        list_push(args, "-L/usr/lib/x86_64-redhat-linux");
-        list_push(args, "-L/usr/lib");
-        list_push(args, "-L/lib");
-        list_push(args, "-lc");
-        //list_push(args, "-lgcc");
-        list_push(args, "--as-needed");
-        //list_push(args, "-lgcc_s");
-        list_push(args, "--no-as-needed");
-        list_push(args, NULL);
+        const char* args[] = {
+            "ld",
+            "-o",
+            target,
+            "-m",
+            "elf_x86_64",
+            "/usr/lib64/crt1.o",
+            "/usr/lib64/crti.o",
+            "/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0/crtbegin.o",
+            "-L/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0",
+            "-L/usr/lib/x86_64-linux-gnu",
+            "-L/usr/lib64",
+            "-L/lib64",
+            "-L/usr/lib/x86_64-linux-gnu",
+            "-L/usr/lib/x86_64-pc-linux-gnu",
+            "-L/usr/lib/x86_64-redhat-linux",
+            "-L/usr/lib",
+            "-L/lib",
+            "-dynamic-linker",
+            "/lib64/ld-linux-x86-64.so.2",
+            obj_file,
+            "-lc",
+            "-lgcc",
+            "--as-needed",
+            "-lgcc_s",
+            "--no-as-needed",
+            "/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0/crtend.o",
+            "/usr/lib64/crtn.o",
+            NULL
+        };
 
-        i32 exit_code = subprocess(args->items[0], (char* const*) args->items, false);
-        
-        free_list(args);
+        i32 exit_code = subprocess(args[0], (char* const*) args, false);
         if(exit_code != 0)
         {
             LOG_ERROR_F("error linking code. (exit code %d)\n", exit_code);
@@ -237,14 +248,103 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
     }
 }
 
-static void asm_gen_file_descriptors(ASMCodegenData_T* cg)
+static char* asm_gen_identifier(ASTIdentifier_T* id)
 {
-    println(cg, "  .file 0 \"%s\"", cg->ast->main_file_path);
+    char* str = gen_identifier(id);
+    ast_mem_add_ptr(str);
+    return str;
 }
 
-static void asm_assign_lvar_offsets(ASMCodegenData_T* cg)
+static void asm_gen_file_descriptors(ASMCodegenData_T* cg)
 {
+    for(size_t i = 0; i < cg->ast->imports->size; i++)
+    {
+        SrcFile_T* file = cg->ast->imports->items[i];
+        asm_println(cg, "  .file %d \"%s\"", file->file_no + 1, file->path);
+    }
+}
 
+static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
+{
+    for(size_t i = 0; i < objs->size; i++)
+    {
+        ASTObj_T* obj = objs->items[i];
+        switch (obj->kind) 
+        {
+        case OBJ_NAMESPACE:
+            asm_gen_text(cg, obj->objs);
+            break;
+        
+        case OBJ_FUNCTION:
+        {
+            i32 top = 16, bottom = 0;
+            i32 gp = 0, fp = 0;
+
+            // Assign offsets to pass-by-stack parameters
+            for(size_t j = 0; j < obj->args->size; j++)
+            {
+                ASTObj_T* var = obj->args->items[j];
+                ASTType_T* ty = var->data_type;
+                switch(ty->kind)
+                {
+                case TY_STRUCT:
+                    if(ty->size <= 16)
+                    {
+                        bool fp1 = asm_has_flonum(ty, 0, 8, 0);
+                        bool fp2 = asm_has_flonum(ty, 8, 16, 8);
+                        if(fp + fp1 + fp2 < FP_MAX && gp + !fp1 + !fp2 < GP_MAX)
+                        {
+                            fp = fp + fp1 + fp2;
+                            gp = gp + !fp1 + fp2;
+                            continue;
+                        }
+                    } break;
+                
+                case TY_F32:
+                case TY_F64:
+                    if(fp++ < FP_MAX)
+                        continue;
+                    break;
+                case TY_F80:
+                    break;
+                default:
+                    if(gp++ < GP_MAX)
+                        continue;
+                }
+
+                top = align_to(top, 8);
+                var->offset = top;
+                top += var->data_type->size;
+            }
+
+            // alloca size
+            {
+                bottom += obj->alloca_bottom->data_type->size;
+                bottom = align_to(bottom, obj->alloca_bottom->align);
+                obj->alloca_bottom->offset = -bottom;
+            }
+
+            for(size_t j = 0; j < obj->args->size; j++)
+            {
+                ASTObj_T* var = obj->args->items[j];
+                //if(var->offset)
+                //    continue;
+                
+                // AMD64 System V ABI has a special alignment rule for an array of
+			    // length at least 16 bytes. We need to align such array to at least
+			    // 16-byte boundaries. See p.14 of
+			    // https://github.com/hjl-tools/x86-psABI/wiki/x86-64-psABI-draft.pdf.
+			    
+                int align = var->data_type->kind == TY_ARR && var->data_type->size >= 16 ? MAX(16, var->align) : var->align;
+                bottom += var->data_type->size;
+                bottom = align_to(bottom, align);
+                var->offset = -bottom;
+            }
+
+            obj->stack_size = align_to(bottom, 16);
+        } break;
+        }
+    }
 }
 
 static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
@@ -258,13 +358,43 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
                 asm_gen_text(cg, obj->objs);
                 break;
             
-            case OBJ_FUNCTION:
+            case OBJ_GLOBAL:
                 if(obj->is_extern)
                     continue;
-                
-                
-                break;
-            
+                {
+                    char* id = asm_gen_identifier(obj->id);
+                    asm_println(cg, "  .globl %s", id);
+
+                    int align = obj->data_type->kind == TY_ARR && obj->data_type->size >= 16 ? MAX(10, obj->align) : obj->align;
+
+                    bool is_tls = false; //fixme: evaluate correctly
+                    if(obj->value)
+                    {
+                        if(is_tls)
+                            asm_println(cg, "  .section .tdata,\"awT\",@progbits");
+                        else
+                            asm_println(cg, "  .data");
+
+                        asm_println(cg, "  .type %s, @object", id);
+                        asm_println(cg, "  .size %s, %d", id, obj->data_type->size);
+                        asm_println(cg, "  .align %d", align);
+                        asm_println(cg, "%s:", id);
+
+                        // todo: evaluate relocation
+
+                        continue;
+                    }
+
+                    if(is_tls)
+                        asm_println(cg, "  .section .tbss,\"awT\",@nobits");
+                    else
+                        asm_println(cg, "  .bss");
+                    
+                    asm_println(cg, "  .align %d", align);
+                    asm_println(cg, "%s:", id);
+                    asm_println(cg, "  .zero %d", obj->data_type->size);
+                } break;
+
             default:
                 continue;
         }
@@ -287,19 +417,107 @@ static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs)
                     if(obj->is_extern) 
                         continue;
 
-                    char* fn_name = gen_identifier(obj->id);
-                    println(cg, "  .globl %s", fn_name);
-                    println(cg, "  .text");
-                    println(cg, "  .type %s, @function", fn_name);
-                    println(cg, "%s:", fn_name);
+                    char* fn_name = asm_gen_identifier(obj->id);
+                    asm_println(cg, "  .globl %s", fn_name);
+                    asm_println(cg, "  .text");
+                    asm_println(cg, "  .type %s, @function", fn_name);
+                    asm_println(cg, "%s:", fn_name);
 
                     cg->current_fn = obj;
 
                     // prologue
-                    println(cg, "  push %%rbp");
-                    println(cg, "  mov %%rsp, %%rbp");
-                    //println(cg, "  sub $%d, %%rsp", obj->stack_size);
-                    //println(cg, "  mov %%rsp, %d(%%rbp)", obj)
+                    asm_println(cg, "  push %%rbp");
+                    asm_println(cg, "  mov %%rsp, %%rbp");
+                    asm_println(cg, "  sub $%d, %%rsp", obj->stack_size);
+                    asm_println(cg, "  mov %%rsp, %d(%%rbp)", obj->alloca_bottom->offset);
+
+                    // save arg registers if function is variadic
+                    if(obj->args->size >= 1 && ((ASTObj_T*)obj->args->items[obj->args->size - 1])->data_type->kind == TY_VA_LIST)
+                    {
+                        i32 gp = 0, fp = 0;
+                        for(size_t j = 0; j < obj->args->size; j++)
+                        {
+                            ASTObj_T* arg = obj->args->items[j];
+                            if(is_flonum(arg->data_type))
+                                fp++;
+                            else
+                                gp++;
+                            
+                            i32 off = ((ASTObj_T*)obj->args->items[obj->args->size - 1])->offset;
+
+                            // va_elem
+			                asm_println(cg, "  movl $%d, %d(%%rbp)", gp * 8, off);          // gp_offset
+			                asm_println(cg, "  movl $%d, %d(%%rbp)", fp * 8 + 48, off + 4); // fp_offset
+			                asm_println(cg, "  movq %%rbp, %d(%%rbp)", off + 8);            // overflow_arg_area
+			                asm_println(cg, "  addq $16, %d(%%rbp)", off + 8);
+			                asm_println(cg, "  movq %%rbp, %d(%%rbp)", off + 16);           // reg_save_area
+			                asm_println(cg, "  addq $%d, %d(%%rbp)", off + 24, off + 16);
+                
+			                // __reg_save_area__
+			                asm_println(cg, "  movq %%rdi, %d(%%rbp)", off + 24);
+			                asm_println(cg, "  movq %%rsi, %d(%%rbp)", off + 32);
+			                asm_println(cg, "  movq %%rdx, %d(%%rbp)", off + 40);
+			                asm_println(cg, "  movq %%rcx, %d(%%rbp)", off + 48);
+			                asm_println(cg, "  movq %%r8, %d(%%rbp)", off + 56);
+			                asm_println(cg, "  movq %%r9, %d(%%rbp)", off + 64);
+			                asm_println(cg, "  movsd %%xmm0, %d(%%rbp)", off + 72);
+			                asm_println(cg, "  movsd %%xmm1, %d(%%rbp)", off + 80);
+			                asm_println(cg, "  movsd %%xmm2, %d(%%rbp)", off + 88);
+			                asm_println(cg, "  movsd %%xmm3, %d(%%rbp)", off + 96);
+			                asm_println(cg, "  movsd %%xmm4, %d(%%rbp)", off + 104);
+			                asm_println(cg, "  movsd %%xmm5, %d(%%rbp)", off + 112);
+			                asm_println(cg, "  movsd %%xmm6, %d(%%rbp)", off + 120);
+			                asm_println(cg, "  movsd %%xmm7, %d(%%rbp)", off + 128);
+                        }
+                    }
+
+                    // save passed-by-register arguments to the stack
+                    i32 gp = 0, fp = 0;
+                    for(size_t j = 0; j < obj->args->size; j++)
+                    {
+                        ASTObj_T* arg = obj->args->items[j];
+                        if(arg->offset > 0)
+                            continue;
+                        
+                        ASTType_T* ty = arg->data_type;
+
+                        switch(ty->kind)
+                        {
+                            case TY_STRUCT:
+                                assert(ty->size <= 16);
+                                if(asm_has_flonum(ty, 0, 8, 0))
+                                    asm_store_fp(cg, fp++, arg->offset, MIN(8, ty->size));
+                                else
+                                    asm_store_gp(cg, gp++, arg->offset, MIN(8, ty->size));
+                                
+                                if(ty->size > 8)
+                                {
+                                    if(asm_has_flonum(ty, 8, 16, 0))
+                                        asm_store_fp(cg, fp++, arg->offset + 8, ty->size - 8);
+                                    else
+                                        asm_store_gp(cg, gp++, arg->offset + 8, ty->size - 8);
+                                }
+                                break;
+                            case TY_F32:
+                            case TY_F64:
+                                asm_store_fp(cg, fp++, arg->offset, ty->size);
+                                break;
+                            default:
+                                asm_store_gp(cg, gp++, arg->offset, ty->size);
+                        }
+                    }
+
+                    // emit code
+                    cg->current_fn_name = fn_name;
+                    asm_gen_stmt(cg, obj->body);
+                    assert(cg->depth == 0);
+                    cg->current_fn_name = NULL;
+
+                    // epilogue
+                    asm_println(cg, ".L.return.%s:", fn_name);
+                    asm_println(cg, "  mov %%rbp, %%rsp");
+                    asm_println(cg, "  pop %%rbp");
+                    asm_println(cg, "  ret");
                 }
                 break;
 
@@ -347,34 +565,35 @@ static u64 asm_count(void)
 
 static void asm_push(ASMCodegenData_T* cg) 
 {
-    println(cg, "  push %%rax");
+    asm_println(cg, "  push %%rax");
     cg->depth++;
 }
 
 static void asm_pop(ASMCodegenData_T* cg, char *arg) 
 {
-    println(cg, "  pop %s", arg);
+    asm_println(cg, "  pop %s", arg);
     cg->depth--;
 }
 
 static void asm_pushf(ASMCodegenData_T* cg) 
 {
-    println(cg, "  sub $8, %%rsp");
-    println(cg, "  movsd %%xmm0, (%%rsp)");
+    asm_println(cg, "  sub $8, %%rsp");
+    asm_println(cg, "  movsd %%xmm0, (%%rsp)");
     cg->depth++;
 }
 
 static void asm_popf(ASMCodegenData_T* cg, i32 reg) 
 {
-    println(cg, "  movsd (%%rsp), %%xmm%d", reg);
-    println(cg, "  add $8, %%rsp");
+    asm_println(cg, "  movsd (%%rsp), %%xmm%d", reg);
+    asm_println(cg, "  add $8, %%rsp");
     cg->depth--;
 }
 
 
-static char *reg_dx(i32 sz) 
+static char *asm_reg_dx(i32 sz) 
 {
-    switch (sz) {
+    switch (sz) 
+    {
         case 1: return "%dl";
         case 2: return "%dx";
         case 4: return "%edx";
@@ -384,9 +603,10 @@ static char *reg_dx(i32 sz)
     return 0;
 }
 
-static char *reg_ax(i32 sz) 
+static char *asm_reg_ax(i32 sz) 
 {
-    switch (sz) {
+    switch (sz) 
+    {
         case 1: return "%al";
         case 2: return "%ax";
         case 4: return "%eax";
@@ -396,34 +616,141 @@ static char *reg_ax(i32 sz)
     return 0;
 }
 
+static void gen_addr(ASMCodegenData_T* cg, union {ASTNode_T* node; ASTObj_T* obj;} u)
+{
+
+}
+
+static bool asm_has_flonum(ASTType_T* ty, i32 lo, i32 hi, i32 offset)
+{
+    if(ty->kind == TY_STRUCT)
+    {
+        for(size_t i = 0; i < ty->members->size; i++)
+            // todo: apply correct offset
+            if(!asm_has_flonum(((ASTObj_T*) ty->members->items[i])->data_type, lo, hi, offset));
+                return false;
+        return true;
+    }
+    else if(ty->kind == TY_ARR)
+    {
+        // todo: iterate over every index and check
+    }
+
+    return offset < lo || hi <= offset || ty->kind == TY_F32 || ty->kind == TY_F64 || ty->kind == TY_F80; 
+}
+
+static bool asm_has_flonum_1(ASTType_T* ty)
+{
+    return asm_has_flonum(ty, 0, 8, 0);
+}
+
+static bool asm_has_flonum_2(ASTType_T* ty)
+{
+    return asm_has_flonum(ty, 0, 16, 0);
+}
+
+static void asm_push_struct(ASMCodegenData_T* cg, ASTType_T* ty)
+{
+    i32 sz = align_to(ty->size, 8);
+    asm_println(cg, "  sub $%d, %%rsp", sz);
+    cg->depth += sz / 8;
+    
+    for(i32 i = 0; i < ty->size; i++)
+    {
+        asm_println(cg, "  mov %d(%%rax), %%r10b", i);
+        asm_println(cg, "  mov %%r10b, %d(%%rsp)", i);
+    }
+}
+
+static void asm_copy_struct_reg(ASMCodegenData_T* cg)
+{
+    ASTType_T* ty = cg->current_fn->return_type;
+    i32 gp = 0, fp = 0;
+
+    asm_println(cg, "  mov %%rax, %%rdi");
+
+    if(asm_has_flonum(ty, 0, 8, 0))
+    {
+        assert(ty->size == 4 || 8 <= ty->size);
+        if(ty->size == 4)
+            asm_println(cg, "  movss (%%rdi), %%xmm0");
+        else
+            asm_println(cg, "  movsd (%%rdi), %%xmm0");
+        fp++;
+    }
+    else
+    {
+        asm_println(cg, "  mov $0, %%rax");
+        for(i32 i = MIN(8, ty->size) - 1; i >= 0; i--)
+        {
+            asm_println(cg, "  shl $8, %%rax");
+            asm_println(cg, "  mov %d(%%rdi), %%al", i);
+        }
+        gp++;
+    }
+
+    if(ty->size > 8)
+    {
+        if(asm_has_flonum(ty, 8, 16, 0))
+        {
+            assert(ty->size == 12 || ty->size == 16);
+            if(ty->size == 4)
+                asm_println(cg, "  movss 8(%%rdi), %%xmm%d", fp);
+            else
+                asm_println(cg, "  movsd 8(%%rdi), %%xmm%d", fp);
+        }
+        else
+        {
+            char* reg1 = (gp == 0) ? "%al" : "%dl";
+            char* reg2 = (gp == 0) ? "%rax" : "%rdx";
+            asm_println(cg, "  mov $0, %s", reg2);
+            for(i32 i = MIN(16, ty->size) - 1; i >= 8; i--)
+            {
+                asm_println(cg, "  shl $8, %s", reg2);
+                asm_println(cg, "  mov %d(%%rdi), %s", i, reg1);
+            }
+        }
+    }
+}
+
+static void asm_copy_struct_mem(ASMCodegenData_T* cg)
+{
+
+}
+
+static void asm_copy_ret_buffer(ASMCodegenData_T* cg, ASTObj_T* var)
+{
+
+}
+
 static void asm_cmp_zero(ASMCodegenData_T* cg, ASTType_T* ty)
 {
     switch(ty->kind)
     {
         case TY_F32:
-            println(cg, "  xorps %%xmm1, %%xmm1");
-            println(cg, "  ucomiss %%xmm1, %%xmm0");
+            asm_println(cg, "  xorps %%xmm1, %%xmm1");
+            asm_println(cg, "  ucomiss %%xmm1, %%xmm0");
             return;
         case TY_F64:
-            println(cg, "  xorpd %%xmm1, %%xmm1");
-            println(cg, "  ucomisd %%xmm1, %%xmm0");
+            asm_println(cg, "  xorpd %%xmm1, %%xmm1");
+            asm_println(cg, "  ucomisd %%xmm1, %%xmm0");
             return;
         case TY_F80:
-            println(cg, "  fldz");
-            println(cg, "  fucomip");
-            println(cg, "  fstp %%st(0)");
+            asm_println(cg, "  fldz");
+            asm_println(cg, "  fucomip");
+            asm_println(cg, "  fstp %%st(0)");
             return;
         default:
             break;
     }
 
     if(is_integer(ty) && ty->size <= 4)
-        println(cg, "  cmp $0, %%eax");
+        asm_println(cg, "  cmp $0, %%eax");
     else
-        println(cg, "  cmp $0, %%rax");
+        asm_println(cg, "  cmp $0, %%rax");
 }
 
-static void asm_gen_cast(ASMCodegenData_T* cg, ASTType_T* from, ASTType_T* to) 
+static void asm_cast(ASMCodegenData_T* cg, ASTType_T* from, ASTType_T* to) 
 {
     if(to->kind == TY_VOID)
         return;
@@ -431,8 +758,8 @@ static void asm_gen_cast(ASMCodegenData_T* cg, ASTType_T* from, ASTType_T* to)
     if(to->kind == TY_BOOL)
     {
         asm_cmp_zero(cg, from);
-        println(cg, "  setne %%al");
-        println(cg, "  movzx %%al, %%eax");
+        asm_println(cg, "  setne %%al");
+        asm_println(cg, "  movzx %%al, %%eax");
         return;
     }
 
@@ -440,7 +767,7 @@ static void asm_gen_cast(ASMCodegenData_T* cg, ASTType_T* from, ASTType_T* to)
     i32 t2 = get_type_id(to);
 
     if(cast_table[t1][t2])
-        println(cg, "  %s", cast_table[t1][t2]);
+        asm_println(cg, "  %s", cast_table[t1][t2]);
 }
 
 // Store %rax to an address that the stack top is pointing to.
@@ -450,31 +777,31 @@ static void asm_store(ASMCodegenData_T* cg, ASTType_T *ty) {
     switch (ty->kind) {
         case TY_STRUCT:
             for (i32 i = 0; i < ty->size; i++) {
-                println(cg, "  mov %d(%%rax), %%r8b", i);
-                println(cg, "  mov %%r8b, %d(%%rdi)", i);
+                asm_println(cg, "  mov %d(%%rax), %%r8b", i);
+                asm_println(cg, "  mov %%r8b, %d(%%rdi)", i);
             }
             return;
         case TY_F32:
-            println(cg, "  movss %%xmm0, (%%rdi)");
+            asm_println(cg, "  movss %%xmm0, (%%rdi)");
             return;
         case TY_F64:
-            println(cg, "  movsd %%xmm0, (%%rdi)");
+            asm_println(cg, "  movsd %%xmm0, (%%rdi)");
             return;
         case TY_F80:
-            println(cg, "  fstpt (%%rdi)");
+            asm_println(cg, "  fstpt (%%rdi)");
             return;
         default:    
             break;
     }
 
     if(ty->size == 1)
-        println(cg, "  mov %%al, (%%rdi)");
+        asm_println(cg, "  mov %%al, (%%rdi)");
     else if(ty->size == 2)
-        println(cg, "  mov %%ax, (%%rdi)");
+        asm_println(cg, "  mov %%ax, (%%rdi)");
     else if(ty->size == 4)
-        println(cg, "  mov %%eax, (%%rdi)");
+        asm_println(cg, "  mov %%eax, (%%rdi)");
     else
-        println(cg, "  mov %%rax, (%%rdi)");
+        asm_println(cg, "  mov %%rax, (%%rdi)");
 }
 
 // Load a value from where %rax is pointing to.
@@ -486,13 +813,13 @@ static void asm_load(ASMCodegenData_T* cg, ASTType_T *ty) {
         case TY_VA_LIST:
             return;
         case TY_F32:
-            println(cg, "  movss (%%rax), %%xmm0");
+            asm_println(cg, "  movss (%%rax), %%xmm0");
             return;
         case TY_F64:
-            println(cg, "  movsd (%%rax), %%xmm0");
+            asm_println(cg, "  movsd (%%rax), %%xmm0");
             return;
         case TY_F80:
-            println(cg, "  fldt (%%rax)");
+            asm_println(cg, "  fldt (%%rax)");
             return;
         default:
             break;
@@ -502,12 +829,188 @@ static void asm_load(ASMCodegenData_T* cg, ASTType_T *ty) {
 
     // extend short values to an entire register
     if (ty->size == 1)
-      println(cg, "  %sbl (%%rax), %%eax", insn);
+      asm_println(cg, "  %sbl (%%rax), %%eax", insn);
     else if (ty->size == 2)
-      println(cg, "  %swl (%%rax), %%eax", insn);
+      asm_println(cg, "  %swl (%%rax), %%eax", insn);
     else if (ty->size == 4)
-      println(cg, "  movsxd (%%rax), %%rax");
+      asm_println(cg, "  movsxd (%%rax), %%rax");
     else
-      println(cg, "  mov (%%rax), %%rax");
+      asm_println(cg, "  mov (%%rax), %%rax");
 }
 
+static void asm_push_args2(ASMCodegenData_T* cg, ASTObj_T* arg, bool first_pass)
+{
+
+}
+
+static i32 asm_push_args(ASMCodegenData_T* cg, ASTObj_T* fn)
+{
+    return 0;
+}
+
+static void asm_builtin_alloca(ASMCodegenData_T* cg)
+{
+    // Align size to 16 bytes.
+	asm_println(cg, "  add $15, %%rdi");
+	asm_println(cg, "  and $0xfffffff0, %%edi");
+
+	// Shift the temporary area by %rdi.
+	asm_println(cg, "  mov %d(%%rbp), %%rcx", cg->current_fn->alloca_bottom->offset);
+	asm_println(cg, "  sub %%rsp, %%rcx");
+	asm_println(cg, "  mov %%rsp, %%rax");
+	asm_println(cg, "  sub %%rdi, %%rsp");
+	asm_println(cg, "  mov %%rsp, %%rdx");
+	asm_println(cg, "1:");
+	asm_println(cg, "  cmp $0, %%rcx");
+	asm_println(cg, "  je 2f");
+	asm_println(cg, "  mov (%%rax), %%r8b");
+	asm_println(cg, "  mov %%r8b, (%%rdx)");
+	asm_println(cg, "  inc %%rdx");
+	asm_println(cg, "  inc %%rax");
+	asm_println(cg, "  dec %%rcx");
+	asm_println(cg, "  jmp 1b");
+	asm_println(cg, "2:");
+
+	// Move alloca_bottom pointer.
+	asm_println(cg, "  mov %d(%%rbp), %%rax", cg->current_fn->alloca_bottom->offset);
+	asm_println(cg, "  sub %%rdi, %%rax");
+	asm_println(cg, "  mov %%rax, %d(%%rbp)", cg->current_fn->alloca_bottom->offset);
+}
+
+static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
+{
+    if(node->tok)
+        asm_println(cg, "  .loc %d %d", node->tok->source->file_no + 1, node->tok->line);
+    
+    switch(node->kind)
+    {
+        case ND_NIL:
+            return;
+        case ND_FLOAT:
+            {
+                union { f32 f32; u32 u32; } u = { node->float_val };
+                asm_println(cg, "  mov $%u, %%eax  # float %f", u.u32, node->float_val);
+                asm_println(cg, "  movq %%rax, %%xmm0");
+            } return;
+        case ND_DOUBLE:
+            {
+                union { f64 f64; u64 u64; } u = { node->double_val };
+                asm_println(cg, "  mov $%lu, %%rax  # float %Lf", u.u64, node->double_val);
+                asm_println(cg, "  movq %%rax, %%xmm0");
+            } return;
+        case ND_INT:
+            asm_println(cg, "  mov $%d, %%rax", node->int_val);
+            return;
+        case ND_LONG:
+            asm_println(cg, "  mov $%ld, %%rax", node->long_val);
+            return;
+        case ND_LLONG:
+            asm_println(cg, "  mov $%lld, %%rax", node->llong_val);
+            return;
+    }
+}
+
+static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
+{
+    asm_println(cg, "  .loc %d %d", node->tok->source->file_no + 1, node->tok->line + 1);
+
+    switch(node->kind)
+    {
+        case ND_IF:
+        {
+            i32 c = asm_count();
+            asm_gen_expr(cg, node->condition);
+            asm_cmp_zero(cg, node->condition->data_type);
+            asm_println(cg, "  je  .L.else.%d", c);
+            asm_gen_stmt(cg, node->if_branch);
+            asm_println(cg, "  jmp .L.end.%d", c);
+            asm_println(cg, ".L.else.%d:", c);
+            if(node->else_branch)
+                asm_gen_stmt(cg, node->else_branch);
+            asm_println(cg, ".L.end.%d:", c);
+        } return;
+
+        case ND_FOR:
+            return;
+        
+        case ND_MATCH:
+            return;
+        
+        case ND_CASE:
+            return;
+        
+        case ND_WHILE:
+            return;
+        
+        case ND_BLOCK:
+            for(size_t i = 0; i < node->stmts->size; i++)
+                asm_gen_stmt(cg, node->stmts->items[i]);
+        
+        case ND_RETURN:
+            if(node->return_val)
+            {
+                asm_gen_expr(cg, node->return_val);
+                ASTType_T* ty = node->return_val->data_type;
+
+                if(ty->kind == TY_STRUCT)
+                {
+                    if(ty->size <= 16)
+                        asm_copy_struct_reg(cg);
+                    else
+                        asm_copy_struct_mem(cg);
+                }
+            }
+
+            asm_println(cg, "  jmp .L.return.%s", cg->current_fn_name);
+            return;
+        
+        case ND_EXPR_STMT:
+            asm_gen_expr(cg, node->expr);
+            return;
+
+        default:
+            break;
+    }
+
+    unreachable();
+}
+
+static void asm_store_fp(ASMCodegenData_T* cg, i32 r, i32 offset, i32 sz)
+{
+    switch(sz)
+    {
+        case 4:
+            asm_println(cg, "  movss %%xmm%d, %d(%%rbp)", r, offset);
+            return;
+        case 8:
+            asm_println(cg, "  movsd %%xmm%d, %d(%%rbp)", r, offset);
+            return;
+    }
+    unreachable();
+}
+
+static void asm_store_gp(ASMCodegenData_T* cg, i32 r, i32 offset, i32 sz)
+{
+    switch(sz)
+    {
+        case 1:
+            asm_println(cg, "  mov %s, %d(%%rbp)", argreg8[r], offset);
+            return;
+        case 2:
+            asm_println(cg, "  mov %s, %d(%%rbp)", argreg16[r], offset);
+            return;
+        case 4:
+            asm_println(cg, "  mov %s, %d(%%rbp)", argreg32[r], offset);
+            return;
+        case 8:
+            asm_println(cg, "  mov %s, %d(%%rbp)", argreg64[r], offset);
+            return;
+        default:
+            for(i32 i = 0; i < sz; i++)
+            {
+                asm_println(cg, "  mov %s, %d(%%rbp)", argreg8[r], offset + i);
+                asm_println(cg, "  shr $8, %s", argreg64[r]);
+            }
+            return;
+    }
+}

@@ -1,6 +1,4 @@
-fn sub(a: i32, b: i32): i32 ret a - b;
-
-fn main(): i32
+fn main(argc: i32, argv: &&char): i32
 {   
-    <- sub(2, 2);
+    <- 1;
 }

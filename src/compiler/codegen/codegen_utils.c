@@ -2,8 +2,12 @@
 
 #include "../list.h"
 #include "../ast/mem/ast_mem.h"
+#include "../io/log.h"
+#include "../io/io.h"
 
+#include <libgen.h>
 #include <string.h>
+#include <glob.h>
 
 static void cat_id(char* callee, ASTIdentifier_T* id)
 {
@@ -97,4 +101,44 @@ bool is_unsigned(ASTType_T* ty)
 i32 align_to(i32 n, i32 align) 
 {
     return (n + align - 1) / align * align;
+}
+
+static char *find_file(char *pattern) {
+    char *path = NULL;
+    glob_t buf = {};
+    glob(pattern, 0, NULL, &buf);
+    if (buf.gl_pathc > 0)
+        path = strdup(buf.gl_pathv[buf.gl_pathc - 1]);
+    globfree(&buf);
+    return path;
+}
+
+char* find_libpath(void)
+{
+    if(file_exists("/usr/lib/x86_64-linux-gnu/crti.o"))
+        return "/usr/lib/x86_64-linux-gnu";
+    if(file_exists("/usr/lib64/crti.o"))
+        return "/usr/lib64";
+    
+    LOG_ERROR("could not find library path\n");
+    exit(1);
+}
+
+char* find_gcc_libpath(void)
+{
+    char* paths[] = {
+        "/usr/lib/gcc/x86_64-linux-gnu/*/crtbegin.o",    // default Linux
+        "/usr/lib/gcc/x86_64-pc-linux-gnu/*/crtbegin.o", // Gentoo
+        "/usr/lib/gcc/x86_64-redhat-linux/*/crtbegin.o"  // Fedora
+    };
+
+    for(i32 i = 0; i < sizeof(paths) / sizeof(*paths); i++)
+    {
+        char* path = find_file(paths[i]);
+        if(path)
+            return dirname(path);
+    }
+
+    LOG_ERROR("gcc library path not found\n");
+    exit(1);
 }

@@ -22,7 +22,7 @@ static void generate_asm(ASTProg_T* ast, char* target, Action_T action, bool pri
 void compile(char* input_file, char* output_file, Action_T action)
 {
     main_src_file = input_file;
-    ASTProg_T ast; 
+    ASTProg_T ast = { 0 }; 
     generate_ast(&ast, input_file, output_file, silent);
     
     switch(ct)
@@ -43,6 +43,9 @@ void compile(char* input_file, char* output_file, Action_T action)
             LOG_ERROR_F("[Error] Unknown compile type %d!\n", ct);
             exit(1);
     }
+
+    for(size_t i = 0; i < ast.imports->size; i++)
+        free_srcfile(ast.imports->items[i]);
     ast_free();
 }
 
@@ -55,10 +58,9 @@ static void generate_ast(ASTProg_T* ast, char* path, char* target, bool silent)
 
     parse(ast, files, silent);
     //optimize(ast);
-
-    for(size_t i = 0; i < files->size; i++) 
-        free_srcfile(files->items[i]);
-    free_list(files);
+    
+    ast->imports = files;
+    ast_mem_add_list(files);
 }
 
 // sets up and runs the compilation pipeline using LLVM

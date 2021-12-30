@@ -185,6 +185,7 @@ static Import_T* find_import(Preprocessor_T* pp, Import_T* imp)
 
 static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
 {
+    static u32 file_no = 0;
     // parse the import struct from the source code
     (*i)++;
 
@@ -211,6 +212,7 @@ static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
     // get the tokens from the file
     SrcFile_T* import_file = read_file(imp->import_path);
     import_file->short_path = strdup(imp->tok->value);
+    import_file->file_no = ++file_no;
 
     Lexer_T import_lexer;
     init_lexer(&import_lexer, import_file);

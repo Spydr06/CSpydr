@@ -10,7 +10,7 @@ import "tuple.csp";
 
 # macro to quickly create a new vector
 macro vec(datatype) {
-    std::vec::init(): &datatype
+    (std::vec::init(): &datatype)
 }
 
 # macro to add a value to the vector
@@ -40,6 +40,21 @@ macro vec_remove(addr, pos) {
 # macro to copy a vector
 macro vec_copy(addr) {
     (::std::vec::__internal_copy((addr): &void, sizeof typeof *(addr)): typeof (addr));
+}
+
+# macro to iterate over every index of a vector
+macro vec_foreach(addr, i, v, code) {
+    {
+        for let i: u64 = 0; i < ::std::vec::size(addr); i++; {
+            let v = addr[i];
+            code;
+        }
+    }
+}
+
+# macro to free the memory allocated by a vector
+macro vec_free(addr) {
+    (::std::vec::free(addr))
 }
 
 namespace std {
@@ -142,6 +157,16 @@ namespace std {
 
         fn pop(vec: &void) {
             get_data(vec).size--;
+        }
+
+        fn rotate_right(addr: &void, type_size: u8, amount: u64) {
+            if !amount || !addr || !type_size ret;
+
+
+        }
+
+        fn rotate_left(addr: &void, type_size: u8, amount: u64) {
+            if !amount || !addr || !type_size ret;
         }
 
         #
