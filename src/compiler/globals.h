@@ -25,8 +25,7 @@ i32 __CSP_GLOBAL fs;
 i32 __CSP_GLOBAL last_exit_code;
 
 bool __CSP_GLOBAL silent;
-bool __CSP_GLOBAL print_llvm;
-bool __CSP_GLOBAL print_c;
+bool __CSP_GLOBAL print_code;
 
 char __CSP_GLOBAL* exec_name;
 char __CSP_GLOBAL* main_src_file;

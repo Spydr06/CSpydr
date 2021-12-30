@@ -67,8 +67,7 @@ const char* help_text = "%s"
                        "  -o, --output [file]    Sets the target output file (default: " DEFAULT_OUTPUT_FILE ").\n"
                        "  -t, --transpile        Instructs the compiler to compile to C source code.\n"
                        "  -l, --llvm             Instructs the compiler to compile to LLVM BitCode (default).\n"
-                       "      --print-llvm       Prints the generated LLVM ByteCode.\n"
-                       "      --print-c          Prints the generated C code.\n"
+                       "      --print-code       Prints the generated code (C | Assembly | LLVM IR).\n"
                        "      --silent           Disables all command line output except error messages.\n"
                        "      --cc [compiler]    Sets the C compiler being used after transpiling (default: " DEFAULT_CC ")\n"
                        "      --cc-flags [flags] Sets the C compiler flags, must be last argument (default: " DEFAULT_CC_FLAGS ")\n"
@@ -184,10 +183,8 @@ i32 main(i32 argc, char* argv[])
             }
             output_file = argv[i];
         }
-        else if(streq(arg, "--print-llvm"))
-            print_llvm = true;
-        else if(streq(arg, "--print-c"))
-            print_c = true;
+        else if(streq(arg, "--print-code"))
+            print_code = true;
         else if(streq(arg, "-t") || streq(arg, "--transpile"))
             ct = CT_TRANSPILE;
         else if(streq(arg, "-l") || streq(arg, "--llvm"))

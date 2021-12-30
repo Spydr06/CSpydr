@@ -28,16 +28,16 @@ void compile(char* input_file, char* output_file, Action_T action)
     switch(ct)
     {
         case CT_LLVM:
-            generate_llvm(&ast, output_file, action, print_llvm, silent);
+            generate_llvm(&ast, output_file, action, print_code, silent);
             break;
         case CT_TRANSPILE:
-            transpile_c(&ast, output_file, action, print_c, silent);
+            transpile_c(&ast, output_file, action, print_code, silent);
             break;
         case CT_TO_XML:
             parse_to_xml(&ast, output_file, action, silent);
             break;
         case CT_ASM:
-            generate_asm(&ast, output_file, action, print_c, silent);
+            generate_asm(&ast, output_file, action, print_code, silent);
             break;
         default:
             LOG_ERROR_F("[Error] Unknown compile type %d!\n", ct);
@@ -114,7 +114,7 @@ static void generate_asm(ASTProg_T* ast, char* target, Action_T action, bool pri
     ASMCodegenData_T cg;
     init_asm_cg(&cg, ast);
     cg.silent = silent;
-    cg.print = print_c;
+    cg.print = print_asm;
 
     asm_gen_code(&cg, target);
 }
