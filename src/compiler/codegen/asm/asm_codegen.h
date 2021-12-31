@@ -21,5 +21,6 @@ typedef struct ASM_CODEGEN_DATA_STRUCT
 
 void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast);
 void asm_gen_code(ASMCodegenData_T* cg, const char* target);
+void asm_run_code(ASMCodegenData_T* cg, const char* bin);
 
 #endif

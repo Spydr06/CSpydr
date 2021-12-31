@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 #define GP_MAX 6
 #define FP_MAX 8
@@ -158,11 +159,32 @@ static void write_code(ASMCodegenData_T* cg, const char* target_bin)
     fclose(out);
 }
 
+static void get_platform(char* dest)
+{
+#if defined (__linux__) || defined(__linux)
+#if defined(__x86_64) || defined(__x86_64__)
+    strcpy(dest, "x86_64");
+#else
+    #warn "unsupported assembler platform"
+#endif
+    strcat(dest, "-linux");
+#if defined(__GNUC__) || defined(__gnu_linux__)
+    strcat(dest, "-gnu");
+#else
+    #warn "unsupported assembler platoform"
+#endif
+#else
+    #warn "unsupported assembler platform"
+#endif
+}
+
 void asm_gen_code(ASMCodegenData_T* cg, const char* target)
 {
+    char platform[1024] = { '\0' };
+    get_platform(platform);
     if(!cg->silent)
     {
-        LOG_OK(COLOR_BOLD_BLUE "  Generating" COLOR_BOLD_WHITE " Assembly" COLOR_RESET " code\n");
+        LOG_OK_F(COLOR_BOLD_BLUE "  Generating" COLOR_BOLD_WHITE " assembly" COLOR_RESET " for " COLOR_BOLD_WHITE "%s" COLOR_RESET "\n", platform);
     }
 
     // generate the assembly code
@@ -205,7 +227,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
     {
         if(!cg->silent)
         {
-            LOG_OK_F(COLOR_BOLD_BLUE "  Linking    " COLOR_BOLD_WHITE "%s" COLOR_RESET "\n", target);
+            LOG_OK_F(COLOR_BOLD_BLUE "  Linking    " COLOR_RESET "%s\n", target);
         }
 
         const char* args[] = {
@@ -246,6 +268,19 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
             exit(1);
         }
     }
+}
+
+void asm_run_code(ASMCodegenData_T* cg, const char* bin)
+{
+    if(!cg->silent)
+        LOG_OK_F(COLOR_BOLD_BLUE "  Executing " COLOR_RESET " %s\n", bin);
+    
+    const char* cmd_tmp = "." DIRECTORY_DELIMS "%s";
+    char cmd[BUFSIZ];
+    memset(cmd, '\0', sizeof cmd);
+    sprintf(cmd, cmd_tmp, bin);
+
+    global.last_exit_code = subprocess(cmd, (char* const[]){cmd, NULL}, !cg->silent);
 }
 
 static char* asm_gen_identifier(ASTIdentifier_T* id)

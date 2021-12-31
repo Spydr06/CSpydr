@@ -117,6 +117,12 @@ static void generate_asm(ASTProg_T* ast, char* target, Action_T action, bool pri
     cg.print = print_asm;
 
     asm_gen_code(&cg, target);
+
+    if(action == AC_RUN)
+    {
+        asm_run_code(&cg, target);
+        remove(target);
+    }
 }
 
 static void parse_to_xml(ASTProg_T* ast, char* target, Action_T action, bool silent)

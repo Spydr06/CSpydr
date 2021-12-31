@@ -37,7 +37,7 @@ bool make_dir(char* path)
     return 1;
 }
 
-i32 subprocess(const char* p_name, char* const* p_arg, bool pri32_exit_msg)
+i32 subprocess(const char* p_name, char* const* p_arg, bool print_exit_msg)
 {
     pid_t pid = fork();
 
@@ -60,17 +60,20 @@ i32 subprocess(const char* p_name, char* const* p_arg, bool pri32_exit_msg)
         return -1;
     }
 
-    if(pri32_exit_msg)
+    if(print_exit_msg)
     {
         if(WIFEXITED(pid_status))
-            LOG_INFO_F(COLOR_RESET "[%s terminated with exit code %d]\n", p_name, WEXITSTATUS(pid_status));
+        {
+            i32 exit_code = WEXITSTATUS(pid_status);
+            LOG_INFO_F(COLOR_RESET "[%s terminated with exit code %s%d" COLOR_RESET "]\n", p_name, exit_code ? COLOR_BOLD_RED : COLOR_BOLD_GREEN, exit_code);
+        }
         else if(WIFSIGNALED(pid_status))
-            LOG_INFO_F(COLOR_RESET "[%s killed by signal %s (%d)]\n", p_name, strsignal(WTERMSIG(pid_status)), WTERMSIG(pid_status));
+            LOG_INFO_F(COLOR_BOLD_RED "[%s killed by signal %s (%d)]\n", p_name, strsignal(WTERMSIG(pid_status)), WTERMSIG(pid_status));
         else if(WIFSTOPPED(pid_status))
-            LOG_INFO_F(COLOR_RESET "[%s stopped by signal %s (%d)\n", p_name, strsignal(WSTOPSIG(pid_status)), WSTOPSIG(pid_status));
+            LOG_INFO_F(COLOR_BOLD_RED "[%s stopped by signal %s (%d)\n", p_name, strsignal(WSTOPSIG(pid_status)), WSTOPSIG(pid_status));
 #ifdef WCOREDUMP
         else if(WCOREDUMP(pid_status))
-            LOG_INFO_F(COLOR_RESET "[%s core dumped]\n", p_name);
+            LOG_INFO_F(COLOR_YELLOW "[%s core dumped]\n", p_name);
 #endif
     }
 

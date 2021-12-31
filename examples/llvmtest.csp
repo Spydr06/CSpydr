@@ -2,5 +2,5 @@ let x = 0;
 
 fn main(argc: i32, argv: &&char): i32
 {   
-    <- 2 + 5;
+    <- 2 + 2 * 2 - 6;
 }
