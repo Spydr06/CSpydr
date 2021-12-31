@@ -355,7 +355,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
         switch(obj->kind)
         {
             case OBJ_NAMESPACE:
-                asm_gen_text(cg, obj->objs);
+                asm_gen_data(cg, obj->objs);
                 break;
             
             case OBJ_GLOBAL:
@@ -380,7 +380,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
                         asm_println(cg, "  .align %d", align);
                         asm_println(cg, "%s:", id);
 
-                        // todo: evaluate relocation
+                        //todo: relocation
 
                         continue;
                     }
@@ -557,10 +557,16 @@ static i32 get_type_id(ASTType_T *ty) {
     }
 }
 
+static u64 asm_i = 1;
+
 static u64 asm_count(void) 
 {
-    static u64 i = 1;
-    return i++;
+    return asm_i++;
+}
+
+static u64 asm_current_count(void)
+{
+    return asm_i;
 }
 
 static void asm_push(ASMCodegenData_T* cg) 
@@ -616,9 +622,14 @@ static char *asm_reg_ax(i32 sz)
     return 0;
 }
 
-static void gen_addr(ASMCodegenData_T* cg, union {ASTNode_T* node; ASTObj_T* obj;} u)
+static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
 {
+    switch(node->kind)
+    {
+        case ND_ID: {
 
+        }
+    }
 }
 
 static bool asm_has_flonum(ASTType_T* ty, i32 lo, i32 hi, i32 offset)
@@ -884,20 +895,20 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
     
     switch(node->kind)
     {
-        case ND_NIL:
+        case ND_NOOP:
             return;
         case ND_FLOAT:
-            {
-                union { f32 f32; u32 u32; } u = { node->float_val };
-                asm_println(cg, "  mov $%u, %%eax  # float %f", u.u32, node->float_val);
-                asm_println(cg, "  movq %%rax, %%xmm0");
-            } return;
+        {
+            union { f32 f32; u32 u32; } u = { node->float_val };
+            asm_println(cg, "  mov $%u, %%eax  # float %f", u.u32, node->float_val);
+            asm_println(cg, "  movq %%rax, %%xmm0");
+        } return;
         case ND_DOUBLE:
-            {
-                union { f64 f64; u64 u64; } u = { node->double_val };
-                asm_println(cg, "  mov $%lu, %%rax  # float %Lf", u.u64, node->double_val);
-                asm_println(cg, "  movq %%rax, %%xmm0");
-            } return;
+        {
+            union { f64 f64; u64 u64; } u = { node->double_val };
+            asm_println(cg, "  mov $%lu, %%rax  # float %Lf", u.u64, node->double_val);
+            asm_println(cg, "  movq %%rax, %%xmm0");
+        } return;
         case ND_INT:
             asm_println(cg, "  mov $%d, %%rax", node->int_val);
             return;
@@ -907,7 +918,308 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_LLONG:
             asm_println(cg, "  mov $%lld, %%rax", node->llong_val);
             return;
+        
+        case ND_NEG:
+            asm_gen_expr(cg, node->right);
+            switch(node->data_type->kind)
+            {
+                case TY_F32:
+                    asm_println(cg, "  mov $1, %%rax");
+                    asm_println(cg, "  shl $31, %%rax");
+                    asm_println(cg, "  movq %%rax %%xmm1");
+                    asm_println(cg, "  xorps %%xmm1, %%xmm0");
+                    return;
+                case TY_F64:
+                    asm_println(cg, "  mov $1, %%rax");
+                    asm_println(cg, "  shl $63, %%rax");
+                    asm_println(cg, "  mov1 %%rax, %%xmm1");
+                    asm_println(cg, "  xorpd %%xmm1, %%xmm0");
+                    return;
+                case TY_F80:
+                    asm_println(cg, "  fchs");
+                    return;
+                default:
+                    asm_println(cg, "  neg %%rax");
+                    return;
+            }
+        
+        case ND_ID:
+            asm_gen_addr(cg, node);
+            asm_load(cg, node->data_type);
+            return;
+
+        case ND_MEMBER:
+            asm_gen_addr(cg, node);
+            asm_load(cg, node->data_type);
+            return;
+        
+        case ND_DEREF:
+            asm_gen_expr(cg, node->right);
+            asm_load(cg, node->data_type);
+            return;
+        
+        case ND_ASSIGN:
+            asm_gen_addr(cg, node->left);
+            asm_push(cg);
+            asm_gen_expr(cg, node->right);
+            asm_store(cg, node->data_type);
+            return;
+
+        case ND_CAST:
+            asm_gen_expr(cg, node->expr);
+            asm_cast(cg, node->expr->data_type, node->data_type);
+            return;
+        
+        case ND_NOT:
+            asm_gen_expr(cg, node->right);
+            asm_cmp_zero(cg, node->right->data_type);
+            asm_println(cg, "  sete %%al");
+            asm_println(cg, "  movzx %%al, %%rax");
+            return;
+        
+        case ND_BIT_NEG:
+            asm_gen_expr(cg, node->right);
+            asm_println(cg, "  not %%rax");
+            return;
+        
+        case ND_AND:
+        {
+            u64 c = asm_count();
+            asm_gen_expr(cg, node->left);
+            asm_cmp_zero(cg, node->left->data_type);
+            asm_println(cg, "  je .L.false.%ld", c);
+            asm_gen_expr(cg, node->right);
+            asm_cmp_zero(cg, node->right->data_type);
+            asm_println(cg, "  je .L.false.%ld", c);
+            asm_println(cg, "  mov $1, %%rax");
+            asm_println(cg, "  jmp .L.end.%ld", c);
+            asm_println(cg, ".L.false.%ld:", c);
+            asm_println(cg, "  mov $0, %%rax");
+            asm_println(cg, ".L.end.%ld:", c);
+        } return;
+
+        case ND_OR:
+        {
+            u64 c = asm_count();
+            asm_gen_expr(cg, node->left);
+            asm_cmp_zero(cg, node->left->data_type);
+            asm_println(cg, "  jne .L.true.%ld", c);
+            asm_gen_expr(cg, node->right);
+            asm_cmp_zero(cg, node->right->data_type);
+            asm_println(cg, "  jne .L.true.%ld", c);
+            asm_println(cg, "  mov $1, %%rax");
+            asm_println(cg, "  jmp .L.end.%ld", c);
+            asm_println(cg, ".L.true.%ld:", c);
+            asm_println(cg, "  mov $1, %%rax");
+            asm_println(cg, ".L.end.%ld:", c);
+        } return;
+
+        case ND_CALL:
+        {
+            //todo:
+        } return;
     }
+
+    switch(node->left->data_type->kind)
+    {
+        case TY_F32:
+        case TY_F64:
+        {
+            if(node->kind == ND_GT || node->kind == ND_GE)
+            {
+                asm_gen_expr(cg, node->left);
+                asm_pushf(cg);
+                asm_gen_expr(cg, node->right);
+                asm_popf(cg, 1);
+            }
+            else {
+                asm_gen_expr(cg, node->right);
+                asm_pushf(cg);
+                asm_gen_expr(cg, node->left);
+                asm_popf(cg, 1);
+            }
+
+            char* sz = node->left->data_type->kind == TY_F32 ? "ss" : "sd";
+
+            switch(node->kind)
+            {
+                case ND_ADD:
+                    asm_println(cg, "  add%s %%xmm1, %%xmm0", sz);
+                    return;
+                case ND_SUB:
+                    asm_println(cg, "  sub%s %%xmm1, %%xmm0", sz);
+                    return;
+                case ND_MUL:
+                    asm_println(cg, "  mul%s %%xmm1, %%xmm0", sz);
+                    return;
+                case ND_DIV:
+                    asm_println(cg, "  div%s %%xmm1, %%xmm0", sz);
+                    return;
+                case ND_EQ:
+                    asm_println(cg, "  ucomi%s %%xmm0, %%xmm1", sz);
+                    asm_println(cg, "  sete %%al");
+                    asm_println(cg, "  setnp %%dl");
+                    asm_println(cg, "  and %%dl, %%al");
+                    asm_println(cg, "  and $1, %%al");
+                    asm_println(cg, "  movzb %%al, %%rax");
+                    return;
+                case ND_NE:
+                    asm_println(cg, "  ucomi%s %%xmm0, %%xmm1", sz);
+                    asm_println(cg, "  setne %%al");
+                    asm_println(cg, "  setnp %%dl");
+                    asm_println(cg, "  and %%dl, %%al");
+                    asm_println(cg, "  and $1, %%al");
+                    asm_println(cg, "  movzb %%al, %%rax");
+                    return;
+                case ND_LT:
+                case ND_GT:
+                    asm_println(cg, "  ucomi%s %%xmm0, %%xmm1", sz);
+                    asm_println(cg, "  seta %%ak");
+                    asm_println(cg, "  and $1, %%al");
+                    asm_println(cg, "  movzb %%al, %%rax");
+                    return;
+                case ND_LE:
+                case ND_GE:
+                    asm_println(cg, "  ucomi%s %%xmm0, %%xmm1", sz);
+                    asm_println(cg, "  setae %%al");
+                    asm_println(cg, "  and $1, %%al");
+                    asm_println(cg, "  movzb %%al, %%rax");
+                    return;
+            }
+            LOG_ERROR_F("unhandled expression (%d)\n", node->kind);
+            return;
+        }
+        case TY_F80:
+            if(node->kind == ND_GT || node->kind == ND_GE)
+            {
+                asm_gen_expr(cg, node->right);
+                asm_gen_expr(cg, node->left);
+            }
+            else
+            {
+                asm_gen_expr(cg, node->left);
+                asm_gen_expr(cg, node->right);
+            }
+
+            switch (node->kind) 
+            {
+                case ND_ADD:
+                    asm_println(cg, "  faddp");
+                    return;
+                case ND_SUB:
+                    asm_println(cg, "  fsubrp");
+                    return;
+                case ND_MUL:
+                    asm_println(cg, "  fmulp");
+                    return;
+                case ND_DIV:
+                    asm_println(cg, "  fdivrp");
+                    return;
+                case ND_EQ:
+                    asm_println(cg, "  fcomip");
+                    asm_println(cg, "  fstp %%st(0)");
+                    asm_println(cg, "  sete %%al");
+                    asm_println(cg, "  movzb %%al, %%rax");
+                    return;
+                case ND_NE:
+                    asm_println(cg, "  fcomip");
+                    asm_println(cg, "  fstp %%st(0)");
+                    asm_println(cg, "  setne %%al");
+                    asm_println(cg, "  movzb %%al, %%rax");
+                    return;
+                case ND_LT:
+                case ND_GT:
+                    asm_println(cg, "  fcomip");
+                    asm_println(cg, "  fstp %%st(0)");
+                    asm_println(cg, "  seta %%al");
+                    asm_println(cg, "  movzb %%al, %%rax");
+                    return;
+                case ND_LE:
+                case ND_GE:
+                    asm_println(cg, "  fcomip");
+                    asm_println(cg, "  fstp %%st(0)");
+                    asm_println(cg, "  setae %%al");
+                    asm_println(cg, "  movzb %%al, %%rax");
+                    return;
+            }
+
+            LOG_ERROR_F("unhandled expression (%d)\n", node->kind);
+            return;
+    }
+
+    asm_gen_expr(cg, node->kind == ND_GE || node->kind == ND_GT ? node->left : node->right);
+    asm_push(cg);
+    asm_gen_expr(cg, node->kind == ND_GE || node->kind == ND_GT ? node->right : node->left);
+    asm_pop(cg, "%rdi");
+
+    char* ax, * di, * dx;
+
+    if(node->left->data_type->kind == TY_I64 || node->left->data_type->kind == TY_U64 || node->left->data_type->base)
+    {
+        ax = "%rax";
+        di = "%rdi";
+        dx = "%rdx";
+    }
+    else
+    {
+        ax = "%eax";
+        di = "%edi";
+        dx = "%edx";
+    }
+
+    switch(node->kind)
+    {
+        case ND_ADD:
+            asm_println(cg, "  add %s, %s", di, ax);
+            return;
+        case ND_SUB:
+            asm_println(cg, "  sub %s, %s", di, ax);
+            return;
+        case ND_MUL:
+            asm_println(cg, "  imul %s, %s", di, ax);
+            return;
+        case ND_DIV:
+        case ND_MOD:
+            if(unsigned_type(node->data_type))
+            {
+                asm_println(cg, "  mov $0, %s", dx);
+                asm_println(cg, "  div %s", di);
+            }
+            else
+            {
+                if(node->left->data_type->size == 8)
+                    asm_println(cg, "  cqo");
+                else
+                    asm_println(cg, "  cdq");
+                asm_println(cg, "  idiv %s", di);
+            }
+
+            if(node->kind == ND_MOD)
+                asm_println(cg, "  mov %%rdx, %%rax");
+            return;
+        case ND_BIT_AND:
+            asm_println(cg, "  and %s, %s", di, ax);
+            return;
+        case ND_BIT_OR:
+            asm_println(cg, "  or %s, %s", di, ax);
+            return;
+        case ND_XOR:
+            asm_println(cg, "  xor %s, %s", di, ax);
+            return;
+        case ND_LSHIFT:
+            asm_println(cg, "  mov %%rdi, %%rcx");
+            asm_println(cg, "  shl %%cl, %s", ax);
+            return;
+        case ND_RSHIFT:
+            asm_println(cg, "  mov %%rdi, %%rcx");
+            if(unsigned_type(node->left->data_type))
+                asm_println(cg, "  shr %%cl, %s", ax);
+            else
+                asm_println(cg, "  sar %%cl, %s", ax);
+            return;
+    }
+
+    LOG_ERROR_F("unhandled expression (%d)", node->kind);
 }
 
 static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
@@ -916,22 +1228,40 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
 
     switch(node->kind)
     {
+        case ND_NOOP:
+            return;
         case ND_IF:
         {
-            i32 c = asm_count();
+            u64 c = asm_count();
             asm_gen_expr(cg, node->condition);
             asm_cmp_zero(cg, node->condition->data_type);
-            asm_println(cg, "  je  .L.else.%d", c);
+            asm_println(cg, "  je  .L.else.%ld", c);
             asm_gen_stmt(cg, node->if_branch);
-            asm_println(cg, "  jmp .L.end.%d", c);
-            asm_println(cg, ".L.else.%d:", c);
+            asm_println(cg, "  jmp .L.end.%ld", c);
+            asm_println(cg, ".L.else.%ld:", c);
             if(node->else_branch)
                 asm_gen_stmt(cg, node->else_branch);
-            asm_println(cg, ".L.end.%d:", c);
+            asm_println(cg, ".L.end.%ld:", c);
         } return;
 
         case ND_FOR:
-            return;
+        {
+            u64 c = asm_count();
+            if(node->init_stmt)
+                asm_gen_stmt(cg, node->init_stmt);
+            asm_println(cg, ".L.begin.%ld:");
+            if(node->condition) {
+                asm_gen_expr(cg, node->condition);
+                asm_cmp_zero(cg, node->condition->data_type);
+                asm_println(cg, "  je .L.break.%ld", c);
+            }
+            asm_gen_stmt(cg, node->body);
+            asm_println(cg, ".L.continue.%ld:", c);
+            if(node->expr)
+                asm_gen_expr(cg, node->expr);
+            asm_println(cg, "  jmp .L.begin.%ld", c);
+            asm_println(cg, ".L.break.%ld:", c);
+        } return;
         
         case ND_MATCH:
             return;
@@ -966,6 +1296,14 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
         
         case ND_EXPR_STMT:
             asm_gen_expr(cg, node->expr);
+            return;
+        
+        case ND_CONTINUE:
+            asm_println(cg, "  jmp .L.break.%ld", asm_current_count());
+            return;
+
+        case ND_BREAK:
+            asm_println(cg, "  jmp .L.continue.%ld", asm_current_count());
             return;
 
         default:

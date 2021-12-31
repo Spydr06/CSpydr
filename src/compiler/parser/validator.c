@@ -811,6 +811,7 @@ static void call(ASTNode_T* call, va_list args)
         return;
     }
     called_obj->referenced = true;
+    call->counter_var = called_obj;
 
     switch(called_obj->kind)
     {

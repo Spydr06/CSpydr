@@ -142,3 +142,8 @@ char* find_gcc_libpath(void)
     LOG_ERROR("gcc library path not found\n");
     exit(1);
 }
+
+bool unsigned_type(ASTType_T *ty)
+{
+    return ty->kind == TY_U8 || ty->kind == TY_U16 || ty->kind == TY_U32 || ty->kind == TY_U64;
+}
