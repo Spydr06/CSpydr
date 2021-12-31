@@ -210,8 +210,8 @@ static void run_compiler(CCodegenData_T* cg, const char* target_bin)
     list_push(args, "-o");
     list_push(args, (void*) target_bin);
     
-    for(size_t i = 0; i < compiler_flags->size; i++)
-        list_push(args, compiler_flags->items[i]);
+    for(size_t i = 0; i < global.compiler_flags->size; i++)
+        list_push(args, global.compiler_flags->items[i]);
     
     list_push(args, NULL);
 
@@ -258,7 +258,7 @@ void run_c_code(CCodegenData_T* cg, const char* bin)
     memset(cmd, '\0', sizeof cmd);
     sprintf(cmd, cmd_tmp, bin);
 
-    last_exit_code = subprocess(cmd, (char* const[]){cmd, NULL}, !cg->silent);
+    global.last_exit_code = subprocess(cmd, (char* const[]){cmd, NULL}, !cg->silent);
 }
 
 static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)

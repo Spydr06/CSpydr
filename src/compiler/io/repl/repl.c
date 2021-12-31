@@ -65,7 +65,7 @@ void repl()
     // print the REPL greeting
     fprintf(OUTPUT_STREAM, greeting, get_cspydr_version());
 
-    silent = true;  // disable compiler output
+    global.silent = true;  // disable compiler output
     repl_running = true;
  
     // enter the main loop
@@ -98,7 +98,7 @@ void repl()
 
 static void print_prompt()
 {
-    fprintf(OUTPUT_STREAM, "%s[%d]" COLOR_RESET " >> ", last_exit_code == 0 ? COLOR_BOLD_WHITE : COLOR_BOLD_RED, last_exit_code);
+    fprintf(OUTPUT_STREAM, "%s[%d]" COLOR_RESET " >> ", global.last_exit_code == 0 ? COLOR_BOLD_WHITE : COLOR_BOLD_RED, global.last_exit_code);
     fflush(OUTPUT_STREAM);
 }
 

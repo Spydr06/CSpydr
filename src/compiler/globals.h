@@ -19,18 +19,20 @@
 
 #define __CSP_MAX_REPL_CMD_LEN (BUFSIZ * 8)
 
-i32 __CSP_GLOBAL ct;
-i32 __CSP_GLOBAL fs;
+struct {
+    i32 ct;
+    i32 fs;
 
-i32 __CSP_GLOBAL last_exit_code;
+    i32 last_exit_code;
 
-bool __CSP_GLOBAL silent;
-bool __CSP_GLOBAL print_code;
+    bool silent;
+    bool print_code;
 
-char __CSP_GLOBAL* exec_name;
-char __CSP_GLOBAL* main_src_file;
+    char* exec_name;
+    char* main_src_file;
 
-__CSP_GLOBAL List_T* compiler_flags;
+    List_T* compiler_flags;
+} __CSP_GLOBAL global;
 
 __CSP_GLOBAL void globals_exit_hook(void);
 __CSP_GLOBAL void init_globals(void);

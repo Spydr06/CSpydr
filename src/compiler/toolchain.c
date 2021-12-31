@@ -21,26 +21,26 @@ static void generate_asm(ASTProg_T* ast, char* target, Action_T action, bool pri
 
 void compile(char* input_file, char* output_file, Action_T action)
 {
-    main_src_file = input_file;
+    global.main_src_file = input_file;
     ASTProg_T ast = { 0 }; 
-    generate_ast(&ast, input_file, output_file, silent);
+    generate_ast(&ast, input_file, output_file, global.silent);
     
-    switch(ct)
+    switch(global.ct)
     {
         case CT_LLVM:
-            generate_llvm(&ast, output_file, action, print_code, silent);
+            generate_llvm(&ast, output_file, action, global.print_code, global.silent);
             break;
         case CT_TRANSPILE:
-            transpile_c(&ast, output_file, action, print_code, silent);
+            transpile_c(&ast, output_file, action, global.print_code, global.silent);
             break;
         case CT_TO_XML:
-            parse_to_xml(&ast, output_file, action, silent);
+            parse_to_xml(&ast, output_file, action, global.silent);
             break;
         case CT_ASM:
-            generate_asm(&ast, output_file, action, print_code, silent);
+            generate_asm(&ast, output_file, action, global.print_code, global.silent);
             break;
         default:
-            LOG_ERROR_F("[Error] Unknown compile type %d!\n", ct);
+            LOG_ERROR_F("[Error] Unknown compile type %d!\n", global.ct);
             exit(1);
     }
 

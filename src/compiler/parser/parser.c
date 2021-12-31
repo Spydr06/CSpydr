@@ -423,7 +423,7 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value)
         sprintf(link_flag, "-l%s", value);
         ast_mem_add_ptr(link_flag);
 
-        list_push(compiler_flags, link_flag);
+        list_push(global.compiler_flags, link_flag);
     }
     else
         throw_error(ERR_SYNTAX_WARNING, field, "undefined compiler directive `%s`", field->value);
@@ -888,12 +888,12 @@ static ASTObj_T* parse_fn(Parser_T* p)
 {
     ASTObj_T* fn = parse_fn_def(p);
 
-    if(ct == CT_ASM)
+    if(global.ct == CT_ASM)
         fn->alloca_bottom = &alloca_bottom;
     p->cur_fn = fn;
     fn->body = parse_stmt(p);
 
-    if(ct == CT_ASM)
+    if(global.ct == CT_ASM)
     {
         fn->objs = init_list(sizeof(struct AST_OBJ_STRUCT*));
         ast_mem_add_list(fn->objs);

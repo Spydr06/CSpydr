@@ -123,7 +123,7 @@ i32 main(i32 argc, char* argv[])
     atexit(globals_exit_hook);
     atexit(llvm_exit_hook);
 
-    exec_name = argv[0]; // save the execution name for later use
+    global.exec_name = argv[0]; // save the execution name for later use
     if(argc == 1)
     {
         LOG_ERROR_F("[Error] Too few arguments given.\n" COLOR_RESET "%s", usage_text);
@@ -136,7 +136,7 @@ i32 main(i32 argc, char* argv[])
 
     // get the action to perform
     Action_T action = AC_UNDEF;
-    ct = DEFAULT_COMPILE_TYPE;
+    global.ct = DEFAULT_COMPILE_TYPE;
     for(i32 i = 0; i < AC_UNDEF; i++)
         if(streq(argv[1], action_table[i].as_str))
             action = action_table[i].ac;
@@ -184,15 +184,15 @@ i32 main(i32 argc, char* argv[])
             output_file = argv[i];
         }
         else if(streq(arg, "--print-code"))
-            print_code = true;
+            global.print_code = true;
         else if(streq(arg, "-t") || streq(arg, "--transpile"))
-            ct = CT_TRANSPILE;
+            global.ct = CT_TRANSPILE;
         else if(streq(arg, "-l") || streq(arg, "--llvm"))
-            ct = CT_LLVM;
+            global.ct = CT_LLVM;
         else if(streq(arg, "-a") || streq(arg, "--asm"))
-            ct = CT_ASM;
+            global.ct = CT_ASM;
         else if(streq(arg, "--silent"))
-            silent = true;
+            global.silent = true;
         else if(streq(arg, "--cc"))
         {
             if(!argv[++i])
@@ -205,11 +205,11 @@ i32 main(i32 argc, char* argv[])
         else if(streq(arg, "--cc-flags"))
         {
             for(i++; i < argc; i++)
-                list_push(compiler_flags, argv[i]);
+                list_push(global.compiler_flags, argv[i]);
             break;
         }
         else if(streq(arg, "--to-xml"))
-            ct = CT_TO_XML;
+            global.ct = CT_TO_XML;
         else
             evaluate_info_flags(argv[i]);
     }

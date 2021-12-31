@@ -123,7 +123,7 @@ const char* get_date_str(void)
 
 const char* get_compile_type(void)
 {
-    switch(ct)
+    switch(global.ct)
     {
         case CT_ASM:
             return "asm";
@@ -140,5 +140,5 @@ const char* get_compile_type(void)
 
 const char* get_main_file(void)
 {
-    return main_src_file;
+    return global.main_src_file;
 }
