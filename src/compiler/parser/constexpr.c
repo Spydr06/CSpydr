@@ -10,5 +10,7 @@ u64 const_u64(ASTNode_T* node)
             return node->long_val;
         case ND_LLONG:
             return node->llong_val;
+        case ND_SIZEOF:
+            return node->the_type->size;
     }
 }

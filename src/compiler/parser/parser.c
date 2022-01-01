@@ -1558,57 +1558,6 @@ static ASTNode_T* parse_char_lit(Parser_T* p)
     return char_lit;
 }
 
-static void replace_escape_codes(char* str)
-{
-    for(size_t i = 0; str[i]; i++)
-    {
-        if(str[i] == '\\')
-        {
-            switch(str[i + 1])
-            {
-                case 'a':
-                    str[i] = '\a';
-                    break;
-                case 'b':
-                    str[i] = '\b';
-                    break;
-                case 'f':
-                    str[i] = '\f';
-                    break;
-                case 'n':
-                    str[i] = '\n';
-                    break;
-                case 'r':
-                    str[i] = '\r';
-                    break;
-                case 't':
-                    str[i] = '\t';
-                    break;
-                case 'v':
-                    str[i] = '\v';
-                    break;
-                case '\\':
-                    break;
-                case '\'':
-                    str[i] = '\'';
-                    break;
-                case '"':
-                    str[i] = '"';
-                    break;
-                case '?':
-                    str[i] = '\?';
-                    break;
-                case '0':
-                    str[i] = '\0';
-                    break;
-                default:
-                    continue;
-            }
-            memmove(str + i + 1, str + i + 2, strlen(str + i + 1));
-        }
-    }
-}
-
 static ASTNode_T* parse_str_lit(Parser_T* p)
 {
     ASTNode_T* str_lit = init_ast_node(ND_STR, p->tok);
@@ -1628,8 +1577,6 @@ static ASTNode_T* parse_str_lit(Parser_T* p)
 
     if(global.ct == CT_ASM)
     {
-        replace_escape_codes(str_lit->str_val);
-
         static u64 i = 0;
         char id[256] = { '\0' };
         sprintf(id, ".L.str.%ld", i++);

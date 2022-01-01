@@ -14,12 +14,14 @@
 #define GP_MAX 6
 #define FP_MAX 8
 
+enum { I8, I16, I32, I64, U8, U16, U32, U64, F32, F64, F80, LAST };
+
+static u64 asm_i = 1;
+
 static char *argreg8[] = {"%dil", "%sil", "%dl", "%cl", "%r8b", "%r9b"};
 static char *argreg16[] = {"%di", "%si", "%dx", "%cx", "%r8w", "%r9w"};
 static char *argreg32[] = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d"};
 static char *argreg64[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
-
-enum { I8, I16, I32, I64, U8, U16, U32, U64, F32, F64, F80 };
 
 // The table for type casts
 static char i32i8[] = "movsbl %al, %eax";
@@ -88,7 +90,7 @@ static char f80u64[] = FROM_F80_1 "fistpq" FROM_F80_2 "mov -24(%rsp), %rax";
 static char f80f32[] = "fstps -8(%rsp); movss -8(%rsp), %xmm0";
 static char f80f64[] = "fstpl -8(%rsp); movsd -8(%rsp), %xmm0";
 
-static char *cast_table[][11] = {
+static char *cast_table[LAST][LAST] = {
   // i8   i16     i32     i64     u8     u16     u32     u64     f32     f64     f80
   {NULL,  NULL,   NULL,   i32i64, i32u8, i32u16, NULL,   i32i64, i32f32, i32f64, i32f80}, // i8
   {i32i8, NULL,   NULL,   i32i64, i32u8, i32u16, NULL,   i32i64, i32f32, i32f64, i32f80}, // i16
@@ -196,6 +198,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         asm_gen_file_descriptors(cg);
     asm_assign_lvar_offsets(cg, cg->ast->objs);
     asm_gen_data(cg, cg->ast->objs);
+    asm_gen_text(cg, cg->ast->lambda_literals);
     asm_gen_text(cg, cg->ast->objs);
 
     write_code(cg, target);
@@ -364,6 +367,7 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
                 obj->alloca_bottom->offset = -bottom;
             }
 
+            // assign function argument offsets
             for(size_t j = 0; j < obj->args->size; j++)
             {
                 ASTObj_T* var = obj->args->items[j];
@@ -381,6 +385,17 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
                 var->offset = -bottom;
             }
 
+            // assign local offsets
+            if(!obj->is_extern)
+                for(size_t j = 0; j < obj->objs->size; j++)
+                {
+                    ASTObj_T* var = obj->objs->items[j];
+                    i32 align = var->data_type->kind == TY_ARR && var->data_type->size >= 16 ? MAX(16, var->align) : var->align;
+                    bottom += var->data_type->size;
+                    bottom = align_to(bottom, align);
+                    var->offset = -bottom;
+                }
+
             obj->stack_size = align_to(bottom, 16);
         } break;
         }
@@ -393,9 +408,7 @@ static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var)
     switch(val->kind)
     {
         case ND_STR:
-            for(size_t i = 0; i < strlen(val->str_val); i++)
-                asm_println(cg, "  .byte %d", val->str_val[i]);
-            asm_println(cg, "  .byte %d", '\0');
+            asm_println(cg,"  .ascii \"%s\"", val->str_val);
             return;
         case ND_CHAR:
             asm_println(cg, "  .byte %d", val->str_val[0]);
@@ -454,16 +467,11 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
                     char* id = asm_gen_identifier(obj->id);
                     asm_println(cg, "  .globl %s", id);
 
-                    i32 align = /*obj->data_type->kind == TY_ARR && obj->data_type->size >= 16 ? MAX(16, obj->align) :*/ obj->align;
+                    i32 align = obj->data_type->kind == TY_ARR && obj->data_type->size >= 16 ? MAX(16, obj->align) : obj->align;
 
-                    bool is_tls = false; //fixme: evaluate correctly
                     if(obj->value)
                     {
-                        if(is_tls)
-                            asm_println(cg, "  .section .tdata,\"awT\",@progbits");
-                        else
-                            asm_println(cg, "  .data");
-
+                        asm_println(cg, "  .data");
                         asm_println(cg, "  .type %s, @object", id);
                         asm_println(cg, "  .size %s, %d", id, obj->data_type->size);
                         asm_println(cg, "  .align %d", align);
@@ -473,12 +481,8 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
 
                         continue;
                     }
-
-                    if(is_tls)
-                        asm_println(cg, "  .section .tbss,\"awT\",@nobits");
-                    else
-                        asm_println(cg, "  .bss");
                     
+                    asm_println(cg, "  .bss");    
                     asm_println(cg, "  .align %d", align);
                     asm_println(cg, "%s:", id);
                     asm_println(cg, "  .zero %d", obj->data_type->size);
@@ -646,8 +650,6 @@ static i32 get_type_id(ASTType_T *ty) {
     }
 }
 
-static u64 asm_i = 1;
-
 static u64 asm_count(void) 
 {
     return asm_i++;
@@ -732,14 +734,24 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
                 case OBJ_GLOBAL:
                     asm_println(cg, "  lea %s(%%rip), %%rax", asm_gen_identifier(node->id));
                     return;
+                
+                case OBJ_FUNCTION:
+                    if(node->referenced_obj->is_extern)
+                        asm_println(cg, "  mov %s@GOTPCREL(%%rip), %%ray", asm_gen_identifier(node->id));
+                    else
+                        asm_println(cg, "  mov %s(%%rip), %%rax", asm_gen_identifier(node->id));
+                    return;
+                
+                default:
+                    throw_error(ERR_CODEGEN, node->tok, "`%s` reference object of unexpected kind", node->id->callee);
             }
             return;
         
         case ND_CALL:
-            if(!node->called_obj->is_extern)
-                asm_println(cg, "  lea %s(%%rip), %%rax", asm_gen_identifier(node->expr->id));
-            else
+            if(node->called_obj->is_extern)
                 asm_println(cg, "  mov %s@GOTPCREL(%%rip), %%rax", asm_gen_identifier(node->expr->id));
+            else
+                asm_println(cg, "  lea %s(%%rip), %%rax", asm_gen_identifier(node->expr->id));
             return;
 
         case ND_DEREF:
@@ -747,7 +759,7 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         case ND_MEMBER:
             asm_gen_addr(cg, node->right);
-            asm_println(cg, "  add $%d, %%rax", 0); // fixme: get member offset
+            asm_println(cg, "  add $%d, %%rax", node->int_val /*offset*/);
             return;
     }
 }
@@ -757,14 +769,19 @@ static bool asm_has_flonum(ASTType_T* ty, i32 lo, i32 hi, i32 offset)
     if(ty->kind == TY_STRUCT)
     {
         for(size_t i = 0; i < ty->members->size; i++)
-            // todo: apply correct offset
-            if(!asm_has_flonum(((ASTObj_T*) ty->members->items[i])->data_type, lo, hi, offset));
+        {
+            ASTNode_T* member = ty->members->items[i];
+            if(!asm_has_flonum(member->data_type, lo, hi, offset + member->int_val /*offset*/))
                 return false;
+        }
         return true;
     }
     else if(ty->kind == TY_ARR)
     {
-        // todo: iterate over every index and check
+        for(size_t i = 0; i < ty->size / ty->base->size; i++)
+            if(!asm_has_flonum(ty->base, lo, hi, offset + ty->base->size * i))
+                return false;
+        return true;
     }
 
     return offset < lo || hi <= offset || ty->kind == TY_F32 || ty->kind == TY_F64 || ty->kind == TY_F80; 
@@ -1022,7 +1039,7 @@ static void asm_load(ASMCodegenData_T* cg, ASTType_T *ty) {
 
 static void asm_push_args2(ASMCodegenData_T* cg, List_T* args, bool first_pass)
 {
-    for(size_t i = 0; i < args->size; i++)
+    for(i64 i = args->size - 1; i >= 0; i--)
     {
         ASTNode_T* arg = args->items[i];
         if((first_pass && !arg->pass_by_stack) || (!first_pass && arg->pass_by_stack))
@@ -1056,7 +1073,7 @@ static i32 asm_push_args(ASMCodegenData_T* cg, ASTNode_T* node)
 
     // If the return type is a large struct/union, the caller passes
 	// a pointer to a buffer as if it were the first argument.
-	if (node->data_type->kind != TY_VOID && node->data_type->size > 16)
+	if (node->return_buffer && node->data_type->size > 16)
 		gp++;
 
     for(size_t i = 0; i < node->args->size; i++)
@@ -1119,9 +1136,9 @@ static i32 asm_push_args(ASMCodegenData_T* cg, ASTNode_T* node)
 
 	// If the return type is a large struct/union, the caller passes
 	// a pointer to a buffer as if it were the first argument.
-    if(node->data_type->kind != TY_VOID && node->data_type->size > 16)
+    if(node->return_buffer && node->data_type->size > 16)
     {
-        asm_println(cg, "  lea %d(%%rbp), %%rax", 0); // fixme: get correct return buffer
+        asm_println(cg, "  lea %d(%%rbp), %%rax", node->return_buffer->offset);
         asm_push(cg);
     }
     return stack;
@@ -1234,12 +1251,12 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_gen_addr(cg, node->left);
             asm_push(cg);
             asm_gen_expr(cg, node->right);
-            asm_store(cg, node->data_type);
+            asm_store(cg, node->left->data_type);
             return;
 
         case ND_CAST:
-            asm_gen_expr(cg, node->expr);
-            asm_cast(cg, node->expr->data_type, node->data_type);
+            asm_gen_expr(cg, node->left);
+            asm_cast(cg, node->left->data_type, node->data_type);
             return;
         
         case ND_NOT:
@@ -1296,7 +1313,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             if(node->data_type->kind != TY_VOID && node->data_type->size > 16)
                 asm_pop(cg, argreg64[gp++]);
             
-            for(size_t i = 0; i < node->args->size; i++)
+            for(i64 i = 0; i < node->args->size; i++)
             {
                 ASTNode_T* arg = node->args->items[i];
                 ASTType_T* ty = arg->data_type;
@@ -1371,9 +1388,9 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
 
             // If the return type is a small struct, a value is returned
 		    // using up to two registers.
-            if(node->data_type->kind == TY_STRUCT && node->data_type->size <= 16)
-            {
-                // todo: return buffer
+            if(node->return_buffer && node->data_type->size <= 16) {
+                asm_copy_ret_buffer(cg, node->return_buffer);
+                asm_println(cg, "  lea %d(%%rbp), %%rax", node->return_buffer->offset);
             }
         } return;
     }
@@ -1608,7 +1625,7 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             u64 c = asm_count();
             if(node->init_stmt)
                 asm_gen_stmt(cg, node->init_stmt);
-            asm_println(cg, ".L.begin.%ld:");
+            asm_println(cg, ".L.begin.%ld:", c);
             if(node->condition) {
                 asm_gen_expr(cg, node->condition);
                 asm_cmp_zero(cg, node->condition->data_type);

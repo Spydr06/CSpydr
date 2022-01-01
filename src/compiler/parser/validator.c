@@ -5,6 +5,7 @@
 #include "../error/error.h"
 #include "../io/log.h"
 #include "constexpr.h"
+#include "../toolchain.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -23,6 +24,8 @@ struct VALIDATOR_SCOPE_STRUCT
 
 typedef struct VALIDATOR_STRUCT 
 {
+    ASTProg_T* ast;
+
     VScope_T* current_scope;
     i32 scope_depth;
     ASTObj_T* current_function;
@@ -201,6 +204,8 @@ void validate_ast(ASTProg_T* ast)
 {
     Validator_T v;
     init_validator(&v);
+
+    v.ast = ast;
 
     begin_obj_scope(&v, NULL, ast->objs);
     global_scope = v.current_scope;
@@ -878,6 +883,16 @@ static void call(ASTNode_T* call, va_list args)
             throw_error(ERR_TYPE_ERROR, call->expr->tok, "cannot call %s `%s`", obj_kind_to_str(called_obj->kind), called_obj->id->callee);
             return;
     }
+    
+    // if we compile using the assembly compiler, a buffer for the return value is needed when handling big structs
+    if(global.ct == CT_ASM && expand_typedef(v, call->data_type)->kind == TY_STRUCT)
+    {
+        ASTObj_T* ret_buf = init_ast_obj(OBJ_LOCAL, call->tok);
+        ret_buf->data_type = call->data_type;
+        
+        list_push(v->current_scope->objs, ret_buf);
+        call->return_buffer = ret_buf;
+    }
 }
 
 static void identifier(ASTNode_T* id, va_list args)
@@ -1239,6 +1254,30 @@ static void type_end(ASTType_T* type, va_list args)
     type->size = get_type_size(v, expand_typedef(v, type));
 }
 
+static i32 get_union_size(Validator_T* v, ASTType_T* u_type)
+{
+    i32 biggest = 0;
+    for(size_t i = 0; i < u_type->members->size; i++)
+    {
+        ASTNode_T* member = u_type->members->items[i];
+        if(member->data_type->size > biggest)
+            biggest = member->data_type->size;
+    }
+    return biggest;
+}
+
+static i32 get_struct_size(Validator_T* v, ASTType_T* s_type)
+{
+    i32 size = 0;
+    for(size_t i = 0; i < s_type->members->size; i++)
+    {
+        ASTNode_T* member = s_type->members->items[i];
+        member->int_val = size; // offset
+        size += member->data_type->size;
+    }
+    return size;
+}
+
 static i32 get_type_size(Validator_T* v, ASTType_T* type)
 {
     switch(type->kind)
@@ -1276,5 +1315,10 @@ static i32 get_type_size(Validator_T* v, ASTType_T* type)
                 return get_type_size(v, type->base) * const_u64(type->num_indices);
             else
                 return sizeof(void*);
+        case TY_STRUCT:
+            if(type->is_union)
+                return get_union_size(v, type);
+            else
+                return get_struct_size(v, type);
     }
 }

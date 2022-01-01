@@ -169,6 +169,10 @@ struct AST_NODE_STRUCT
         f64 double_val;
         bool bool_val;
         char* str_val;  // also used for chars
+    };
+
+    // references
+    union {
         ASTObj_T* called_obj;
         ASTObj_T* referenced_obj;
     };
@@ -195,8 +199,10 @@ struct AST_NODE_STRUCT
     ASTNode_T* body;
     ASTNode_T* init_stmt;
 
-    // return
-    ASTNode_T* return_val;
+    union {
+        ASTNode_T* return_val; // return
+        ASTObj_T* return_buffer; // call
+    };
 
     // match
     List_T* cases;           // list of ASTNode_Ts
@@ -314,5 +320,7 @@ const char* obj_kind_to_str(ASTObjKind_T kind);
 const char* type_kind_to_str(ASTTypeKind_T kind);
 
 void merge_ast_progs(ASTProg_T* dest, ASTProg_T* src);
+
+extern const ASTIdentifier_T empty_id;
 
 #endif
