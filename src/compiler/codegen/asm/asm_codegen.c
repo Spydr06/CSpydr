@@ -375,7 +375,7 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
 			    // 16-byte boundaries. See p.14 of
 			    // https://github.com/hjl-tools/x86-psABI/wiki/x86-64-psABI-draft.pdf.
 			    
-                int align = var->data_type->kind == TY_ARR && var->data_type->size >= 16 ? MAX(16, var->align) : var->align;
+                i32 align = var->data_type->kind == TY_ARR && var->data_type->size >= 16 ? MAX(16, var->align) : var->align;
                 bottom += var->data_type->size;
                 bottom = align_to(bottom, align);
                 var->offset = -bottom;
@@ -454,7 +454,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
                     char* id = asm_gen_identifier(obj->id);
                     asm_println(cg, "  .globl %s", id);
 
-                    int align = obj->data_type->kind == TY_ARR && obj->data_type->size >= 16 ? MAX(10, obj->align) : obj->align;
+                    i32 align = /*obj->data_type->kind == TY_ARR && obj->data_type->size >= 16 ? MAX(16, obj->align) :*/ obj->align;
 
                     bool is_tls = false; //fixme: evaluate correctly
                     if(obj->value)

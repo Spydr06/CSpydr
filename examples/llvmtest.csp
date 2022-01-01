@@ -1,9 +1,9 @@
-extern fn puts(str: const &char): i32;
+import "libc/libc.csp";
 
 let x = 1024;
 
 fn main(argc: i32, argv: &&char): i32
 {
-    puts("Hello, World!");
+    printf("Hello, World!\n");
     <- 0;
 }

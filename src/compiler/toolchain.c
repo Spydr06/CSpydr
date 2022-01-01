@@ -123,6 +123,8 @@ static void generate_asm(ASTProg_T* ast, char* target, Action_T action, bool pri
         asm_run_code(&cg, target);
         remove(target);
     }
+    
+    free(cg.buf);
 }
 
 static void parse_to_xml(ASTProg_T* ast, char* target, Action_T action, bool silent)

@@ -557,6 +557,18 @@ static bool types_equal(ASTType_T* t1, ASTType_T* t2)
     }
 }
 
+static i32 align_type(ASTType_T* ty)
+{
+    switch(ty->kind)
+    {
+        case TY_ARR:
+        case TY_PTR:
+            return ty->base->size;
+        default:
+            return ty->size;
+    }
+}
+
 // id
 
 static void id_def(ASTIdentifier_T* id, va_list args)
@@ -698,8 +710,7 @@ static void global_end(ASTObj_T* global, va_list args)
         global->data_type = global->value->data_type;
     }
     // fixme: evaluate seperately for structs and unions
-    global->align = global->data_type->base ? global->data_type->base->size : global->data_type->size;
-
+    global->align = align_type(global->data_type);
     gen_id_path(v->current_scope, global->id);
 }
 
