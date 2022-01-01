@@ -9,6 +9,7 @@ typedef struct ASM_CODEGEN_DATA_STRUCT
     ASTProg_T* ast;
     bool silent;
     bool print;
+    bool embed_file_locations;
 
     char* buf;
     size_t buf_len;

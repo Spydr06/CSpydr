@@ -145,5 +145,20 @@ char* find_gcc_libpath(void)
 
 bool unsigned_type(ASTType_T *ty)
 {
+    if(!ty)
+        return false;
+    if(ty->kind == TY_UNDEF)
+        return unsigned_type(ty->base);
+
     return ty->kind == TY_U8 || ty->kind == TY_U16 || ty->kind == TY_U32 || ty->kind == TY_U64;
+}
+
+bool vla_type(ASTType_T* ty)
+{
+    if(!ty)
+        return false;
+    if(ty->kind == TY_UNDEF)
+        return vla_type(ty->base);
+    
+    return ty->kind == TY_ARR && !ty->num_indices;
 }

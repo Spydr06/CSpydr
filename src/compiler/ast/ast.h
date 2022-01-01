@@ -169,6 +169,8 @@ struct AST_NODE_STRUCT
         f64 double_val;
         bool bool_val;
         char* str_val;  // also used for chars
+        ASTObj_T* called_obj;
+        ASTObj_T* referenced_obj;
     };
 
     // op
@@ -191,7 +193,6 @@ struct AST_NODE_STRUCT
 
     // loop
     ASTNode_T* body;
-    ASTObj_T* counter_var;
     ASTNode_T* init_stmt;
 
     // return
@@ -201,8 +202,10 @@ struct AST_NODE_STRUCT
     List_T* cases;           // list of ASTNode_Ts
     ASTNode_T* default_case;
 
-    // case
-    bool is_default_case: 1;
+    union { 
+        bool is_default_case: 1; // case
+        bool pass_by_stack: 1;   // call
+    };
 
     // expression statement
     bool is_constant: 1;

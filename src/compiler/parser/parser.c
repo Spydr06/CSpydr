@@ -868,6 +868,9 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
 
     fn->data_type = (ASTType_T*) primitives[TY_FN];
 
+    if(global.ct == CT_ASM)
+        fn->alloca_bottom = &alloca_bottom;
+
     return fn;
 }
 
@@ -888,8 +891,6 @@ static ASTObj_T* parse_fn(Parser_T* p)
 {
     ASTObj_T* fn = parse_fn_def(p);
 
-    if(global.ct == CT_ASM)
-        fn->alloca_bottom = &alloca_bottom;
     p->cur_fn = fn;
     fn->body = parse_stmt(p);
 

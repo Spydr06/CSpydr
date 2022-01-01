@@ -1,6 +1,6 @@
-let x = 0;
+fn sq(a: i32): i32 ret a²;
 
 fn main(argc: i32, argv: &&char): i32
-{   
-    <- 2 + 2 * 2 - 6;
+{
+    <- sq(argc);
 }
