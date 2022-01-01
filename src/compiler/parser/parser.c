@@ -1575,7 +1575,29 @@ static ASTNode_T* parse_str_lit(Parser_T* p)
 
     ast_mem_add_ptr(str_lit->str_val);
 
-    return str_lit;
+    if(global.ct == CT_ASM)
+    {
+        static u64 i = 0;
+        char id[256] = { '\0' };
+        sprintf(id, ".L.str.%ld", i++);
+        ASTIdentifier_T* ast_id = init_ast_identifier(str_lit->tok, id);
+
+        ASTObj_T* globl = init_ast_obj(OBJ_GLOBAL, str_lit->tok);
+        globl->id = ast_id;
+        globl->value = str_lit;
+        globl->data_type = init_ast_type(TY_ARR, str_lit->tok);
+        globl->data_type->num_indices = init_ast_node(ND_LONG, str_lit->tok);
+        globl->data_type->num_indices->long_val = strlen(str_lit->str_val);
+        globl->data_type->base = (ASTType_T*) primitives[TY_CHAR];
+        list_push(p->root_ref->objs, globl);
+
+        ASTNode_T* caller = init_ast_node(ND_ID, str_lit->tok);
+        caller->id = ast_id;
+        caller->referenced_obj = globl;
+        return caller;
+    }
+    else
+        return str_lit;
 }
 
 static ASTNode_T* parse_array_lit(Parser_T* p)

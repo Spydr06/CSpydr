@@ -1,6 +1,14 @@
 #include "constexpr.h"
 
-i64 const_i64(ASTNode_T* node)
+u64 const_u64(ASTNode_T* node)
 {
-    return 1;
+    switch(node->kind)
+    {
+        case ND_INT:
+            return node->int_val;
+        case ND_LONG:
+            return node->long_val;
+        case ND_LLONG:
+            return node->llong_val;
+    }
 }

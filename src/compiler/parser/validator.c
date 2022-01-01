@@ -698,7 +698,7 @@ static void global_end(ASTObj_T* global, va_list args)
         global->data_type = global->value->data_type;
     }
     // fixme: evaluate seperately for structs and unions
-    global->align = global->data_type->size;
+    global->align = global->data_type->base ? global->data_type->base->size : global->data_type->size;
 
     gen_id_path(v->current_scope, global->id);
 }
@@ -720,7 +720,7 @@ static void local_end(ASTObj_T* local, va_list args)
         local->data_type = local->value->data_type;
     }
     // fixme: evaluate seperately for structs and unions
-    local->align = local->data_type->size;
+    local->align = local->data_type->base ? local->data_type->base->size : local->data_type->size;
 }
 
 static void fn_arg_start(ASTObj_T* arg, va_list args)
@@ -1262,7 +1262,7 @@ static i32 get_type_size(Validator_T* v, ASTType_T* type)
             return get_type_size(v, expand_typedef(v, type));
         case TY_ARR:
             if(type->num_indices)
-                return get_type_size(v, type->base) * const_i64(type->num_indices);
+                return get_type_size(v, type->base) * const_u64(type->num_indices);
             else
                 return sizeof(void*);
     }

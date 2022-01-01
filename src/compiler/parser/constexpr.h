@@ -4,6 +4,6 @@
 #include "../util.h"
 #include "../ast/ast.h"
 
-i64 const_i64(ASTNode_T* node);
+u64 const_u64(ASTNode_T* node);
 
 #endif

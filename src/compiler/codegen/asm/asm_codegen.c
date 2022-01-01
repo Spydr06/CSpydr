@@ -387,6 +387,55 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
     }
 }
 
+static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var)
+{
+    ASTNode_T* val = var->value;
+    switch(val->kind)
+    {
+        case ND_STR:
+            for(size_t i = 0; i < strlen(val->str_val); i++)
+                asm_println(cg, "  .byte %d", val->str_val[i]);
+            asm_println(cg, "  .byte %d", '\0');
+            return;
+        case ND_CHAR:
+            asm_println(cg, "  .byte %d", val->str_val[0]);
+            return;
+        case ND_BOOL:
+            asm_println(cg, "  .byte %d", val->bool_val);
+            return;
+        case ND_INT:
+            {
+                u8* bytes = (u8*)&val->int_val;
+                for(i32 i = 0; i < sizeof(i32); i++)
+                    asm_println(cg, "  .byte %d", bytes[i]);
+            } return;
+        case ND_LONG:
+            {
+                u8* bytes = (u8*)&val->long_val;
+                for(i32 i = 0; i < sizeof(i64); i++)
+                    asm_println(cg, "  .byte %d", bytes[i]);
+            } return;
+        case ND_LLONG:
+            {
+                u8* bytes = (u8*)&val->llong_val;
+                for(i32 i = 0; i < sizeof(i128); i++)
+                    asm_println(cg, "  .byte %d", bytes[i]);
+            } return;
+        case ND_FLOAT:
+            {
+                union { f32 f32; u8 bytes[sizeof(f32)]; } u = { .f32 = val->float_val};
+                for(i32 i = 0; i < sizeof(f32); i++)
+                    asm_println(cg, "  .byte %d", u.bytes[i]);
+            } return;
+        case ND_DOUBLE:
+            {
+                union { f64 f64; u8 bytes[sizeof(f64)]; } u = { .f64 = val->float_val};
+                for(i32 i = 0; i < sizeof(f64); i++)
+                    asm_println(cg, "  .byte %d", u.bytes[i]);
+            } return;
+    }
+}
+
 static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
 {
     for(size_t i = 0; i < objs->size; i++)
@@ -420,7 +469,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
                         asm_println(cg, "  .align %d", align);
                         asm_println(cg, "%s:", id);
 
-                        //todo: relocation
+                        asm_gen_relocation(cg, obj);
 
                         continue;
                     }
