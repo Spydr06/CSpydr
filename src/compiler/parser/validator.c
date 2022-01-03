@@ -4,7 +4,7 @@
 #include "../list.h"
 #include "../error/error.h"
 #include "../io/log.h"
-#include "constexpr.h"
+#include "../optimizer/constexpr.h"
 #include "../toolchain.h"
 
 #include <stdarg.h>

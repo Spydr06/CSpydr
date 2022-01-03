@@ -16,7 +16,6 @@ static void generate_ast(ASTProg_T* ast, char* path, char* target, bool silent);
 // generate the output code (c, llvm, xml)
 static void generate_llvm(ASTProg_T*, char* target, Action_T action, bool print_llvm, bool silent);
 static void transpile_c(ASTProg_T*, char* target, Action_T action, bool print_c, bool silent);
-static void parse_to_xml(ASTProg_T*, char* target, Action_T action, bool silent);
 static void generate_asm(ASTProg_T* ast, char* target, Action_T action, bool print_asm, bool silent);
 
 void compile(char* input_file, char* output_file, Action_T action)
@@ -32,9 +31,6 @@ void compile(char* input_file, char* output_file, Action_T action)
             break;
         case CT_TRANSPILE:
             transpile_c(&ast, output_file, action, global.print_code, global.silent);
-            break;
-        case CT_TO_XML:
-            parse_to_xml(&ast, output_file, action, global.silent);
             break;
         case CT_ASM:
             generate_asm(&ast, output_file, action, global.print_code, global.silent);
@@ -125,10 +121,4 @@ static void generate_asm(ASTProg_T* ast, char* target, Action_T action, bool pri
     }
     
     free(cg.buf);
-}
-
-static void parse_to_xml(ASTProg_T* ast, char* target, Action_T action, bool silent)
-{
-    LOG_OK_F(COLOR_BOLD_GREEN "  Emitting " COLOR_RESET "  AST as XML to \"%s\"\n", target);
-    //ast_to_xml(ast, target);
 }

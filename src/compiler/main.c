@@ -26,7 +26,7 @@
 //#include "ast/xml.h"
 
 // default texts, which get shown if you enter help, info or version flags
-// links to me, the creator of CSpydr
+// links to me (Spydr/Spydr06/MCSpiderFe), the creator of CSpydr
 // please be nice and don't change them without any reason. You may add yourself to the credits, if you changed something
 #define CSPYDR_GIT_REPOSITORY "https://github.com/spydr06/cspydr.git"
 #define CSPYDR_GIT_DEVELOPER  "https://github.com/spydr06"
@@ -65,14 +65,13 @@ const char* help_text = "%s"
                        "  -v, --version          Displays the version of CSpydr and quits.\n"
                        "  -i, --info             Displays information text and quits.\n"
                        "  -o, --output [file]    Sets the target output file (default: " DEFAULT_OUTPUT_FILE ").\n"
-                       "  -t, --transpile        Instructs the compiler to compile to C source code.\n"
-                       "  -l, --llvm             Instructs the compiler to compile to LLVM BitCode (default).\n"
+                       "  -t, --transpile        Instructs the compiler to compile to C source code (deprecated).\n"
+                       "  -a, --asm              Instructs the compile to compile to x86_64 gnu assembly code.\n"
+                       "  -l, --llvm             Instructs the compiler to compile to LLVM BitCode.\n"
                        "      --print-code       Prints the generated code (C | Assembly | LLVM IR).\n"
                        "      --silent           Disables all command line output except error messages.\n"
                        "      --cc [compiler]    Sets the C compiler being used after transpiling (default: " DEFAULT_CC ")\n"
                        "      --cc-flags [flags] Sets the C compiler flags, must be last argument (default: " DEFAULT_CC_FLAGS ")\n"
-                       "      --from-xml         Instructs the compiler to construct a AST directly from a XML file (debug!!)\n"
-                       "      --to-xml           Instructs the compiler to parse the AST to a XML file (debug!!)\n"
                        "\n"
                        "If you are unsure, what CSpydr is (or how to use it), please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n"
                        /*"Help and community support: " CSPYDR_SUBREDDIT ".\n"*/;
@@ -208,11 +207,12 @@ i32 main(i32 argc, char* argv[])
                 list_push(global.compiler_flags, argv[i]);
             break;
         }
-        else if(streq(arg, "--to-xml"))
-            global.ct = CT_TO_XML;
         else
             evaluate_info_flags(argv[i]);
     }
+
+    if(global.ct == CT_TRANSPILE)
+        LOG_WARN(COLOR_BOLD_YELLOW "[Warning]" COLOR_RESET COLOR_YELLOW " Compilation mode `transpile` is deprecated and will get removed eventually\n");
 
     if(action == AC_REPL)
         repl();

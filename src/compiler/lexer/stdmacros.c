@@ -131,8 +131,6 @@ const char* get_compile_type(void)
             return "llvm";
         case CT_TRANSPILE:
             return "transpile";
-        case CT_TO_XML:
-            return "xml";
         default:
             return "unknown";
     }
