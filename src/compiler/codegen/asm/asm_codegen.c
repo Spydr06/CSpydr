@@ -394,6 +394,7 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
                     bottom += var->data_type->size;
                     bottom = align_to(bottom, align);
                     var->offset = -bottom;
+                    printf("local with size %d: offset = %d\n", var->data_type->size, var->offset);
                 }
 
             obj->stack_size = align_to(bottom, 16);
@@ -408,7 +409,7 @@ static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var)
     switch(val->kind)
     {
         case ND_STR:
-            asm_println(cg,"  .ascii \"%s\"", val->str_val);
+            asm_println(cg,"  .ascii \"%s\\0\"", val->str_val);
             return;
         case ND_CHAR:
             asm_println(cg, "  .byte %d", val->str_val[0]);
@@ -1581,6 +1582,32 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_XOR:
             asm_println(cg, "  xor %s, %s", di, ax);
             return;
+        case ND_EQ:
+        case ND_NE:
+        case ND_LT:
+        case ND_LE:
+        case ND_GT:
+        case ND_GE:
+            asm_println(cg, "  cmp %s, %s", di, ax);
+
+            if(node->kind == ND_EQ)
+                asm_println(cg, "  sete %%al");
+            else if(node->kind == ND_NE)
+                asm_println(cg, "  setne %%al");
+            else if(node->kind == ND_LT || node->kind == ND_GT)
+                if(unsigned_type(node->left->data_type))
+                    asm_println(cg, "  setb %%al");
+                else
+                    asm_println(cg, "  setl %%al");
+            else if(node->kind == ND_LE || node->kind == ND_GE)
+                if(unsigned_type(node->left->data_type))
+                    asm_println(cg, "  setbe %%al");
+                else
+                    asm_println(cg, "  setle %%al");
+            else {}
+            
+            asm_println(cg, "  movzb %%al, %%rax");
+            return;
         case ND_LSHIFT:
             asm_println(cg, "  mov %%rdi, %%rcx");
             asm_println(cg, "  shl %%cl, %s", ax);
@@ -1595,6 +1622,14 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
     }
 
     LOG_ERROR_F("unhandled expression (%d)", node->kind);
+}
+
+static void asm_init_zero(ASMCodegenData_T* cg, ASTObj_T* var)
+{
+    asm_println(cg, "  mov $%d, %%rcx", var->data_type->size);
+    asm_println(cg, "  lea %d(%%rbp), %%rdi", var->offset);
+    asm_println(cg, "  mov $0, %%al");
+    asm_println(cg, "  rep stosb");
 }
 
 static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
@@ -1638,19 +1673,43 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_println(cg, "  jmp .L.begin.%ld", c);
             asm_println(cg, ".L.break.%ld:", c);
         } return;
-        
+    
+        case ND_WHILE:
+        {
+            u64 c = asm_count();
+            asm_println(cg, ".L.begin.%ld:", c);
+            asm_gen_expr(cg, node->condition);
+            asm_cmp_zero(cg, node->condition->data_type);
+            asm_println(cg, "  je .L.break.%ld", c);
+            asm_gen_stmt(cg, node->body);
+            asm_println(cg, ".L.continue.%ld:", c);
+            asm_println(cg, "  jmp .L.begin.%ld", c);
+            asm_println(cg, ".L.break.%ld:", c);
+        } return;
+
+        case ND_LOOP:
+        {
+            u64 c = asm_count();
+            asm_println(cg, ".L.begin.%ld:", c);
+            asm_gen_stmt(cg, node->body);
+            asm_println(cg, ".L.continue.%ld:", c);
+            asm_println(cg, "  jmp .L.begin.%ld", c);
+            asm_println(cg, ".L.break.%ld:", c);
+        } return;
+    
         case ND_MATCH:
             return;
         
         case ND_CASE:
             return;
         
-        case ND_WHILE:
-            return;
-        
         case ND_BLOCK:
+            for(size_t i = 0; i < node->locals->size; i++)
+                asm_init_zero(cg, node->locals->items[i]);
+
             for(size_t i = 0; i < node->stmts->size; i++)
                 asm_gen_stmt(cg, node->stmts->items[i]);
+            return;
         
         case ND_RETURN:
             if(node->return_val)
@@ -1686,7 +1745,7 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             break;
     }
 
-    unreachable();
+    throw_error(ERR_CODEGEN, node->tok, "unexpected statement");
 }
 
 static void asm_store_fp(ASMCodegenData_T* cg, i32 r, i32 offset, i32 sz)

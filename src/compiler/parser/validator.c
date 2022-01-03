@@ -924,7 +924,8 @@ static void identifier(ASTNode_T* id, va_list args)
     }
 
     //debug: printf("[%3d: %3d] refferring to %s `%s` with type %d\n", id->tok->line + 1, id->tok->pos + 1, obj_kind_to_str(refferred_obj->kind), refferred_obj->id->callee, refferred_obj->data_type->kind);
-    id->data_type = refferred_obj->data_type;
+    if(!id->data_type)
+        id->data_type = refferred_obj->data_type;
     id->referenced_obj = refferred_obj;
 }
 

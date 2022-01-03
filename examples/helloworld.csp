@@ -2,7 +2,11 @@ import "libc/stdio.csp";
 
 fn main(argc: i32, argv: &&char): i32
 {
-    let message = "Hello, World!\n";
-    printf("%s", message);
+    let i = 10;
+    while i > 0 {
+        i = i - 1;
+        printf("%d\n", i);
+    }
+
     <- 0;
 }

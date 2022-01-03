@@ -1594,6 +1594,8 @@ static ASTNode_T* parse_str_lit(Parser_T* p)
         ASTNode_T* caller = init_ast_node(ND_ID, str_lit->tok);
         caller->id = ast_id;
         caller->referenced_obj = globl;
+        caller->data_type = (ASTType_T*) globl->data_type;
+
         return caller;
     }
     else
