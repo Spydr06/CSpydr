@@ -6,6 +6,7 @@
 #include "../codegen_utils.h"
 #include "../../error/error.h"
 #include "../../ast/mem/ast_mem.h"
+#include "../../ast/types.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -281,7 +282,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
 void asm_run_code(ASMCodegenData_T* cg, const char* bin)
 {
     if(!cg->silent)
-        LOG_OK_F(COLOR_BOLD_BLUE "  Executing " COLOR_RESET " %s\n", bin);
+        LOG_OK_F("\033[A\r" COLOR_BOLD_BLUE "  Executing " COLOR_RESET " %s\n", bin);
     
     const char* cmd_tmp = "." DIRECTORY_DELIMS "%s";
     char cmd[BUFSIZ];
@@ -394,7 +395,6 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
                     bottom += var->data_type->size;
                     bottom = align_to(bottom, align);
                     var->offset = -bottom;
-                    printf("local with size %d: offset = %d\n", var->data_type->size, var->offset);
                 }
 
             obj->stack_size = align_to(bottom, 16);
@@ -1195,7 +1195,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_DOUBLE:
         {
             union { f64 f64; u64 u64; } u = { node->double_val };
-            asm_println(cg, "  mov $%lu, %%rax  # float %Lf", u.u64, node->double_val);
+            asm_println(cg, "  mov $%lu, %%rax  # float %f", u.u64, node->double_val);
             asm_println(cg, "  movq %%rax, %%xmm0");
         } return;
         case ND_INT:
@@ -1206,6 +1206,16 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         case ND_LLONG:
             asm_println(cg, "  mov $%lld, %%rax", node->llong_val);
+            return;
+        case ND_CHAR:
+            asm_println(cg, "  mov $%d, %%rax", node->str_val[0]);
+            return;
+        case ND_NIL:
+            asm_println(cg, "  mov $0, %%rax");
+            return;
+        
+        case ND_SIZEOF:
+            asm_println(cg, "  mov $%d, %%rax", node->the_type->size);
             return;
         
         case ND_NEG:
@@ -1221,7 +1231,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                 case TY_F64:
                     asm_println(cg, "  mov $1, %%rax");
                     asm_println(cg, "  shl $63, %%rax");
-                    asm_println(cg, "  mov1 %%rax, %%xmm1");
+                    asm_println(cg, "  movq %%rax, %%xmm1");
                     asm_println(cg, "  xorpd %%xmm1, %%xmm0");
                     return;
                 case TY_F80:
@@ -1231,6 +1241,31 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                     asm_println(cg, "  neg %%rax");
                     return;
             }
+            return;
+        
+        case ND_INDEX:
+            if(!node->left->data_type || !node->left->data_type->base)
+                throw_error(ERR_TYPE_ERROR, node->tok, "Cannot get index of data type `%d`", node->data_type->kind);
+            asm_println(cg, "  mov $%d, %%rax", node->left->data_type->base->size);
+            asm_push(cg);
+
+            asm_gen_expr(cg, node->expr);
+            asm_cast(cg, node->expr->data_type, (ASTType_T*) primitives[TY_I64]);
+            asm_pop(cg, "%rdi");
+            asm_println(cg, "  imul %%rdi, %%rax");
+            asm_push(cg);
+            asm_gen_addr(cg, node->left);
+            asm_println(cg, "  mov (%%rax), %%rax");
+            asm_pop(cg, "%rdi");
+            asm_println(cg, "  add %%rdi, %%rax");
+            asm_println(cg, "  mov (%%rax), %%rax");
+            asm_println(cg, "  push %%rax");
+            return;
+        
+        case ND_INC:
+            return;
+        
+        case ND_DEC:
             return;
         
         case ND_ID:
