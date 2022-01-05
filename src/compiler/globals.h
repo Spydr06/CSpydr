@@ -27,6 +27,8 @@ struct {
 
     bool silent;
     bool print_code;
+    
+    bool from_json;
 
     char* exec_name;
     char* main_src_file;

@@ -68,6 +68,8 @@ const char* help_text = "%s"
                        "  -t, --transpile        Instructs the compiler to compile to C source code (deprecated).\n"
                        "  -a, --asm              Instructs the compile to compile to x86_64 gnu assembly code.\n"
                        "  -l, --llvm             Instructs the compiler to compile to LLVM BitCode.\n"
+                       "      --to-json          Emit the AST directly as a JSON file.\n"
+                       "      --from-json        Load the AST from a JSON file and compile.\n"
                        "      --print-code       Prints the generated code (C | Assembly | LLVM IR).\n"
                        "      --silent           Disables all command line output except error messages.\n"
                        "      --cc [compiler]    Sets the C compiler being used after transpiling (default: " DEFAULT_CC ")\n"
@@ -190,6 +192,10 @@ i32 main(i32 argc, char* argv[])
             global.ct = CT_LLVM;
         else if(streq(arg, "-a") || streq(arg, "--asm"))
             global.ct = CT_ASM;
+        else if(streq(arg, "--to-json"))
+            global.ct = CT_TO_JSON;
+        else if(streq(arg, "--from-json"))
+            global.from_json = true;
         else if(streq(arg, "--silent"))
             global.silent = true;
         else if(streq(arg, "--cc"))

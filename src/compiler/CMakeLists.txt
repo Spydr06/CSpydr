@@ -7,7 +7,7 @@ file(GLOB_RECURSE compiler_source *.c)
 list(REMOVE_ITEM compiler_source "main.c")
 
 add_library(libcsp ${compiler_source})
-target_link_libraries(libcsp LINK_PUBLIC LittleXML c-vector llvm)
+target_link_libraries(libcsp LINK_PUBLIC LittleXML c-vector llvm json-c bsd)
 set_target_properties(libcsp PROPERTIES LINKER_LANGUAGE C)
 
 # build the main executable

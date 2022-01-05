@@ -6,6 +6,7 @@ typedef enum COMPILE_TYPE_ENUM
     CT_LLVM,
     CT_TRANSPILE,
     CT_ASM,
+    CT_TO_JSON,
 } CompileType_T;
 
 typedef enum ACTION_ENUM
