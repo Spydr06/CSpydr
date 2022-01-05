@@ -1174,6 +1174,34 @@ static void asm_builtin_alloca(ASMCodegenData_T* cg)
 	asm_println(cg, "  mov %%rax, %d(%%rbp)", cg->current_fn->alloca_bottom->offset);
 }
 
+static void asm_gen_inc(ASMCodegenData_T* cg, ASTNode_T* node)
+{
+    // convert x++ to (x = x + 1) - 1
+    //         x-- to (x = x + -1) - -1
+    ASTNode_T addend = {
+        .kind = ND_INT,
+        .int_val = node->kind == ND_INC ? 1 : -1
+    };
+
+    ASTNode_T converted = {
+        .kind = ND_SUB,
+        .data_type = node->data_type,
+        .right = &addend,
+        .left = &(ASTNode_T) {
+            .kind = ND_ASSIGN,
+            .data_type = node->data_type,
+            .left = node->left,
+            .right = &(ASTNode_T) {
+                .kind = ND_ADD,
+                .left = node->left,
+                .right = &addend,
+            } 
+        }
+    };
+
+    asm_gen_expr(cg, &converted);
+}
+
 static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
 {
     if(node->tok && cg->embed_file_locations)
@@ -1205,7 +1233,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_println(cg, "  mov $%ld, %%rax", node->long_val);
             return;
         case ND_LLONG:
-            asm_println(cg, "  mov $%lld, %%rax", node->llong_val);
+            asm_println(cg, "  mov $%lld, %%rax", (long long) node->llong_val);
             return;
         case ND_CHAR:
             asm_println(cg, "  mov $%d, %%rax", node->str_val[0]);
@@ -1263,9 +1291,8 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         
         case ND_INC:
-            return;
-        
         case ND_DEC:
+            asm_gen_inc(cg, node);
             return;
         
         case ND_ID:

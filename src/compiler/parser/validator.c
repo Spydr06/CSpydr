@@ -1199,6 +1199,8 @@ static void assignment(ASTNode_T* assign, va_list args)
         default:
             throw_error(ERR_MISC, assign->left->tok, "cannot assign value to `%s`", assign->left->tok->value);
     }
+
+    assign->data_type = assign->left->data_type;
 }
 
 // types
