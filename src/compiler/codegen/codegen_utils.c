@@ -162,3 +162,8 @@ bool vla_type(ASTType_T* ty)
     
     return ty->kind == TY_ARR && !ty->num_indices;
 }
+
+ASTType_T* unpack(ASTType_T* ty)
+{
+    return ty && ty->kind == TY_UNDEF ? ty->base : ty;
+}

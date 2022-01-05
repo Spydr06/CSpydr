@@ -1326,7 +1326,7 @@ static i32 get_type_size(Validator_T* v, ASTType_T* type)
             if(type->num_indices)
                 return get_type_size(v, type->base) * const_u64(type->num_indices);
             else
-                return sizeof(void*);
+                return 0;
         case TY_STRUCT:
             if(type->is_union)
                 return get_union_size(v, type);

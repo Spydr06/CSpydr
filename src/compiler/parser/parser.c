@@ -550,6 +550,10 @@ static ASTType_T* parse_enum_type(Parser_T* p)
             
             member->value = parse_expr(p, LOWEST, TOKEN_COMMA);
         }
+        else {
+            member->value = init_ast_node(ND_INT, member->tok);
+            member->value->int_val = i;
+        }
 
         if(!tok_is(p, TOKEN_RBRACE))
             parser_consume(p, TOKEN_COMMA, "expect `,` between enum members");
@@ -1596,7 +1600,11 @@ static ASTNode_T* parse_str_lit(Parser_T* p)
         caller->referenced_obj = globl;
         caller->data_type = (ASTType_T*) globl->data_type;
 
-        return caller;
+        ASTNode_T* cast = init_ast_node(ND_CAST, str_lit->tok);
+        cast->data_type = (ASTType_T*) char_ptr_type;
+        cast->left = caller;
+
+        return cast;
     }
     else
         return str_lit;

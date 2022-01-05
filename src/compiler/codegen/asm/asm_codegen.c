@@ -316,11 +316,14 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
         switch (obj->kind) 
         {
         case OBJ_NAMESPACE:
-            asm_gen_text(cg, obj->objs);
+            asm_assign_lvar_offsets(cg, obj->objs);
             break;
         
         case OBJ_FUNCTION:
         {
+            if(obj->is_extern)
+                continue;
+
             i32 top = 16, bottom = 0;
             i32 gp = 0, fp = 0;
 
@@ -328,7 +331,7 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
             for(size_t j = 0; j < obj->args->size; j++)
             {
                 ASTObj_T* var = obj->args->items[j];
-                ASTType_T* ty = var->data_type;
+                ASTType_T* ty = unpack(var->data_type);
                 switch(ty->kind)
                 {
                 case TY_STRUCT:
@@ -461,6 +464,27 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
                 asm_gen_data(cg, obj->objs);
                 break;
             
+            case OBJ_TYPEDEF:
+            {
+                ASTType_T* ty = unpack(obj->data_type);
+                if(!ty)
+                    continue;
+                if(ty->kind == TY_ENUM)
+                    for(size_t i = 0; i < ty->members->size; i++)
+                    {
+                        ASTObj_T* member = ty->members->items[i];
+                        char* id = asm_gen_identifier(member->id);
+                        asm_println(cg, "  .globl %s", id);
+                        asm_println(cg, "  .data");
+                        asm_println(cg, "  .type %s, @object", id);
+                        asm_println(cg, "  .size %s, 4", id);
+                        asm_println(cg, "  .align 4");
+                        asm_println(cg, "%s:", id);
+
+                        asm_gen_relocation(cg, member); 
+                    }
+            } break;
+
             case OBJ_GLOBAL:
                 if(obj->is_extern)
                     continue;
@@ -505,7 +529,7 @@ static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs)
             case OBJ_NAMESPACE:
                 asm_gen_text(cg, obj->objs);
                 break;
-            
+
             case OBJ_FUNCTION:
                 {
                     if(obj->is_extern) 
@@ -573,7 +597,7 @@ static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs)
                         if(arg->offset > 0)
                             continue;
                         
-                        ASTType_T* ty = arg->data_type;
+                        ASTType_T* ty = unpack(arg->data_type);
 
                         switch(ty->kind)
                         {
@@ -622,7 +646,7 @@ static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs)
 }
 
 static i32 get_type_id(ASTType_T *ty) {
-    switch (ty->kind) {
+    switch (unpack(ty)->kind) {
         case TY_I8:
         case TY_CHAR:
             return I8;
@@ -737,6 +761,7 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
                     return;
 
                 case OBJ_GLOBAL:
+                case OBJ_ENUM_MEMBER:
                     asm_println(cg, "  lea %s(%%rip), %%rax", asm_gen_identifier(node->id));
                     return;
                 
@@ -768,12 +793,13 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         
         default:
-            throw_error(ERR_CODEGEN, node->tok, "cannot get address of `%s`", node->tok->value);
+            break;
     }
 }
 
 static bool asm_has_flonum(ASTType_T* ty, i32 lo, i32 hi, i32 offset)
 {
+    ty = unpack(ty);
     if(ty->kind == TY_STRUCT)
     {
         for(size_t i = 0; i < ty->members->size; i++)
@@ -807,11 +833,11 @@ static bool asm_has_flonum_2(ASTType_T* ty)
 
 static void asm_push_struct(ASMCodegenData_T* cg, ASTType_T* ty)
 {
-    i32 sz = align_to(ty->size, 8);
+    i32 sz = align_to(unpack(ty)->size, 8);
     asm_println(cg, "  sub $%d, %%rsp", sz);
     cg->depth += sz / 8;
     
-    for(i32 i = 0; i < ty->size; i++)
+    for(i32 i = 0; i < unpack(ty)->size; i++)
     {
         asm_println(cg, "  mov %d(%%rax), %%r10b", i);
         asm_println(cg, "  mov %%r10b, %d(%%rsp)", i);
@@ -820,7 +846,7 @@ static void asm_push_struct(ASMCodegenData_T* cg, ASTType_T* ty)
 
 static void asm_copy_struct_reg(ASMCodegenData_T* cg)
 {
-    ASTType_T* ty = cg->current_fn->return_type;
+    ASTType_T* ty = unpack(cg->current_fn->return_type);
     i32 gp = 0, fp = 0;
 
     asm_println(cg, "  mov %%rax, %%rdi");
@@ -885,7 +911,7 @@ static void asm_copy_struct_mem(ASMCodegenData_T* cg)
 
 static void asm_copy_ret_buffer(ASMCodegenData_T* cg, ASTObj_T* var)
 {
-    ASTType_T* ty = var->data_type;
+    ASTType_T* ty = unpack(var->data_type);
     i32 gp = 0, fp = 0;
 
     if(asm_has_flonum_1(ty))
@@ -932,6 +958,7 @@ static void asm_copy_ret_buffer(ASMCodegenData_T* cg, ASTObj_T* var)
 
 static void asm_cmp_zero(ASMCodegenData_T* cg, ASTType_T* ty)
 {
+    ty = unpack(ty);
     switch(ty->kind)
     {
         case TY_F32:
@@ -980,6 +1007,7 @@ static void asm_cast(ASMCodegenData_T* cg, ASTType_T* from, ASTType_T* to)
 // Store %rax to an address that the stack top is pointing to.
 static void asm_store(ASMCodegenData_T* cg, ASTType_T *ty) {
     asm_pop(cg, "%rdi");
+    ty = unpack(ty);
 
     switch (ty->kind) {
         case TY_STRUCT:
@@ -1013,6 +1041,7 @@ static void asm_store(ASMCodegenData_T* cg, ASTType_T *ty) {
 
 // Load a value from where %rax is pointing to.
 static void asm_load(ASMCodegenData_T* cg, ASTType_T *ty) {
+    ty = unpack(ty);
     switch (ty->kind) {
         case TY_ARR:
         case TY_STRUCT:
@@ -1085,7 +1114,7 @@ static i32 asm_push_args(ASMCodegenData_T* cg, ASTNode_T* node)
     for(size_t i = 0; i < node->args->size; i++)
     {
         ASTNode_T* arg = node->args->items[i];
-        ASTType_T* ty = arg->data_type;
+        ASTType_T* ty = unpack(arg->data_type);
 
         switch(ty->kind)
         {
@@ -1310,6 +1339,12 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_load(cg, node->data_type);
             return;
         
+        case ND_ARRAY:
+            return;
+        
+        case ND_STRUCT:
+            return;
+        
         case ND_REF:
             asm_gen_addr(cg, node->right);
             return;
@@ -1388,7 +1423,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             for(i64 i = 0; i < node->args->size; i++)
             {
                 ASTNode_T* arg = node->args->items[i];
-                ASTType_T* ty = arg->data_type;
+                ASTType_T* ty = unpack(arg->data_type);
 
                 switch(ty->kind)
                 {
@@ -1786,7 +1821,7 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             if(node->return_val)
             {
                 asm_gen_expr(cg, node->return_val);
-                ASTType_T* ty = node->return_val->data_type;
+                ASTType_T* ty = unpack(node->return_val->data_type);
 
                 if(ty->kind == TY_STRUCT)
                 {
