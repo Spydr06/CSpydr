@@ -695,11 +695,23 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             c_gen_expr(cg, node->right);
             break;
         case ND_REF:
+            print(cg, "&");
+            c_gen_expr(cg, node->right);
+            break;
         case ND_DEREF:
+            print(cg, "*");
+            c_gen_expr(cg, node->right);
+            break;
         case ND_NEG:
+            print(cg, "-");
+            c_gen_expr(cg, node->right);
+            break;
         case ND_BIT_NEG:
+            print(cg, "~");
+            c_gen_expr(cg, node->right);
+            break;
         case ND_NOT:
-            print(cg, node->tok->value);
+            print(cg, "!");
             c_gen_expr(cg, node->right);
             break;
         case ND_INC:
@@ -713,8 +725,9 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, ")");
             break;
         case ND_MEMBER:
+            print(cg, "(");
             c_gen_expr(cg, node->left);
-            print(cg, node->is_ptr ? "->" : ".");
+            print(cg, ").");
             c_gen_expr(cg, node->right);
             break;
         case ND_INDEX:

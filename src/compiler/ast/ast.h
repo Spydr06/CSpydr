@@ -180,10 +180,7 @@ struct AST_NODE_STRUCT
     // op
     ASTNode_T* left;
     ASTNode_T* right;
-
-    // member
-    bool is_ptr: 1;
-
+    
     // block
     List_T* stmts;  // list of ASTNode_Ts
     List_T* locals; // list of ASTObj_Ts

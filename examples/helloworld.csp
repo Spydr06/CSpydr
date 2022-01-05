@@ -1,9 +1,22 @@
 import "libc/stdio.csp";
 
+type test: struct {
+    a: i32,
+    b: i64
+};
+
+let t: test;
+
 fn main(argc: i32, argv: &&char): i32
 {
-    for let i = 0; i < argc; i++;
-        printf("[%d] :: %s\n", i, argv[i]);
+    #for let i = 0; i < argc; i++;
+    #    printf("[%d] :: %s\n", i, argv[i]);
+
+    let f = &t;
+    f.a = 69;
+    #let g = *f;
+
+    printf("%d\n", f.a);
 
     <- 0;
 }

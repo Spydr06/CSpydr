@@ -718,6 +718,10 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
 {
     switch(node->kind)
     {
+        case ND_CLOSURE:
+            asm_gen_addr(cg, node->expr);
+            return;
+
         case ND_ID: 
             if(vla_type(node->data_type))
             {
@@ -759,9 +763,12 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_gen_expr(cg, node->right);
             return;
         case ND_MEMBER:
-            asm_gen_addr(cg, node->right);
-            asm_println(cg, "  add $%d, %%rax", node->int_val /*offset*/);
+            asm_gen_addr(cg, node->left);
+            asm_println(cg, "  add $%d, %%rax", node->body->int_val );
             return;
+        
+        default:
+            throw_error(ERR_CODEGEN, node->tok, "cannot get address of `%s`", node->tok->value);
     }
 }
 
@@ -1021,8 +1028,6 @@ static void asm_load(ASMCodegenData_T* cg, ASTType_T *ty) {
         case TY_F80:
             asm_println(cg, "  fldt (%%rax)");
             return;
-        default:
-            break;
     }
 
     char *insn = is_unsigned(ty) ? "movz" : "movs";
@@ -1303,6 +1308,10 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_MEMBER:
             asm_gen_addr(cg, node);
             asm_load(cg, node->data_type);
+            return;
+        
+        case ND_REF:
+            asm_gen_addr(cg, node->right);
             return;
         
         case ND_DEREF:

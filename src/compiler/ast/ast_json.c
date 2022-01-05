@@ -110,7 +110,6 @@ json_object* gen_ast_node(ASTNode_T* node)
     // todo: unions
     if(node->left) json_object_object_add(obj, "left", gen_ast_node(node->left));
     if(node->right) json_object_object_add(obj, "right", gen_ast_node(node->right));
-    if(node->is_ptr) json_object_object_add(obj, "is_ptr", gen_bool(node->is_ptr));
     if(node->stmts) json_object_object_add(obj, "stmts", gen_list(node->stmts, (IndexFn) gen_ast_node));
     if(node->locals) json_object_object_add(obj, "locals", gen_list(node->locals, (IndexFn) gen_ast_obj));
     if(node->condition) json_object_object_add(obj, "condition", gen_ast_node(node->condition));

@@ -9,6 +9,7 @@
 
 #include <stdarg.h>
 #include <string.h>
+#include <math.h>
 
 #define GET_VALIDATOR(va) Validator_T* v = va_arg(va, Validator_T*)
 #define MIN(a, b) (a < b ? a : b)
@@ -568,9 +569,9 @@ static i32 align_type(ASTType_T* ty)
     {
         case TY_ARR:
         case TY_PTR:
-            return ty->base->size;
+            return pow(2, floor(log(ty->base->size)/log(2)));
         default:
-            return ty->size;
+            return pow(2, floor(log(ty->size)/log(2)));
     }
 }
 
@@ -982,8 +983,16 @@ static void member(ASTNode_T* member, va_list args)
             return;
         }
         member->data_type = found->data_type;
+        member->body = found;
     }
-    member->is_ptr = is_ptr(v, member->left->data_type);
+    if(is_ptr(v, member->left->data_type))
+    {
+        // convert x->y to (*x).y
+        ASTNode_T* new_left = init_ast_node(ND_DEREF, member->left->tok);
+        new_left->data_type = member->left->data_type->base;
+        new_left->right = member->left;
+        member->left = new_left;
+    }
 }
 
 static void bin_operation(ASTNode_T* op, va_list args)

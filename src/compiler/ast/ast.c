@@ -9,35 +9,9 @@
 ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok)
 {
     ASTNode_T* node = ast_malloc(sizeof(struct AST_NODE_STRUCT));
+    memset(node, 0, sizeof(struct AST_NODE_STRUCT));
     node->kind = kind;
     node->tok = tok;
-    node->is_default_case = false;
-    node->is_constant = false;
-
-    node->int_val = 0;
-    node->float_val = 0;
-    node->bool_val = false;
-
-    node->is_constant = false;
-    node->is_default_case = false;
-    node->is_ptr = false;
-
-    node->locals = NULL;
-    node->data_type = NULL;
-    node->left = NULL;
-    node->right = NULL;
-    node->stmts = NULL;
-    node->locals = NULL;
-    node->condition = NULL;
-    node->if_branch = NULL;
-    node->else_branch = NULL;
-    node->body = NULL;
-    node->return_val = NULL;
-    node->cases = NULL;
-    node->default_case = NULL;
-    node->expr = NULL;
-    node->args = NULL;
-    node->template_types = NULL;
 
     return node;
 }
