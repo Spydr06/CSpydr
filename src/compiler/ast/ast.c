@@ -45,12 +45,12 @@ ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok)
 ASTIdentifier_T* init_ast_identifier(Token_T* tok, char callee[__CSP_MAX_TOKEN_SIZE])
 {
     ASTIdentifier_T* id = ast_malloc(sizeof(struct AST_IDENTIFIER_STRUCT));
+    memset(id, 0, sizeof(struct AST_IDENTIFIER_STRUCT));
+
     id->tok = tok;
-    id->outer = NULL;
     id->kind = -1;
     id->global_scope = true;
-
-    strcpy(id->callee, callee);;
+    strcpy(id->callee, callee);
 
     return id;
 }
@@ -58,29 +58,11 @@ ASTIdentifier_T* init_ast_identifier(Token_T* tok, char callee[__CSP_MAX_TOKEN_S
 ASTType_T* init_ast_type(ASTTypeKind_T kind, Token_T* tok)
 {
     ASTType_T* type = ast_malloc(sizeof(struct AST_TYPE_STRUCT));
+    memset(type, 0, sizeof(struct AST_TYPE_STRUCT));
+    
+    type->tok = tok;
     type->kind = kind;
-    type->tok = NULL;
-
-    if(tok) 
-    {
-        type->tok = tok;
-    }
-
     type->size = type_byte_size_map[kind];
-
-    type->base = NULL;
-    type->arg_types = NULL;
-    type->num_indices = NULL;
-    type->members = NULL;
-
-    type->is_primitive = false;
-    type->is_constant = false;
-    type->is_complex = false;
-    type->is_atomic = false;
-    type->is_volatile = false;
-    type->size = 0;
-    type->is_fn = false;
-    type->is_union = false;
 
     return type;
 }
@@ -88,23 +70,9 @@ ASTType_T* init_ast_type(ASTTypeKind_T kind, Token_T* tok)
 ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok)
 {
     ASTObj_T* obj = ast_malloc(sizeof(struct AST_OBJ_STRUCT));
+    memset(obj, 0, sizeof(struct AST_OBJ_STRUCT));
     obj->kind = kind;
     obj->tok = tok;
-    obj->offset = 0;
-    obj->stack_size = 0;
-    obj->align = 0;
-    obj->is_extern = false;
-
-    obj->data_type = NULL;
-    obj->value = NULL;
-    obj->return_type = NULL;
-    obj->args = NULL;
-    obj->body = NULL;
-    obj->templates = NULL;
-
-    obj->is_constant = false;
-    obj->referenced = false;
-
     return obj;
 }
 
