@@ -13,6 +13,7 @@
 
 #define GET_VALIDATOR(va) Validator_T* v = va_arg(va, Validator_T*)
 #define MIN(a, b) (a < b ? a : b)
+#define MAX(a, b) (a > b ? a : b)
 
 // validator structs
 typedef struct VALIDATOR_SCOPE_STRUCT VScope_T;
@@ -569,9 +570,9 @@ static i32 align_type(ASTType_T* ty)
     {
         case TY_ARR:
         case TY_PTR:
-            return pow(2, floor(log(ty->base->size)/log(2)));
+            return MAX(pow(2, floor(log(ty->base->size)/log(2))), 1);
         default:
-            return pow(2, floor(log(ty->size)/log(2)));
+            return MAX(pow(2, floor(log(ty->size)/log(2))), 1);
     }
 }
 
@@ -737,7 +738,7 @@ static void local_end(ASTObj_T* local, va_list args)
         local->data_type = local->value->data_type;
     }
     // fixme: evaluate seperately for structs and unions
-    local->align = local->data_type->base ? local->data_type->base->size : local->data_type->size;
+    local->align = MAX(local->data_type->base ? local->data_type->base->size : local->data_type->size, 1);
 }
 
 static void fn_arg_start(ASTObj_T* arg, va_list args)
@@ -748,7 +749,7 @@ static void fn_arg_start(ASTObj_T* arg, va_list args)
 
 static void fn_arg_end(ASTObj_T* arg, va_list args)
 {
-    arg->align = arg->data_type->size;
+    arg->align = MAX(arg->data_type->size, 1);
 }
 
 static void enum_member_end(ASTObj_T* e_member, va_list args)

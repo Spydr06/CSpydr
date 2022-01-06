@@ -100,6 +100,8 @@ bool is_unsigned(ASTType_T* ty)
 // Round up `n` to the nearest multiple of `align`.
 i32 align_to(i32 n, i32 align) 
 {
+    if(!align)
+        align = 1;
     return (n + align - 1) / align * align;
 }
 

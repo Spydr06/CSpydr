@@ -423,7 +423,7 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value)
         sprintf(link_flag, "-l%s", value);
         ast_mem_add_ptr(link_flag);
 
-        list_push(global.compiler_flags, link_flag);
+        list_push(global.linker_flags, link_flag);
     }
     else
         throw_error(ERR_SYNTAX_WARNING, field, "undefined compiler directive `%s`", field->value);

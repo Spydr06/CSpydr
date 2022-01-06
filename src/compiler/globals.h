@@ -34,6 +34,7 @@ struct {
     char* main_src_file;
 
     List_T* compiler_flags;
+    List_T* linker_flags;
 } __CSP_GLOBAL global;
 
 __CSP_GLOBAL void globals_exit_hook(void);

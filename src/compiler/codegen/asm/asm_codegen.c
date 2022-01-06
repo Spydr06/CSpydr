@@ -239,43 +239,80 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
             LOG_OK_F(COLOR_BOLD_BLUE "  Linking    " COLOR_RESET "%s\n", target);
         }
 
-        const char* args[] = {
-            "ld",
-            "-o",
-            target,
-            "-m",
-            "elf_x86_64",
-            "/usr/lib64/crt1.o",
-            "/usr/lib64/crti.o",
-            "/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0/crtbegin.o",
-            "-L/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0",
-            "-L/usr/lib/x86_64-linux-gnu",
-            "-L/usr/lib64",
-            "-L/lib64",
-            "-L/usr/lib/x86_64-linux-gnu",
-            "-L/usr/lib/x86_64-pc-linux-gnu",
-            "-L/usr/lib/x86_64-redhat-linux",
-            "-L/usr/lib",
-            "-L/lib",
-            "-dynamic-linker",
-            "/lib64/ld-linux-x86-64.so.2",
-            obj_file,
-            "-lc",
-            "-lgcc",
-            "--as-needed",
-            "-lgcc_s",
-            "--no-as-needed",
-            "/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0/crtend.o",
-            "/usr/lib64/crtn.o",
-            NULL
-        };
+        //const char* args[] = {
+        //    "ld",
+        //    "-o",
+        //    target,
+        //    "-m",
+        //    "elf_x86_64",
+        //    "/usr/lib64/crt1.o",
+        //    "/usr/lib64/crti.o",
+        //    "/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0/crtbegin.o",
+        //    "-L/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0",
+        //    "-L/usr/lib/x86_64-linux-gnu",
+        //    "-L/usr/lib64",
+        //    "-L/lib64",
+        //    "-L/usr/lib/x86_64-linux-gnu",
+        //    "-L/usr/lib/x86_64-pc-linux-gnu",
+        //    "-L/usr/lib/x86_64-redhat-linux",
+        //    "-L/usr/lib",
+        //    "-L/lib",
+        //    "-dynamic-linker",
+        //    "/lib64/ld-linux-x86-64.so.2",
+        //    obj_file,
+        //    "-lc",
+        //    "-lgcc",
+        //    "--as-needed",
+        //    "-lgcc_s",
+        //    "--no-as-needed",
+        //    "/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0/crtend.o",
+        //    "",
+        //    NULL
+        //};
 
-        i32 exit_code = subprocess(args[0], (char* const*) args, false);
+        List_T* args = init_list(sizeof(char*));
+        list_push(args, "ld");
+        list_push(args, "-o");
+        list_push(args, (void*) target);
+        list_push(args, "-m");
+        list_push(args, "elf_x86_64");
+        list_push(args, "/usr/lib64/crt1.o");
+        list_push(args, "/usr/lib64/crti.o");
+        list_push(args, "/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0/crtbegin.o");
+        list_push(args, "-L/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0");
+        list_push(args, "-L/usr/lib/x86_64-linux-gnu");
+        list_push(args, "-L/usr/lib64");
+        list_push(args, "-L/lib64");
+        list_push(args, "-L/usr/lib/x86_64-linux-gnu");
+        list_push(args, "-L/usr/lib/x86_64-pc-linux-gnu");
+        list_push(args, "-L/usr/lib/x86_64-redhat-linux");
+        list_push(args, "-L/usr/lib");
+        list_push(args, "-L/lib");
+
+        for(size_t i = 0; i < global.linker_flags->size; i++)
+            list_push(args, global.linker_flags->items[i]);
+
+        list_push(args, "-dynamic-linker");
+        list_push(args, "/lib64/ld-linux-x86-64.so.2");
+        list_push(args, obj_file);
+        list_push(args, "-lc");
+        list_push(args, "-lgcc");
+        list_push(args, "--as-needed");
+        list_push(args, "-lgcc_s");
+        list_push(args, "--no-as-needed");
+        list_push(args, "/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0/crtend.o");
+        list_push(args, "/usr/lib64/crtn.o");
+        list_push(args, NULL);
+
+
+        i32 exit_code = subprocess((char*) args->items[0], (char* const*) args->items, false);
         if(exit_code != 0)
         {
             LOG_ERROR_F("error linking code. (exit code %d)\n", exit_code);
             exit(1);
         }
+
+        free_list(args);
     }
 }
 
@@ -399,7 +436,6 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
                     bottom = align_to(bottom, align);
                     var->offset = -bottom;
                 }
-
             obj->stack_size = align_to(bottom, 16);
         } break;
         }
@@ -1307,7 +1343,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                 case TY_F32:
                     asm_println(cg, "  mov $1, %%rax");
                     asm_println(cg, "  shl $31, %%rax");
-                    asm_println(cg, "  movq %%rax %%xmm1");
+                    asm_println(cg, "  movq %%rax, %%xmm1");
                     asm_println(cg, "  xorps %%xmm1, %%xmm0");
                     return;
                 case TY_F64:

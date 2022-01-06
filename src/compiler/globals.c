@@ -14,6 +14,8 @@ void init_globals(void)
     // default compiler flags
     list_push(global.compiler_flags, (void*) optimization_flag);
     list_push(global.compiler_flags, (void*) all_warnings_flag);
+
+    global.linker_flags = init_list(sizeof(char*));
 }
 
 void globals_exit_hook(void)

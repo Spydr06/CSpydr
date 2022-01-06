@@ -213,6 +213,9 @@ static void run_compiler(CCodegenData_T* cg, const char* target_bin)
     for(size_t i = 0; i < global.compiler_flags->size; i++)
         list_push(args, global.compiler_flags->items[i]);
     
+    for(size_t i = 0; i < global.linker_flags->size; i++)
+        list_push(args, global.linker_flags->items[i]);
+    
     list_push(args, NULL);
 
     i32 exit_code = subprocess(args->items[0], (char* const*) args->items, false);
