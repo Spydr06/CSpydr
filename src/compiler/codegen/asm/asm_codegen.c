@@ -375,8 +375,8 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
             for(size_t j = 0; j < obj->args->size; j++)
             {
                 ASTObj_T* var = obj->args->items[j];
-                //if(var->offset)
-                //    continue;
+                if(var->offset)
+                    continue;
                 
                 // AMD64 System V ABI has a special alignment rule for an array of
 			    // length at least 16 bytes. We need to align such array to at least
@@ -406,11 +406,19 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
     }
 }
 
-static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var)
+static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var, ASTNode_T* val)
 {
-    ASTNode_T* val = var->value;
+    if(var && !val)
+        val = var->value;
+
     switch(val->kind)
     {
+        case ND_NIL:
+            asm_println(cg, "  .zero %d", (var ? var->data_type : val->data_type)->size);
+            return;
+        case ND_CLOSURE:
+            asm_gen_relocation(cg, var, val->expr);
+            return;
         case ND_STR:
             asm_println(cg,"  .ascii \"%s\\0\"", val->str_val);
             return;
@@ -450,6 +458,17 @@ static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var)
                 for(i32 i = 0; i < sizeof(f64); i++)
                     asm_println(cg, "  .byte %d", u.bytes[i]);
             } return;
+        case ND_ARRAY:
+            {
+                for(size_t i = 0; i < val->args->size; i++)
+                    asm_gen_relocation(cg, NULL, val->args->items[i]);
+            } return;
+        case ND_STRUCT:
+            {
+                LOG_ERROR("not implemented\n");
+            } return;
+        default:
+            throw_error(ERR_CODEGEN, val->tok, "cannot generate relocation for `%s`", val->tok->value);
     }
 }
 
@@ -481,7 +500,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
                         asm_println(cg, "  .align 4");
                         asm_println(cg, "%s:", id);
 
-                        asm_gen_relocation(cg, member); 
+                        asm_gen_relocation(cg, member, NULL); 
                     }
             } break;
 
@@ -502,7 +521,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
                         asm_println(cg, "  .align %d", align);
                         asm_println(cg, "%s:", id);
 
-                        asm_gen_relocation(cg, obj);
+                        asm_gen_relocation(cg, obj, NULL);
 
                         continue;
                     }
@@ -1088,6 +1107,7 @@ static void asm_push_args2(ASMCodegenData_T* cg, List_T* args, bool first_pass)
                 asm_push_struct(cg, arg->data_type);
                 break;
             case TY_F32:
+                //asm_cast(cg, (ASTType_T*) primitives[TY_F32], (ASTType_T*) primitives[TY_F64]);
             case TY_F64:
                 asm_pushf(cg);
                 break;
@@ -1306,23 +1326,24 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         
         case ND_INDEX:
+            node->left->data_type = unpack(node->left->data_type);
             if(!node->left->data_type || !node->left->data_type->base)
                 throw_error(ERR_TYPE_ERROR, node->tok, "Cannot get index of data type `%d`", node->data_type->kind);
-            asm_println(cg, "  mov $%d, %%rax", node->left->data_type->base->size);
-            asm_push(cg);
+            {
+                // x[y] gets converted to *(x + y)
+                ASTNode_T converted = {
+                    .kind = ND_DEREF,
+                    .data_type = node->data_type,
+                    .right = &(ASTNode_T) {
+                        .kind = ND_ADD,
+                        .data_type = node->left->data_type,
+                        .left = node->left,
+                        .right = node->expr
+                    }
+                };
 
-            asm_gen_expr(cg, node->expr);
-            asm_cast(cg, node->expr->data_type, (ASTType_T*) primitives[TY_I64]);
-            asm_pop(cg, "%rdi");
-            asm_println(cg, "  imul %%rdi, %%rax");
-            asm_push(cg);
-            asm_gen_addr(cg, node->left);
-            asm_println(cg, "  mov (%%rax), %%rax");
-            asm_pop(cg, "%rdi");
-            asm_println(cg, "  add %%rdi, %%rax");
-            asm_println(cg, "  mov (%%rax), %%rax");
-            asm_println(cg, "  push %%rax");
-            return;
+                asm_gen_expr(cg, &converted);
+            } return;
         
         case ND_INC:
         case ND_DEC:
