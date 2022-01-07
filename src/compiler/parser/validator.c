@@ -1012,7 +1012,14 @@ static void bin_operation(ASTNode_T* op, va_list args)
         return;
     }
 
-    op->data_type = op->right->data_type->size > op->left->data_type->size ? op->right->data_type : op->left->data_type;
+    if(op->kind == ND_ADD && expand_typedef(v, op->left->data_type)->base && !expand_typedef(v, op->right->data_type)->base)
+    {
+        ASTNode_T* tmp = op->left;
+        op->left = op->right;
+        op->right = tmp;
+    }
+
+    op->data_type = op->right->data_type;
 }
 
 static void modulo(ASTNode_T* mod, va_list args)

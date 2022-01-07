@@ -878,16 +878,35 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
     return fn;
 }
 
-static void collect_locals(ASTNode_T* block, List_T* locals)
+static void collect_locals(ASTNode_T* stmt, List_T* locals)
 {
-    for(size_t i = 0; i < block->locals->size; i++)
-        list_push(locals, block->locals->items[i]);
-    
-    for(size_t i = 0; i < block->stmts->size; i++)
+    switch(stmt->kind)
     {
-        ASTNode_T* stmt = block->stmts->items[i];
-        if(stmt->kind == ND_BLOCK)
-            collect_locals(block, locals);
+        case ND_BLOCK:
+            for(size_t i = 0; i < stmt->locals->size; i++)
+                list_push(locals, stmt->locals->items[i]);
+            for(size_t i = 0; i < stmt->stmts->size; i++)
+                collect_locals(stmt->stmts->items[i], locals);
+            break;
+        case ND_IF:
+            collect_locals(stmt->if_branch, locals);
+            if(stmt->else_branch)
+                collect_locals(stmt->else_branch, locals);
+            break;
+        case ND_FOR:
+            for(size_t i = 0; i < stmt->locals->size; i++)
+                list_push(locals, stmt->locals->items[i]);
+        case ND_WHILE:
+        case ND_LOOP:
+        case ND_CASE:
+            collect_locals(stmt->body, locals);
+            break;
+        case ND_MATCH:
+            for(size_t i = 0; i < stmt->cases->size; i++)
+                collect_locals(stmt->cases->items[i], locals);
+            if(stmt->default_case)
+                collect_locals(stmt->default_case, locals);
+            break;
     }
 }
 
@@ -902,9 +921,7 @@ static ASTObj_T* parse_fn(Parser_T* p)
     {
         fn->objs = init_list(sizeof(struct AST_OBJ_STRUCT*));
         ast_mem_add_list(fn->objs);
-
-        if(fn->body->kind == ND_BLOCK)
-            collect_locals(fn->body, fn->objs);
+        collect_locals(fn->body, fn->objs);
     }   
 
     return fn;

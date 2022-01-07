@@ -21,16 +21,17 @@ static struct { const char* as_str; bool force_exit; } error_types[ERR_INTERNAL 
     [ERR_TYPE_ERROR]        = {"type", true},
     [ERR_MISC]              = {"misc", false},       // miscellaneous errors, who cannot get categorized
     [ERR_CONST_ASSIGN]      = {"const assign", true},
-    [ERR_CODEGEN]           = {"code generation", true}
+    [ERR_CODEGEN]           = {"codegen", true},
+    [ERR_CODEGEN_WARN]      = {"codegen warn", false}
 };
 
 void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
 {
     const char* err_tmp1 = COLOR_BOLD_WHITE "%s:%ld:%ld"           // file, line and character
-                          COLOR_RESET " => " COLOR_BOLD_RED "[%s]" // type of the error
+                          COLOR_RESET " => %s[%s]"                 // type of the error
                           COLOR_RESET ": ";                        //before the error message
     const char* err_tmp2 = COLOR_RESET "\n"                        // after the error message
-                          " %*d | %s %s"                             // the line number and source code line
+                          " %*d | %s %s"                           // the line number and source code line
                           "%*s | " COLOR_BOLD_BLUE "%*s^~here"     // the pointer to the error in the source
                           "\n" COLOR_RESET;                        // end of the message
 
@@ -46,7 +47,7 @@ void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
     va_start(arg_list, format);
 
     // print the error
-    fprintf(OUTPUT_FILE_STREAM, err_tmp1, source_file_path, line, character, err_ty_str);
+    fprintf(OUTPUT_FILE_STREAM, err_tmp1, source_file_path, line, character, error_types[ty].force_exit ? COLOR_BOLD_RED : COLOR_BOLD_YELLOW, err_ty_str);
     vfprintf(OUTPUT_FILE_STREAM, format, arg_list);
     fprintf(OUTPUT_FILE_STREAM, err_tmp2, LINE_NUMBER_SPACES, line, src_line, src_line[strlen(src_line) - 1] == '\n' ? "" : "\n ", LINE_NUMBER_SPACES, "", character - strlen(tok->value), "");
 

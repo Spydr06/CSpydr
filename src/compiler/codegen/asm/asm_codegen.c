@@ -683,7 +683,10 @@ static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs)
                     // emit code
                     cg->current_fn_name = fn_name;
                     asm_gen_stmt(cg, obj->body);
-                    assert(cg->depth == 0);
+                    if(cg->depth != 0) {
+                        cg->depth = 0;
+                        throw_error(ERR_CODEGEN_WARN, obj->tok, "cg->depth is not 0");
+                    }
                     cg->current_fn_name = NULL;
 
                     // epilogue
@@ -1295,7 +1298,7 @@ static void asm_gen_inc(ASMCodegenData_T* cg, ASTNode_T* node)
 static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
 {
     if(node->tok && cg->embed_file_locations)
-        asm_println(cg, "  .loc %d %d", node->tok->source->file_no + 1, node->tok->line);
+        asm_println(cg, "  .loc %d %d", node->tok->source->file_no + 1, node->tok->line + 1);
     
     switch(node->kind)
     {
@@ -1366,13 +1369,13 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             if(!node->left->data_type || !node->left->data_type->base)
                 throw_error(ERR_TYPE_ERROR, node->tok, "Cannot get index of data type `%d`", node->data_type->kind);
             {
-                // x[y] gets converted to *(x + y)
+                // x[y] gets converted to *(x + y * sizeof *x)
                 ASTNode_T converted = {
                     .kind = ND_DEREF,
                     .data_type = node->data_type,
                     .right = &(ASTNode_T) {
                         .kind = ND_ADD,
-                        .data_type = node->left->data_type,
+                        .data_type = node->expr->data_type,
                         .left = node->left,
                         .right = node->expr
                     }
@@ -1385,6 +1388,66 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_DEC:
             asm_gen_inc(cg, node);
             return;
+
+        case ND_ADD:
+            if(unpack(node->left->data_type)->base)
+            {
+                // if we add a number to a pointer, multiply the second argument with the base type size
+                // a + b -> a + b * sizeof *a
+                ASTNode_T new_right = {
+                    .kind = ND_MUL,
+                    .data_type = node->right->data_type,
+                    .left = node->right,
+                    .right = &(ASTNode_T) {
+                        .kind = ND_LONG,
+                        .data_type = (ASTType_T*) primitives[TY_I64],
+                        .long_val = unpack(node->left->data_type)->base->size
+                    }
+                };
+
+                node->right = &new_right;
+            }
+            break;
+        
+        case ND_SUB:
+            if(unpack(node->left->data_type)->base && is_integer(node->right->data_type))
+            {
+                // if we subtract a number from a pointer, multiply the second argument with the base type size
+                // a - b -> a - b * sizeof *a
+                ASTNode_T new_right = {
+                    .kind = ND_MUL,
+                    .data_type = node->right->data_type,
+                    .left = node->right,
+                    .right = &(ASTNode_T) {
+                        .kind = ND_LONG,
+                        .data_type = (ASTType_T*) primitives[TY_I64],
+                        .long_val = unpack(node->left->data_type)->size
+                    }
+                };
+
+                node->right = &new_right;
+            }
+            else if(unpack(node->left->data_type)->base && unpack(node->left->data_type)->base)
+            {
+                // if both subtraction arguments are pointers, return the number of elements in between
+                // a - b -> (a - b) / sizeof *a
+
+                ASTNode_T converted = {
+                    .kind = ND_DIV,
+                    .data_type = (ASTType_T*) primitives[TY_I64],
+                    .left = node,
+                    .right = &(ASTNode_T) {
+                        .kind = ND_LONG,
+                        .data_type = (ASTType_T*) primitives[TY_I64],
+                        .int_val = unpack(node->left->data_type)->base->size
+                    }
+                };
+
+                asm_gen_expr(cg, &converted);
+                return;
+            }
+            break;
+
         
         case ND_ID:
             asm_gen_addr(cg, node);
@@ -1523,7 +1586,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_println(cg, "  mov %%rax, %%r10");
             asm_println(cg, "  mov $%d, %%rax", fp);
             asm_println(cg, "  call *%%r10");
-            asm_println(cg, "  add $%d, %%rsp", stack_args * 10);
+            asm_println(cg, "  add $%d, %%rsp", stack_args * 8);
 
             cg->depth -= stack_args;
 

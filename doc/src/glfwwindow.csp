@@ -1,10 +1,11 @@
 import "glfw/glfw3.csp";
+import "libc/stdio.csp";
 
 fn main(): i32 {
     if !glfwInit()
         <- -1;
     
-    let window = glfwCreateWindow(640, 480, "CSpydr+GLFW Window!", nil, nil);
+    let window = glfwCreateWindow(640, 480, "GLFW Window", nil, nil);
     if !window {
         glfwTerminate();
         <- -1;

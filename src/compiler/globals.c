@@ -21,4 +21,5 @@ void init_globals(void)
 void globals_exit_hook(void)
 {
     free_list(global.compiler_flags);
+    free_list(global.linker_flags);
 }
