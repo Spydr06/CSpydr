@@ -1,3 +1,6 @@
 # a basic implementation of the libc stdnoreturn.h header for the CSpydr programming language
 
+# link with the gnulibc standard library
+import "link.csp";
+
 macro noreturn { _Noreturn }

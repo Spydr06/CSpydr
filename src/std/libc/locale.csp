@@ -1,5 +1,7 @@
 # a basic implementation of the libc locale.h header for the CSpydr programming language
 
+import "link.csp";
+
 type lconv: struct {
     decimal_point: &char,
     thousands_sep: &char,

@@ -1,5 +1,7 @@
 # a basic implementation of the libc iso646.h header for the CSpydr programming language
 
+import "link.csp";
+
 macro and { && }
 macro and_eq { &= }
 macro bitand { & }

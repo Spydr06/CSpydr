@@ -1,5 +1,7 @@
 # a basic implementation of the libc ctype.h header for the CSpydr programming language
 
+import "link.csp";
+
 extern {
 
     fn isalnum(c: i32): i32;

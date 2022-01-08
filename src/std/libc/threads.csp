@@ -2,6 +2,10 @@
 
 import "libc/time.csp";
 
+# link with the gnulibc standard library
+import "link.csp";
+
+
 macro thread_local { _Thread_local }
 
 macro ONCE_FLAG_INIT { {0} }

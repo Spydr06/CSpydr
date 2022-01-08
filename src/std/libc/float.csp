@@ -1,5 +1,8 @@
 # a basic implementation of the libc float.h header for the CSpydr programming language
 
+# link with the gnulibc standard library
+import "link.csp";
+
 # TODO: all of these macros are highly platform- and compiler-dependant. I will rewrite them in the near future.
 macro FLT_RADIX { 2 }
 

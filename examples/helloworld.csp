@@ -1,23 +1,14 @@
 import "libc/stdio.csp";
 import "libc/stdlib.csp";
-import "vec.csp";
 
 # todo: vla support hinzufügen -> is_vla flag, etc.
 
+fn test(msg: &char) {
+
+}
+
 fn main(argc: i32, argv: &&char): i32
 {
-    let vector = vec![i32];
-    vec_add!(vector, 3);
-    vec_add!(vector, 1);
-    vec_add!(vector, 4);
-    vec_add!(vector, 1);
-    vec_add!(vector, 5);
-    vec_add!(vector, 6);
-    vec_add!(vector, 9);
-
-    printf("%d\n", vector[4]);
-
-    vec_free!(vector);
-
+    printf("Hello, World!\n");
     <- 0;
 }

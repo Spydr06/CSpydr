@@ -1,5 +1,9 @@
 # a basic implementation of the libc wchar.h header for the CSpydr programming language
 
+# link with the gnulibc standard library
+import "link.csp";
+
+
 import "libc/time.csp";
 import "libc/stdio.csp";
 import "libc/stddef.csp";

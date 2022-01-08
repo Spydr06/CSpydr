@@ -1,5 +1,8 @@
 # a basic implementation of the libc setjmp.h header for the CSpydr programming language
 
+# link with the gnulibc standard library
+import "link.csp";
+
 macro _SIGSET_NWORDS { (1024 / 64) }
 
 type __jmp_buf: i64[8];

@@ -1,5 +1,8 @@
 # a basic implementation of the libc signal.h header for the CSpydr programming language
 
+# link with the gnulibc standard library
+import "link.csp";
+
 type sig_atomic_t: i32;
 
 macro SIG_ERR { -1 }

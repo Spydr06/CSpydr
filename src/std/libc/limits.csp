@@ -1,5 +1,8 @@
 # a basic implementation of the libc limits.h header for the CSpydr programming language
 
+import "link.csp";
+
+
 macro SCHAR_MAX { 127 }
 macro SHRT_MAX { 32767 }
 macro INT_MAX { 2147483647 }

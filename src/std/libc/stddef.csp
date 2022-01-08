@@ -1,5 +1,9 @@
 # a basic implementation of the libc stddef.h header for the CSpydr programming language
 
+# link with the gnulibc standard library
+import "link.csp";
+
+
 type ptrdiff_t: i64;
 type size_t: u64;
 type max_align_t: f64;

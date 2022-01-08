@@ -1,5 +1,7 @@
 # a basic implementation of the libc math.h header for the CSpydr programming language
 
+import "link.csp";
+
 [link("m")] # link with the glibc math library
 
 macro HUGE_VAL  { __builtin_huge_val()  }

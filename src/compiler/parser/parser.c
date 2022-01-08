@@ -425,6 +425,16 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value)
 
         list_push(global.linker_flags, link_flag);
     }
+    else if(streq(field->value, "link_dir"))
+    {
+        char* link_flag = calloc(strlen(value) + 3, sizeof(char));
+        sprintf(link_flag, "-L%s", value);
+        ast_mem_add_ptr(link_flag);
+
+        list_push(global.linker_flags, link_flag);
+    }
+    else if(streq(field->value, "link_obj"))
+        list_push(global.linker_flags, value);
     else
         throw_error(ERR_SYNTAX_WARNING, field, "undefined compiler directive `%s`", field->value);
 }
@@ -437,13 +447,16 @@ static void parse_compiler_directives(Parser_T* p)
     parser_consume(p, TOKEN_ID, "expect compiler directive identifier");
     parser_consume(p, TOKEN_LPAREN, "expect `(` after identifier");
 
-    char value[__CSP_MAX_TOKEN_SIZE] = { '\0' };
-    strcpy(value, p->tok->value);
-    parser_consume(p, TOKEN_STRING, "expect value as string");
+    do {
+        if(tok_is(p, TOKEN_COMMA))
+            parser_advance(p);
+        eval_compiler_directive(p, field_token, p->tok->value);
+        parser_consume(p, TOKEN_STRING, "expect value as string");
+    } while(tok_is(p, TOKEN_COMMA));
+
     parser_consume(p, TOKEN_RPAREN, "expect `)` after value");
     parser_consume(p, TOKEN_RBRACKET, "expect `]` after compiler directive");
 
-    eval_compiler_directive(p, field_token, value);
 }
 
 /////////////////////////////////

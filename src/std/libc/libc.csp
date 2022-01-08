@@ -1,5 +1,8 @@
 # imports all files for accessing the C standard library
 
+import "link.csp";
+
+
 import "assert.csp";
 import "complex.csp";
 import "ctype.csp";

@@ -1,5 +1,9 @@
 # a basic implementation of the libc stdint.h header for the CSpydr programming language
 
+# link with the gnulibc standard library
+import "link.csp";
+
+
 type int_least8_t: i8;
 type int_least16_t: i16;
 type int_least32_t: i32;

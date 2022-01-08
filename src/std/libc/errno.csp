@@ -1,5 +1,8 @@
 # a basic implementation of the libc errno.h header for the CSpydr programming language
 
+# link with the gnulibc standard library
+import "link.csp";
+
 macro EDOM { 1 }
 macro EILSEQ { 1 }
 macro ERANGE { 1 }

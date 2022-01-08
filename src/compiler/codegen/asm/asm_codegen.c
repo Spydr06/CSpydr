@@ -20,6 +20,19 @@ enum { I8, I16, I32, I64, U8, U16, U32, U64, F32, F64, F80, LAST };
 // a counter variable for generating unique labels
 static u64 asm_c = 0;
 
+const char asm_start_text[] = 
+    "  .globl _start\n"
+    "  .text\n"
+    "_start:\n"
+    "  xorl %ebp, %ebp\n"
+    "  popq %rdi\n"
+    "  movq %rsp, %rsi\n"
+    "  andq $~15, %rsp\n"
+    "  call main\n"
+    "  movq %rax, %rdi\n"
+    "  movq $60, %rax\n"
+    "  syscall\n";
+
 static char *argreg8[] = {"%dil", "%sil", "%dl", "%cl", "%r8b", "%r9b"};
 static char *argreg16[] = {"%di", "%si", "%dx", "%cx", "%r8w", "%r9w"};
 static char *argreg32[] = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d"};
@@ -216,6 +229,9 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         asm_gen_file_descriptors(cg);
     asm_assign_lvar_offsets(cg, cg->ast->objs);
     asm_gen_data(cg, cg->ast->objs);
+    
+    asm_println(cg, "%s", asm_start_text);
+    
     asm_gen_text(cg, cg->ast->lambda_literals);
     asm_gen_text(cg, cg->ast->objs);
 
@@ -265,22 +281,22 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         //    "/usr/lib64/crt1.o",
         //    "/usr/lib64/crti.o",
         //    "/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0/crtbegin.o",
-        //    "-L/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0",
-        //    "-L/usr/lib/x86_64-linux-gnu",
-        //    "-L/usr/lib64",
-        //    "-L/lib64",
-        //    "-L/usr/lib/x86_64-linux-gnu",
-        //    "-L/usr/lib/x86_64-pc-linux-gnu",
-        //    "-L/usr/lib/x86_64-redhat-linux",
-        //    "-L/usr/lib",
-        //    "-L/lib",
+        // x   "-L/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0",
+        // x   "-L/usr/lib/x86_64-linux-gnu",
+        // x   "-L/usr/lib64",
+        // x   "-L/lib64",
+        // x   "-L/usr/lib/x86_64-linux-gnu",
+        // x   "-L/usr/lib/x86_64-pc-linux-gnu",
+        // x   "-L/usr/lib/x86_64-redhat-linux",
+        // x   "-L/usr/lib",
+        // x   "-L/lib",
         //    "-dynamic-linker",
         //    "/lib64/ld-linux-x86-64.so.2",
         //    obj_file,
-        //    "-lc",
-        //    "-lgcc",
+        // x   "-lc",
+        // x   "-lgcc",
         //    "--as-needed",
-        //    "-lgcc_s",
+        // x   "-lgcc_s",
         //    "--no-as-needed",
         //    "/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0/crtend.o",
         //    "",
@@ -293,16 +309,8 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         list_push(args, (void*) target);
         list_push(args, "-m");
         list_push(args, "elf_x86_64");
-        list_push(args, "/usr/lib64/crt1.o");
-        list_push(args, "/usr/lib64/crti.o");
-        list_push(args, "/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0/crtbegin.o");
-        list_push(args, "-L/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0");
-        list_push(args, "-L/usr/lib/x86_64-linux-gnu");
         list_push(args, "-L/usr/lib64");
         list_push(args, "-L/lib64");
-        list_push(args, "-L/usr/lib/x86_64-linux-gnu");
-        list_push(args, "-L/usr/lib/x86_64-pc-linux-gnu");
-        list_push(args, "-L/usr/lib/x86_64-redhat-linux");
         list_push(args, "-L/usr/lib");
         list_push(args, "-L/lib");
 
@@ -312,13 +320,6 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         list_push(args, "-dynamic-linker");
         list_push(args, "/lib64/ld-linux-x86-64.so.2");
         list_push(args, obj_file);
-        list_push(args, "-lc");
-        list_push(args, "-lgcc");
-        list_push(args, "--as-needed");
-        list_push(args, "-lgcc_s");
-        list_push(args, "--no-as-needed");
-        list_push(args, "/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0/crtend.o");
-        list_push(args, "/usr/lib64/crtn.o");
         list_push(args, NULL);
 
 
@@ -843,7 +844,7 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
                 
                 case OBJ_FUNCTION:
                     if(node->referenced_obj->is_extern)
-                        asm_println(cg, "  mov %s@GOTPCREL(%%rip), %%ray", asm_gen_identifier(node->id));
+                        asm_println(cg, "  mov %s@GOTPCREL(%%rip), %%rax", asm_gen_identifier(node->id));
                     else
                         asm_println(cg, "  mov %s(%%rip), %%rax", asm_gen_identifier(node->id));
                     return;

@@ -4,6 +4,10 @@ import "libc/stdint.csp";
 import "libc/stddef.csp";
 import "libc/wchar.csp";
 
+# link with the gnulibc standard library
+import "link.csp";
+
+
 type char16_t: uint_least16_t;
 type char32_t: uint_least32_t;
 

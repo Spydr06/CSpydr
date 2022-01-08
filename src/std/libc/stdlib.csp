@@ -1,5 +1,9 @@
 # a basic implementation of the libc stdlib.h header for the CSpydr programming language
 
+# link with the gnulibc standard library
+import "link.csp";
+
+
 import "libc/stddef.csp";
 
 macro EXIT_FAILURE { 1 }

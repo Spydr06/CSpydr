@@ -1,5 +1,8 @@
 # a basic implementation of the libc fenv.h header for the CSpydr programming language
 
+# link with the gnulibc standard library
+import "link.csp";
+
 # TODO: find a way to define this libc- and platform independant.
 type fenv_t: struct {
     __control_word: u16,

@@ -1,5 +1,9 @@
 # a basic implementation of the libc wctype.h header for the CSpydr programming language
 
+# link with the gnulibc standard library
+import "link.csp";
+
+
 import "libc/wchar.csp";
 
 macro WEOF { (0xffffffff) }

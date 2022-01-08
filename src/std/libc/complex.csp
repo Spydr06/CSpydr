@@ -1,5 +1,7 @@
 # a basic implementation of the libc complex.h header for the CSpydr programming language
 
+import "link.csp";
+
 extern {
 
     fn casin(z: complex f64): complex f64;

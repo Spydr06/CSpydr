@@ -1,5 +1,8 @@
 # a basic implementation of the libc stdatomic.h header for the CSpydr programming language
 
+# link with the gnulibc standard library
+import "link.csp";
+
 import "stdint.csp";
 import "stddef.csp";
 import "stdint.csp";

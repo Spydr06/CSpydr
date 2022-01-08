@@ -2,6 +2,10 @@
 
 import "libc/stddef.csp";
 
+# link with the gnulibc standard library
+import "link.csp";
+
+
 macro CLOCKS_PER_SEC { (1000000: __clock_t) }
 macro TIME_UTC { 1 }
 

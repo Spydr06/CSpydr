@@ -1,2 +1,6 @@
 # a basic implementation of the libc stdarg.h header for the CSpydr programming language
 # this will be implemented as soon as CSpydr supports va_lists
+
+# link with the gnulibc standard library
+import "link.csp";
+
