@@ -71,7 +71,7 @@ static ASTNode_T* parse_int_lit(Parser_T* p);
 static ASTNode_T* parse_float_lit(Parser_T* p);
 static ASTNode_T* parse_char_lit(Parser_T* p);
 static ASTNode_T* parse_bool_lit(Parser_T* p);
-static ASTNode_T* parse_str_lit(Parser_T* p);
+static ASTNode_T* parse_str_lit(Parser_T* p, bool keep_inline);
 static ASTNode_T* parse_nil_lit(Parser_T* p);
 static ASTNode_T* parse_closure(Parser_T* p);
 
@@ -109,7 +109,7 @@ static struct { PrefixParseFn_T pfn; InfixParseFn_T ifn; Precedence_T prec; } ex
     [TOKEN_TRUE]     = {parse_bool_lit, NULL, LOWEST},
     [TOKEN_FALSE]    = {parse_bool_lit, NULL, LOWEST},
     [TOKEN_CHAR]     = {parse_char_lit, NULL, LOWEST},
-    [TOKEN_STRING]   = {parse_str_lit, NULL, LOWEST},
+    [TOKEN_STRING]   = {(PrefixParseFn_T) parse_str_lit, NULL, LOWEST},
     [TOKEN_BANG]     = {parse_unary, NULL, LOWEST},
     [TOKEN_MINUS]    = {parse_unary, parse_num_op, MINUS},
     [TOKEN_LPAREN]   = {parse_closure, NULL, CALL}, 
@@ -1425,12 +1425,21 @@ static ASTNode_T* parse_stmt(Parser_T* p)
                 if(tok_is(p, TOKEN_NOOP))
                 {
                     parser_advance(p);
-                    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after noop statement");
+                    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after `noop` statement");
                 } else 
                 {
                 parser_advance(p);
                 }
                 return noop;
+            }
+        case TOKEN_ASM:
+            {
+                ASTNode_T* asm_stmt = init_ast_node(ND_ASM, p->tok);
+                parser_advance(p);
+
+                asm_stmt->expr = parse_str_lit(p, true);
+                parser_consume(p, TOKEN_SEMICOLON, "expect `;` after `asm` statement");
+                return asm_stmt;
             }
         default:
             return parse_expr_stmt(p);
@@ -1592,7 +1601,7 @@ static ASTNode_T* parse_char_lit(Parser_T* p)
     return char_lit;
 }
 
-static ASTNode_T* parse_str_lit(Parser_T* p)
+static ASTNode_T* parse_str_lit(Parser_T* p, bool keep_inline)
 {
     ASTNode_T* str_lit = init_ast_node(ND_STR, p->tok);
     str_lit->str_val = strdup(p->tok->value);
@@ -1609,7 +1618,7 @@ static ASTNode_T* parse_str_lit(Parser_T* p)
 
     ast_mem_add_ptr(str_lit->str_val);
 
-    if(global.ct == CT_ASM)
+    if(global.ct == CT_ASM && !keep_inline)
     {
         static u64 i = 0;
         char id[256] = { '\0' };

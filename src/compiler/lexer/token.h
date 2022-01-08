@@ -110,6 +110,7 @@ typedef enum TOKEN_TYPE {
     TOKEN_NOOP,         // noop
     TOKEN_LEN,          // len
     TOKEN_VA_ARG,       // va_arg
+    TOKEN_ASM,          // asm
 
     TOKEN_ERROR,        // error handling token
     TOKEN_EOF,          // end of file

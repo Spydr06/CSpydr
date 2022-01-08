@@ -1887,6 +1887,9 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
     {
         case ND_NOOP:
             return;
+        case ND_ASM:
+            asm_println(cg, "%s", node->expr->str_val);
+            return;
         case ND_IF:
         {
             u64 c = asm_count();

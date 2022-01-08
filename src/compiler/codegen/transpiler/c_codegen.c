@@ -921,7 +921,11 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
             else if(node->default_case)
                 c_gen_stmt(cg, node->default_case->body);
             break;
-
+        case ND_ASM:
+            print(cg, "__asm__(");
+            c_gen_expr(cg, node->expr);
+            println(cg, ");");
+            break;
         default:
             break;
     }

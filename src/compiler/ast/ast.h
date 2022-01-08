@@ -98,6 +98,8 @@ typedef enum {
 
     ND_STRUCT_MEMBER,  // struct members
 
+    ND_ASM, // inline assembly
+
     ND_KIND_LEN
 } ASTNodeKind_T;
 
