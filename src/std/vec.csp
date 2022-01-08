@@ -114,7 +114,7 @@ namespace std {
                 *addr = v_data.buff;
             }
 
-            <- &(v_data.buff[type_size * (v_data.size++)]);;
+            <- &(v_data.buff[type_size * (v_data.size++)]);
         }
 
         fn __internal_insert(addr: &&void, type_size: u8, pos: u64): &void {

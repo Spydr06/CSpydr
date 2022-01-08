@@ -17,7 +17,8 @@
 
 enum { I8, I16, I32, I64, U8, U16, U32, U64, F32, F64, F80, LAST };
 
-static u64 asm_i = 1;
+// a counter variable for generating unique labels
+static u64 asm_c = 0;
 
 static char *argreg8[] = {"%dil", "%sil", "%dl", "%cl", "%r8b", "%r9b"};
 static char *argreg16[] = {"%di", "%si", "%dx", "%cx", "%r8w", "%r9w"};
@@ -107,6 +108,22 @@ static char *cast_table[LAST][LAST] = {
   {f64i8, f64i16, f64i32, f64i64, f64u8, f64u16, f64u32, f64u64, f64f32, NULL,   f64f80}, // f64
   {f80i8, f80i16, f80i32, f80i64, f80u8, f80u16, f80u32, f80u64, f80f32, f80f64, NULL},   // f80
 };
+
+#define CONVERT_INDEX_NODE(node)                            \
+    (ASTNode_T) {                                           \
+        .kind = ND_DEREF,                                   \
+        .data_type = node->data_type,                       \
+        .right = &(ASTNode_T) {                             \
+            .kind = ND_CAST,                                \
+            .data_type = (ASTType_T*) primitives[TY_I64],   \
+            .left = &(ASTNode_T) {                          \
+                .kind = ND_ADD,                             \
+                .data_type = node->expr->data_type,         \
+                .left = node->left,                         \
+                .right = node->expr                         \
+            }                                               \
+        }                                                   \
+    }
 
 static void generate_files(ASMCodegenData_T* cg);
 static void asm_gen_file_descriptors(ASMCodegenData_T* cg);
@@ -735,12 +752,12 @@ static i32 get_type_id(ASTType_T *ty) {
 
 static u64 asm_count(void) 
 {
-    return asm_i++;
+    return asm_c++;
 }
 
 static u64 asm_current_count(void)
 {
-    return asm_i;
+    return asm_c;
 }
 
 static void asm_push(ASMCodegenData_T* cg) 
@@ -805,7 +822,7 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
 
         case ND_ID: 
-            if(vla_type(node->data_type))
+            if(unpack(node->data_type)->is_vla)
             {
                 asm_println(cg, "  mov %d(%%rbp), %%rax", node->referenced_obj->offset);
                 return;
@@ -847,10 +864,18 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         case ND_MEMBER:
             asm_gen_addr(cg, node->left);
-            asm_println(cg, "  add $%d, %%rax", node->body->int_val );
+            asm_println(cg, "  add $%d, %%rax", node->body->int_val);
+            return;
+        case ND_INDEX:
+            {
+                // x[y] gets converted to *(x + y * sizeof *x)
+                ASTNode_T converted = CONVERT_INDEX_NODE(node);
+                asm_gen_addr(cg, &converted);
+            }
             return;
         
         default:
+            throw_error(ERR_CODEGEN, node->tok, "cannot generate address from node of kind %d", node->kind);
             break;
     }
 }
@@ -1370,17 +1395,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                 throw_error(ERR_TYPE_ERROR, node->tok, "Cannot get index of data type `%d`", node->data_type->kind);
             {
                 // x[y] gets converted to *(x + y * sizeof *x)
-                ASTNode_T converted = {
-                    .kind = ND_DEREF,
-                    .data_type = node->data_type,
-                    .right = &(ASTNode_T) {
-                        .kind = ND_ADD,
-                        .data_type = node->expr->data_type,
-                        .left = node->left,
-                        .right = node->expr
-                    }
-                };
-
+                ASTNode_T converted = CONVERT_INDEX_NODE(node);
                 asm_gen_expr(cg, &converted);
             } return;
         
@@ -1390,6 +1405,8 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
 
         case ND_ADD:
+            if(unpack(node->left->data_type)->base && unpack(node->right->data_type)->base)
+                throw_error(ERR_SYNTAX_ERROR, node->tok, "cannot add two pointer types together");
             if(unpack(node->left->data_type)->base)
             {
                 // if we add a number to a pointer, multiply the second argument with the base type size
@@ -1407,6 +1424,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
 
                 node->right = &new_right;
             }
+            
             break;
         
         case ND_SUB:

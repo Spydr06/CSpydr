@@ -101,6 +101,8 @@ static void inc_dec(ASTNode_T* op, va_list args);
 static void index_(ASTNode_T* index, va_list args); // "index" was taken by string.h
 static void cast(ASTNode_T* cast, va_list args);
 static void assignment(ASTNode_T* assign, va_list args);
+static void struct_member(ASTNode_T* member, va_list args);
+
 
 //types
 static void struct_type(ASTType_T* s_type, va_list args);
@@ -666,6 +668,13 @@ static void fn_end(ASTObj_T* fn, va_list args)
     gen_id_path(v->current_scope, fn->id);
 
     v->current_function = NULL;
+
+    for(size_t i = 0; i < fn->args->size; i++)
+    {
+        ASTObj_T* arg = fn->args->items[i];
+        if(arg->data_type->is_vla && fn->args->size - i > 1)
+            throw_error(ERR_TYPE_ERROR, arg->tok, "argument of type `vla` has to be the last");
+    }
 }
 
 static void namespace_start(ASTObj_T* namespace, va_list args)
@@ -719,6 +728,10 @@ static void global_end(ASTObj_T* global, va_list args)
     // fixme: evaluate seperately for structs and unions
     global->align = align_type(global->data_type);
     gen_id_path(v->current_scope, global->id);
+
+    // todo: check if type initializer is an array literal, if it is, calculate the size
+    if(global->data_type->is_vla)
+        throw_error(ERR_TYPE_ERROR, global->data_type->tok, "vla type is not allowed for global variables");
 }
 
 static void local_start(ASTObj_T* local, va_list args)
@@ -739,6 +752,10 @@ static void local_end(ASTObj_T* local, va_list args)
     }
     // fixme: evaluate seperately for structs and unions
     local->align = MAX(local->data_type->base ? local->data_type->base->size : local->data_type->size, 1);
+
+    // todo: check if type initializer is an array literal, if it is, calculate the size
+    if(local->data_type->is_vla)
+        throw_error(ERR_TYPE_ERROR, local->data_type->tok, "vla type is not allowed for local variables");
 }
 
 static void fn_arg_start(ASTObj_T* arg, va_list args)
@@ -1228,8 +1245,13 @@ static void struct_type(ASTType_T* s_type, va_list args)
     begin_scope(v, NULL);
 
     for(size_t i = 0; i < s_type->members->size; i++)
-        scope_add_node(v, s_type->members->items[i]);
+    {
+        ASTNode_T* member = s_type->members->items[i];
+        if(member->data_type->is_vla && s_type->members->size - i > 1 && !s_type->is_union)
+            throw_error(ERR_TYPE_ERROR, member->tok, "member of type `vla` has to be the last struct member");
 
+        scope_add_node(v, member);
+    }
     end_scope(v);
 }
 
@@ -1271,6 +1293,15 @@ static void type_begin(ASTType_T* type, va_list args)
 static void type_end(ASTType_T* type, va_list args)
 {
     GET_VALIDATOR(args);
+
+    ASTType_T* exp = expand_typedef(v, type);
+
+    if(exp->kind == TY_ARR && !exp->num_indices)
+    {
+        exp->is_vla = true;
+        type->is_vla = true;
+    }
+
     type->size = get_type_size(v, expand_typedef(v, type));
 }
 
