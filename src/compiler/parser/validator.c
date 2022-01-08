@@ -6,6 +6,7 @@
 #include "../io/log.h"
 #include "../optimizer/constexpr.h"
 #include "../toolchain.h"
+#include "../ast/types.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -1334,29 +1335,37 @@ static i32 get_type_size(Validator_T* v, ASTType_T* type)
     switch(type->kind)
     {
         case TY_I8:
+            return I8_S;
         case TY_U8:
+            return U8_S;
         case TY_CHAR:
-            return sizeof(char);
+            return CHAR_S;
+        case TY_BOOL:
+            return BOOL_S;
         case TY_I16:
+            return I16_S;
         case TY_U16:
-            return sizeof(short);
+            return U16_S;
         case TY_I32:
+            return I32_S;
         case TY_U32:
+            return U32_S;
         case TY_ENUM:
-            return sizeof(int);
+            return ENUM_S;
         case TY_I64:
+            return I64_S;
         case TY_U64:
-            return sizeof(long);
+            return U64_S;
         case TY_F32:
-            return sizeof(float);
+            return F32_S;
         case TY_F64:
-            return sizeof(double);
+            return F64_S;
         case TY_F80:
-            return sizeof(long double);
+            return F80_S;
         case TY_VOID:
-            return sizeof(void);
+            return VOID_S;
         case TY_PTR:
-            return sizeof(void*);
+            return PTR_S;
         case TY_TYPEOF:
             return get_type_size(v, expand_typedef(v, type->num_indices->data_type));
         case TY_UNDEF:

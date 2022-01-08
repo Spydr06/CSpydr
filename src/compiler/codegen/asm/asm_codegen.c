@@ -143,7 +143,7 @@ void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast)
     cg->ast = ast;
     cg->print = false;
     cg->silent = false;
-    cg->embed_file_locations = false;
+    cg->embed_file_locations = true;
 
     cg->code_buffer = open_memstream(&cg->buf, &cg->buf_len);
     cg->current_fn = NULL;
@@ -358,7 +358,7 @@ static void asm_gen_file_descriptors(ASMCodegenData_T* cg)
     for(size_t i = 0; i < cg->ast->imports->size; i++)
     {
         SrcFile_T* file = cg->ast->imports->items[i];
-        asm_println(cg, "  .file %d \"%s\"", file->file_no + 1, file->path);
+        asm_println(cg, "  .file %d \"%s\"", file->file_no + 1, file->short_path);
     }
 }
 
@@ -484,31 +484,31 @@ static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var, ASTNode_T* v
         case ND_INT:
             {
                 u8* bytes = (u8*)&val->int_val;
-                for(i32 i = 0; i < sizeof(i32); i++)
+                for(i32 i = 0; i < I32_S; i++)
                     asm_println(cg, "  .byte %d", bytes[i]);
             } return;
         case ND_LONG:
             {
                 u8* bytes = (u8*)&val->long_val;
-                for(i32 i = 0; i < sizeof(i64); i++)
+                for(i32 i = 0; i < I64_S; i++)
                     asm_println(cg, "  .byte %d", bytes[i]);
             } return;
         case ND_LLONG:
             {
                 u8* bytes = (u8*)&val->llong_val;
-                for(i32 i = 0; i < sizeof(i128); i++)
+                for(i32 i = 0; i < I64_S; i++)
                     asm_println(cg, "  .byte %d", bytes[i]);
             } return;
         case ND_FLOAT:
             {
                 union { f32 f32; u8 bytes[sizeof(f32)]; } u = { .f32 = val->float_val};
-                for(i32 i = 0; i < sizeof(f32); i++)
+                for(i32 i = 0; i < F32_S; i++)
                     asm_println(cg, "  .byte %d", u.bytes[i]);
             } return;
         case ND_DOUBLE:
             {
                 union { f64 f64; u8 bytes[sizeof(f64)]; } u = { .f64 = val->float_val};
-                for(i32 i = 0; i < sizeof(f64); i++)
+                for(i32 i = 0; i < F64_S; i++)
                     asm_println(cg, "  .byte %d", u.bytes[i]);
             } return;
         case ND_ARRAY:
@@ -606,6 +606,7 @@ static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs)
                 {
                     if(obj->is_extern) 
                         continue;
+                    
 
                     char* fn_name = asm_gen_identifier(obj->id);
                     asm_println(cg, "  .globl %s", fn_name);

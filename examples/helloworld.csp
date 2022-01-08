@@ -4,27 +4,20 @@ import "vec.csp";
 
 # todo: vla support hinzufügen -> is_vla flag, etc.
 
-type VLA: struct {
-    n: i32,
-    v: i32[]
-};  
-
 fn main(argc: i32, argv: &&char): i32
 {
     let vector = vec![i32];
-    vec_add!(vector, 2);
     vec_add!(vector, 3);
+    vec_add!(vector, 1);
+    vec_add!(vector, 4);
+    vec_add!(vector, 1);
+    vec_add!(vector, 5);
+    vec_add!(vector, 6);
+    vec_add!(vector, 9);
 
-    printf("%d\n", vector[1]);
-    #printf("%d\n", test()[-1]);
+    printf("%d\n", vector[4]);
+
+    vec_free!(vector);
+
     <- 0;
-}
-
-fn test(): &i32
-{
-    let vla: &VLA = malloc(sizeof VLA + 10);
-    vla.n = 69;
-    vla.v[0] = 420;
-
-    <- &(vla.v[1]);
 }
