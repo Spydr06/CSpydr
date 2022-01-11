@@ -4,7 +4,7 @@
 #include "../io/log.h"
 #include "../io/io.h"
 #include "../ast/types.h"
-#include "../ast/mem/ast_mem.h"
+#include "../mem/mem.h"
 #include "../platform/platform_bindings.h"
 #include "../lexer/lexer.h"
 #include "../preprocessor/preprocessor.h"
@@ -423,7 +423,7 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value)
     {
         char* link_flag = calloc(strlen(value) + 3, sizeof(char));
         sprintf(link_flag, "-l%s", value);
-        ast_mem_add_ptr(link_flag);
+        mem_add_ptr(link_flag);
 
         list_push(global.linker_flags, link_flag);
     }
@@ -431,7 +431,7 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value)
     {
         char* link_flag = calloc(strlen(value) + 3, sizeof(char));
         sprintf(link_flag, "-L%s", value);
-        ast_mem_add_ptr(link_flag);
+        mem_add_ptr(link_flag);
 
         list_push(global.linker_flags, link_flag);
     }
@@ -522,7 +522,7 @@ static ASTType_T* parse_struct_type(Parser_T* p)
 
     parser_consume(p, TOKEN_LBRACE, "expect `{` or identifier after struct keyword");
     struct_type->members = init_list(sizeof(struct AST_NODE_STRUCT*));
-    ast_mem_add_list(struct_type->members);
+    mem_add_list(struct_type->members);
 
     while(!tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF))
     {
@@ -549,7 +549,7 @@ static ASTType_T* parse_enum_type(Parser_T* p)
     parser_consume(p, TOKEN_LBRACE, "expect `{` after enum keyword");
 
     enum_type->members = init_list(sizeof(struct AST_OBJ_STRUCT*));
-    ast_mem_add_list(enum_type->members);
+    mem_add_list(enum_type->members);
 
     for(i32 i = 0; !tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF); i++)
     {
@@ -591,7 +591,7 @@ static ASTType_T* parse_lambda_type(Parser_T* p)
     parser_consume(p, TOKEN_LPAREN, "expect `(` before lambda argument types");
 
     lambda->arg_types = init_list(sizeof(struct AST_TYPE_STRUCT*));
-    ast_mem_add_list(lambda->arg_types);
+    mem_add_list(lambda->arg_types);
 
     while(!tok_is(p, TOKEN_RPAREN) && !tok_is(p, TOKEN_EOF))
     {
@@ -666,7 +666,7 @@ static ASTType_T* parse_type(Parser_T* p)
                 type = init_ast_type(TY_TUPLE, p->tok);
                 parser_advance(p);
                 type->arg_types = init_list(sizeof(struct AST_TYPE_STRUCT*));
-                ast_mem_add_list(type->arg_types);
+                mem_add_list(type->arg_types);
 
                 while(!tok_is(p, TOKEN_RBRACKET) && !tok_is(p, TOKEN_EOF))
                 {
@@ -868,13 +868,13 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
     {
         parser_advance(p);
         fn->templates = parse_template_list(p);
-        ast_mem_add_list(fn->templates);
+        mem_add_list(fn->templates);
     }
 
     parser_consume(p, TOKEN_LPAREN, "expect `(` after function name");
 
     fn->args = parse_argument_list(p, TOKEN_RPAREN);
-    ast_mem_add_list(fn->args);
+    mem_add_list(fn->args);
 
     parser_consume(p, TOKEN_RPAREN, "expect `)` after function arguments");
 
@@ -935,7 +935,7 @@ static ASTObj_T* parse_fn(Parser_T* p)
     if(global.ct == CT_ASM)
     {
         fn->objs = init_list(sizeof(struct AST_OBJ_STRUCT*));
-        ast_mem_add_list(fn->objs);
+        mem_add_list(fn->objs);
         collect_locals(fn->body, fn->objs);
     }   
 
@@ -1003,7 +1003,7 @@ static void parse_namespace(Parser_T* p, List_T* objs)
     ASTObj_T* found = find_namespace(objs, namespace->id->callee);
     if(found)
     {
-        namespace = found; // the previous namespace will be deleted by ast_mem.c later
+        namespace = found; // the previous namespace will be deleted by mem.c later
     }
     else
     {
@@ -1011,7 +1011,7 @@ static void parse_namespace(Parser_T* p, List_T* objs)
 
         // initialize the namespace's object list
         namespace->objs = init_list(sizeof(struct AST_OBJ_STRUCT));
-        ast_mem_add_list(namespace->objs);
+        mem_add_list(namespace->objs);
     }
 
     // FIXME: will not work, if the namespace is added to another one in another file
@@ -1092,8 +1092,8 @@ static ASTNode_T* parse_block(Parser_T* p)
 
     parser_consume(p, TOKEN_RBRACE, "expect `}` at the end of a block statement");
 
-    ast_mem_add_list(block->locals);
-    ast_mem_add_list(block->stmts);
+    mem_add_list(block->locals);
+    mem_add_list(block->stmts);
 
     return block;
 }
@@ -1163,7 +1163,7 @@ static ASTNode_T* parse_for(Parser_T* p)
     parser_consume(p, TOKEN_FOR, "expect `for` for a for loop statement");
 
     loop->locals = init_list(sizeof(struct AST_OBJ_STRUCT*));
-    ast_mem_add_list(loop->locals);
+    mem_add_list(loop->locals);
 
     ASTNode_T* prev_block = p->cur_block;
     p->cur_block = loop;
@@ -1264,7 +1264,7 @@ static ASTNode_T* parse_match(Parser_T* p)
     ASTNode_T* match = init_ast_node(ND_MATCH, p->tok);
     match->cases = init_list(sizeof(struct AST_NODE_STRUCT*));
     match->default_case = NULL;
-    ast_mem_add_list(match->cases);
+    mem_add_list(match->cases);
 
     parser_consume(p, TOKEN_MATCH, "expect `match` keyword to match an expression");
 
@@ -1470,7 +1470,7 @@ static ASTNode_T* parse_expr(Parser_T* p, Precedence_T prec, TokenType_T end_tok
 static List_T* parse_expr_list(Parser_T* p, TokenType_T end_tok)
 {
     List_T* list = init_list(sizeof(struct AST_NODE_STRUCT*));
-    ast_mem_add_list(list);
+    mem_add_list(list);
 
     while (!tok_is(p, end_tok) && !tok_is(p, TOKEN_EOF)) 
     {
@@ -1600,7 +1600,7 @@ static ASTNode_T* parse_char_lit(Parser_T* p)
 
     parser_consume(p, TOKEN_CHAR, "expect char literal ('a', 'b', ...)");
     
-    ast_mem_add_ptr(char_lit->str_val);
+    mem_add_ptr(char_lit->str_val);
     return char_lit;
 }
 
@@ -1619,7 +1619,7 @@ static ASTNode_T* parse_str_lit(Parser_T* p, bool keep_inline)
         parser_advance(p);
     }
 
-    ast_mem_add_ptr(str_lit->str_val);
+    mem_add_ptr(str_lit->str_val);
 
     if(global.ct == CT_ASM && !keep_inline)
     {
@@ -1684,7 +1684,7 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p)
     parser_consume(p, TOKEN_BIT_OR, "expect `|` for lambda expression");
 
     lambda_lit->args = init_list(sizeof(struct AST_OBJ_STRUCT*));
-    ast_mem_add_list(lambda_lit->args);
+    mem_add_list(lambda_lit->args);
 
     while(!tok_is(p, TOKEN_BIT_OR) && !tok_is(p, TOKEN_EOF))
     {
@@ -1835,7 +1835,7 @@ static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left)
     if(tok_is(p, TOKEN_LT))
     {
         call->template_types = parse_call_templates(p);
-        ast_mem_add_list(call->template_types);
+        mem_add_list(call->template_types);
     }   
 
     parser_consume(p, TOKEN_LPAREN, "expect `(` after callee");
@@ -1955,7 +1955,7 @@ static ASTNode_T* parse_infix_call(Parser_T* p, ASTNode_T* left)
     list_push(call->args, left);
     list_push(call->args, parse_expr(p, INFIX_CALL, TOKEN_SEMICOLON));
 
-    ast_mem_add_list(call->args);
+    mem_add_list(call->args);
     return call;
 }
 

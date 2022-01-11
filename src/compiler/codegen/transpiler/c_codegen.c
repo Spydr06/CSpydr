@@ -12,7 +12,7 @@
 #include <stdarg.h>
 
 #include "../../platform/platform_bindings.h"
-#include "../../ast/mem/ast_mem.h"
+#include "../../mem/mem.h"
 
 char* cc = DEFAULT_CC;
 char* cc_flags = DEFAULT_CC_FLAGS;
@@ -965,6 +965,6 @@ static char* c_gen_identifier(CCodegenData_T* cg, ASTIdentifier_T* id)
         memcpy(str, "__csp_", 6);
     }
 
-    ast_mem_add_ptr(str);
+    mem_add_ptr(str);
     return str;
 }

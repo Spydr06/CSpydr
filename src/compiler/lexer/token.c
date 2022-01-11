@@ -1,5 +1,5 @@
 #include "token.h"
-#include "../ast/mem/ast_mem.h"
+#include "../mem/mem.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -9,7 +9,7 @@
 
 Token_T* init_token(char* value, u32 line, u32 pos, TokenType_T type, SrcFile_T* source)
 {
-    Token_T* token = calloc(1, sizeof(struct TOKEN_STRUCT));
+    Token_T* token = mem_malloc(sizeof(struct TOKEN_STRUCT));
 
     token->line = line;
     token->pos = pos;
@@ -17,8 +17,6 @@ Token_T* init_token(char* value, u32 line, u32 pos, TokenType_T type, SrcFile_T*
 
     strcpy(token->value, value);
     token->source = source;
-
-    ast_mem_add_ptr(token);
 
     return token;
 }

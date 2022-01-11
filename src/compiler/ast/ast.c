@@ -2,13 +2,13 @@
 #include "../io/log.h"
 
 #include "types.h"
-#include "mem/ast_mem.h"
+#include "../mem/mem.h"
 
 #include <string.h>
 
 ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok)
 {
-    ASTNode_T* node = ast_malloc(sizeof(struct AST_NODE_STRUCT));
+    ASTNode_T* node = mem_malloc(sizeof(struct AST_NODE_STRUCT));
     memset(node, 0, sizeof(struct AST_NODE_STRUCT));
     node->kind = kind;
     node->tok = tok;
@@ -18,7 +18,7 @@ ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok)
 
 ASTIdentifier_T* init_ast_identifier(Token_T* tok, char callee[__CSP_MAX_TOKEN_SIZE])
 {
-    ASTIdentifier_T* id = ast_malloc(sizeof(struct AST_IDENTIFIER_STRUCT));
+    ASTIdentifier_T* id = mem_malloc(sizeof(struct AST_IDENTIFIER_STRUCT));
     memset(id, 0, sizeof(struct AST_IDENTIFIER_STRUCT));
 
     id->tok = tok;
@@ -31,7 +31,7 @@ ASTIdentifier_T* init_ast_identifier(Token_T* tok, char callee[__CSP_MAX_TOKEN_S
 
 ASTType_T* init_ast_type(ASTTypeKind_T kind, Token_T* tok)
 {
-    ASTType_T* type = ast_malloc(sizeof(struct AST_TYPE_STRUCT));
+    ASTType_T* type = mem_malloc(sizeof(struct AST_TYPE_STRUCT));
     memset(type, 0, sizeof(struct AST_TYPE_STRUCT));
     
     type->tok = tok;
@@ -43,7 +43,7 @@ ASTType_T* init_ast_type(ASTTypeKind_T kind, Token_T* tok)
 
 ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok)
 {
-    ASTObj_T* obj = ast_malloc(sizeof(struct AST_OBJ_STRUCT));
+    ASTObj_T* obj = mem_malloc(sizeof(struct AST_OBJ_STRUCT));
     memset(obj, 0, sizeof(struct AST_OBJ_STRUCT));
     obj->kind = kind;
     obj->tok = tok;
@@ -61,17 +61,9 @@ void init_ast_prog(ASTProg_T* prog, const char* main_file_path, const char* targ
     prog->lambda_literals = init_list(sizeof(struct AST_NODE_STRUCT*));
     prog->tuple_structs = init_list(sizeof(struct AST_TYPE_STRUCT*));
 
-    ast_mem_add_list(prog->objs);
-    ast_mem_add_list(prog->lambda_literals);
-    ast_mem_add_list(prog->tuple_structs);
-}
-
-void free_ast_prog(ASTProg_T* prog)
-{
-    if(prog == NULL)
-        return;
-
-    ast_free();
+    mem_add_list(prog->objs);
+    mem_add_list(prog->lambda_literals);
+    mem_add_list(prog->tuple_structs);
 }
 
 void merge_ast_progs(ASTProg_T* dest, ASTProg_T* src)

@@ -1,6 +1,6 @@
 #include "toolchain.h"
 
-#include "ast/mem/ast_mem.h"
+#include "mem/mem.h"
 #include "ast/ast.h"
 #include "codegen/transpiler/c_codegen.h"
 #include "parser/parser.h"
@@ -47,10 +47,8 @@ void compile(char* input_file, char* output_file, Action_T action)
 
     for(size_t i = 0; i < ast.imports->size; i++)
         free_srcfile(ast.imports->items[i]);
-    ast_free();
+    mem_free();
 }
-
-
 
 static void generate_ast(ASTProg_T* ast, char* path, char* target, bool silent)
 {
@@ -61,7 +59,7 @@ static void generate_ast(ASTProg_T* ast, char* path, char* target, bool silent)
     //optimize(ast);
     
     ast->imports = files;
-    ast_mem_add_list(files);
+    mem_add_list(files);
 }
 
 static void transpile_c(ASTProg_T* ast, char* target, Action_T action, bool print_c, bool silent)

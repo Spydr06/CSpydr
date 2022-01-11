@@ -1,7 +1,7 @@
 #include "codegen_utils.h"
 
 #include "../list.h"
-#include "../ast/mem/ast_mem.h"
+#include "../mem/mem.h"
 #include "../io/log.h"
 #include "../io/io.h"
 

@@ -5,7 +5,7 @@
 #include "../../platform/platform_bindings.h"
 #include "../codegen_utils.h"
 #include "../../error/error.h"
-#include "../../ast/mem/ast_mem.h"
+#include "../../mem/mem.h"
 #include "../../ast/types.h"
 
 #include <stdio.h>
@@ -354,7 +354,7 @@ void asm_run_code(ASMCodegenData_T* cg, const char* bin)
 static char* asm_gen_identifier(ASTIdentifier_T* id)
 {
     char* str = gen_identifier(id);
-    ast_mem_add_ptr(str);
+    mem_add_ptr(str);
     return str;
 }
 

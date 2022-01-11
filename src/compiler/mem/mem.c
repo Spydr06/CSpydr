@@ -1,11 +1,11 @@
-#include "ast_mem.h"
+#include "mem.h"
 
 #include <c-vector/vec.h>
 
 void** allocs = NULL;
 void** lists = NULL;
 
-void ast_free(void)
+void mem_free(void)
 {
     if(allocs)
     {
@@ -25,7 +25,7 @@ void ast_free(void)
     }
 }
 
-void* ast_malloc(size_t size)
+void* mem_malloc(size_t size)
 {
     if(!allocs)
         allocs = vector_create();
@@ -37,7 +37,7 @@ void* ast_malloc(size_t size)
     return ptr;
 }
 
-void ast_mem_add_ptr(void* ptr)
+void mem_add_ptr(void* ptr)
 {
     if(!allocs)
         allocs = vector_create();
@@ -45,7 +45,7 @@ void ast_mem_add_ptr(void* ptr)
     vector_add(&allocs, ptr);
 }
 
-void ast_mem_add_list(List_T* list)
+void mem_add_list(List_T* list)
 {
     if(!lists)
         lists = vector_create();
