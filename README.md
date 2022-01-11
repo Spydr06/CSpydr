@@ -18,8 +18,8 @@ CSpydr is a low-level, static typed, compiled programming language inspired by R
 A list of all the features, that are/will be implemented.
 
 ##### cspc Compiler features:
-- [ ] LLVM compiler -> under construction
-- [ ] Assembly compiler
+- [ ] Assembly compiler -> under construction
+- [ ] move to an intermediate bytecode compiler
 - [x] C transpiler
 - [x] lexing symbols
 - [x] parsing an AST
@@ -41,7 +41,8 @@ A list of all the features, that are/will be implemented.
 - [x] arrays
 - [x] file imports
 - [x] `extern` functions and globals
-- [x] `sizeof` keyword (currently called through the C interface)
+- [x] `sizeof` keyword
+- [x] `typeof` data type
 - [x] different loop types: `for`, `while` and `loop`
 - [x] macros
 - [x] namespaces
@@ -54,13 +55,13 @@ A list of all the features, that are/will be implemented.
 
 ##### CSpydr Standard library features
 - [x] basic `c17` `libc`-header implementation
+- [ ] from-the-ground custom written `stdlib` basing on linux syscalls
 - [ ] control- and safety-structs and -functions (like in Rust)
-- [ ] llvm-c implementation
 - [ ] higher-level wrapper-functions and -structs for the `libc` functions
 
 ## Installation
 
-Currently, CSpydr is only available for Linux. Once a first major release is in sight I will create an [AUR](https://aur.archlinux.org/) repository for [Arch Linux](https://archlinux.org/) and port it over to [Windows](https://www.microsoft.com/windows), but at the moment Installation is done via CMake. You also need [*LLVM-13*](https://llvm.org/docs/GettingStarted.html) to compile CSpydr.
+Currently, CSpydr is only available for Linux. Once a first major release is in sight I will create an [AUR](https://aur.archlinux.org/) repository for [Arch Linux](https://archlinux.org/) and port it over to [Windows](https://www.microsoft.com/windows), but at the moment Installation is done via CMake.
 Finally, enter these commands:
 
 ```bash

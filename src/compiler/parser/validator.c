@@ -232,7 +232,7 @@ static ASTObj_T* search_in_current_scope(VScope_T* scope, char* id)
     for(size_t i = 0; i < scope->objs->size; i++)
     {
         ASTObj_T* obj = scope->objs->items[i];
-        if(strcmp(obj->id->callee, id) == 0)
+        if(obj->id && strcmp(obj->id->callee, id) == 0)
             return obj;
     }
     return NULL;
@@ -1288,7 +1288,24 @@ static void typeof_type(ASTType_T* typeof_type, va_list args)
 
 static void type_begin(ASTType_T* type, va_list args)
 {
+    GET_VALIDATOR(args);
 
+    if(global.ct == CT_ASM && type->kind == TY_TUPLE)
+    {
+        type->kind = TY_STRUCT;
+        type->members = init_list(sizeof(struct AST_NODE_STRUCT*));
+        for(size_t i = 0; i < type->arg_types->size; i++)
+        {
+            ASTType_T* arg_type = type->arg_types->items[i];
+            char id[__CSP_MAX_TOKEN_SIZE] = {};
+            sprintf(id, "_%ld", i);
+
+            ASTNode_T* struct_member = init_ast_node(ND_STRUCT_MEMBER, arg_type->tok);
+            struct_member->data_type = arg_type;
+            struct_member->id = init_ast_identifier(arg_type->tok, id);
+            list_push(type->members, struct_member);
+        }
+    }
 }
 
 static void type_end(ASTType_T* type, va_list args)

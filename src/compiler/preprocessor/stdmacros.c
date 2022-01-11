@@ -1,7 +1,7 @@
 #include "stdmacros.h"
 #include "preprocessor.h"
 #include "../version.h"
-#include "token.h"
+#include "../lexer/token.h"
 #include "../toolchain.h"
 #include "../globals.h"
 #include "../ast/types.h"
@@ -127,8 +127,6 @@ const char* get_compile_type(void)
     {
         case CT_ASM:
             return "asm";
-        case CT_LLVM:
-            return "llvm";
         case CT_TRANSPILE:
             return "transpile";
         default:

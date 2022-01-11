@@ -31,16 +31,16 @@ const char asm_start_text[] =
     "  call main\n"
     "  movq %rax, %rdi\n"
     "  movq $60, %rax\n"
-    "  syscall\n";
+    "  syscall";
 
-static char *argreg8[] = {"%dil", "%sil", "%dl", "%cl", "%r8b", "%r9b"};
+static char *argreg8[]  = {"%dil", "%sil", "%dl", "%cl", "%r8b", "%r9b"};
 static char *argreg16[] = {"%di", "%si", "%dx", "%cx", "%r8w", "%r9w"};
 static char *argreg32[] = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d"};
 static char *argreg64[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
 
 // The table for type casts
-static char i32i8[] = "movsbl %al, %eax";
-static char i32u8[] = "movzbl %al, %eax";
+static char i32i8[]  = "movsbl %al, %eax";
+static char i32u8[]  = "movzbl %al, %eax";
 static char i32i16[] = "movswl %ax, %eax";
 static char i32u16[] = "movzwl %ax, %eax";
 static char i32f32[] = "cvtsi2ssl %eax, %xmm0";
@@ -66,8 +66,8 @@ static char u64f80[] =
   "mov %rax, -8(%rsp); fildq -8(%rsp); test %rax, %rax; jns 1f;"
   "mov $1602224128, %eax; mov %eax, -4(%rsp); fadds -4(%rsp); 1:";
 
-static char f32i8[] = "cvttss2sil %xmm0, %eax; movsbl %al, %eax";
-static char f32u8[] = "cvttss2sil %xmm0, %eax; movzbl %al, %eax";
+static char f32i8[]  = "cvttss2sil %xmm0, %eax; movsbl %al, %eax";
+static char f32u8[]  = "cvttss2sil %xmm0, %eax; movzbl %al, %eax";
 static char f32i16[] = "cvttss2sil %xmm0, %eax; movswl %ax, %eax";
 static char f32u16[] = "cvttss2sil %xmm0, %eax; movzwl %ax, %eax";
 static char f32i32[] = "cvttss2sil %xmm0, %eax";
@@ -77,8 +77,8 @@ static char f32u64[] = "cvttss2siq %xmm0, %rax";
 static char f32f64[] = "cvtss2sd %xmm0, %xmm0";
 static char f32f80[] = "movss %xmm0, -4(%rsp); flds -4(%rsp)";
 
-static char f64i8[] = "cvttsd2sil %xmm0, %eax; movsbl %al, %eax";
-static char f64u8[] = "cvttsd2sil %xmm0, %eax; movzbl %al, %eax";
+static char f64i8[]  = "cvttsd2sil %xmm0, %eax; movsbl %al, %eax";
+static char f64u8[]  = "cvttsd2sil %xmm0, %eax; movzbl %al, %eax";
 static char f64i16[] = "cvttsd2sil %xmm0, %eax; movswl %ax, %eax";
 static char f64u16[] = "cvttsd2sil %xmm0, %eax; movzwl %ax, %eax";
 static char f64i32[] = "cvttsd2sil %xmm0, %eax";
@@ -94,8 +94,8 @@ static char f64f80[] = "movsd %xmm0, -8(%rsp); fldl -8(%rsp)";
 
 #define FROM_F80_2 " -24(%rsp); fldcw -10(%rsp); "
 
-static char f80i8[] = FROM_F80_1 "fistps" FROM_F80_2 "movsbl -24(%rsp), %eax";
-static char f80u8[] = FROM_F80_1 "fistps" FROM_F80_2 "movzbl -24(%rsp), %eax";
+static char f80i8[]  = FROM_F80_1 "fistps" FROM_F80_2 "movsbl -24(%rsp), %eax";
+static char f80u8[]  = FROM_F80_1 "fistps" FROM_F80_2 "movzbl -24(%rsp), %eax";
 static char f80i16[] = FROM_F80_1 "fistps" FROM_F80_2 "movzbl -24(%rsp), %eax";
 static char f80u16[] = FROM_F80_1 "fistpl" FROM_F80_2 "movswl -24(%rsp), %eax";
 static char f80i32[] = FROM_F80_1 "fistpl" FROM_F80_2 "mov -24(%rsp), %eax";
@@ -122,20 +122,24 @@ static char *cast_table[LAST][LAST] = {
   {f80i8, f80i16, f80i32, f80i64, f80u8, f80u16, f80u32, f80u64, f80f32, f80f64, NULL},   // f80
 };
 
-#define CONVERT_INDEX_NODE(node)                            \
-    (ASTNode_T) {                                           \
-        .kind = ND_DEREF,                                   \
-        .data_type = node->data_type,                       \
-        .right = &(ASTNode_T) {                             \
-            .kind = ND_CAST,                                \
-            .data_type = (ASTType_T*) primitives[TY_I64],   \
-            .left = &(ASTNode_T) {                          \
-                .kind = ND_ADD,                             \
-                .data_type = node->expr->data_type,         \
-                .left = node->left,                         \
-                .right = node->expr                         \
-            }                                               \
-        }                                                   \
+#define CONVERT_INDEX_NODE(node)                                  \
+    (ASTNode_T) {                                                 \
+        .kind = ND_DEREF,                                         \
+        .data_type = node->data_type,                             \
+        .right = &(ASTNode_T) {                                   \
+            .kind = ND_CAST,                                      \
+            .data_type = (ASTType_T*) primitives[TY_I64],         \
+            .left = &(ASTNode_T) {                                \
+                .kind = ND_ADD,                                   \
+                .data_type = (ASTType_T*) primitives[TY_I64],     \
+                .left = node->left,                               \
+                .right = &(ASTNode_T) {                           \
+                    .kind = ND_CAST,                              \
+                    .data_type = (ASTType_T*) primitives[TY_I64], \
+                    .left = node->expr                            \
+                }                                                 \
+            }                                                     \
+        }                                                         \
     }
 
 static void generate_files(ASMCodegenData_T* cg);
@@ -156,7 +160,7 @@ void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast)
     cg->ast = ast;
     cg->print = false;
     cg->silent = false;
-    cg->embed_file_locations = true;
+    cg->embed_file_locations = false;
 
     cg->code_buffer = open_memstream(&cg->buf, &cg->buf_len);
     cg->current_fn = NULL;
@@ -1071,6 +1075,7 @@ static void asm_cmp_zero(ASMCodegenData_T* cg, ASTType_T* ty)
 
 static void asm_cast(ASMCodegenData_T* cg, ASTType_T* from, ASTType_T* to) 
 {
+    printf("cast\n");
     if(to->kind == TY_VOID)
         return;
     
@@ -1331,6 +1336,9 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
     {
         case ND_NOOP:
             return;
+        case ND_ASM:
+            asm_println(cg, "%s", node->expr->str_val);
+            return;
         case ND_CLOSURE:
             asm_gen_expr(cg, node->expr);
             return;
@@ -1392,10 +1400,10 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         
         case ND_INDEX:
-            node->left->data_type = unpack(node->left->data_type);
-            if(!node->left->data_type || !node->left->data_type->base)
-                throw_error(ERR_TYPE_ERROR, node->tok, "Cannot get index of data type `%d`", node->data_type->kind);
-            {
+            {            
+                node->left->data_type = unpack(node->left->data_type);
+                if(!node->left->data_type || !node->left->data_type->base)
+                    throw_error(ERR_TYPE_ERROR, node->tok, "Cannot get index of data type `%d`", node->data_type->kind);
                 // x[y] gets converted to *(x + y * sizeof *x)
                 ASTNode_T converted = CONVERT_INDEX_NODE(node);
                 asm_gen_expr(cg, &converted);
@@ -1479,12 +1487,14 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_load(cg, node->data_type);
             return;
         
-        case ND_ARRAY:
-            return;
-        
         case ND_STRUCT:
+            throw_error(ERR_CODEGEN, node->tok, "cannot have struct literal at this place");
             return;
         
+        case ND_ARRAY:
+            throw_error(ERR_CODEGEN, node->tok, "cannot have array literal at this place");
+            return;
+
         case ND_REF:
             asm_gen_addr(cg, node->right);
             return;
@@ -1495,6 +1505,39 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         
         case ND_ASSIGN:
+            if(unpack(node->left->data_type)->base)
+            {   
+                switch(node->right->kind)
+                {
+                    case ND_STRUCT:
+                        printf("not implemented!\n");
+                        return;
+                    case ND_ARRAY:
+                        // convert x = [y, z, w] to x[0] = y, x[1] = z, x[2] = w
+                        for(size_t i = 0; i < node->right->args->size; i++)
+                        {
+                            ASTNode_T converted = {
+                                .kind = ND_ASSIGN,
+                                .data_type = unpack(node->left->data_type)->base,
+                                .left = &(ASTNode_T) {
+                                    .kind = ND_INDEX,
+                                    .data_type = unpack(node->left->data_type)->base,
+                                    .left = node->left,
+                                    .expr = &(ASTNode_T) {
+                                        .kind = ND_LONG,
+                                        .data_type = (ASTType_T*) primitives[TY_I64],
+                                        .long_val = i
+                                    }
+                                },
+                                .right = node->right->args->items[i]
+                            };  
+                            asm_gen_expr(cg, &converted);
+                        }
+                        return;
+                    default:
+                        break;
+                }
+            }
             asm_gen_addr(cg, node->left);
             asm_push(cg);
             asm_gen_expr(cg, node->right);
@@ -1886,9 +1929,6 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
     switch(node->kind)
     {
         case ND_NOOP:
-            return;
-        case ND_ASM:
-            asm_println(cg, "%s", node->expr->str_val);
             return;
         case ND_IF:
         {

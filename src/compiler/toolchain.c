@@ -3,7 +3,6 @@
 #include "ast/mem/ast_mem.h"
 #include "ast/ast.h"
 #include "codegen/transpiler/c_codegen.h"
-#include "codegen/llvm/llvm_codegen.h"
 #include "parser/parser.h"
 #include "io/file.h"
 #include "io/log.h"
@@ -32,9 +31,6 @@ void compile(char* input_file, char* output_file, Action_T action)
 
     switch(global.ct)
     {
-        case CT_LLVM:
-            generate_llvm(&ast, output_file, action, global.print_code, global.silent);
-            break;
         case CT_TRANSPILE:
             transpile_c(&ast, output_file, action, global.print_code, global.silent);
             break;
@@ -66,35 +62,6 @@ static void generate_ast(ASTProg_T* ast, char* path, char* target, bool silent)
     
     ast->imports = files;
     ast_mem_add_list(files);
-}
-
-// sets up and runs the compilation pipeline using LLVM
-static void generate_llvm(ASTProg_T* ast, char* target, Action_T action, bool print_llvm, bool silent)
-{
-    LLVMCodegenData_T cg;
-    init_llvm_cg(&cg, ast);
-    cg.silent = silent;
-    llvm_gen_code(&cg);
-
-    if(print_llvm)
-        llvm_print_code(&cg);
-
-    switch(action)
-    {
-        case AC_BUILD:
-            llvm_emit_code(&cg, target);
-            break;
-        case AC_RUN:
-            llvm_run_code(&cg);
-            break;
-        case AC_DEBUG:
-            // TODO:
-            break;
-        default:
-            LOG_ERROR_F("Unrecognized action of type [%d], exit\n", action);
-            exit(1);
-    }
-    free_llvm_cg(&cg);
 }
 
 static void transpile_c(ASTProg_T* ast, char* target, Action_T action, bool print_c, bool silent)

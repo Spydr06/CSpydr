@@ -2,7 +2,7 @@
     CSPC - THE CSPYDR PROGRAMMING LANGUAGE COMPILER
     This is the main file and entry point to the compiler.
 
-    This compiler and all components of CSpydr, except external dependencies (LLVM, acutest, ...), are licensed under the MIT license.
+    This compiler and all components of CSpydr, except external dependencies (acutest, c-vector, json-c), are licensed under the MIT license.
 
     Creator:
         https://github.com/spydr06
@@ -15,15 +15,12 @@
 #include <string.h>
 
 // compiler includes
-#include "io/repl/repl.h"
 #include "toolchain.h"
 #include "io/io.h"
 #include "io/log.h"
-#include "codegen/llvm/llvm_codegen.h"
 #include "codegen/transpiler/c_codegen.h"
 #include "platform/platform_bindings.h"
 #include "version.h"
-//#include "ast/xml.h"
 
 // default texts, which get shown if you enter help, info or version flags
 // links to me (Spydr/Spydr06/MCSpiderFe), the creator of CSpydr
@@ -33,6 +30,8 @@
 #define CSPYDR_SUBREDDIT      "https://reddit.com/r/cspydr"
 
 #define CSPC_HELP_COMMAND "cspc --help"
+
+#define streq(a, b) (strcmp(a, b) == 0)
 
 const char* usage_text = COLOR_BOLD_WHITE "Usage:" COLOR_RESET " cspc [run, build, debug, repl] [<input file> <flags>]\n"
                          "       cspc [--help, --info, --version]\n";
@@ -59,7 +58,6 @@ const char* help_text = "%s"
                        "  build    Builds a cspydr program to a binary to execute.\n"
                        "  run      Builds, then runs a cspydr program directly.\n"
                        "  debug    Runs a cspydr program with special debug tools. [!!NOT IMPLEMENTED YET!!]\n"
-                       "  repl     Opens the cspydr REPL console.\n"
                        COLOR_BOLD_WHITE "Options:\n" COLOR_RESET
                        "  -h, --help             Displays this help text and quits.\n"
                        "  -v, --version          Displays the version of CSpydr and quits.\n"
@@ -67,7 +65,6 @@ const char* help_text = "%s"
                        "  -o, --output [file]    Sets the target output file (default: " DEFAULT_OUTPUT_FILE ").\n"
                        "  -t, --transpile        Instructs the compiler to compile to C source code (deprecated).\n"
                        "  -a, --asm              Instructs the compile to compile to x86_64 gnu assembly code.\n"
-                       "  -l, --llvm             Instructs the compiler to compile to LLVM BitCode.\n"
                        "      --to-json          Emit the AST directly as a JSON file.\n"
                        "      --from-json        Load the AST from a JSON file and compile.\n"
                        "      --print-code       Prints the generated code (C | Assembly | LLVM IR).\n"
@@ -85,17 +82,15 @@ const char* version_text = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE
                           "\n"
                           "For more information type -i.\n";
 
-const struct { char* as_str; Action_T ac; } action_table[AC_UNDEF] = {
+const struct { 
+    char* as_str; 
+    Action_T ac;
+} action_table[] = 
+{
     {"build", AC_BUILD},
     {"run",   AC_RUN},
     {"debug", AC_DEBUG},
-    {"repl",  AC_REPL},
 };
-
-static inline bool streq(char* a, char* b)
-{
-    return strcmp(a, b) == 0;
-}
 
 static void evaluate_info_flags(char* argv)
 {
@@ -122,7 +117,6 @@ i32 main(i32 argc, char* argv[])
 {
     init_globals();
     atexit(globals_exit_hook);
-    atexit(llvm_exit_hook);
 
     global.exec_name = argv[0]; // save the execution name for later use
     if(argc == 1)
@@ -136,39 +130,30 @@ i32 main(i32 argc, char* argv[])
         evaluate_info_flags(argv[1]);
 
     // get the action to perform
-    Action_T action = AC_UNDEF;
+    Action_T action = -1;
     global.ct = DEFAULT_COMPILE_TYPE;
-    for(i32 i = 0; i < AC_UNDEF; i++)
+    for(i32 i = 0; i < 3; i++)
         if(streq(argv[1], action_table[i].as_str))
             action = action_table[i].ac;
-    if(action == AC_UNDEF)
+    if(action == -1)
     {
         LOG_ERROR_F("[Error] Unknown action \"%s\", expect [build, run, debug, repl]\n", argv[1]);
+        exit(1);
     }
-    
+
     // declare the input/output files
     char* output_file = DEFAULT_OUTPUT_FILE;
     char* input_file;
 
-    if(action == AC_REPL)
+    input_file = argv[2];
+    if(!file_exists(input_file))
     {
-        // remove the first two flags form argc/argv
-        argc -= 2;
-        argv += 2;
+        LOG_ERROR_F("[Error] Error opening file \"%s\": No such file or directory\n", input_file);
+        exit(1);
     }
-    else
-    {
-        input_file = argv[2];
-        if(!file_exists(input_file))
-        {
-            LOG_ERROR_F("[Error] Error opening file \"%s\": No such file or directory\n", input_file);
-            exit(1);
-        }
-
-        // remove the first three flags form argc/argv
-        argc -= 3;
-        argv += 3;
-    }
+    // remove the first three flags form argc/argv
+    argc -= 3;
+    argv += 3;
 
     // get all the other flags
     for(i32 i = 0; i < argc; i++)
@@ -188,8 +173,6 @@ i32 main(i32 argc, char* argv[])
             global.print_code = true;
         else if(streq(arg, "-t") || streq(arg, "--transpile"))
             global.ct = CT_TRANSPILE;
-        else if(streq(arg, "-l") || streq(arg, "--llvm"))
-            global.ct = CT_LLVM;
         else if(streq(arg, "-a") || streq(arg, "--asm"))
             global.ct = CT_ASM;
         else if(streq(arg, "--to-json"))
@@ -220,10 +203,7 @@ i32 main(i32 argc, char* argv[])
     if(global.ct == CT_TRANSPILE)
         LOG_WARN(COLOR_BOLD_YELLOW "[Warning]" COLOR_RESET COLOR_YELLOW " Compilation mode `transpile` is deprecated and will get removed eventually\n");
 
-    if(action == AC_REPL)
-        repl();
-    else
-        compile(input_file, output_file, action);
+    compile(input_file, output_file, action);
 
     if(!streq(cc_flags, DEFAULT_CC_FLAGS))
         free(cc_flags);

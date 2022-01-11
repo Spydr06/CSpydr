@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<struct name="Person">
-    <field name="name" type="string"/>
-    <field name="age" type="int"/>
-    <description>This describes a person</description>
-</struct>

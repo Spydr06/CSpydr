@@ -7,7 +7,7 @@
 #include "../ast/mem/ast_mem.h"
 #include "../platform/platform_bindings.h"
 #include "../lexer/lexer.h"
-#include "../lexer/preprocessor.h"
+#include "../preprocessor/preprocessor.h"
 #include "../toolchain.h"
 
 #include <limits.h>
@@ -68,6 +68,7 @@ typedef enum
 
 static ASTNode_T* parse_id(Parser_T* p);
 static ASTNode_T* parse_int_lit(Parser_T* p);
+static ASTNode_T* parse_inline_asm(Parser_T* p);
 static ASTNode_T* parse_float_lit(Parser_T* p);
 static ASTNode_T* parse_char_lit(Parser_T* p);
 static ASTNode_T* parse_bool_lit(Parser_T* p);
@@ -104,6 +105,7 @@ static ASTNode_T* parse_pow_3(Parser_T* p, ASTNode_T* left);
 static struct { PrefixParseFn_T pfn; InfixParseFn_T ifn; Precedence_T prec; } expr_parse_fns[TOKEN_EOF + 1] = {
     [TOKEN_ID]       = {parse_id, NULL, LOWEST},
     [TOKEN_INT]      = {parse_int_lit, NULL, LOWEST},
+    [TOKEN_ASM]      = {parse_inline_asm, NULL, LOWEST},
     [TOKEN_FLOAT]    = {parse_float_lit, NULL, LOWEST},
     [TOKEN_NIL]      = {parse_nil_lit, NULL, LOWEST},
     [TOKEN_TRUE]     = {parse_bool_lit, NULL, LOWEST},
@@ -1432,15 +1434,6 @@ static ASTNode_T* parse_stmt(Parser_T* p)
                 }
                 return noop;
             }
-        case TOKEN_ASM:
-            {
-                ASTNode_T* asm_stmt = init_ast_node(ND_ASM, p->tok);
-                parser_advance(p);
-
-                asm_stmt->expr = parse_str_lit(p, true);
-                parser_consume(p, TOKEN_SEMICOLON, "expect `;` after `asm` statement");
-                return asm_stmt;
-            }
         default:
             return parse_expr_stmt(p);
     }
@@ -1505,6 +1498,16 @@ static ASTNode_T* parse_id(Parser_T* p)
         default:
             return id;
     }
+}
+
+static ASTNode_T* parse_inline_asm(Parser_T* p)
+{
+    ASTNode_T* asm_stmt = init_ast_node(ND_ASM, p->tok);
+    parser_advance(p);
+    asm_stmt->expr = parse_str_lit(p, true);
+    
+    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after `asm` statement");
+    return asm_stmt;
 }
 
 static ASTNode_T* parse_int_lit(Parser_T* p)

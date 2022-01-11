@@ -2,7 +2,7 @@
 #define CSPYDR_PREPROCESSOR_H
 
 #include "../list.h"
-#include "lexer.h"
+#include "../lexer/lexer.h"
 
 #include <stdint.h>
 
