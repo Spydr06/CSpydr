@@ -1,5 +1,8 @@
 #include "toolchain.h"
 
+#include <string.h>
+
+#include "platform/platform_bindings.h"
 #include "mem/mem.h"
 #include "ast/ast.h"
 #include "codegen/transpiler/c_codegen.h"
@@ -18,6 +21,8 @@ static void generate_llvm(ASTProg_T*, char* target, Action_T action, bool print_
 static void transpile_c(ASTProg_T*, char* target, Action_T action, bool print_c, bool silent);
 static void generate_asm(ASTProg_T* ast, char* target, Action_T action, bool print_asm, bool silent);
 static void generate_json(ASTProg_T* ast, char* target, bool print_json, bool silent);
+
+static void run(char* file);
 
 void compile(char* input_file, char* output_file, Action_T action)
 {
@@ -48,6 +53,25 @@ void compile(char* input_file, char* output_file, Action_T action)
     for(size_t i = 0; i < ast.imports->size; i++)
         free_srcfile(ast.imports->items[i]);
     mem_free();
+
+    switch(action)
+    {
+        case AC_RUN:
+            run(output_file);
+            remove(output_file);
+            break;
+
+        case AC_BUILD:
+            break;
+
+        case AC_DEBUG:
+            LOG_ERROR(COLOR_BOLD_RED "[ERROR]" COLOR_RESET COLOR_RED " the `debug` action is not supported yet.\n");
+            break;
+
+        default:
+            LOG_ERROR_F(COLOR_BOLD_RED "[ERROR]" COLOR_RESET COLOR_RED "unknown action `%d`\n", action);
+            break;
+    }
 }
 
 static void generate_ast(ASTProg_T* ast, char* path, char* target, bool silent)
@@ -70,12 +94,6 @@ static void transpile_c(ASTProg_T* ast, char* target, Action_T action, bool prin
     cg.silent = silent;
     c_gen_code(&cg, target);
 
-    if(action == AC_RUN)
-    {
-        run_c_code(&cg, target);
-        remove(target);
-    }
-
     free(cg.buf);
 }
 
@@ -87,13 +105,6 @@ static void generate_asm(ASTProg_T* ast, char* target, Action_T action, bool pri
     cg.print = print_asm;
 
     asm_gen_code(&cg, target);
-
-    if(action == AC_RUN)
-    {
-        asm_run_code(&cg, target);
-        remove(target);
-    }
-    
     free(cg.buf);
 }
 
@@ -102,4 +113,17 @@ static void generate_json(ASTProg_T* ast, char* target, bool print_json, bool si
     if(!silent)
         LOG_OK_F(COLOR_BOLD_BLUE "  Generating" COLOR_BOLD_WHITE " JSON" COLOR_RESET " to %s\n", target);
     ast_to_json(ast, target, print_json);
+}
+
+static void run(char* file)
+{
+    if(!global.silent)
+        LOG_OK_F(COLOR_BOLD_BLUE "  Executing " COLOR_RESET " %s\n", file);
+    
+    const char* cmd_tmp = "." DIRECTORY_DELIMS "%s";
+    char cmd[BUFSIZ];
+    memset(cmd, '\0', sizeof cmd);
+    sprintf(cmd, cmd_tmp, file);
+
+    global.last_exit_code = subprocess(cmd, (char* const[]){cmd, NULL}, !global.silent);
 }

@@ -272,40 +272,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
     // run the linker
     {
         if(!cg->silent)
-        {
             LOG_OK_F(COLOR_BOLD_BLUE "  Linking    " COLOR_RESET "%s\n", target);
-        }
-
-        //const char* args[] = {
-        //    "ld",
-        //    "-o",
-        //    target,
-        //    "-m",
-        //    "elf_x86_64",
-        //    "/usr/lib64/crt1.o",
-        //    "/usr/lib64/crti.o",
-        //    "/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0/crtbegin.o",
-        // x   "-L/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0",
-        // x   "-L/usr/lib/x86_64-linux-gnu",
-        // x   "-L/usr/lib64",
-        // x   "-L/lib64",
-        // x   "-L/usr/lib/x86_64-linux-gnu",
-        // x   "-L/usr/lib/x86_64-pc-linux-gnu",
-        // x   "-L/usr/lib/x86_64-redhat-linux",
-        // x   "-L/usr/lib",
-        // x   "-L/lib",
-        //    "-dynamic-linker",
-        //    "/lib64/ld-linux-x86-64.so.2",
-        //    obj_file,
-        // x   "-lc",
-        // x   "-lgcc",
-        //    "--as-needed",
-        // x   "-lgcc_s",
-        //    "--no-as-needed",
-        //    "/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0/crtend.o",
-        //    "",
-        //    NULL
-        //};
 
         List_T* args = init_list(sizeof(char*));
         list_push(args, "ld");
@@ -336,19 +303,6 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
 
         free_list(args);
     }
-}
-
-void asm_run_code(ASMCodegenData_T* cg, const char* bin)
-{
-    if(!cg->silent)
-        LOG_OK_F("\033[A\r" COLOR_BOLD_BLUE "  Executing " COLOR_RESET " %s\n", bin);
-    
-    const char* cmd_tmp = "." DIRECTORY_DELIMS "%s";
-    char cmd[BUFSIZ];
-    memset(cmd, '\0', sizeof cmd);
-    sprintf(cmd, cmd_tmp, bin);
-
-    global.last_exit_code = subprocess(cmd, (char* const[]){cmd, NULL}, !cg->silent);
 }
 
 static char* asm_gen_identifier(ASTIdentifier_T* id)
@@ -1075,7 +1029,6 @@ static void asm_cmp_zero(ASMCodegenData_T* cg, ASTType_T* ty)
 
 static void asm_cast(ASMCodegenData_T* cg, ASTType_T* from, ASTType_T* to) 
 {
-    printf("cast\n");
     if(to->kind == TY_VOID)
         return;
     
@@ -1987,9 +1940,45 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
         } return;
     
         case ND_MATCH:
-            return;
+            {
+                asm_gen_expr(cg, node->condition);
+                //asm_println(cg, "  mov %%rax, %%rdi");
+                asm_count();
+
+                char* ax = (node->condition->data_type->size == 8) ? "%rax" : "%eax";
+                char* di = (node->condition->data_type->size == 8) ? "%rdi" : "%edi";
+                for(size_t i = 0; i < node->cases->size; i++)
+                {
+                    ASTNode_T* _case = node->cases->items[i];
+                    _case->long_val = i;
+
+                    asm_push(cg);
+                    asm_push(cg);
+                    asm_gen_expr(cg, _case->condition);
+                    asm_pop(cg, "%rdi");
+                    //asm_println(cg, "  mov %s, %s", ax, di);
+                    asm_println(cg, "  cmp %s, %s", ax, di);
+                    asm_pop(cg, "%rax");
+                    asm_println(cg, "  je .L.case.%ld.%ld", i, asm_current_count());
+                }
+
+                if(node->default_case) 
+                {
+                    node->default_case->long_val = node->cases->size;
+                    asm_println(cg, "  jmp .L.case.%ld.%ld", node->cases->size, asm_current_count());
+                }
+                for(size_t i = 0; i < node->cases->size; i++)
+                    asm_gen_stmt(cg, node->cases->items[i]);
+                if(node->default_case)
+                    asm_gen_stmt(cg, node->default_case);
+                
+                asm_println(cg, ".L.break.%ld:", asm_current_count());
+            } return;
         
         case ND_CASE:
+            asm_println(cg, ".L.case.%ld.%ld:", node->long_val, asm_current_count());
+            asm_gen_stmt(cg, node->body);
+            asm_println(cg, "  jmp .L.break.%ld", asm_current_count());
             return;
         
         case ND_BLOCK:
@@ -2023,11 +2012,11 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         
         case ND_CONTINUE:
-            asm_println(cg, "  jmp .L.break.%ld", asm_current_count());
+            asm_println(cg, "  jmp .L.continue.%ld", asm_current_count());
             return;
 
         case ND_BREAK:
-            asm_println(cg, "  jmp .L.continue.%ld", asm_current_count());
+            asm_println(cg, "  jmp .L.break.%ld", asm_current_count());
             return;
 
         default:

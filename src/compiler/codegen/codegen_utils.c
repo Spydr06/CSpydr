@@ -28,18 +28,6 @@ static List_T* get_id_path(ASTIdentifier_T* id) {
     return path;
 }
 
-u64 hash_64(const char* key)
-{
-    u64 h = 525201411107845655ull;
-    for (;*key;++key) {
-        h ^= *key;
-        h *= 0x5bd1e9955bd1e995;
-        h ^= h >> 47;
-    }
-    return h;
-}
-
-
 char* gen_identifier(ASTIdentifier_T* id)
 {
     char* new_c;

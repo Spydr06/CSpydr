@@ -256,6 +256,7 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
             for(size_t i = 0; i < node->cases->size; i++)
                 ast_node(list, node->cases->items[i], custom_args);
             ast_node(list, node->body, custom_args);
+            ast_node(list, node->default_case, custom_args);
             break;
 
         case ND_RETURN:

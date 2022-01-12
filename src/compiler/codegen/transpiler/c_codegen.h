@@ -31,6 +31,5 @@ void init_c_cg(CCodegenData_T* cg, ASTProg_T* ast);
 void free_c_cg(CCodegenData_T* cg);
 
 void c_gen_code(CCodegenData_T* cg, const char* target);
-void run_c_code(CCodegenData_T* cg, const char* bin);
 
 #endif

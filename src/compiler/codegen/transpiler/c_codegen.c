@@ -251,19 +251,6 @@ static void write_code(CCodegenData_T* cg, const char* target_bin)
     fclose(out);
 }
 
-void run_c_code(CCodegenData_T* cg, const char* bin)
-{
-    if(!cg->silent)
-        LOG_OK_F(COLOR_BOLD_BLUE "  Executing " COLOR_RESET " %s\n", bin);
-    
-    const char* cmd_tmp = "." DIRECTORY_DELIMS "%s";
-    char cmd[BUFSIZ];
-    memset(cmd, '\0', sizeof cmd);
-    sprintf(cmd, cmd_tmp, bin);
-
-    global.last_exit_code = subprocess(cmd, (char* const[]){cmd, NULL}, !cg->silent);
-}
-
 static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
 {
     if(ty->is_constant)
