@@ -12,6 +12,7 @@
 #include "io/io.h"
 #include "codegen/asm/asm_codegen.h"
 #include "ast/ast_json.h"
+#include "debugger/dbg.h"
 
 // generate the ast from the source file (lexing, preprocessing, parsing)
 static void generate_ast(ASTProg_T* ast, char* path, char* target, bool silent);
@@ -65,7 +66,7 @@ void compile(char* input_file, char* output_file, Action_T action)
             break;
 
         case AC_DEBUG:
-            LOG_ERROR(COLOR_BOLD_RED "[ERROR]" COLOR_RESET COLOR_RED " the `debug` action is not supported yet.\n");
+            debug_repl(input_file, output_file);
             break;
 
         default:
