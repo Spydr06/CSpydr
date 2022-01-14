@@ -2,8 +2,7 @@
 #define CSPYDR_LOG_H
 
 #include <stdio.h>
-
-#define OUTPUT_STREAM stdout
+#include "../config.h"
 
 #define COLOR_RESET   "\033[0m"
 #define COLOR_BLACK   "\033[30m"     

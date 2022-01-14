@@ -5,9 +5,6 @@
 
 #include <stdio.h>
 
-#define DEFAULT_CC "gcc"
-#define DEFAULT_CC_FLAGS "-m64 -O3 -Wall -fPIC"
-
 extern char* cc;
 extern char* cc_flags;
 

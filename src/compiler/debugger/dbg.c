@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#define CLEAR_CODE "\e[1;1H\e[2J"
 #define PROMPT_FMT COLOR_MAGENTA "%s" COLOR_RESET " [%s%d" COLOR_RESET "] >>"
 
 static void handle_exit(const char* input);

@@ -10,15 +10,9 @@
 #include <stdbool.h>
 #include "util.h"
 #include "list.h"
+#include "config.h"
 
 // all global variables, that the compiler needs
-
-#define DEFAULT_COMPILE_TYPE CT_TRANSPILE
-#define __CSP_MAX_TOKEN_SIZE 128
-#define __CSP_MAX_FN_NUM_ARGS 128
-
-#define __CSP_MAX_REPL_CMD_LEN (BUFSIZ * 8)
-
 struct {
     i32 ct;
     i32 fs;

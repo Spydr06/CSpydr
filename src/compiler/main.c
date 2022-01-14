@@ -21,66 +21,67 @@
 #include "codegen/transpiler/c_codegen.h"
 #include "platform/platform_bindings.h"
 #include "version.h"
-
-// default texts, which get shown if you enter help, info or version flags
-// links to me (Spydr/Spydr06/MCSpiderFe), the creator of CSpydr
-// please be nice and don't change them without any reason. You may add yourself to the credits, if you changed something
-#define CSPYDR_GIT_REPOSITORY "https://github.com/spydr06/cspydr.git"
-#define CSPYDR_GIT_DEVELOPER  "https://github.com/spydr06"
-#define CSPYDR_SUBREDDIT      "https://reddit.com/r/cspydr"
-
-#define CSPC_HELP_COMMAND "cspc --help"
+#include "config.h"
 
 #define streq(a, b) (strcmp(a, b) == 0)
 
-const char* usage_text = COLOR_BOLD_WHITE "Usage:" COLOR_RESET " cspc [run, build, debug, repl] [<input file> <flags>]\n"
+// default texts, which get shown if you enter help, info or version flags
+#define CSPC_HELP_COMMAND "cspc --help"
+
+const char usage_text[] = COLOR_BOLD_WHITE "Usage:" COLOR_RESET " cspc [run, build, debug, repl] [<input file> <flags>]\n"
                          "       cspc [--help, --info, --version]\n";
 
 // this text gets shown if -i or --info is used
-const char* info_text = COLOR_BOLD_YELLOW "** CSPC - THE CSPYDR PROGRAMMING LANGUAGE COMPILER **\n" COLOR_RESET
+const char info_text[] = COLOR_BOLD_MAGENTA " ** cspc - The CSpydr Programming Language Compiler **\n" COLOR_RESET
                        COLOR_BOLD_WHITE "Version:" COLOR_RESET " %s\n"
                        COLOR_BOLD_WHITE "Build:" COLOR_RESET " %s\n"
                        "\n"
-                       "Copyright (c) 2021 Spydr06\n"
-                       "CSpydr is distributed under the MIT license\n"
+                       "Copyright (c) 2021 - 2022 Spydr06\n"
+                       "CSpydr is distributed under the MIT license.\n"
                        "This is free software; see the source for copying conditions;\n"
-                       "you may redistribute it under the terms of the MIT license\n"
+                       "you may redistribute it under the terms of the MIT license.\n"
                        "This program has absolutely no warranty.\n"
                        "\n"
-                       COLOR_BOLD_WHITE "    repository: " COLOR_RESET CSPYDR_GIT_REPOSITORY "\n"
-                       COLOR_BOLD_WHITE "    developer:  " COLOR_RESET CSPYDR_GIT_DEVELOPER "\n"
+                    #ifdef CSPYDR_SHOW_GIT_REPOSITORY
+                       COLOR_BOLD_WHITE "    repository:     " COLOR_RESET CSPYDR_GIT_REPOSITORY "\n"
+                    #endif
+                    #ifdef CSPYDR_SHOW_GIT_DEVELOPER
+                       COLOR_BOLD_WHITE "    developer:      " COLOR_RESET CSPYDR_GIT_DEVELOPER "\n"
+                    #endif
+                    #ifdef CSPYDR_SHOW_SUBREDDIT
+                       COLOR_BOLD_WHITE "    support & help: " COLOR_RESET CSPYDR_SUBREDDIT "\n"
+                    #endif
                        "\n"
-                       "Type -h or --help for help page.\n";
+                       "Type -h or --help for the help page.\n";
 
 // this text gets shown if -h or --help is used
-const char* help_text = "%s"
+const char help_text[] = "%s"
                        COLOR_BOLD_WHITE "Actions:\n" COLOR_RESET
                        "  build    Builds a cspydr program to a binary to execute.\n"
                        "  run      Builds, then runs a cspydr program directly.\n"
-                       "  debug    Runs a cspydr program with special debug tools. [!!NOT IMPLEMENTED YET!!]\n"
+                       "  debug    Builds a cspydr program, then launches the debugger shell.\n"
                        COLOR_BOLD_WHITE "Options:\n" COLOR_RESET
-                       "  -h, --help             Displays this help text and quits.\n"
-                       "  -v, --version          Displays the version of CSpydr and quits.\n"
-                       "  -i, --info             Displays information text and quits.\n"
-                       "  -o, --output [file]    Sets the target output file (default: " DEFAULT_OUTPUT_FILE ").\n"
-                       "  -t, --transpile        Instructs the compiler to compile to C source code (deprecated).\n"
-                       "  -a, --asm              Instructs the compile to compile to x86_64 gnu assembly code.\n"
-                       "      --to-json          Emit the AST directly as a JSON file.\n"
-                       "      --from-json        Load the AST from a JSON file and compile.\n"
-                       "      --print-code       Prints the generated code (C | Assembly | LLVM IR).\n"
-                       "      --silent           Disables all command line output except error messages.\n"
-                       "      --cc [compiler]    Sets the C compiler being used after transpiling (default: " DEFAULT_CC ")\n"
-                       "      --cc-flags [flags] Sets the C compiler flags, must be last argument (default: " DEFAULT_CC_FLAGS ")\n"
+                       "  -h, --help             | Displays this help text and quits\n"
+                       "  -v, --version          | Displays the version of CSpydr and quits\n"
+                       "  -i, --info             | Displays information text and quits\n"
+                       "  -o, --output [file]    | Sets the target output file (default: `" DEFAULT_OUTPUT_FILE "`)\n"
+                       "  -t, --transpile        | Instructs the compiler to compile to C source code (deprecated)\n"
+                       "  -a, --asm              | Instructs the compile to compile to x86_64 gnu assembly code\n"
+                       "      --to-json          | Emit the AST directly as a JSON file (for debugging purposes)\n"
+                       "      --print-code       | Prints the generated code (C | Assembly | LLVM IR)\n"
+                       "      --silent           | Disables all command line output except error messages\n"
+                       "      --cc [compiler]    | Sets the C compiler being used after transpiling (default: " DEFAULT_CC ")\n"
+                       "      --cc-flags [flags] | Sets the C compiler flags, must be last argument (default: " DEFAULT_CC_FLAGS ")\n"
                        "\n"
                        "If you are unsure, what CSpydr is (or how to use it), please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n"
                        /*"Help and community support: " CSPYDR_SUBREDDIT ".\n"*/;
 
 // this text gets shown if -v or --version is used
-const char* version_text = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE COMPILER **\n" COLOR_RESET
+const char version_text[] = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE COMPILER **\n" COLOR_RESET
                           COLOR_BOLD_WHITE "Version:" COLOR_RESET " %s\n"
                           COLOR_BOLD_WHITE "Build:" COLOR_RESET " %s\n"
                           "\n"
-                          "For more information type -i.\n";
+                          "For more information type -i; for help type -h.\n";
 
 const struct { 
     char* as_str; 
@@ -90,6 +91,7 @@ const struct {
     {"build", AC_BUILD},
     {"run",   AC_RUN},
     {"debug", AC_DEBUG},
+    {NULL, -1}
 };
 
 static void evaluate_info_flags(char* argv)
@@ -132,7 +134,7 @@ i32 main(i32 argc, char* argv[])
     // get the action to perform
     Action_T action = -1;
     global.ct = DEFAULT_COMPILE_TYPE;
-    for(i32 i = 0; i < 3; i++)
+    for(i32 i = 0; action_table[i].as_str; i++)
         if(streq(argv[1], action_table[i].as_str))
             action = action_table[i].ac;
     if(action == -1)

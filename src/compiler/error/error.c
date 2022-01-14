@@ -6,9 +6,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#define LINE_NUMBER_SPACES 4
-#define OUTPUT_FILE_STREAM stderr
-
 static struct { const char* as_str; bool force_exit; } error_types[ERR_INTERNAL + 1] = {
     [ERR_SYNTAX_ERROR]      = {"syntax", true},
     [ERR_SYNTAX_WARNING]    = {"warning", false},
@@ -47,9 +44,9 @@ void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
     va_start(arg_list, format);
 
     // print the error
-    fprintf(OUTPUT_FILE_STREAM, err_tmp1, source_file_path, line, character, error_types[ty].force_exit ? COLOR_BOLD_RED : COLOR_BOLD_YELLOW, err_ty_str);
-    vfprintf(OUTPUT_FILE_STREAM, format, arg_list);
-    fprintf(OUTPUT_FILE_STREAM, err_tmp2, LINE_NUMBER_SPACES, line, src_line, src_line[strlen(src_line) - 1] == '\n' ? "" : "\n ", LINE_NUMBER_SPACES, "", character - strlen(tok->value), "");
+    fprintf(ERR_OUTPUT_STREAM, err_tmp1, source_file_path, line, character, error_types[ty].force_exit ? COLOR_BOLD_RED : COLOR_BOLD_YELLOW, err_ty_str);
+    vfprintf(ERR_OUTPUT_STREAM, format, arg_list);
+    fprintf(ERR_OUTPUT_STREAM, err_tmp2, ERR_LINE_NUMBER_SPACES, line, src_line, src_line[strlen(src_line) - 1] == '\n' ? "" : "\n ", ERR_LINE_NUMBER_SPACES, "", character - strlen(tok->value), "");
 
     va_end(arg_list);
 

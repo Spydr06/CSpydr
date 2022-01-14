@@ -12,9 +12,6 @@
 #include <assert.h>
 #include <string.h>
 
-#define GP_MAX 6
-#define FP_MAX 8
-
 enum { I8, I16, I32, I64, U8, U16, U32, U64, F32, F64, F80, LAST };
 
 // a counter variable for generating unique labels
@@ -362,7 +359,7 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
                     {
                         bool fp1 = asm_has_flonum(ty, 0, 8, 0);
                         bool fp2 = asm_has_flonum(ty, 8, 16, 8);
-                        if(fp + fp1 + fp2 < FP_MAX && gp + !fp1 + !fp2 < GP_MAX)
+                        if(fp + fp1 + fp2 < ASM_FP_MAX && gp + !fp1 + !fp2 < ASM_GP_MAX)
                         {
                             fp = fp + fp1 + fp2;
                             gp = gp + !fp1 + fp2;
@@ -372,13 +369,13 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
                 
                 case TY_F32:
                 case TY_F64:
-                    if(fp++ < FP_MAX)
+                    if(fp++ < ASM_FP_MAX)
                         continue;
                     break;
                 case TY_F80:
                     break;
                 default:
-                    if(gp++ < GP_MAX)
+                    if(gp++ < ASM_GP_MAX)
                         continue;
                 }
 
@@ -1190,7 +1187,7 @@ static i32 asm_push_args(ASMCodegenData_T* cg, ASTNode_T* node)
                     bool fp1 = asm_has_flonum_1(ty);
                     bool fp2 = asm_has_flonum_2(ty);
 
-                    if(fp + fp1 + fp2 < FP_MAX && gp + !fp + !fp2 < GP_MAX)
+                    if(fp + fp1 + fp2 < ASM_FP_MAX && gp + !fp + !fp2 < ASM_GP_MAX)
                     {
                         fp = fp + fp1 + fp2;
                         gp = gp + !fp1 + !fp2;
@@ -1203,7 +1200,7 @@ static i32 asm_push_args(ASMCodegenData_T* cg, ASTNode_T* node)
                 } break;
             case TY_F32:
             case TY_F64:
-                if(fp++ >= FP_MAX)
+                if(fp++ >= ASM_FP_MAX)
                 {
                     arg->pass_by_stack = true;
                     stack++;
@@ -1213,7 +1210,7 @@ static i32 asm_push_args(ASMCodegenData_T* cg, ASTNode_T* node)
                 stack += 2;
                 break;
             default:
-                if(gp++ >= GP_MAX) {
+                if(gp++ >= ASM_GP_MAX) {
                     arg->pass_by_stack = true;
                     stack++;
                 }
@@ -1558,7 +1555,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                         bool fp1 = asm_has_flonum_1(ty);
                         bool fp2 = asm_has_flonum_2(ty);
 
-                        if(fp + fp1 + fp2 < FP_MAX && gp + !fp1 + !fp2 < GP_MAX)
+                        if(fp + fp1 + fp2 < ASM_FP_MAX && gp + !fp1 + !fp2 < ASM_GP_MAX)
                         {
                             if(fp1)
                                 asm_popf(cg, fp++);
@@ -1576,13 +1573,13 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                         break;
                     case TY_F32:
                     case TY_F64:
-                        if(fp < FP_MAX)
+                        if(fp < ASM_FP_MAX)
                             asm_popf(cg, fp++);
                         break;
                     case TY_F80:
                         break;
                     default:
-                        if(gp < GP_MAX)
+                        if(gp < ASM_GP_MAX)
                             asm_pop(cg, argreg64[gp++]);
                 }
             }
