@@ -337,6 +337,16 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
             if(obj->is_extern)
                 continue;
 
+            if(is_variadic(obj))
+            {
+                obj->va_area = init_ast_obj(OBJ_LOCAL, obj->tok);
+                obj->va_area->align = 1;
+                obj->va_area->id = init_ast_identifier(obj->tok, "__csp_alloca_size__");
+                obj->va_area->data_type = init_ast_type(TY_ARR, obj->tok);
+                obj->va_area->data_type->base = (ASTType_T*) primitives[TY_U8];
+                obj->va_area->data_type->size = 136;
+            }
+
             i32 top = 16, bottom = 0;
             i32 gp = 0, fp = 0;
 
@@ -377,6 +387,14 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
                 top += var->data_type->size;
             }
 
+            // va_area
+            if(is_variadic(obj))
+            {
+                bottom += obj->va_area->data_type->size;
+                bottom = align_to(bottom, obj->va_area->align);
+                obj->va_area->offset = -bottom;
+            }
+
             // alloca size
             {
                 bottom += obj->alloca_bottom->data_type->size;
@@ -388,7 +406,7 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
             for(size_t j = 0; j < obj->args->size; j++)
             {
                 ASTObj_T* var = obj->args->items[j];
-                if(var->offset)
+                if(var->offset || unpack(var->data_type)->kind == TY_VA_LIST)
                     continue;
                 
                 // AMD64 System V ABI has a special alignment rule for an array of
@@ -582,43 +600,42 @@ static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs)
                     asm_println(cg, "  mov %%rsp, %d(%%rbp)", obj->alloca_bottom->offset);
 
                     // save arg registers if function is variadic
-                    if(obj->args->size >= 1 && ((ASTObj_T*)obj->args->items[obj->args->size - 1])->data_type->kind == TY_VA_LIST)
+                    if(is_variadic(obj))
                     {
                         i32 gp = 0, fp = 0;
                         for(size_t j = 0; j < obj->args->size; j++)
                         {
                             ASTObj_T* arg = obj->args->items[j];
-                            if(is_flonum(arg->data_type))
+                            if(is_flonum(unpack(arg->data_type)))
                                 fp++;
                             else
                                 gp++;
-                            
-                            i32 off = ((ASTObj_T*)obj->args->items[obj->args->size - 1])->offset;
-
-                            // va_elem
-			                asm_println(cg, "  movl $%d, %d(%%rbp)", gp * 8, off);          // gp_offset
-			                asm_println(cg, "  movl $%d, %d(%%rbp)", fp * 8 + 48, off + 4); // fp_offset
-			                asm_println(cg, "  movq %%rbp, %d(%%rbp)", off + 8);            // overflow_arg_area
-			                asm_println(cg, "  addq $16, %d(%%rbp)", off + 8);
-			                asm_println(cg, "  movq %%rbp, %d(%%rbp)", off + 16);           // reg_save_area
-			                asm_println(cg, "  addq $%d, %d(%%rbp)", off + 24, off + 16);
-                
-			                // __reg_save_area__
-			                asm_println(cg, "  movq %%rdi, %d(%%rbp)", off + 24);
-			                asm_println(cg, "  movq %%rsi, %d(%%rbp)", off + 32);
-			                asm_println(cg, "  movq %%rdx, %d(%%rbp)", off + 40);
-			                asm_println(cg, "  movq %%rcx, %d(%%rbp)", off + 48);
-			                asm_println(cg, "  movq %%r8, %d(%%rbp)", off + 56);
-			                asm_println(cg, "  movq %%r9, %d(%%rbp)", off + 64);
-			                asm_println(cg, "  movsd %%xmm0, %d(%%rbp)", off + 72);
-			                asm_println(cg, "  movsd %%xmm1, %d(%%rbp)", off + 80);
-			                asm_println(cg, "  movsd %%xmm2, %d(%%rbp)", off + 88);
-			                asm_println(cg, "  movsd %%xmm3, %d(%%rbp)", off + 96);
-			                asm_println(cg, "  movsd %%xmm4, %d(%%rbp)", off + 104);
-			                asm_println(cg, "  movsd %%xmm5, %d(%%rbp)", off + 112);
-			                asm_println(cg, "  movsd %%xmm6, %d(%%rbp)", off + 120);
-			                asm_println(cg, "  movsd %%xmm7, %d(%%rbp)", off + 128);
                         }
+
+                        i32 off = obj->va_area->offset;
+                        // va_elem
+			            asm_println(cg, "  movl $%d, %d(%%rbp)", gp * 8, off);          // gp_offset
+			            asm_println(cg, "  movl $%d, %d(%%rbp)", fp * 8 + 48, off + 4); // fp_offset
+			            asm_println(cg, "  movq %%rbp, %d(%%rbp)", off + 8);            // overflow_arg_area
+			            asm_println(cg, "  addq $16, %d(%%rbp)", off + 8);
+			            asm_println(cg, "  movq %%rbp, %d(%%rbp)", off + 16);           // reg_save_area
+			            asm_println(cg, "  addq $%d, %d(%%rbp)", off + 24, off + 16);
+            
+			            // __reg_save_area__
+			            asm_println(cg, "  movq %%rdi, %d(%%rbp)", off + 24);
+			            asm_println(cg, "  movq %%rsi, %d(%%rbp)", off + 32);
+			            asm_println(cg, "  movq %%rdx, %d(%%rbp)", off + 40);
+			            asm_println(cg, "  movq %%rcx, %d(%%rbp)", off + 48);
+			            asm_println(cg, "  movq %%r8, %d(%%rbp)", off + 56);
+			            asm_println(cg, "  movq %%r9, %d(%%rbp)", off + 64);
+			            asm_println(cg, "  movsd %%xmm0, %d(%%rbp)", off + 72);
+			            asm_println(cg, "  movsd %%xmm1, %d(%%rbp)", off + 80);
+			            asm_println(cg, "  movsd %%xmm2, %d(%%rbp)", off + 88);
+			            asm_println(cg, "  movsd %%xmm3, %d(%%rbp)", off + 96);
+			            asm_println(cg, "  movsd %%xmm4, %d(%%rbp)", off + 104);
+			            asm_println(cg, "  movsd %%xmm5, %d(%%rbp)", off + 112);
+			            asm_println(cg, "  movsd %%xmm6, %d(%%rbp)", off + 120);
+			            asm_println(cg, "  movsd %%xmm7, %d(%%rbp)", off + 128);
                     }
 
                     // save passed-by-register arguments to the stack
@@ -626,7 +643,7 @@ static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs)
                     for(size_t j = 0; j < obj->args->size; j++)
                     {
                         ASTObj_T* arg = obj->args->items[j];
-                        if(arg->offset > 0)
+                        if(arg->offset > 0 || unpack(arg->data_type)->kind == TY_VA_LIST)
                             continue;
                         
                         ASTType_T* ty = unpack(arg->data_type);
@@ -1221,35 +1238,6 @@ static i32 asm_push_args(ASMCodegenData_T* cg, ASTNode_T* node)
         asm_push(cg);
     }
     return stack;
-}
-
-static void asm_builtin_alloca(ASMCodegenData_T* cg)
-{
-    // Align size to 16 bytes.
-	asm_println(cg, "  add $15, %%rdi");
-	asm_println(cg, "  and $0xfffffff0, %%edi");
-
-	// Shift the temporary area by %rdi.
-	asm_println(cg, "  mov %d(%%rbp), %%rcx", cg->current_fn->alloca_bottom->offset);
-	asm_println(cg, "  sub %%rsp, %%rcx");
-	asm_println(cg, "  mov %%rsp, %%rax");
-	asm_println(cg, "  sub %%rdi, %%rsp");
-	asm_println(cg, "  mov %%rsp, %%rdx");
-	asm_println(cg, "1:");
-	asm_println(cg, "  cmp $0, %%rcx");
-	asm_println(cg, "  je 2f");
-	asm_println(cg, "  mov (%%rax), %%r8b");
-	asm_println(cg, "  mov %%r8b, (%%rdx)");
-	asm_println(cg, "  inc %%rdx");
-	asm_println(cg, "  inc %%rax");
-	asm_println(cg, "  dec %%rcx");
-	asm_println(cg, "  jmp 1b");
-	asm_println(cg, "2:");
-
-	// Move alloca_bottom pointer.
-	asm_println(cg, "  mov %d(%%rbp), %%rax", cg->current_fn->alloca_bottom->offset);
-	asm_println(cg, "  sub %%rdi, %%rax");
-	asm_println(cg, "  mov %%rax, %d(%%rbp)", cg->current_fn->alloca_bottom->offset);
 }
 
 static void asm_gen_inc(ASMCodegenData_T* cg, ASTNode_T* node)
@@ -1942,7 +1930,6 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_MATCH:
             {
                 asm_gen_expr(cg, node->condition);
-                //asm_println(cg, "  mov %%rax, %%rdi");
                 asm_count();
 
                 char* ax = (node->condition->data_type->size == 8) ? "%rax" : "%eax";
@@ -1956,7 +1943,6 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
                     asm_push(cg);
                     asm_gen_expr(cg, _case->condition);
                     asm_pop(cg, "%rdi");
-                    //asm_println(cg, "  mov %s, %s", ax, di);
                     asm_println(cg, "  cmp %s, %s", ax, di);
                     asm_pop(cg, "%rax");
                     asm_println(cg, "  je .L.case.%ld.%ld", i, asm_current_count());
@@ -2059,6 +2045,7 @@ static void asm_store_gp(ASMCodegenData_T* cg, i32 r, i32 offset, i32 sz)
         default:
             for(i32 i = 0; i < sz; i++)
             {
+                printf("%d\n", i);
                 asm_println(cg, "  mov %s, %d(%%rbp)", argreg8[r], offset + i);
                 asm_println(cg, "  shr $8, %s", argreg64[r]);
             }

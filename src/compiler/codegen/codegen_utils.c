@@ -157,3 +157,11 @@ ASTType_T* unpack(ASTType_T* ty)
 {
     return ty && ty->kind == TY_UNDEF ? ty->base : ty;
 }
+
+bool is_variadic(ASTObj_T* fn)
+{
+    if(!fn->args->size)
+        return false;
+    
+    return unpack(((ASTObj_T*) fn->args->items[fn->args->size - 1])->data_type)->kind == TY_VA_LIST;
+}

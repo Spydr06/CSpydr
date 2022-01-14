@@ -289,6 +289,7 @@ struct AST_OBJ_STRUCT
     List_T* templates;
     ASTObj_T* alloca_size;
     ASTObj_T* alloca_bottom;
+    ASTObj_T* va_area;
 
     // namespaces
     List_T* objs;

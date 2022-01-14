@@ -133,6 +133,9 @@ const ASTType_T* void_ptr_type = &(ASTType_T)
     }
 };
 
+#define U32_LIT &(ASTType_T){.kind = TY_U32, .size = U32_S, .is_primitive = true}
+#define VOIDPTR_LIT &(ASTType_T){.kind = TY_PTR, .size = PTR_S, .base = &(ASTType_T){.kind = TY_VOID, .is_primitive = true, .size = VOID_S}}
+
 ASTTypeKind_T get_datatype_from_str(char* str)
 {
     for(int i = 0; i < NUM_TYPES; i++)

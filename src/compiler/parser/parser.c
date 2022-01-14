@@ -9,6 +9,7 @@
 #include "../lexer/lexer.h"
 #include "../preprocessor/preprocessor.h"
 #include "../toolchain.h"
+#include "../codegen/codegen_utils.h"
 
 #include <limits.h>
 #include <string.h>
@@ -221,16 +222,16 @@ static ASTNodeKind_T infix_ops[TOKEN_EOF + 1] = {
 };
 
 static ASTObj_T alloca_bottom = {
-            .kind = OBJ_LOCAL,
-            .id = &(ASTIdentifier_T) {
-                .callee = "__alloca_size__"
-            },
-            .data_type = &(ASTType_T){
-                .size = sizeof(void*)
-            },
-            .align = sizeof(void*),
-            .offset = 0
-        };
+    .kind = OBJ_LOCAL,
+    .id = &(ASTIdentifier_T) {
+        .callee = "__alloca_size__"
+    },
+    .data_type = &(ASTType_T){
+        .size = sizeof(void*)
+    },
+    .align = sizeof(void*),
+    .offset = 0
+};
 
 static inline PrefixParseFn_T get_PrefixParseFn_T(TokenType_T tt)
 {

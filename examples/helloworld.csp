@@ -1,19 +1,13 @@
 import "libc/stdio.csp";
 import "libc/stdlib.csp";
 
+fn va_test(n: i32, v: ...)
+{
+    printf("n: %d\n", n);
+}
+
 fn main(argc: i32, argv: &&char): i32 
 {
-    match 0 {
-        1 => {
-            printf("Fizz\n");
-        }
-        2 => {
-            printf("Foo\n");
-        }
-        _ => {
-            printf("Bar\n");
-        }
-    }
-
+    va_test(1, 0);
     <- 0;
 }
