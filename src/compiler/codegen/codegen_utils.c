@@ -28,24 +28,24 @@ static List_T* get_id_path(ASTIdentifier_T* id) {
     return path;
 }
 
-char* gen_identifier(ASTIdentifier_T* id)
+char* gen_identifier(ASTIdentifier_T* id, const char* prefix, bool prefix_at_start)
 {
     char* new_c;
     if(id->outer)
     {
-        static const char* CSP_PREFIX_STR = "__csp_";
-
         List_T* path = get_id_path(id);
 
         size_t len = (BUFSIZ) * path->size + 1;
         char callee[len];
         memset(callee, '\0', sizeof callee);
-        strcat(callee, CSP_PREFIX_STR);
+
+        if(prefix_at_start)
+            strcat(callee, prefix);
 
         for(size_t i = path->size - 1; i > 0; i--)
         {
             cat_id(callee, path->items[i]);
-            strcat(callee, "__csp_");
+            strcat(callee, prefix);
         }
         cat_id(callee, path->items[0]);
 

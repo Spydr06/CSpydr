@@ -209,7 +209,7 @@ static void get_platform(char* dest)
 #if defined(__GNUC__) || defined(__gnu_linux__)
     strcat(dest, "-gnu");
 #else
-    #warn "unsupported assembler platoform"
+    #warn "unsupported assembler platform"
 #endif
 #else
     #warn "unsupported assembler platform"
@@ -304,7 +304,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
 
 static char* asm_gen_identifier(ASTIdentifier_T* id)
 {
-    char* str = gen_identifier(id);
+    char* str = gen_identifier(id, ".", false);
     mem_add_ptr(str);
     return str;
 }
@@ -336,9 +336,10 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
 
             if(is_variadic(obj))
             {
+                char* id = "__csp_alloca_size__";
                 obj->va_area = init_ast_obj(OBJ_LOCAL, obj->tok);
                 obj->va_area->align = 1;
-                obj->va_area->id = init_ast_identifier(obj->tok, "__csp_alloca_size__");
+                obj->va_area->id = init_ast_identifier(obj->tok, id);
                 obj->va_area->data_type = init_ast_type(TY_ARR, obj->tok);
                 obj->va_area->data_type->base = (ASTType_T*) primitives[TY_U8];
                 obj->va_area->data_type->size = 136;
@@ -761,7 +762,7 @@ static void asm_popf(ASMCodegenData_T* cg, i32 reg)
 }
 
 
-static char *asm_reg_dx(i32 sz) 
+static char* asm_reg_dx(i32 sz) 
 {
     switch (sz) 
     {
@@ -774,7 +775,7 @@ static char *asm_reg_dx(i32 sz)
     return 0;
 }
 
-static char *asm_reg_ax(i32 sz) 
+static char* asm_reg_ax(i32 sz) 
 {
     switch (sz) 
     {
@@ -847,7 +848,7 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
                 asm_gen_addr(cg, &converted);
             }
             return;
-        
+
         default:
             throw_error(ERR_CODEGEN, node->tok, "cannot generate address from node of kind %d", node->kind);
             break;
@@ -1443,39 +1444,39 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         
         case ND_ASSIGN:
-            if(unpack(node->left->data_type)->base)
-            {   
-                switch(node->right->kind)
-                {
-                    case ND_STRUCT:
-                        printf("not implemented!\n");
-                        return;
-                    case ND_ARRAY:
-                        // convert x = [y, z, w] to x[0] = y, x[1] = z, x[2] = w
-                        for(size_t i = 0; i < node->right->args->size; i++)
-                        {
-                            ASTNode_T converted = {
-                                .kind = ND_ASSIGN,
-                                .data_type = unpack(node->left->data_type)->base,
-                                .left = &(ASTNode_T) {
-                                    .kind = ND_INDEX,
-                                    .data_type = unpack(node->left->data_type)->base,
-                                    .left = node->left,
-                                    .expr = &(ASTNode_T) {
-                                        .kind = ND_LONG,
-                                        .data_type = (ASTType_T*) primitives[TY_I64],
-                                        .long_val = i
-                                    }
-                                },
-                                .right = node->right->args->items[i]
-                            };  
-                            asm_gen_expr(cg, &converted);
-                        }
-                        return;
-                    default:
-                        break;
-                }
-            }
+            //if(unpack(node->left->data_type)->base)
+            //{   
+            //    switch(node->right->kind)
+            //    {
+            //        case ND_STRUCT:
+            //            printf("not implemented!\n");
+            //            return;
+            //        case ND_ARRAY:
+            //            // convert x = [y, z, w] to x[0] = y, x[1] = z, x[2] = w
+            //            for(size_t i = 0; i < node->right->args->size; i++)
+            //            {
+            //                ASTNode_T converted = {
+            //                    .kind = ND_ASSIGN,
+            //                    .data_type = unpack(node->left->data_type)->base,
+            //                    .left = &(ASTNode_T) {
+            //                        .kind = ND_INDEX,
+            //                        .data_type = unpack(node->left->data_type)->base,
+            //                        .left = node->left,
+            //                        .expr = &(ASTNode_T) {
+            //                            .kind = ND_LONG,
+            //                            .data_type = (ASTType_T*) primitives[TY_I64],
+            //                            .long_val = i
+            //                        }
+            //                    },
+            //                    .right = node->right->args->items[i]
+            //                };  
+            //                asm_gen_expr(cg, &converted);
+            //            }
+            //            return;
+            //        default:
+            //            break;
+            //    }
+            //}
             asm_gen_addr(cg, node->left);
             asm_push(cg);
             asm_gen_expr(cg, node->right);

@@ -8,7 +8,7 @@
 #define MIN(a, b) (a < b ? a : b)
 
 u64 hash_64(const char* key);
-char* gen_identifier(ASTIdentifier_T* id);
+char* gen_identifier(ASTIdentifier_T* id, const char* prefix, bool prefix_at_start);
 bool is_integer(ASTType_T *ty);
 bool is_flonum(ASTType_T *ty);
 bool is_numeric(ASTType_T *ty);

@@ -1,15 +1,15 @@
 import "libc/stdio.csp";
 import "libc/stdlib.csp";
 
+namespace foo {
+    fn bar() {
+
+    }
+}
+
 fn main(argc: i32, argv: &&char): i32 
 {
-    for let i = 0; i < 100; i++; {
-        printf("[%d] ", i);
-        if !(i % 3)
-            printf("Fizz");
-        if !(i % 5)
-            printf("Buzz");
-        printf("\n");
-    }
+    printf("%s:%d: Hello, World!\n", __file__!, __line__!);
+    foo::bar();
     <- 0;
 }

@@ -310,7 +310,7 @@ typedef struct AST_PROG_STRUCT
 ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok);
 ASTType_T* init_ast_type(ASTTypeKind_T kind, Token_T* tok);
 
-ASTIdentifier_T* init_ast_identifier(Token_T* tok, char callee[__CSP_MAX_TOKEN_SIZE]);
+ASTIdentifier_T* init_ast_identifier(Token_T* tok, char* callee);
 
 ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok);
 

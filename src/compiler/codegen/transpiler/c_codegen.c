@@ -935,7 +935,7 @@ static void c_gen_lambda_fn(CCodegenData_T* cg, ASTNode_T* lambda)
 
 static char* c_gen_identifier(CCodegenData_T* cg, ASTIdentifier_T* id)
 {
-    char* str = gen_identifier(id);
+    char* str = gen_identifier(id, "__csp_", true);
     
     bool is_c_keyword = false;
     for(i32 i = 0; c_keywords[i]; i++)
