@@ -81,7 +81,6 @@ const struct {
     {"=", TOKEN_ASSIGN},
     {"!=", TOKEN_NOT_EQ},
     {"!", TOKEN_BANG},
-    {"<>", TOKEN_VERSUS},
     {">=", TOKEN_GT_EQ},
     {">", TOKEN_GT},
     {"<=", TOKEN_LT_EQ},

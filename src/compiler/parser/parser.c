@@ -1740,8 +1740,8 @@ static ASTNode_T* parse_if_expr(Parser_T* p)
     if_expr->condition = parse_expr(p, LOWEST, TOKEN_ARROW);
     parser_consume(p, TOKEN_ARROW, "expect `=>` after condition");
 
-    if_expr->if_branch = parse_expr(p, LOWEST, TOKEN_VERSUS);
-    parser_consume(p, TOKEN_VERSUS, "expect `<>` between if branches");
+    if_expr->if_branch = parse_expr(p, LOWEST, TOKEN_ELSE);
+    parser_consume(p, TOKEN_ELSE, "expect `else` between if branches");
 
     if_expr->else_branch = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
 
