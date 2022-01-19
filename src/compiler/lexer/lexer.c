@@ -38,6 +38,7 @@ const struct {
     {"namespace", TOKEN_NAMESPACE},
     {"sizeof", TOKEN_SIZEOF},
     {"typeof", TOKEN_TYPEOF},
+    {"alignof", TOKEN_ALIGNOF},
     {"break", TOKEN_BREAK},
     {"continue", TOKEN_CONTINUE},
     {"noop", TOKEN_NOOP},

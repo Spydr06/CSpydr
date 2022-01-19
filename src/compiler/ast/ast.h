@@ -76,6 +76,7 @@ typedef enum {
     ND_CAST,    // x:i32
 
     ND_SIZEOF,  // sizeof x
+    ND_ALIGNOF, // alignof x
 
     // statements
     ND_BLOCK,   // {...}
@@ -242,6 +243,7 @@ struct AST_TYPE_STRUCT
 
     ASTType_T* base;
     i32 size;
+    i32 align;
 
     ASTIdentifier_T* id;
 
@@ -272,7 +274,6 @@ struct AST_OBJ_STRUCT
     ASTIdentifier_T* id;
     i32 offset;
     i32 stack_size;
-    i32 align;
 
     // variables
     bool is_constant : 1;

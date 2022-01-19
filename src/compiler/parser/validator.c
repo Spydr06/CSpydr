@@ -7,6 +7,7 @@
 #include "../optimizer/constexpr.h"
 #include "../toolchain.h"
 #include "../ast/types.h"
+#include "ast/ast.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -103,7 +104,8 @@ static void index_(ASTNode_T* index, va_list args); // "index" was taken by stri
 static void cast(ASTNode_T* cast, va_list args);
 static void assignment(ASTNode_T* assign, va_list args);
 static void struct_member(ASTNode_T* member, va_list args);
-
+static void struct_lit(ASTNode_T* s_lit, va_list args);
+static void array_lit(ASTNode_T* a_lit, va_list args);
 
 //types
 static void struct_type(ASTType_T* s_type, va_list args);
@@ -165,6 +167,8 @@ static ASTIteratorList_T main_iterator_list =
         [ND_INDEX]   = index_,
         [ND_CAST]    = cast,
         [ND_ASSIGN]  = assignment,
+        [ND_STRUCT]  = struct_lit,
+        [ND_ARRAY]   = array_lit
     },
 
     .type_fns = 
@@ -727,7 +731,6 @@ static void global_end(ASTObj_T* global, va_list args)
         global->data_type = global->value->data_type;
     }
     // fixme: evaluate seperately for structs and unions
-    global->align = align_type(global->data_type);
     gen_id_path(v->current_scope, global->id);
 
     // todo: check if type initializer is an array literal, if it is, calculate the size
@@ -752,8 +755,6 @@ static void local_end(ASTObj_T* local, va_list args)
         local->data_type = local->value->data_type;
     }
     // fixme: evaluate seperately for structs and unions
-    local->align = MAX(local->data_type->base ? local->data_type->base->size : local->data_type->size, 1);
-
     // todo: check if type initializer is an array literal, if it is, calculate the size
     if(local->data_type->is_vla)
         throw_error(ERR_TYPE_ERROR, local->data_type->tok, "vla type is not allowed for local variables");
@@ -767,7 +768,6 @@ static void fn_arg_start(ASTObj_T* arg, va_list args)
 
 static void fn_arg_end(ASTObj_T* arg, va_list args)
 {
-    arg->align = MAX(arg->data_type->size, 1);
 }
 
 static void enum_member_end(ASTObj_T* e_member, va_list args)
@@ -1238,6 +1238,35 @@ static void assignment(ASTNode_T* assign, va_list args)
     assign->data_type = assign->left->data_type;
 }
 
+static void struct_lit(ASTNode_T* s_lit, va_list args)
+{
+    GET_VALIDATOR(args);
+
+    // When compiling to assembly, we have to allocate the memory on the stack.
+    // this is done by creating an "anonymous" local variable of the struct type
+    // and then assigning the struct literal to it
+    // foo :: {0, 1} gets converted to:
+    // let <anonymous>: foo = foo :: {0, 1};
+    if(global.ct == CT_ASM)
+    {
+    }
+}
+
+static void array_lit(ASTNode_T* a_lit, va_list args)
+{
+    GET_VALIDATOR(args);
+
+    // When compiling to assembly, we have to allocate the memory on the stack.
+    // this is done by creating an "anonymous" local variable of the array type
+    // and then assigning the array literal to it
+    // [0, 1, 2] gets converted to:
+    // let <anonymous>: i32[3] = [0, 1, 2];
+    if(global.ct == CT_ASM)
+    {
+
+    }
+}
+
 // types
 
 static void struct_type(ASTType_T* s_type, va_list args)
@@ -1321,6 +1350,8 @@ static void type_end(ASTType_T* type, va_list args)
     }
 
     type->size = get_type_size(v, expand_typedef(v, type));
+    type->align = align_type(exp);
+    exp->align = type->align;
 }
 
 static i32 get_union_size(Validator_T* v, ASTType_T* u_type)

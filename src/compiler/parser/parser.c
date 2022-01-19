@@ -1,5 +1,6 @@
 #include "parser.h"
 
+#include "ast/ast.h"
 #include "validator.h"
 #include "../io/log.h"
 #include "../io/io.h"
@@ -59,12 +60,13 @@ typedef enum
     POWER      = 13, // x²
     INC        = 14, // x--
     DEC        = 14, // x++
-    CAST       = 15, // x: y
-    CALL       = 16, // x(y)
-    ARRAY      = 17, // x[y]
-    MEMBER     = 18, // x.y
+    ALIGNOF    = 15, // alignof x
+    CAST       = 16, // x: y
+    CALL       = 17, // x(y)
+    ARRAY      = 18, // x[y]
+    MEMBER     = 19, // x.y
 
-    HIGHEST    = 19
+    HIGHEST    = 20
 } Precedence_T;
 
 static ASTNode_T* parse_id(Parser_T* p);
@@ -83,6 +85,7 @@ static ASTNode_T* parse_struct_lit(Parser_T* p, ASTNode_T* id);
 static ASTNode_T* parse_lambda_lit(Parser_T* p);
 
 static ASTNode_T* parse_sizeof(Parser_T* p);
+static ASTNode_T* parse_alignof(Parser_T* p);
 static ASTNode_T* parse_len(Parser_T* p);
 static ASTNode_T* parse_va_arg(Parser_T* p);
 
@@ -143,6 +146,7 @@ static struct { PrefixParseFn_T pfn; InfixParseFn_T ifn; Precedence_T prec; } ex
     [TOKEN_DOT]      = {NULL, parse_member, MEMBER},
     [TOKEN_COLON]    = {NULL, parse_cast, CAST},
     [TOKEN_SIZEOF]   = {parse_sizeof, NULL, LOWEST},
+    [TOKEN_ALIGNOF]  = {parse_alignof, NULL, ALIGNOF},
     [TOKEN_LEN]      = {parse_len, NULL, LOWEST},
     [TOKEN_POW_2]    = {NULL, parse_pow_2, POWER},
     [TOKEN_POW_3]    = {NULL, parse_pow_3, POWER},
@@ -227,9 +231,9 @@ static ASTObj_T alloca_bottom = {
         .callee = "__alloca_size__"
     },
     .data_type = &(ASTType_T){
-        .size = sizeof(void*)
+        .size = sizeof(void*),
+        .align = sizeof(void*)
     },
-    .align = sizeof(void*),
     .offset = 0
 };
 
@@ -1890,13 +1894,21 @@ static ASTNode_T* parse_sizeof(Parser_T* p)
     ASTNode_T* size_of = init_ast_node(ND_SIZEOF, p->tok);
     parser_consume(p, TOKEN_SIZEOF, "expect `sizeof` keyword");
 
-    // detect weather sizeof is called from an type, variable or array
     size_of->the_type = parse_type(p);
     size_of->data_type = (ASTType_T*) primitives[TY_U64];
-        // we still don't know if a typedef was passed. We simply parse it as an expression and evaluate it later in the optimizer
-//        size_of->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
-    
+
     return size_of;
+}
+
+static ASTNode_T* parse_alignof(Parser_T* p)
+{
+    ASTNode_T* align_of = init_ast_node(ND_ALIGNOF, p->tok);
+    parser_consume(p, TOKEN_ALIGNOF, "expect `alignof` keyword");
+
+    align_of->the_type = parse_type(p);
+    align_of->data_type = (ASTType_T*) primitives[TY_U64];
+
+    return align_of;
 }
 
 static ASTNode_T* parse_len(Parser_T* p)

@@ -139,6 +139,7 @@ json_object* gen_ast_type(ASTType_T* type)
     if(type->tok) json_object_object_add(obj, "tok", gen_tok(type->tok));
     if(type->base) json_object_object_add(obj, "base", gen_ast_type(type->base));
     if(type->size) json_object_object_add(obj, "size", gen_i32(type->size));
+    if(type->align) json_object_object_add(obj, "align", gen_i32(type->align));
     if(type->id) json_object_object_add(obj, "id", gen_ast_identifier(type->id));
     if(type->is_primitive) json_object_object_add(obj, "is_primitive", gen_bool(type->is_primitive));
     if(type->is_constant) json_object_object_add(obj, "is_constant", gen_bool(type->is_constant));
@@ -165,7 +166,6 @@ json_object* gen_ast_obj(ASTObj_T* obj)
     if(obj->id) json_object_object_add(jobj, "id", gen_ast_identifier(obj->id));
     if(obj->offset) json_object_object_add(jobj, "offset", gen_i32(obj->offset));
     if(obj->stack_size) json_object_object_add(jobj, "stack_size", gen_i32(obj->stack_size));
-    if(obj->align) json_object_object_add(jobj, "align", gen_i32(obj->align));
     if(obj->is_constant) json_object_object_add(jobj, "is_constant", gen_bool(obj->is_constant));
     if(obj->is_extern) json_object_object_add(jobj, "is_extern", gen_bool(obj->is_extern));
     if(obj->referenced) json_object_object_add(jobj, "referenced", gen_bool(obj->referenced));

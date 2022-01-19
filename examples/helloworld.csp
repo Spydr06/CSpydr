@@ -3,7 +3,7 @@ import "libc/stdlib.csp";
 
 namespace foo {
     fn bar() {
-
+        printf("%ld\n", alignof i32);
     }
 }
 

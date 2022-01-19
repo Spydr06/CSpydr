@@ -768,6 +768,11 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
                 c_gen_expr(cg, node->expr);
             print(cg, ")");
             break;
+        case ND_ALIGNOF:
+            print(cg, "_Alignof(");
+            c_gen_type(cg, node->the_type, "");
+            print(cg, ")");
+            break;
         case ND_LEN:
             print(cg, "len(");
             c_gen_expr(cg, node->expr);

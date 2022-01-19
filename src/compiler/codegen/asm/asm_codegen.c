@@ -338,7 +338,7 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
             {
                 char* id = "__csp_alloca_size__";
                 obj->va_area = init_ast_obj(OBJ_LOCAL, obj->tok);
-                obj->va_area->align = 1;
+                obj->va_area->data_type->align = 1;
                 obj->va_area->id = init_ast_identifier(obj->tok, id);
                 obj->va_area->data_type = init_ast_type(TY_ARR, obj->tok);
                 obj->va_area->data_type->base = (ASTType_T*) primitives[TY_U8];
@@ -389,14 +389,14 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
             if(is_variadic(obj))
             {
                 bottom += obj->va_area->data_type->size;
-                bottom = align_to(bottom, obj->va_area->align);
+                bottom = align_to(bottom, obj->va_area->data_type->align);
                 obj->va_area->offset = -bottom;
             }
 
             // alloca size
             {
                 bottom += obj->alloca_bottom->data_type->size;
-                bottom = align_to(bottom, obj->alloca_bottom->align);
+                bottom = align_to(bottom, obj->alloca_bottom->data_type->align);
                 obj->alloca_bottom->offset = -bottom;
             }
 
@@ -412,7 +412,7 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
 			    // 16-byte boundaries. See p.14 of
 			    // https://github.com/hjl-tools/x86-psABI/wiki/x86-64-psABI-draft.pdf.
 			    
-                i32 align = var->data_type->kind == TY_ARR && var->data_type->size >= 16 ? MAX(16, var->align) : var->align;
+                i32 align = var->data_type->kind == TY_ARR && var->data_type->size >= 16 ? MAX(16, var->data_type->align) : var->data_type->align;
                 bottom += var->data_type->size;
                 bottom = align_to(bottom, align);
                 var->offset = -bottom;
@@ -423,7 +423,7 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
                 for(size_t j = 0; j < obj->objs->size; j++)
                 {
                     ASTObj_T* var = obj->objs->items[j];
-                    i32 align = var->data_type->kind == TY_ARR && var->data_type->size >= 16 ? MAX(16, var->align) : var->align;
+                    i32 align = var->data_type->kind == TY_ARR && var->data_type->size >= 16 ? MAX(16, var->data_type->align) : var->data_type->align;
                     bottom += var->data_type->size;
                     bottom = align_to(bottom, align);
                     var->offset = -bottom;
@@ -539,7 +539,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
                     char* id = asm_gen_identifier(obj->id);
                     asm_println(cg, "  .globl %s", id);
 
-                    i32 align = obj->data_type->kind == TY_ARR && obj->data_type->size >= 16 ? MAX(16, obj->align) : obj->align;
+                    i32 align = obj->data_type->kind == TY_ARR && obj->data_type->size >= 16 ? MAX(16, obj->data_type->align) : obj->data_type->align;
 
                     if(obj->value)
                     {
@@ -1311,6 +1311,10 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         
         case ND_SIZEOF:
             asm_println(cg, "  mov $%d, %%rax", node->the_type->size);
+            return;
+        
+        case ND_ALIGNOF:
+            asm_println(cg, "  mov $%d, %%rax", node->the_type->align);
             return;
         
         case ND_NEG:

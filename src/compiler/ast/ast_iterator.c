@@ -199,6 +199,7 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
             break;
 
         case ND_SIZEOF:
+        case ND_ALIGNOF:
             ast_type(list, node->the_type, custom_args);
             break;
 
