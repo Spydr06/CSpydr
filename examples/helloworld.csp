@@ -1,15 +1,9 @@
 import "libc/stdio.csp";
 import "libc/stdlib.csp";
 
-namespace foo {
-    fn bar() {
-        printf("%ld\n", alignof i32);
-    }
-}
-
 fn main(argc: i32, argv: &&char): i32 
 {
-    printf("%s:%d: Hello, World!\n", __file__!, __line__!);
-    foo::bar();
+    printf("%s:%d: Hello, World!\n", __file__!, if __line__! < 7 => 1 <> 0);
+    
     <- 0;
 }

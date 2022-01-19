@@ -202,6 +202,14 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
         case ND_ALIGNOF:
             ast_type(list, node->the_type, custom_args);
             break;
+        
+        case ND_IF_EXPR:
+            ast_node(list, node->condition, custom_args);
+            ast_node(list, node->if_branch, custom_args);
+            ast_node(list, node->else_branch, custom_args);
+            if(node->data_type)
+                ast_type(list, node->data_type, custom_args);
+            break;
 
         case ND_BLOCK:
             for(size_t i = 0; i < node->locals->size; i++)

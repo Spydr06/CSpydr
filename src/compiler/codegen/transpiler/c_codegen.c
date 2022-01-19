@@ -792,6 +792,15 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
                 print(cg, c_gen_identifier(cg, node->id));
                 cg->current_lambda = prev_lambda;
             } break;
+        case ND_IF_EXPR:
+            print(cg, "(");
+            c_gen_expr(cg, node->condition);
+            print(cg, ")?(");
+            c_gen_expr(cg, node->if_branch);
+            print(cg, "):(");
+            c_gen_expr(cg, node->else_branch);
+            print(cg, ")");
+            break;
         default:
             throw_error(ERR_MISC, node->tok, "Expressions of type %d are currently not supported", node->kind);
     }

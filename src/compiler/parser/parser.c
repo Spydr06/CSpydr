@@ -83,6 +83,7 @@ static ASTNode_T* parse_array_lit(Parser_T* p);
 static ASTNode_T* parse_struct_lit(Parser_T* p, ASTNode_T* id);
 
 static ASTNode_T* parse_lambda_lit(Parser_T* p);
+static ASTNode_T* parse_if_expr(Parser_T* p);
 
 static ASTNode_T* parse_sizeof(Parser_T* p);
 static ASTNode_T* parse_alignof(Parser_T* p);
@@ -162,6 +163,7 @@ static struct { PrefixParseFn_T pfn; InfixParseFn_T ifn; Precedence_T prec; } ex
     [TOKEN_BIT_OR_ASSIGN] = {NULL, parse_assignment, ASSIGN},  
     [TOKEN_INFIX_CALL] = {NULL, parse_infix_call, INFIX_CALL},
     [TOKEN_STATIC_MEMBER] = {parse_id, NULL, LOWEST},
+    [TOKEN_IF]       = {parse_if_expr, NULL, LOWEST},
 }; 
 
 static ASTNodeKind_T unary_ops[TOKEN_EOF + 1] = {
@@ -1728,6 +1730,22 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p)
     p->cur_lambda_lit = prev_lambda_lit;
 
     return lambda_lit;
+}
+
+static ASTNode_T* parse_if_expr(Parser_T* p)
+{
+    ASTNode_T* if_expr = init_ast_node(ND_IF_EXPR, p->tok);
+    parser_consume(p, TOKEN_IF, "expect `if` keyword");
+
+    if_expr->condition = parse_expr(p, LOWEST, TOKEN_ARROW);
+    parser_consume(p, TOKEN_ARROW, "expect `=>` after condition");
+
+    if_expr->if_branch = parse_expr(p, LOWEST, TOKEN_VERSUS);
+    parser_consume(p, TOKEN_VERSUS, "expect `<>` between if branches");
+
+    if_expr->else_branch = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+
+    return if_expr;
 }
 
 static ASTNode_T* parse_unary(Parser_T* p)

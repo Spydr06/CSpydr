@@ -106,6 +106,7 @@ static void assignment(ASTNode_T* assign, va_list args);
 static void struct_member(ASTNode_T* member, va_list args);
 static void struct_lit(ASTNode_T* s_lit, va_list args);
 static void array_lit(ASTNode_T* a_lit, va_list args);
+static void if_expr(ASTNode_T* if_expr, va_list args);
 
 //types
 static void struct_type(ASTType_T* s_type, va_list args);
@@ -168,7 +169,8 @@ static ASTIteratorList_T main_iterator_list =
         [ND_CAST]    = cast,
         [ND_ASSIGN]  = assignment,
         [ND_STRUCT]  = struct_lit,
-        [ND_ARRAY]   = array_lit
+        [ND_ARRAY]   = array_lit,
+        [ND_IF_EXPR] = if_expr,
     },
 
     .type_fns = 
@@ -968,7 +970,7 @@ static void dereference(ASTNode_T* deref, va_list args)
     GET_VALIDATOR(args);
 
     ASTType_T* right_dt = expand_typedef(v, deref->right->data_type);
-    if(right_dt->kind != TY_PTR)
+    if(right_dt->kind != TY_PTR && right_dt->kind != TY_ARR)
     {
         throw_error(ERR_TYPE_ERROR, deref->tok, "can only dereference variables with pointer type");
         return;
@@ -1265,6 +1267,16 @@ static void array_lit(ASTNode_T* a_lit, va_list args)
     {
 
     }
+}
+
+static void if_expr(ASTNode_T* if_expr, va_list args)
+{
+    GET_VALIDATOR(args);
+
+    if(!is_bool(v, if_expr->condition->data_type))
+        throw_error(ERR_TYPE_ERROR, if_expr->condition->tok, "expect `bool` type for if condition");
+    
+    if_expr->data_type = if_expr->if_branch->data_type;
 }
 
 // types

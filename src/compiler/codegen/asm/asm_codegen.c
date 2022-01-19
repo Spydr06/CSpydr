@@ -338,9 +338,9 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
             {
                 char* id = "__csp_alloca_size__";
                 obj->va_area = init_ast_obj(OBJ_LOCAL, obj->tok);
-                obj->va_area->data_type->align = 1;
                 obj->va_area->id = init_ast_identifier(obj->tok, id);
                 obj->va_area->data_type = init_ast_type(TY_ARR, obj->tok);
+                obj->va_area->data_type->align = 1;
                 obj->va_area->data_type->base = (ASTType_T*) primitives[TY_U8];
                 obj->va_area->data_type->size = 136;
             }
@@ -848,6 +848,12 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
                 asm_gen_addr(cg, &converted);
             }
             return;
+        case ND_IF_EXPR:
+            if(unpack(node->data_type)->kind == TY_STRUCT)
+            {
+                asm_gen_expr(cg, node);
+                return;
+            }
 
         default:
             throw_error(ERR_CODEGEN, node->tok, "cannot generate address from node of kind %d", node->kind);
@@ -1534,6 +1540,19 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_println(cg, ".L.true.%ld:", c);
             asm_println(cg, "  mov $1, %%rax");
             asm_println(cg, ".L.end.%ld:", c);
+        } return;
+
+        case ND_IF_EXPR:
+        {
+            u64 count = asm_count();
+            asm_gen_expr(cg, node->condition);
+            asm_cmp_zero(cg, node->condition->data_type);
+            asm_println(cg, "  je .L.else.%ld", count);
+            asm_gen_expr(cg, node->if_branch);
+            asm_println(cg, "  jmp .L.end.%ld", count);
+            asm_println(cg, "  .L.else.%ld:", count);
+            asm_gen_expr(cg, node->else_branch);
+            asm_println(cg, ".L.end.%ld:", count);
         } return;
 
         case ND_CALL:

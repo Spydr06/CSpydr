@@ -57,6 +57,8 @@ typedef enum TOKEN_TYPE {
     TOKEN_DIV,          // /=
     TOKEN_MOD,          // %=
 
+    TOKEN_VERSUS,       // <>
+
     TOKEN_XOR,          // ^
     TOKEN_XOR_ASSIGN,   // ^=
     TOKEN_LSHIFT,       // <<
