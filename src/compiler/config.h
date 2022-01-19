@@ -53,6 +53,9 @@
 #define DEFAULT_CC_FLAGS "-m64 -O3 -Wall -fPIC"
 
 // ASM code generation
+#define DEFAULT_ASSEMBLER "as"
+#define DEFAULT_LINKER "ld"
+
 #define ASM_GP_MAX 6
 #define ASM_FP_MAX 8
 

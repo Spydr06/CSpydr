@@ -17,7 +17,7 @@ enum { I8, I16, I32, I64, U8, U16, U32, U64, F32, F64, F80, LAST };
 // a counter variable for generating unique labels
 static u64 asm_c = 0;
 
-const char asm_start_text[] = 
+static char asm_start_text[] = 
     "  .globl _start\n"
     "  .text\n"
     "_start:\n"
@@ -250,7 +250,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
     // run the assembler
     {
         const char* args[] = {
-            "as",
+            DEFAULT_ASSEMBLER,
             "-c",
             asm_source_file,
             "-o",
@@ -272,7 +272,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
             LOG_OK_F(COLOR_BOLD_BLUE "  Linking    " COLOR_RESET "%s\n", target);
 
         List_T* args = init_list(sizeof(char*));
-        list_push(args, "ld");
+        list_push(args, DEFAULT_LINKER);
         list_push(args, "-o");
         list_push(args, (void*) target);
         list_push(args, "-m");

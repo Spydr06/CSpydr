@@ -107,6 +107,8 @@ static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_pow_2(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_pow_3(Parser_T* p, ASTNode_T* left);
 
+static ASTNode_T* parse_current_fn_token(Parser_T* p);
+
 static struct { PrefixParseFn_T pfn; InfixParseFn_T ifn; Precedence_T prec; } expr_parse_fns[TOKEN_EOF + 1] = {
     [TOKEN_ID]       = {parse_id, NULL, LOWEST},
     [TOKEN_INT]      = {parse_int_lit, NULL, LOWEST},
@@ -164,6 +166,7 @@ static struct { PrefixParseFn_T pfn; InfixParseFn_T ifn; Precedence_T prec; } ex
     [TOKEN_INFIX_CALL] = {NULL, parse_infix_call, INFIX_CALL},
     [TOKEN_STATIC_MEMBER] = {parse_id, NULL, LOWEST},
     [TOKEN_IF]       = {parse_if_expr, NULL, LOWEST},
+    [TOKEN_CURRENT_FN] = {parse_current_fn_token, NULL, LOWEST},
 }; 
 
 static ASTNodeKind_T unary_ops[TOKEN_EOF + 1] = {
@@ -276,9 +279,16 @@ static void free_parser(Parser_T* p)
     // nothing to do here
 }
 
+static inline bool streq(char* s1, char* s2)
+{
+    return strcmp(s1, s2) == 0;
+}
+
 static inline Token_T* parser_advance(Parser_T* p)
 {
     p->tok = p->tokens->items[++p->token_i];
+    if(p->tok->type == TOKEN_SEMICOLON && streq(p->tok->value, ";"))
+        throw_error(ERR_SYNTAX_WARNING, p->tok, "found `;` (greek question mark) instead of `;` (semicolon)");
     return p->tok;
 }
 
@@ -292,11 +302,6 @@ static inline Token_T* parser_peek(Parser_T* p, i32 level)
 static inline bool tok_is(Parser_T* p, TokenType_T type)
 {
     return p->tok->type == type;
-}
-
-static inline bool streq(char* s1, char* s2)
-{
-    return strcmp(s1, s2) == 0;
 }
 
 Token_T* parser_consume(Parser_T* p, TokenType_T type, const char* msg)
@@ -2019,4 +2024,12 @@ static ASTNode_T* parse_pow_3(Parser_T* p, ASTNode_T* left)
 
     closure->expr = mult_a;
     return closure;
+}
+
+static ASTNode_T* parse_current_fn_token(Parser_T* p)
+{
+    p->tok->type = TOKEN_STRING,
+    strcpy(p->tok->value, p->cur_fn->id->callee);
+
+    return parse_str_lit(p, false);
 }

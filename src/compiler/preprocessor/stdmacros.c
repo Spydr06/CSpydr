@@ -28,17 +28,18 @@ struct {
         INTEGER,
         ID,
         STRING,
-        STRING_FN
+        STRING_FN,
+        CURRENT_FN,
     } value_type;
 } 
 macros[] = {
     {"__version__",  .value = "v" CSPYDR_VERSION_X "." CSPYDR_VERSION_Y "." CSPYDR_VERSION_Z CSPYDR_VERSION_W, STRING},
 #if defined(__linux) || defined(__linux__)
-    {"__system__", .value = "linux", STRING},
+    {"__system__", .value = "linux", STRING},   // returns the linux platform
 #elif defined(_WIN32)
-    {"__system__", .value = "windows", STRING},
+    {"__system__", .value = "windows", STRING}, // returns the windows platform
 #else
-    {"__system__", .value = "unknown", STRING},
+    {"__system__", .value = "unknown", STRING}, // returns an unknown function
 #endif
 
 #if defined(__x86_64) || defined(__x86_64__) || defined(_M_X64)
@@ -49,14 +50,15 @@ macros[] = {
     {"__architecture__", .value = "unknown", STRING},
 #endif
 
-    {"__time__", .fn = get_time_str, STRING_FN},
-    {"__date__", .fn = get_date_str, STRING_FN},
-    {"__compile_type__", .fn = get_compile_type, STRING_FN},
-    {"__main_file__", .fn = get_main_file, STRING_FN},
+    {"__time__", .fn = get_time_str, STRING_FN},             // returns the compile time
+    {"__date__", .fn = get_date_str, STRING_FN},             // returns the compile date
+    {"__compile_type__", .fn = get_compile_type, STRING_FN}, // returns the compile type
+    {"__main_file__", .fn = get_main_file, STRING_FN},       // returns the main file
 
-    {"__file__", .value = "__file__", ID},
-    {"__line__", .value = "__line__", ID},
-
+    {"__file__", .value = "__file__", ID}, // returns the current file
+    {"__line__", .value = "__line__", ID}, // returns the current line
+    {"__func__", NULL, CURRENT_FN},        // returns the current function
+    
     {NULL, NULL, 0}
 };
 
@@ -81,6 +83,9 @@ void define_std_macros(List_T *macro_list)
                 break;
             case STRING_FN:
                 replacement_token = init_token((char*) macros[i].fn(), 0, 0, TOKEN_STRING, NULL);
+                break;
+            case CURRENT_FN:
+                replacement_token = init_token("__func__", 0, 0, TOKEN_CURRENT_FN, NULL);
                 break;
         }
 

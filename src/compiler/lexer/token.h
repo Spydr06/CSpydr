@@ -113,6 +113,8 @@ typedef enum TOKEN_TYPE {
     TOKEN_VA_ARG,       // va_arg
     TOKEN_ASM,          // asm
 
+    TOKEN_CURRENT_FN,   // special token for the __func__! macro
+
     TOKEN_ERROR,        // error handling token
     TOKEN_EOF,          // end of file
 } TokenType_T;

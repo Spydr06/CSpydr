@@ -108,6 +108,7 @@ void init_c_cg(CCodegenData_T* cg, ASTProg_T* ast)
     cg->code_buffer = open_memstream(&cg->buf, &cg->buf_len);
 }
 
+__attribute((format(printf, 2, 3)))
 static void println(CCodegenData_T* cg, char* fmt, ...)
 {
     va_list va;
@@ -117,6 +118,7 @@ static void println(CCodegenData_T* cg, char* fmt, ...)
     fprintf(cg->code_buffer, "\n");
 }
 
+__attribute((format(printf, 2, 3)))
 static void print(CCodegenData_T* cg, char* fmt, ...)
 {
     va_list va;
@@ -157,7 +159,7 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
      * sections of a program and emit them seperately.
      */
 
-    println(cg, (char*) default_header_code);
+    println(cg, "%s", (char*) default_header_code);
 
     // generate typedefs
     for(size_t i = 0; i < cg->ast->objs->size; i++)
@@ -194,16 +196,6 @@ static void run_compiler(CCodegenData_T* cg, const char* target_bin)
     char c_source_file[BUFSIZ] = {'\0'};
     sprintf(c_source_file, "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.c", get_home_directory(), target_bin);
 
-    /*char* args[] = // TODO: enable cc_flags again
-    {
-        cc,
-        c_source_file,
-        "-o",
-        (char*) target_bin,
-        "-lglfw",
-        "-lGL",
-        NULL
-    };*/
     List_T* args = init_list(sizeof(char*));
     list_push(args, cc);
     list_push(args, c_source_file);
@@ -334,7 +326,7 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
             case TY_UNDEF:
                 if(struct_name && strcmp(c_gen_identifier(cg, ty->id), struct_name) == 0)
                     print(cg, "struct ");
-                print(cg, c_gen_identifier(cg, ty->id));
+                print(cg, "%s", c_gen_identifier(cg, ty->id));
                 break;
             case TY_OPAQUE_STRUCT:
                 print(cg, "struct %s", c_gen_identifier(cg, ty->id));
@@ -707,7 +699,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
         case ND_INC:
         case ND_DEC:
             c_gen_expr(cg, node->left);
-            print(cg, node->tok->value);
+            print(cg, "%s", node->tok->value);
             break;
         case ND_CLOSURE:
             print(cg, "(");
@@ -789,7 +781,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             {
                 ASTNode_T* prev_lambda = cg->current_lambda;
                 cg->current_lambda = node;
-                print(cg, c_gen_identifier(cg, node->id));
+                print(cg, "%s", c_gen_identifier(cg, node->id));
                 cg->current_lambda = prev_lambda;
             } break;
         case ND_IF_EXPR:
