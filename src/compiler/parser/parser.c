@@ -593,13 +593,19 @@ static ASTType_T* parse_lambda_type(Parser_T* p)
     ASTType_T* lambda = init_ast_type(TY_LAMBDA, p->tok);
 
     parser_consume(p, TOKEN_FN, "expect `fn` keyword for lambda type");
-    parser_consume(p, TOKEN_LT, "expect `<` before lambda return type");
 
-    lambda->base = parse_type(p);
+    if(tok_is(p, TOKEN_LT))
+    {
+        parser_consume(p, TOKEN_LT, "expect `<` before lambda return type");
+        lambda->base = parse_type(p);
+        parser_consume(p, TOKEN_GT, "expect `>` after lambda return type");
+    }
+    else
+    {
+        lambda->base = (ASTType_T*) primitives[TY_VOID];
+    }
 
-    parser_consume(p, TOKEN_GT, "expect `>` after lambda return type");
     parser_consume(p, TOKEN_LPAREN, "expect `(` before lambda argument types");
-
     lambda->arg_types = init_list(sizeof(struct AST_TYPE_STRUCT*));
     mem_add_list(lambda->arg_types);
 
@@ -612,7 +618,6 @@ static ASTType_T* parse_lambda_type(Parser_T* p)
     }
 
     parser_consume(p, TOKEN_RPAREN, "expect `)` after lambda argument types");
-
     return lambda;
 }
 

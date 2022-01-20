@@ -1,17 +1,12 @@
 import "libc/stdio.csp";
 import "libc/stdlib.csp";
 
-fn foo() {
-    printf("Hi!\n");   
-}
-
-fn bar(f: fn<void>(i32)) {
-    f(4);
+fn bar(f: fn(i32)) {
+    f(42);
 }
 
 fn main(): i32 
 {
-    #printf("%s:%d in function `%s`:\n\tHello, World!\n", __file__!, __line__!, __func__!);
-    bar(|i: i32| => printf("%d\n", i););
+    bar(|i: i32| => printf("Hello %d\n", i););
     <- 0;
 }
