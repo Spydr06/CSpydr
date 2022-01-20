@@ -1425,6 +1425,7 @@ static i32 get_type_size(Validator_T* v, ASTType_T* type)
         case TY_VOID:
             return VOID_S;
         case TY_PTR:
+        case TY_LAMBDA:
             return PTR_S;
         case TY_TYPEOF:
             return get_type_size(v, expand_typedef(v, type->num_indices->data_type));

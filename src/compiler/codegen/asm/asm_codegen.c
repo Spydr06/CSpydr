@@ -7,6 +7,7 @@
 #include "../../error/error.h"
 #include "../../mem/mem.h"
 #include "../../ast/types.h"
+#include "ast/ast.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -229,8 +230,9 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
     if(cg->embed_file_locations)
         asm_gen_file_descriptors(cg);
     asm_assign_lvar_offsets(cg, cg->ast->objs);
+
     asm_gen_data(cg, cg->ast->objs);
-    
+
     asm_println(cg, "%s", asm_start_text);
     
     asm_gen_text(cg, cg->ast->lambda_literals);
@@ -817,9 +819,9 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
                 
                 case OBJ_FUNCTION:
                     if(node->referenced_obj->is_extern)
-                        asm_println(cg, "  mov %s@GOTPCREL(%%rip), %%rax", asm_gen_identifier(node->id));
+                        asm_println(cg, "  lea %s@GOTPCREL(%%rip), %%rax", asm_gen_identifier(node->id));
                     else
-                        asm_println(cg, "  mov %s(%%rip), %%rax", asm_gen_identifier(node->id));
+                        asm_println(cg, "  lea %s(%%rip), %%rax", asm_gen_identifier(node->id));
                     return;
                 
                 default:
@@ -830,6 +832,11 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_CALL:
             if(node->called_obj->is_extern)
                 asm_println(cg, "  mov %s@GOTPCREL(%%rip), %%rax", asm_gen_identifier(node->expr->id));
+            else if(node->referenced_obj->kind != OBJ_FUNCTION)
+            {
+                asm_println(cg, "  lea %d(%%rbp), %%rax", node->referenced_obj->offset);
+                asm_println(cg, "  mov (%%rax), %%rax");
+            }
             else
                 asm_println(cg, "  lea %s(%%rip), %%rax", asm_gen_identifier(node->expr->id));
             return;
@@ -1321,6 +1328,10 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         
         case ND_ALIGNOF:
             asm_println(cg, "  mov $%d, %%rax", node->the_type->align);
+            return;
+
+        case ND_LAMBDA:
+            asm_println(cg, "  lea %s(%%rip), %rax", asm_gen_identifier(node->id));
             return;
         
         case ND_NEG:
@@ -2066,7 +2077,6 @@ static void asm_store_gp(ASMCodegenData_T* cg, i32 r, i32 offset, i32 sz)
         default:
             for(i32 i = 0; i < sz; i++)
             {
-                printf("%d\n", i);
                 asm_println(cg, "  mov %s, %d(%%rbp)", argreg8[r], offset + i);
                 asm_println(cg, "  shr $8, %s", argreg64[r]);
             }
