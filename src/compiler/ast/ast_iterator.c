@@ -278,13 +278,6 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
             ast_node(list, node->expr, custom_args);
             break;
 
-        case ND_LAMBDA:
-            for(size_t i = 0; i < node->args->size; i++)
-                ast_obj(list, node->args->items[i], custom_args);
-            ast_type(list, node->data_type, custom_args);
-            ast_node(list, node->body, custom_args);
-            break;
-
         case ND_ARRAY:
         case ND_STRUCT:
             for(size_t i = 0; i < node->args->size; i++)

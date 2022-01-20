@@ -141,7 +141,6 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node);
 static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node);
 
 static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name);
-static void c_gen_lambda_fn(CCodegenData_T* cg, ASTNode_T* lambda);
 static void c_gen_array_brackets(CCodegenData_T* cg, ASTType_T* ty);
 static void c_gen_tuple_struct(CCodegenData_T* cg, ASTType_T* tuple);
 
@@ -174,10 +173,6 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
     // declare all objects first
     for(size_t i = 0; i < cg->ast->objs->size; i++)
         c_gen_obj_decl(cg, cg->ast->objs->items[i]);
-
-    // emit all lambda templates
-    for(size_t i = 0; i < cg->ast->lambda_literals->size; i++)
-        c_gen_lambda_fn(cg, cg->ast->lambda_literals->items[i]);
     
     // finally, emit every function containing the *actual* code
     for(size_t i = 0; i < cg->ast->objs->size; i++)
@@ -777,13 +772,6 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             c_gen_type(cg, node->data_type, "");
             print(cg, ")");
             break;
-        case ND_LAMBDA:
-            {
-                ASTNode_T* prev_lambda = cg->current_lambda;
-                cg->current_lambda = node;
-                print(cg, "%s", c_gen_identifier(cg, node->id));
-                cg->current_lambda = prev_lambda;
-            } break;
         case ND_IF_EXPR:
             print(cg, "(");
             c_gen_expr(cg, node->condition);
@@ -815,11 +803,8 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, "return ");
             if(node->return_val) {
                 print(cg, "(");
-                if(!cg->current_fn && !cg->current_lambda)
-                    throw_error(ERR_SYNTAX_ERROR, node->tok, "return statement outside of function or lambda");
-                c_gen_type(cg, cg->current_lambda ? cg->current_lambda->data_type : cg->current_fn->return_type, "");
+                c_gen_type(cg, cg->current_fn->return_type, "");
                 print(cg, ")");
-
                 c_gen_expr(cg, node->return_val);          
             }
             println(cg, ";");
@@ -922,21 +907,6 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
         default:
             break;
     }
-}
-
-static void c_gen_lambda_fn(CCodegenData_T* cg, ASTNode_T* lambda)
-{
-    ASTNode_T* prev_lambda = cg->current_lambda;
-    cg->current_lambda = lambda;
-    c_gen_type(cg, lambda->data_type, "");
-    print(cg, " %s(", c_gen_identifier(cg, lambda->id));
-
-    c_gen_fn_arg_list(cg, lambda->args);
-
-    println(cg, "){");
-    c_gen_stmt(cg, lambda->body);
-    println(cg, "}");
-    cg->current_lambda = prev_lambda;
 }
 
 static char* c_gen_identifier(CCodegenData_T* cg, ASTIdentifier_T* id)

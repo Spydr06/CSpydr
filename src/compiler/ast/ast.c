@@ -58,11 +58,9 @@ void init_ast_prog(ASTProg_T* prog, const char* main_file_path, const char* targ
     prog->imports = imports;
 
     prog->objs = init_list(sizeof(struct AST_OBJ_STRUCT*));
-    prog->lambda_literals = init_list(sizeof(struct AST_NODE_STRUCT*));
     prog->tuple_structs = init_list(sizeof(struct AST_TYPE_STRUCT*));
 
     mem_add_list(prog->objs);
-    mem_add_list(prog->lambda_literals);
     mem_add_list(prog->tuple_structs);
 }
 

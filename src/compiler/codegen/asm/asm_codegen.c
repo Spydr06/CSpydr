@@ -235,7 +235,6 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
 
     asm_println(cg, "%s", asm_start_text);
     
-    asm_gen_text(cg, cg->ast->lambda_literals);
     asm_gen_text(cg, cg->ast->objs);
 
     write_code(cg, target);
@@ -420,6 +419,8 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
                 var->offset = -bottom;
             }
 
+            printf("(%s)\n", obj->id->callee);
+
             // assign local offsets
             if(!obj->is_extern)
                 for(size_t j = 0; j < obj->objs->size; j++)
@@ -430,6 +431,7 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
                     bottom = align_to(bottom, align);
                     var->offset = -bottom;
                 }
+
             obj->stack_size = align_to(bottom, 16);
         } break;
         }
@@ -1328,10 +1330,6 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         
         case ND_ALIGNOF:
             asm_println(cg, "  mov $%d, %%rax", node->the_type->align);
-            return;
-
-        case ND_LAMBDA:
-            asm_println(cg, "  lea %s(%%rip), %rax", asm_gen_identifier(node->id));
             return;
         
         case ND_NEG:

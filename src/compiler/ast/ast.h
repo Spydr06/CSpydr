@@ -96,8 +96,6 @@ typedef enum {
     ND_LEN,       // len x
     ND_VA_ARG,    // va_arg x: i32
 
-    ND_LAMBDA,    // |x, y| => {}
-
     ND_STRUCT_MEMBER,  // struct members
 
     ND_ASM, // inline assembly
@@ -303,7 +301,6 @@ typedef struct AST_PROG_STRUCT
     const char* target_binary;
 
     List_T* imports;
-    List_T* lambda_literals;
     List_T* tuple_structs;
 
     List_T* objs;   // list of ASTObj_Ts

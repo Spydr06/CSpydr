@@ -5,13 +5,13 @@ fn foo() {
     printf("Hi!\n");   
 }
 
-fn bar(f: fn<void>()) {
-    f();
+fn bar(f: fn<void>(i32)) {
+    f(4);
 }
 
 fn main(): i32 
 {
     #printf("%s:%d in function `%s`:\n\tHello, World!\n", __file__!, __line__!, __func__!);
-    bar(foo);
+    bar(|i: i32| => printf("%d\n", i););
     <- 0;
 }

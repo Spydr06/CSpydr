@@ -24,7 +24,6 @@ typedef struct PARSER_STRUCT
     Token_T* tok;
     ASTNode_T* cur_block;
     ASTObj_T* cur_fn;
-    ASTNode_T* cur_lambda_lit;
 
     size_t cur_lambda_id;
     size_t cur_tuple_id;
@@ -271,7 +270,6 @@ static void init_parser(Parser_T* parser, List_T* tokens)
 
     parser->cur_block = NULL;
     parser->cur_fn = NULL;
-    parser->cur_lambda_lit = NULL;
 }
 
 static void free_parser(Parser_T* p)
@@ -1692,11 +1690,11 @@ static ASTNode_T* parse_struct_lit(Parser_T* p, ASTNode_T* id)
 
 static ASTNode_T* parse_lambda_lit(Parser_T* p)
 {
-    ASTNode_T* lambda_lit = init_ast_node(ND_LAMBDA, p->tok);
+    ASTObj_T* lambda = init_ast_obj(OBJ_FUNCTION, p->tok);
     parser_consume(p, TOKEN_BIT_OR, "expect `|` for lambda expression");
 
-    lambda_lit->args = init_list(sizeof(struct AST_OBJ_STRUCT*));
-    mem_add_list(lambda_lit->args);
+    lambda->args = init_list(sizeof(struct AST_OBJ_STRUCT*));
+    mem_add_list(lambda->args);
 
     while(!tok_is(p, TOKEN_BIT_OR) && !tok_is(p, TOKEN_EOF))
     {
@@ -1706,35 +1704,42 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p)
         parser_consume(p, TOKEN_COLON, "expect `:` after lambda argument");
 
         arg->data_type = parse_type(p);
-        list_push(lambda_lit->args, arg);
+        list_push(lambda->args, arg);
 
         if(!tok_is(p, TOKEN_BIT_OR))
             parser_consume(p, TOKEN_COMMA, "expect `,` between lambda arguments");
     }
     parser_consume(p, TOKEN_BIT_OR, "expect `|` after lambda args");
 
-    if(tok_is(p, TOKEN_ARROW))
-        lambda_lit->data_type = get_primitive_type("void");
-    else
-        lambda_lit->data_type = parse_type(p);
+    lambda->return_type = tok_is(p, TOKEN_ARROW) ? (ASTType_T*) primitives[TY_VOID] : parse_type(p);
     parser_consume(p, TOKEN_ARROW, "expect `=>` after lambda return type");
-
-    ASTNode_T* prev_lambda_lit = p->cur_lambda_lit;
-    p->cur_lambda_lit = lambda_lit;
-
-    lambda_lit->body = parse_stmt(p);
 
     const char* callee_tmp = "__csp_lambda_lit_%ld__";
     char callee[__CSP_MAX_TOKEN_SIZE];
     sprintf(callee, callee_tmp, p->cur_lambda_id++);
     
-    lambda_lit->id = init_ast_identifier(lambda_lit->tok, callee);
+    lambda->id = init_ast_identifier(lambda->tok, callee);
+    lambda->data_type = (ASTType_T*) primitives[TY_FN];
+    lambda->referenced = true;
 
-    list_push(p->root_ref->lambda_literals, lambda_lit);
+    ASTObj_T* prev_fn = p->cur_fn;
+    p->cur_fn = lambda;
+    lambda->body = parse_stmt(p);
+    p->cur_fn = prev_fn;
 
-    p->cur_lambda_lit = prev_lambda_lit;
+    if(global.ct == CT_ASM)
+    {
+        lambda->alloca_bottom = &alloca_bottom;
+        lambda->objs = init_list(sizeof(struct AST_OBJ_STRUCT*));
+        mem_add_list(lambda->objs);
+    }
 
-    return lambda_lit;
+    list_push(p->root_ref->objs, lambda);
+
+    ASTNode_T* caller = init_ast_node(ND_ID, lambda->tok);
+    caller->id = lambda->id;
+
+    return caller;
 }
 
 static ASTNode_T* parse_if_expr(Parser_T* p)

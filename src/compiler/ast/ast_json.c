@@ -189,7 +189,6 @@ json_object* gen_ast_prog(ASTProg_T* ast)
     
     json_object_object_add(obj, "imports", gen_list(ast->imports, (IndexFn) gen_srcfile));
     json_object_object_add(obj, "objs", gen_list(ast->objs, (IndexFn) gen_ast_obj));
-    json_object_object_add(obj, "lambda_literals", gen_list(ast->lambda_literals, (IndexFn) gen_ast_obj));
     json_object_object_add(obj, "tuple_structs", gen_list(ast->tuple_structs, (IndexFn) gen_ast_obj));
 
     return obj;
