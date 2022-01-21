@@ -363,12 +363,6 @@ static void ast_type(ASTIteratorList_T* list, ASTType_T* type, va_list custom_ar
                 ast_type(list, type->arg_types->items[i], custom_args);
             list_fn(list->type_fns[TY_LAMBDA], type, custom_args);
             break;
-
-        case TY_TUPLE:
-            for(size_t i = 0; i < type->arg_types->size; i++)
-                ast_type(list, type->arg_types->items[i], custom_args);
-            list_fn(list->type_fns[TY_TUPLE], type, custom_args);
-            break;
         
         case TY_TYPEOF:
             ast_node(list, type->num_indices, custom_args);

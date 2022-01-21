@@ -142,8 +142,6 @@ const char* type_kind_to_str(ASTTypeKind_T kind)
             return "fn";
         case TY_VA_LIST:
             return "va list";
-        case TY_TUPLE:
-            return "tuple";
         case TY_TEMPLATE:
             return "<template>";
         case TY_UNDEF:

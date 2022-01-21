@@ -315,9 +315,6 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
 
                 print(cg, "}");
                 break;
-            case TY_TUPLE:
-                print(cg, "struct %s", c_gen_identifier(cg, ty->id));
-                break;
             case TY_UNDEF:
                 if(struct_name && strcmp(c_gen_identifier(cg, ty->id), struct_name) == 0)
                     print(cg, "struct ");

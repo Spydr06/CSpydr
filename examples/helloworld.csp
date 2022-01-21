@@ -1,9 +1,13 @@
 import "libc/stdio.csp";
 import "libc/stdlib.csp";
 
-fn main(): i32 
+fn test(): [i32, &char]
 {
-    let x = 3.141569: f80;
-    printf("%d\n", x: i32);
+    <- __csp_tuple_0__ :: {0, "Hi!"};
+}
+
+fn main(): i32
+{
+    printf("%u %s\n", test()._0, test()._1);
     <- 0;
 }

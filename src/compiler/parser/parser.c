@@ -1,6 +1,7 @@
 #include "parser.h"
 
 #include "ast/ast.h"
+#include "../util.h"
 #include "validator.h"
 #include "../io/log.h"
 #include "../io/io.h"
@@ -343,26 +344,24 @@ static bool check_type(ASTType_T* a, ASTType_T* b)
     return true;
 }
 
-static ASTType_T* get_compatible_tuple(Parser_T* p, ASTType_T* tuple)
+static ASTObj_T* get_compatible_tuple(Parser_T* p, ASTType_T* tuple)
 {
-    for(size_t i = 0; i < p->root_ref->tuple_structs->size; i++)
+    for(size_t i = 0; i < p->root_ref->objs->size; i++)
     {
-        ASTType_T* to_check = p->root_ref->tuple_structs->items[i];
-        if(to_check->arg_types->size != tuple->arg_types->size)
-            continue;
-        
-        bool types_compatible = true;
-        for(size_t j = 0; j < to_check->arg_types->size; j++)
+        ASTObj_T* obj = p->root_ref->objs->items[i];
+        if(obj->kind == OBJ_TYPEDEF && str_starts_with(obj->id->callee, "__csp_tuple_") && obj->data_type->members->size == tuple->members->size)
         {
-            if(!check_type(to_check->arg_types->items[i], tuple->arg_types->items[i]))
+            for(size_t j = 0; j < obj->data_type->members->size; j++)
             {
-                types_compatible = false;
-                break;
+                if(!check_type(((ASTNode_T*) obj->data_type->members->items[j])->data_type, ((ASTNode_T*) tuple->members->items[j])->data_type))
+                    goto cont;
             }
+            return obj;
         }
-        if(types_compatible)
-            return to_check;
+    cont:
+        ;
     }
+
     return NULL;
 }
 
@@ -678,32 +677,43 @@ static ASTType_T* parse_type(Parser_T* p)
                 type->base = parse_type(p);
                 break;
             case TOKEN_LBRACKET:
-                type = init_ast_type(TY_TUPLE, p->tok);
+                type = init_ast_type(TY_STRUCT, p->tok);
+                type->members = init_list(sizeof(struct AST_TYPE_STRUCT*));
+                mem_add_list(type->members);
                 parser_advance(p);
-                type->arg_types = init_list(sizeof(struct AST_TYPE_STRUCT*));
-                mem_add_list(type->arg_types);
 
-                while(!tok_is(p, TOKEN_RBRACKET) && !tok_is(p, TOKEN_EOF))
+                for(size_t i = 0; !tok_is(p, TOKEN_RBRACKET) && !tok_is(p, TOKEN_EOF); i++)
                 {
-                    list_push(type->arg_types, parse_type(p));
+                    ASTNode_T* member = init_ast_node(ND_STRUCT_MEMBER, p->tok);
+                    member->data_type = parse_type(p);
+                    member->id = init_ast_identifier(p->tok, "");
+                    sprintf(member->id->callee, "_%lu", i);
+
+                    list_push(type->members, member);
                     if(!tok_is(p, TOKEN_RBRACKET))
                         parser_consume(p, TOKEN_COMMA, "expect `,` between tuple argument types");
                 }
                 parser_consume(p, TOKEN_RBRACKET, "expect `]` after tuple argument types");
 
-                ASTType_T* existing_tuple = get_compatible_tuple(p, type);
-                if(existing_tuple)
-                    type->id = existing_tuple->id;
+                ASTObj_T* existing_tydef = get_compatible_tuple(p, type);
+                if(existing_tydef)
+                {
+                    type->kind = TY_UNDEF;
+                    type->id = existing_tydef->id;
+                }
                 else
                 {
-                    const char* tuple_tmp = "__csp_tuple_%ld__";
-                    char callee[__CSP_MAX_TOKEN_SIZE];
-                    sprintf(callee, tuple_tmp, p->cur_tuple_id++);
-                    type->id = init_ast_identifier(type->tok, callee);
-                
-                    list_push(p->root_ref->tuple_structs, type);
-                }
+                    ASTObj_T* tydef = init_ast_obj(OBJ_TYPEDEF, type->tok);
+                    tydef->data_type = mem_malloc(sizeof(struct AST_TYPE_STRUCT));
+                    *tydef->data_type = *type;
+                    tydef->id = init_ast_identifier(type->tok, "");
+                    sprintf(tydef->id->callee, "__csp_tuple_%lu__", p->cur_tuple_id++);
 
+                    list_push(p->root_ref->objs, tydef); 
+
+                    type->kind = TY_UNDEF;
+                    type->id = tydef->id;
+                }
                 break;
             case TOKEN_TYPEOF:
                 type = init_ast_type(TY_TYPEOF, p->tok);

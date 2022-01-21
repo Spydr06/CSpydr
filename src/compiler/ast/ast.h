@@ -131,7 +131,6 @@ typedef enum {
     TY_LAMBDA,
     TY_FN,
     TY_VA_LIST,
-    TY_TUPLE,
     TY_TEMPLATE,
 
     TY_UNDEF,

@@ -2,6 +2,7 @@
 #define CSPYDR_TYPES_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 /*
  * Type definitions
@@ -35,5 +36,7 @@ typedef long double f80;
 #ifndef __GNUC__
 char *strsep(char **stringp, const char *delim);
 #endif
+
+bool str_starts_with(const char *a, const char *b);
 
 #endif

@@ -990,22 +990,14 @@ static void member(ASTNode_T* member, va_list args)
     GET_VALIDATOR(args);
 
     ASTType_T* tuple_type = NULL;
-    if((tuple_type = expand_typedef(v, member->left->data_type))->kind == TY_TUPLE)
+    ASTNode_T* found = find_member_in_type(v, member->left->data_type, member->right);
+    if(!found)
     {
-        //uint64_t id = strtoll(&(member->right->tok->value[1]), NULL, 10);
-        //member->data_type = tuple_type->arg_types->items[id];
+        throw_error(ERR_TYPE_ERROR, member->tok, "type `%d` has no member named `%s`", member->left->data_type->kind, member->right->id->callee);
+        return;
     }
-    else {
-        ASTNode_T* found = find_member_in_type(v, member->left->data_type, member->right);
-
-        if(!found)
-        {
-            throw_error(ERR_TYPE_ERROR, member->tok, "type `%d` has no member named `%s`", member->left->data_type->kind, member->right->id->callee);
-            return;
-        }
-        member->data_type = found->data_type;
-        member->body = found;
-    }
+    member->data_type = found->data_type;
+    member->body = found;
     if(is_ptr(v, member->left->data_type))
     {
         // convert x->y to (*x).y
@@ -1330,23 +1322,6 @@ static void typeof_type(ASTType_T* typeof_type, va_list args)
 static void type_begin(ASTType_T* type, va_list args)
 {
     GET_VALIDATOR(args);
-
-    if(global.ct == CT_ASM && type->kind == TY_TUPLE)
-    {
-        type->kind = TY_STRUCT;
-        type->members = init_list(sizeof(struct AST_NODE_STRUCT*));
-        for(size_t i = 0; i < type->arg_types->size; i++)
-        {
-            ASTType_T* arg_type = type->arg_types->items[i];
-            char id[__CSP_MAX_TOKEN_SIZE] = {};
-            sprintf(id, "_%ld", i);
-
-            ASTNode_T* struct_member = init_ast_node(ND_STRUCT_MEMBER, arg_type->tok);
-            struct_member->data_type = arg_type;
-            struct_member->id = init_ast_identifier(arg_type->tok, id);
-            list_push(type->members, struct_member);
-        }
-    }
 }
 
 static void type_end(ASTType_T* type, va_list args)
