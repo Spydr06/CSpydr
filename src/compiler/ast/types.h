@@ -5,22 +5,22 @@
 
 #define NUM_TYPES TY_UNDEF + 1 // TY_UNDEF is the last item in the ASTDataType_T enum. TY_UNDEF should never occur
 
-#define I8_S   sizeof(signed char)
-#define I16_S  sizeof(signed short)
-#define I32_S  sizeof(signed int)
-#define I64_S  sizeof(signed long)
-#define U8_S   sizeof(unsigned char)
-#define U16_S  sizeof(unsigned short)
-#define U32_S  sizeof(unsigned int)
-#define U64_S  sizeof(unsigned long)
-#define F32_S  sizeof(float)
-#define F64_S  sizeof(double)
-#define F80_S  sizeof(long double)
-#define CHAR_S sizeof(char)
-#define BOOL_S sizeof(bool)
-#define VOID_S sizeof(void)
-#define PTR_S  sizeof(void*)
-#define ENUM_S sizeof(int)
+#define I8_S   1
+#define I16_S  2
+#define I32_S  4
+#define I64_S  8
+#define U8_S   1
+#define U16_S  2
+#define U32_S  4
+#define U64_S  8
+#define F32_S  4
+#define F64_S  8
+#define F80_S  10
+#define CHAR_S 1
+#define BOOL_S 1
+#define VOID_S 8
+#define PTR_S  8
+#define ENUM_S 4
 
 // a struct for a single index in the String-to-Type Map
 struct StrTypeIdx { 

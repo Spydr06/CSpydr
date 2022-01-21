@@ -1,12 +1,9 @@
 import "libc/stdio.csp";
 import "libc/stdlib.csp";
 
-fn bar(f: fn(i32)) {
-    f(42);
-}
-
 fn main(): i32 
 {
-    bar(|i: i32| => printf("Hello %d\n", i););
+    let x = 3.141569: f80;
+    printf("%d\n", x: i32);
     <- 0;
 }

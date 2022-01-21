@@ -419,8 +419,6 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
                 var->offset = -bottom;
             }
 
-            printf("(%s)\n", obj->id->callee);
-
             // assign local offsets
             if(!obj->is_extern)
                 for(size_t j = 0; j < obj->objs->size; j++)
@@ -1151,7 +1149,7 @@ static void asm_push_args2(ASMCodegenData_T* cg, List_T* args, bool first_pass)
     {
         ASTNode_T* arg = args->items[i];
         if((first_pass && !arg->pass_by_stack) || (!first_pass && arg->pass_by_stack))
-            return;
+            continue;
         
         asm_gen_expr(cg, arg);
 
@@ -1161,7 +1159,6 @@ static void asm_push_args2(ASMCodegenData_T* cg, List_T* args, bool first_pass)
                 asm_push_struct(cg, arg->data_type);
                 break;
             case TY_F32:
-                //asm_cast(cg, (ASTType_T*) primitives[TY_F32], (ASTType_T*) primitives[TY_F64]);
             case TY_F64:
                 asm_pushf(cg);
                 break;
