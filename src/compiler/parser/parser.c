@@ -2,6 +2,7 @@
 
 #include "ast/ast.h"
 #include "../util.h"
+#include "error/error.h"
 #include "validator.h"
 #include "../io/log.h"
 #include "../io/io.h"
@@ -81,6 +82,7 @@ static ASTNode_T* parse_closure(Parser_T* p);
 
 static ASTNode_T* parse_array_lit(Parser_T* p);
 static ASTNode_T* parse_struct_lit(Parser_T* p, ASTNode_T* id);
+static ASTNode_T* parse_anonymous_struct_lit(Parser_T* p);
 
 static ASTNode_T* parse_lambda_lit(Parser_T* p);
 static ASTNode_T* parse_if_expr(Parser_T* p);
@@ -123,7 +125,7 @@ static struct { PrefixParseFn_T pfn; InfixParseFn_T ifn; Precedence_T prec; } ex
     [TOKEN_MINUS]    = {parse_unary, parse_num_op, MINUS},
     [TOKEN_LPAREN]   = {parse_closure, NULL, CALL}, 
     [TOKEN_LBRACKET] = {parse_array_lit, parse_index, ARRAY},   
-    [TOKEN_LBRACE]   = {NULL, NULL, LOWEST}, 
+    [TOKEN_LBRACE]   = {parse_anonymous_struct_lit, NULL, LOWEST}, 
     [TOKEN_STAR]     = {parse_unary, parse_num_op, MULT},
     [TOKEN_PERCENT]  = {NULL, parse_num_op, DIV},
     [TOKEN_MOD]      = {NULL, parse_assignment, ASSIGN},
@@ -620,6 +622,31 @@ static ASTType_T* parse_lambda_type(Parser_T* p)
     return lambda;
 }
 
+static ASTObj_T* parser_generate_tuple_type(Parser_T* p, ASTType_T* tuple)
+{
+    ASTObj_T* existing_tydef = get_compatible_tuple(p, tuple);
+    if(existing_tydef)
+    {
+        tuple->kind = TY_UNDEF;
+        tuple->id = existing_tydef->id;
+
+        return existing_tydef;
+    }
+    else
+    {
+        ASTObj_T* tydef = init_ast_obj(OBJ_TYPEDEF, tuple->tok);
+        tydef->data_type = mem_malloc(sizeof(struct AST_TYPE_STRUCT));
+        *tydef->data_type = *tuple;
+        tydef->id = init_ast_identifier(tuple->tok, "");
+        sprintf(tydef->id->callee, "__csp_tuple_%lu__", p->cur_tuple_id++);
+        list_push(p->root_ref->objs, tydef);
+        tuple->kind = TY_UNDEF;
+        tuple->id = tydef->id;
+
+        return tydef;
+    }
+}
+
 static ASTType_T* parse_type(Parser_T* p)
 {
     ASTType_T* type = get_primitive_type(p->tok->value);
@@ -676,13 +703,13 @@ static ASTType_T* parse_type(Parser_T* p)
                 parser_advance(p);
                 type->base = parse_type(p);
                 break;
-            case TOKEN_LBRACKET:
+            case TOKEN_LBRACE:
                 type = init_ast_type(TY_STRUCT, p->tok);
                 type->members = init_list(sizeof(struct AST_TYPE_STRUCT*));
                 mem_add_list(type->members);
                 parser_advance(p);
 
-                for(size_t i = 0; !tok_is(p, TOKEN_RBRACKET) && !tok_is(p, TOKEN_EOF); i++)
+                for(size_t i = 0; !tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF); i++)
                 {
                     ASTNode_T* member = init_ast_node(ND_STRUCT_MEMBER, p->tok);
                     member->data_type = parse_type(p);
@@ -690,30 +717,11 @@ static ASTType_T* parse_type(Parser_T* p)
                     sprintf(member->id->callee, "_%lu", i);
 
                     list_push(type->members, member);
-                    if(!tok_is(p, TOKEN_RBRACKET))
+                    if(!tok_is(p, TOKEN_RBRACE))
                         parser_consume(p, TOKEN_COMMA, "expect `,` between tuple argument types");
                 }
-                parser_consume(p, TOKEN_RBRACKET, "expect `]` after tuple argument types");
-
-                ASTObj_T* existing_tydef = get_compatible_tuple(p, type);
-                if(existing_tydef)
-                {
-                    type->kind = TY_UNDEF;
-                    type->id = existing_tydef->id;
-                }
-                else
-                {
-                    ASTObj_T* tydef = init_ast_obj(OBJ_TYPEDEF, type->tok);
-                    tydef->data_type = mem_malloc(sizeof(struct AST_TYPE_STRUCT));
-                    *tydef->data_type = *type;
-                    tydef->id = init_ast_identifier(type->tok, "");
-                    sprintf(tydef->id->callee, "__csp_tuple_%lu__", p->cur_tuple_id++);
-
-                    list_push(p->root_ref->objs, tydef); 
-
-                    type->kind = TY_UNDEF;
-                    type->id = tydef->id;
-                }
+                parser_consume(p, TOKEN_RBRACE, "expect `]` after tuple argument types");
+                parser_generate_tuple_type(p, type);
                 break;
             case TOKEN_TYPEOF:
                 type = init_ast_type(TY_TYPEOF, p->tok);
@@ -1701,6 +1709,11 @@ static ASTNode_T* parse_struct_lit(Parser_T* p, ASTNode_T* id)
     struct_lit->data_type->id = id->id;
 
     return struct_lit;
+}
+
+static ASTNode_T* parse_anonymous_struct_lit(Parser_T* p)
+{
+    throw_error(ERR_INTERNAL, p->tok, "anonymous struct types are not implemented yet.");
 }
 
 static ASTNode_T* parse_lambda_lit(Parser_T* p)
