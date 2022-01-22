@@ -1,13 +1,18 @@
 import "libc/stdio.csp";
 import "libc/stdlib.csp";
 
+type Foo: struct {
+    a: i32,
+    b: &char
+};
+
 fn main(): i32
 {
     printf("Hello, World!\n");
 
-    let x: i32[5] = [1, 2, 3, 4, 5];
+    let foo = Foo :: {1, "Hello!"};
 
-    printf("%d\n", x[4]);
+    printf("%s %d\n", foo.b, foo.a);
 
     <- 0;
 }

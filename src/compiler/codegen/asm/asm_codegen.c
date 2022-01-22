@@ -1486,11 +1486,38 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                         };
 
                         asm_gen_expr(cg, &converted);
-                    }
-                    return;
+                    } return;
                 case ND_STRUCT:
-                    // todo: implement
-                    return;
+                    // x = y :: {1, 2, 3} gets converted to x.z = 1, x.w = 2, x.u = 3
+                    {
+                        ASTType_T* struct_type = unpack(node->left->data_type);
+
+                        if(struct_type->members->size > unpack(node->left->data_type)->members->size)
+                            throw_error(ERR_TYPE_ERROR, node->right->tok, "too many struct arguments, maximum allowed is %ld", unpack(node->left->data_type)->members->size);
+                        if(node->right->args->size > struct_type->members->size)
+                            throw_error(ERR_TYPE_ERROR, node->right->tok, "too many struct arguments, maximum allowed is %ld", struct_type->members->size);
+                        for(size_t i = 0; i < node->right->args->size; i++)
+                        {
+                            ASTNode_T* item = node->right->args->items[i];
+                            ASTNode_T* struct_member = struct_type->members->items[i];
+
+                            ASTNode_T converted = {
+                                .kind = ND_ASSIGN,
+                                .tok = node->tok,
+                                .data_type = struct_member->data_type,
+                                .left = &(ASTNode_T) {
+                                    .kind = ND_MEMBER,
+                                    .tok = node->left->tok,
+                                    .data_type = struct_member->data_type,
+                                    .left = node->left,
+                                    .body = struct_member,
+                                },
+                                .right = item
+                            };
+
+                            asm_gen_expr(cg, &converted);
+                        }
+                    } return;
                 default:
                     asm_gen_addr(cg, node->left);
                     asm_push(cg);

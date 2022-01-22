@@ -117,6 +117,7 @@ static void typeof_type(ASTType_T* typeof_type, va_list args);
 static void type_begin(ASTType_T* type, va_list args);
 static void type_end(ASTType_T* type, va_list args);
 static i32 get_type_size(Validator_T* v, ASTType_T* type);
+static void typename(ASTType_T* typename, va_list args);
 
 // iterator configuration
 static ASTIteratorList_T main_iterator_list = 
@@ -180,6 +181,7 @@ static ASTIteratorList_T main_iterator_list =
         [TY_ENUM]   = enum_type,
         [TY_UNDEF]  = undef_type,
         [TY_TYPEOF] = typeof_type,
+        [TY_UNDEF]  = typename,
     },
 
     .obj_start_fns = 
@@ -1358,6 +1360,12 @@ static void type_end(ASTType_T* type, va_list args)
     type->size = get_type_size(v, expand_typedef(v, type));
     type->align = align_type(exp);
     exp->align = type->align;
+}
+
+static void typename(ASTType_T* typename, va_list args)
+{
+    GET_VALIDATOR(args);
+    typename->base = expand_typedef(v, typename);   
 }
 
 static i32 get_union_size(Validator_T* v, ASTType_T* u_type)
