@@ -19,7 +19,9 @@ static struct { const char* as_str; bool force_exit; } error_types[ERR_INTERNAL 
     [ERR_MISC]              = {"misc", false},       // miscellaneous errors, who cannot get categorized
     [ERR_CONST_ASSIGN]      = {"const assign", true},
     [ERR_CODEGEN]           = {"codegen", true},
-    [ERR_CODEGEN_WARN]      = {"codegen warn", false}
+    [ERR_CODEGEN_WARN]      = {"codegen warn", false},
+    [ERR_CONSTEXPR]         = {"constexpr", true},
+    [ERR_CONSTEXPR_WARN]    = {"constexpr", false},
 };
 
 void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)

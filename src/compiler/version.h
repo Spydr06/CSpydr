@@ -1,5 +1,5 @@
 #ifndef CSPYDR_VERSION_H
-#define CSPYDR_VERION_H
+#define CSPYDR_VERSION_H
 
 #define CSPYDR_VERSION_X "0"
 #define CSPYDR_VERSION_Y "0"

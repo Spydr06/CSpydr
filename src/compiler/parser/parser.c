@@ -1703,6 +1703,7 @@ static ASTNode_T* parse_struct_lit(Parser_T* p, ASTNode_T* id)
 static ASTNode_T* parse_anonymous_struct_lit(Parser_T* p)
 {
     throw_error(ERR_INTERNAL, p->tok, "anonymous struct types are not implemented yet.");
+    return NULL;
 }
 
 static ASTNode_T* parse_lambda_lit(Parser_T* p)

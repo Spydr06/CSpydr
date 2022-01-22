@@ -1254,9 +1254,21 @@ static void array_lit(ASTNode_T* a_lit, va_list args)
     // and then assigning the array literal to it
     // [0, 1, 2] gets converted to:
     // let <anonymous>: i32[3] = [0, 1, 2];
+
+    a_lit->data_type = init_ast_type(TY_ARR, a_lit->tok);
+    a_lit->data_type->num_indices = init_ast_node(ND_LONG, a_lit->tok);
+    a_lit->data_type->num_indices->long_val = a_lit->args->size;
+    a_lit->data_type->base = a_lit->args->size ?
+        ((ASTNode_T*) a_lit->args->items[0])->data_type
+        : ({
+            throw_error(ERR_TYPE_ERROR, a_lit->tok, "cannot get base data type of empty array literal");
+            (ASTType_T*) primitives[TY_VOID];
+        });
+
+
     if(global.ct == CT_ASM)
     {
-
+        
     }
 }
 
@@ -1416,4 +1428,7 @@ static i32 get_type_size(Validator_T* v, ASTType_T* type)
             else
                 return get_struct_size(v, type);
     }
+    
+    throw_error(ERR_TYPE_ERROR, type->tok, "could not resolve data type size");
+    return 0;
 }
