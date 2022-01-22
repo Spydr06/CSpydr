@@ -5,6 +5,8 @@ u64 const_u64(ASTNode_T* node)
 {
     switch(node->kind)
     {
+        case ND_CLOSURE:
+            return const_u64(node->expr);
         case ND_INT:
             return node->int_val;
         case ND_LONG:

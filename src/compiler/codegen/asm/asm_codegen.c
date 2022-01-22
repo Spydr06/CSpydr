@@ -791,6 +791,10 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
 {
     switch(node->kind)
     {
+        case ND_CLOSURE:
+            asm_gen_addr(cg, node->expr);
+            return;
+
         case ND_ID: 
             if(unpack(node->data_type)->is_vla)
             {
@@ -1279,6 +1283,9 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
     switch(node->kind)
     {
         case ND_NOOP:
+            return;
+        case ND_CLOSURE:
+            asm_gen_expr(cg, node->expr);
             return;
         case ND_ASM:
             asm_println(cg, "%s", node->expr->str_val);

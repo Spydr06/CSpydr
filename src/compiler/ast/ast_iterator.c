@@ -137,6 +137,12 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
             if(node->data_type) 
                 ast_type(list, node->data_type, custom_args);
             break;
+        
+        case ND_CLOSURE:
+            ast_node(list, node->expr, custom_args);
+            if(node->data_type)
+                ast_type(list, node->data_type, custom_args);
+            break;
 
         // x.y
         case ND_MEMBER:

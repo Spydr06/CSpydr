@@ -107,6 +107,7 @@ static void struct_member(ASTNode_T* member, va_list args);
 static void struct_lit(ASTNode_T* s_lit, va_list args);
 static void array_lit(ASTNode_T* a_lit, va_list args);
 static void if_expr(ASTNode_T* if_expr, va_list args);
+static void closure(ASTNode_T* closure, va_list args);
 
 //types
 static void struct_type(ASTType_T* s_type, va_list args);
@@ -170,6 +171,7 @@ static ASTIteratorList_T main_iterator_list =
         [ND_STRUCT]  = struct_lit,
         [ND_ARRAY]   = array_lit,
         [ND_IF_EXPR] = if_expr,
+        [ND_CLOSURE] = closure,
     },
 
     .type_fns = 
@@ -1427,6 +1429,10 @@ static i32 get_type_size(Validator_T* v, ASTType_T* type)
                 return get_union_size(v, type);
             else
                 return get_struct_size(v, type);
+        case TY_OPAQUE_STRUCT:
+        case TY_FN:
+        case TY_VA_LIST:
+            return 0;
     }
     
     throw_error(ERR_TYPE_ERROR, type->tok, "could not resolve data type size");
