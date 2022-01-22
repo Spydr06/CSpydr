@@ -138,7 +138,6 @@ static ASTIteratorList_T main_iterator_list =
         // expressions
         [ND_ID]      = identifier,
         [ND_CALL]    = call,
-        [ND_CLOSURE] = closure,
         [ND_REF]     = reference,
         [ND_DEREF]   = dereference,
         [ND_MEMBER]  = member,

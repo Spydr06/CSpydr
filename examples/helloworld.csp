@@ -1,13 +1,9 @@
 import "libc/stdio.csp";
 import "libc/stdlib.csp";
 
-fn test(): {{i32, i32}, &char}
-{
-   #<- {{5, 5}, "Hi!"};
-}
-
 fn main(): i32
 {
-    printf("%d %d %s\n", test()._0._0, test()._0._1, test()._1);
+    printf("Hello, World!\n");
+
     <- 0;
 }

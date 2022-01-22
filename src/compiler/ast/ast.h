@@ -67,7 +67,6 @@ typedef enum {
     ND_INC,     // ++
     ND_DEC,     // --
 
-    ND_CLOSURE, // ( )
     ND_ASSIGN,  // x = y
 
     ND_MEMBER,  // x.y

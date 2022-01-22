@@ -265,14 +265,9 @@ static inline Precedence_T get_precedence(TokenType_T tt)
 
 static void init_parser(Parser_T* parser, List_T* tokens)
 {
+    memset(parser, 0, sizeof(struct PARSER_STRUCT));
     parser->tokens = tokens;
     parser->tok = tokens->items[0];
-    parser->token_i = 0;
-    parser->cur_lambda_id = 0;
-    parser->cur_tuple_id = 0;
-
-    parser->cur_block = NULL;
-    parser->cur_fn = NULL;
 }
 
 static void free_parser(Parser_T* p)
@@ -315,7 +310,7 @@ Token_T* parser_consume(Parser_T* p, TokenType_T type, const char* msg)
 
 static inline bool is_editable(ASTNodeKind_T n)
 {
-    return n == ND_ID || n == ND_INDEX || n == ND_CAST || n == ND_CALL || n == ND_ARRAY || n == ND_STR || n == ND_MEMBER || n == ND_DEREF || n == ND_CLOSURE;
+    return n == ND_ID || n == ND_INDEX || n == ND_CAST || n == ND_CALL || n == ND_ARRAY || n == ND_STR || n == ND_MEMBER || n == ND_DEREF;
 }
 
 static inline bool is_executable(ASTNodeKind_T n)
@@ -1334,16 +1329,10 @@ static ASTNode_T* parse_expr_stmt(Parser_T* p)
     stmt->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
 
     ASTNode_T* node = stmt->expr;
-retry:
+
     if(!is_executable(node->kind))
-        {
-            if(node->kind == ND_CLOSURE) {
-                node = node->expr;
-                goto retry;
-            }
-            throw_error(ERR_SYNTAX_ERROR, stmt->expr->tok, "cannot treat `%s` as a statement, expect function call, assignment or similar", stmt->expr->tok->value);
-        }
-        parser_consume(p, TOKEN_SEMICOLON, "expect `;` after expression statement");
+        throw_error(ERR_SYNTAX_ERROR, stmt->expr->tok, "cannot treat `%s` as a statement, expect function call, assignment or similar", stmt->expr->tok->value);
+    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after expression statement");
 
     return stmt;
 }
@@ -1925,13 +1914,11 @@ static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left)
 
 static ASTNode_T* parse_closure(Parser_T* p)
 {
-    ASTNode_T* closure = init_ast_node(ND_CLOSURE, p->tok);
     parser_consume(p, TOKEN_LPAREN, "expect `(` for closure");
-
-    closure->expr = parse_expr(p, LOWEST, TOKEN_RPAREN);
+    ASTNode_T* expr = parse_expr(p, LOWEST, TOKEN_RPAREN);
     parser_consume(p, TOKEN_RPAREN, "expect `)` after closure");
-    
-    return closure;
+
+    return expr;
 }
 
 static ASTNode_T* parse_cast(Parser_T* p, ASTNode_T* left)
@@ -2031,21 +2018,18 @@ static ASTNode_T* parse_infix_call(Parser_T* p, ASTNode_T* left)
 static ASTNode_T* parse_pow_2(Parser_T* p, ASTNode_T* left)
 {
     // x² = (x * x)
-    ASTNode_T* closure = init_ast_node(ND_CLOSURE, p->tok);
     ASTNode_T* mult = init_ast_node(ND_MUL, p->tok);
     parser_consume(p, TOKEN_POW_2, "expect `²`");
 
     mult->left = left;
     mult->right = left;
 
-    closure->expr = mult;
-    return closure;
+    return mult;
 }
 
 static ASTNode_T* parse_pow_3(Parser_T* p, ASTNode_T* left)
 {
     // x³ = (x * x * x)
-    ASTNode_T* closure = init_ast_node(ND_CLOSURE, p->tok);
     ASTNode_T* mult_a = init_ast_node(ND_MUL, p->tok);
     ASTNode_T* mult_b = init_ast_node(ND_MUL, p->tok);
     parser_consume(p, TOKEN_POW_3, "expect `³`");
@@ -2055,8 +2039,7 @@ static ASTNode_T* parse_pow_3(Parser_T* p, ASTNode_T* left)
     mult_b->left = left;
     mult_b->right = left;
 
-    closure->expr = mult_a;
-    return closure;
+    return mult_a;
 }
 
 static ASTNode_T* parse_current_fn_token(Parser_T* p)
