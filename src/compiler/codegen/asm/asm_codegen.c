@@ -166,7 +166,9 @@ void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast)
     cg->depth = 0;
 }
 
+#ifdef __GNUC__
 __attribute((format(printf, 2, 3)))
+#endif
 static void asm_println(ASMCodegenData_T* cg, char* fmt, ...)
 {
     va_list va;
@@ -1457,45 +1459,45 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         
         case ND_ASSIGN:
-            //if(unpack(node->left->data_type)->base)
-            //{   
-            //    switch(node->right->kind)
-            //    {
-            //        case ND_STRUCT:
-            //            printf("not implemented!\n");
-            //            return;
-            //        case ND_ARRAY:
-            //            // convert x = [y, z, w] to x[0] = y, x[1] = z, x[2] = w
-            //            for(size_t i = 0; i < node->right->args->size; i++)
-            //            {
-            //                ASTNode_T converted = {
-            //                    .kind = ND_ASSIGN,
-            //                    .data_type = unpack(node->left->data_type)->base,
-            //                    .left = &(ASTNode_T) {
-            //                        .kind = ND_INDEX,
-            //                        .data_type = unpack(node->left->data_type)->base,
-            //                        .left = node->left,
-            //                        .expr = &(ASTNode_T) {
-            //                            .kind = ND_LONG,
-            //                            .data_type = (ASTType_T*) primitives[TY_I64],
-            //                            .long_val = i
-            //                        }
-            //                    },
-            //                    .right = node->right->args->items[i]
-            //                };  
-            //                asm_gen_expr(cg, &converted);
-            //            }
-            //            return;
-            //        default:
-            //            break;
-            //    }
-            //}
-            asm_gen_addr(cg, node->left);
-            asm_push(cg);
-            asm_gen_expr(cg, node->right);
-            asm_store(cg, node->left->data_type);
-            return;
+            switch(node->right->kind)
+            {
+                case ND_ARRAY:
+                    // x = [1, 2, 3] gets converted to x[0] = 1; x[1] = 2; x[2] = 3;
+                    for(size_t i = 0; i < node->right->args->size; i++)
+                    {
+                        ASTNode_T* item = node->right->args->items[i];
 
+                        ASTNode_T converted = {
+                            .kind = ND_ASSIGN,
+                            .tok = node->tok,
+                            .data_type = unpack(node->left->data_type)->base,
+                            .left = &(ASTNode_T) {
+                                .kind = ND_INDEX,
+                                .tok = node->left->tok,
+                                .data_type = unpack(node->left->data_type)->base,
+                                .left = node->left,
+                                .expr = &(ASTNode_T) {
+                                    .kind = ND_LONG,
+                                    .data_type = (ASTType_T*) primitives[TY_I64],
+                                    .long_val = i
+                                }
+                            },
+                            .right = item
+                        };
+
+                        asm_gen_expr(cg, &converted);
+                    }
+                    return;
+                case ND_STRUCT:
+                    // todo: implement
+                    return;
+                default:
+                    asm_gen_addr(cg, node->left);
+                    asm_push(cg);
+                    asm_gen_expr(cg, node->right);
+                    asm_store(cg, node->left->data_type);
+                    return;
+            }
         case ND_CAST:
             asm_gen_expr(cg, node->left);
             asm_cast(cg, node->left->data_type, node->data_type);

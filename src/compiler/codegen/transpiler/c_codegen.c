@@ -5,6 +5,7 @@
 #include "../../error/error.h"
 #include "../../globals.h"
 #include "../codegen_utils.h"
+#include "../../ast/types.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -108,7 +109,9 @@ void init_c_cg(CCodegenData_T* cg, ASTProg_T* ast)
     cg->code_buffer = open_memstream(&cg->buf, &cg->buf_len);
 }
 
+#ifdef __GNUC__
 __attribute((format(printf, 2, 3)))
+#endif
 static void println(CCodegenData_T* cg, char* fmt, ...)
 {
     va_list va;
@@ -118,7 +121,9 @@ static void println(CCodegenData_T* cg, char* fmt, ...)
     fprintf(cg->code_buffer, "\n");
 }
 
+#ifdef __GNUC__
 __attribute((format(printf, 2, 3)))
+#endif
 static void print(CCodegenData_T* cg, char* fmt, ...)
 {
     va_list va;
@@ -568,16 +573,50 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, ")");
             break;
         case ND_ASSIGN:
-            c_gen_expr(cg, node->left);
-            print(cg, "=");
-            if(node->data_type)
+            switch(node->right->kind)
             {
-                print(cg, "(");
-                c_gen_type(cg, node->data_type, "");
-                print(cg, ")");
-            }
-            c_gen_expr(cg, node->right);
-            break;
+                case ND_ARRAY:
+                    print(cg, "({");
+                    for(size_t i = 0; i < node->right->args->size; i++)
+                    {
+                        ASTNode_T* item = node->right->args->items[i];
+
+                        ASTNode_T converted = {
+                            .kind = ND_ASSIGN,
+                            .tok = node->tok,
+                            .data_type = unpack(node->left->data_type)->base,
+                            .left = &(ASTNode_T) {
+                                .kind = ND_INDEX,
+                                .tok = node->left->tok,
+                                .data_type = unpack(node->left->data_type)->base,
+                                .left = node->left,
+                                .expr = &(ASTNode_T) {
+                                    .kind = ND_LONG,
+                                    .data_type = (ASTType_T*) primitives[TY_I64],
+                                    .long_val = i
+                                }
+                            },
+                            .right = item
+                        };
+
+                        c_gen_expr(cg, &converted);
+                        print(cg, "; ");
+                    }
+                    print(cg, "})");
+                    break;
+                default:
+                    c_gen_expr(cg, node->left);
+                    print(cg, "=");
+                    if(node->data_type)
+                    {
+                        print(cg, "(");
+                        c_gen_type(cg, node->data_type, "");
+                        print(cg, ")");
+                    }
+                    c_gen_expr(cg, node->right);
+                    break;
+            } break;
+
         case ND_ADD:
             c_gen_expr(cg, node->left);
             print(cg, "+");

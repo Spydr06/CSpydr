@@ -586,6 +586,12 @@ static i32 align_type(ASTType_T* ty)
     }
 }
 
+// unwrap a node wrapped in closures (`((((4))))` => `4`)
+static ASTNode_T* unwrap_node(ASTNode_T* node)
+{
+    return node->kind == ND_CLOSURE ? unwrap_node(node->expr) : node;
+}
+
 // id
 
 static void id_def(ASTIdentifier_T* id, va_list args)

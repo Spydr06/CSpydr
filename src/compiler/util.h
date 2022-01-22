@@ -16,6 +16,8 @@ typedef int64_t i64;
 
 #ifdef __GNUC__
 typedef signed __int128 i128;
+#else
+typedef signed long long i128;
 #endif
 
 // unsigned integers
@@ -26,6 +28,8 @@ typedef uint64_t u64;
 
 #ifdef __GNUC__
 typedef unsigned __int128 u128;
+#else
+typedef unsigned long long u128;
 #endif
 
 // floats

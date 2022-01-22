@@ -5,5 +5,9 @@ fn main(): i32
 {
     printf("Hello, World!\n");
 
+    let x: i32[5] = [1, 2, 3, 4, 5];
+
+    printf("%d\n", x[4]);
+
     <- 0;
 }
