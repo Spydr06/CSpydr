@@ -3,8 +3,3 @@
 # link with the gnulibc standard library
 import "link.csp";
 
-macro alignas { _Alignas }
-macro alignof { _Alignof }
-
-macro __alignas_is_defined { }
-macro __alignof_is_defiend { }
