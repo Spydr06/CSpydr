@@ -8,11 +8,10 @@ type Foo: struct {
 
 fn main(): i32
 {
-    printf("Hello, World!\n");
+    let foo: i32[10] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-    let foo = Foo :: {1, "Hello!"};
-
-    printf("%s %d\n", foo.b, foo.a);
-
+    for let i = 0; i < len foo; i++; {
+        printf("%d\n", foo[i]);
+    }
     <- 0;
 }

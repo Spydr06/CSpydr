@@ -1328,6 +1328,10 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_println(cg, "  mov $%d, %%rax", node->the_type->align);
             return;
         
+        case ND_LEN:
+            asm_gen_expr(cg, unpack(node->expr->data_type)->num_indices);
+            return;
+        
         case ND_NEG:
             asm_gen_expr(cg, node->right);
             switch(node->data_type->kind)
@@ -2021,8 +2025,9 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         
         case ND_BLOCK:
-            for(size_t i = 0; i < node->locals->size; i++)
+            for(size_t i = 0; i < node->locals->size; i++) {
                 asm_init_zero(cg, node->locals->items[i]);
+            }
 
             for(size_t i = 0; i < node->stmts->size; i++)
                 asm_gen_stmt(cg, node->stmts->items[i]);

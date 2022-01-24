@@ -31,20 +31,19 @@ typedef struct VALIDATOR_STRUCT
     ASTProg_T* ast;
 
     VScope_T* current_scope;
-    i32 scope_depth;
     ASTObj_T* current_function;
     bool main_function_found;
+    bool struct_or_array_assign;
+
+    u32 scope_depth;  // depth of the current scope
 } Validator_T;
 
 static VScope_T* global_scope;
 
 // validator struct functions
-static Validator_T* init_validator(Validator_T* v)
+static void init_validator(Validator_T* v)
 {
-    v->scope_depth = 0;
-    v->current_scope = NULL;
-
-    return v;
+    memset(v, 0, sizeof(struct VALIDATOR_STRUCT));
 }
 
 static void begin_obj_scope(Validator_T* v, ASTIdentifier_T* id, List_T* objs);
@@ -102,12 +101,14 @@ static void bitwise_op(ASTNode_T* op, va_list args);
 static void inc_dec(ASTNode_T* op, va_list args);
 static void index_(ASTNode_T* index, va_list args); // "index" was taken by string.h
 static void cast(ASTNode_T* cast, va_list args);
-static void assignment(ASTNode_T* assign, va_list args);
+static void assignment_start(ASTNode_T* assign, va_list args);
+static void assignment_end(ASTNode_T* assign, va_list args);
 static void struct_member(ASTNode_T* member, va_list args);
 static void struct_lit(ASTNode_T* s_lit, va_list args);
 static void array_lit(ASTNode_T* a_lit, va_list args);
 static void if_expr(ASTNode_T* if_expr, va_list args);
 static void closure(ASTNode_T* closure, va_list args);
+static void len(ASTNode_T* len, va_list args);
 
 //types
 static void struct_type(ASTType_T* s_type, va_list args);
@@ -117,7 +118,6 @@ static void typeof_type(ASTType_T* typeof_type, va_list args);
 static void type_begin(ASTType_T* type, va_list args);
 static void type_end(ASTType_T* type, va_list args);
 static i32 get_type_size(Validator_T* v, ASTType_T* type);
-static void typename(ASTType_T* typename, va_list args);
 
 // iterator configuration
 static ASTIteratorList_T main_iterator_list = 
@@ -126,6 +126,7 @@ static ASTIteratorList_T main_iterator_list =
     {
         [ND_BLOCK] = block_start,
         [ND_FOR] = for_start,
+        [ND_ASSIGN] = assignment_start,
     },
 
     .node_end_fns = 
@@ -168,11 +169,12 @@ static ASTIteratorList_T main_iterator_list =
         [ND_DEC]     = inc_dec,
         [ND_INDEX]   = index_,
         [ND_CAST]    = cast,
-        [ND_ASSIGN]  = assignment,
+        [ND_ASSIGN]  = assignment_end,
         [ND_STRUCT]  = struct_lit,
         [ND_ARRAY]   = array_lit,
         [ND_IF_EXPR] = if_expr,
         [ND_CLOSURE] = closure,
+        [ND_LEN]     = len,
     },
 
     .type_fns = 
@@ -181,7 +183,6 @@ static ASTIteratorList_T main_iterator_list =
         [TY_ENUM]   = enum_type,
         [TY_UNDEF]  = undef_type,
         [TY_TYPEOF] = typeof_type,
-        [TY_UNDEF]  = typename,
     },
 
     .obj_start_fns = 
@@ -678,6 +679,9 @@ static void fn_end(ASTObj_T* fn, va_list args)
         v->main_function_found = true;
         check_main_fn(v, fn);
     }
+
+    if(expand_typedef(v, fn->return_type)->kind == TY_ARR)
+        throw_error(ERR_TYPE_ERROR, fn->return_type->tok, "cannot return an array type from a function");
 
     end_scope(v);
 
@@ -1197,9 +1201,19 @@ static void cast(ASTNode_T* cast, va_list args)
     //todo: check, if type conversion is valid and safe
 }
 
-static void assignment(ASTNode_T* assign, va_list args)
+static void assignment_start(ASTNode_T* assign, va_list args)
 {
     GET_VALIDATOR(args);
+    ASTNode_T* unwrapped = unwrap_node(assign->right);
+    if(unwrapped->kind == ND_ARRAY || unwrapped->kind == ND_STRUCT) {
+        v->struct_or_array_assign = true;
+    }
+}
+
+static void assignment_end(ASTNode_T* assign, va_list args)
+{
+    GET_VALIDATOR(args);
+    v->struct_or_array_assign = false;
 
     switch(assign->left->kind)
     {
@@ -1250,20 +1264,38 @@ static void struct_lit(ASTNode_T* s_lit, va_list args)
     // and then assigning the struct literal to it
     // foo :: {0, 1} gets converted to:
     // let <anonymous>: foo = foo :: {0, 1};
-    if(global.ct == CT_ASM)
+    if(global.ct == CT_ASM && !v->struct_or_array_assign)
     {
+        static u64 count = 0;
+        ASTObj_T* local = init_ast_obj(OBJ_LOCAL, s_lit->tok);
+        local->data_type = s_lit->data_type;
+        local->referenced = true;
+        local->id = init_ast_identifier(s_lit->tok, "");
+        sprintf(local->id->callee, "__csp_structlit_%ld__", count++);
+        list_push(v->current_scope->objs, local);
+
+        ASTNode_T assignment = {
+            .kind = ND_ASSIGN,
+            .tok = s_lit->tok,
+            .id = local->id,
+            .data_type = s_lit->data_type,
+        };
+
+        assignment.right = init_ast_node(ND_ARRAY, s_lit->tok);
+        *assignment.right = *s_lit;
+        
+        assignment.left = init_ast_node(ND_ID, s_lit->tok);
+        assignment.left->id = local->id;
+        assignment.left->data_type = local->data_type;
+        assignment.left->referenced_obj = local;
+
+        *s_lit = assignment;
     }
 }
 
 static void array_lit(ASTNode_T* a_lit, va_list args)
 {
     GET_VALIDATOR(args);
-
-    // When compiling to assembly, we have to allocate the memory on the stack.
-    // this is done by creating an "anonymous" local variable of the array type
-    // and then assigning the array literal to it
-    // [0, 1, 2] gets converted to:
-    // let <anonymous>: i32[3] = [0, 1, 2];
 
     a_lit->data_type = init_ast_type(TY_ARR, a_lit->tok);
     a_lit->data_type->num_indices = init_ast_node(ND_LONG, a_lit->tok);
@@ -1275,10 +1307,37 @@ static void array_lit(ASTNode_T* a_lit, va_list args)
             (ASTType_T*) primitives[TY_VOID];
         });
 
-
-    if(global.ct == CT_ASM)
+    // When compiling to assembly, we have to allocate the memory on the stack.
+    // this is done by creating an "anonymous" local variable of the array type
+    // and then assigning the array literal to it
+    // [0, 1, 2] gets converted to:
+    // let <anonymous>: i32[3] = [0, 1, 2];
+    if(global.ct == CT_ASM && !v->struct_or_array_assign)
     {
+        static u64 count = 0;
+        ASTObj_T* local = init_ast_obj(OBJ_LOCAL, a_lit->tok);
+        local->data_type = a_lit->data_type;
+        local->referenced = true;
+        local->id = init_ast_identifier(a_lit->tok, "");
+        sprintf(local->id->callee, "__csp_arrlit_%ld__", count++);
+        list_push(v->current_scope->objs, local);
+
+        ASTNode_T assignment = {
+            .kind = ND_ASSIGN,
+            .tok = a_lit->tok,
+            .id = local->id,
+            .data_type = a_lit->data_type,
+        };
+
+        assignment.right = init_ast_node(ND_ARRAY, a_lit->tok);
+        *assignment.right = *a_lit;
         
+        assignment.left = init_ast_node(ND_ID, a_lit->tok);
+        assignment.left->id = local->id;
+        assignment.left->data_type = local->data_type;
+        assignment.left->referenced_obj = local;
+
+        *a_lit = assignment;
     }
 }
 
@@ -1290,6 +1349,15 @@ static void if_expr(ASTNode_T* if_expr, va_list args)
         throw_error(ERR_TYPE_ERROR, if_expr->condition->tok, "expect `bool` type for if condition");
     
     if_expr->data_type = if_expr->if_branch->data_type;
+}
+
+static void len(ASTNode_T* len, va_list args)
+{
+    GET_VALIDATOR(args);
+
+    ASTType_T* ty = expand_typedef(v, len->expr->data_type);
+    if(ty->kind != TY_ARR || ty->is_vla)
+        throw_error(ERR_TYPE_ERROR, len->tok, "cannot get length of given expression");
 }
 
 // types
@@ -1327,6 +1395,7 @@ static void undef_type(ASTType_T* u_type, va_list args)
         throw_error(ERR_TYPE_ERROR, u_type->tok, "could not find data type named `%s`", u_type->id->callee);
     
     u_type->id->outer = found->id->outer;
+    u_type->base = found->data_type;
 }
 
 static void typeof_type(ASTType_T* typeof_type, va_list args)
@@ -1360,12 +1429,6 @@ static void type_end(ASTType_T* type, va_list args)
     type->size = get_type_size(v, expand_typedef(v, type));
     type->align = align_type(exp);
     exp->align = type->align;
-}
-
-static void typename(ASTType_T* typename, va_list args)
-{
-    GET_VALIDATOR(args);
-    typename->base = expand_typedef(v, typename);   
 }
 
 static i32 get_union_size(Validator_T* v, ASTType_T* u_type)

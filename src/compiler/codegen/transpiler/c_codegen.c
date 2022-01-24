@@ -24,7 +24,6 @@ const char* default_header_code =
     "#define true ((bool) 1)\n"
     "#define false ((bool) 0)\n"
     "#define NULL ((void*) 0)\n"
-    "#define len(n) ((unsigned long)(sizeof(n)/sizeof(n[0])))\n"
 ;
 
 static const char* primitive_to_c_type[TY_UNDEF + 1] = {
@@ -347,13 +346,16 @@ static void c_gen_tuple_struct(CCodegenData_T* cg, ASTType_T* tuple)
 
 static void c_gen_array_brackets(CCodegenData_T* cg, ASTType_T* ty)
 {
-    print(cg, "[");
-    if(ty->num_indices)
-        c_gen_expr(cg, ty->num_indices);
-    print(cg, "]");
+    if(unpack(ty)->kind == TY_ARR)
+    {
+        print(cg, "[");
+        if(ty->num_indices)
+            c_gen_expr(cg, ty->num_indices);
+        print(cg, "]");
 
-    if(ty->base && ty->base->kind == TY_ARR)
-        c_gen_array_brackets(cg, ty->base);
+        if(ty->base && ty->base->kind == TY_ARR)
+            c_gen_array_brackets(cg, ty->base);
+    }
 }
 
 static void c_gen_typedefs(CCodegenData_T* cg, ASTObj_T* obj)
@@ -750,6 +752,13 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, "]");
             break;
         case ND_ARRAY:
+            if(node->data_type)
+            {
+                print(cg, "(");
+                c_gen_type(cg, node->data_type, "");
+                c_gen_array_brackets(cg, node->data_type);
+                print(cg, ")");
+            }
             print(cg, "{");
 
             for(size_t i = 0; i < node->args->size; i++)
@@ -797,8 +806,8 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, ")");
             break;
         case ND_LEN:
-            print(cg, "len(");
-            c_gen_expr(cg, node->expr);
+            print(cg, "(");
+            c_gen_expr(cg, unpack(node->expr->data_type)->num_indices);
             print(cg, ")");
             break;
         case ND_VA_ARG:
@@ -838,9 +847,6 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
         case ND_RETURN:
             print(cg, "return ");
             if(node->return_val) {
-                print(cg, "(");
-                c_gen_type(cg, cg->current_fn->return_type, "");
-                print(cg, ")");
                 c_gen_expr(cg, node->return_val);          
             }
             println(cg, ";");
