@@ -497,7 +497,7 @@ static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var, ASTNode_T* v
                 LOG_ERROR("not implemented\n");
             } return;
         default:
-            throw_error(ERR_CODEGEN, val->tok, "cannot generate relocation for `%s`", val->tok->value);
+            throw_error(ERR_CODEGEN, val->tok, "cannot generate relocation for `%s` (%d)", val->tok->value, val->kind);
     }
 }
 

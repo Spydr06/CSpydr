@@ -1,7 +1,9 @@
 import "libc/libc.csp";
 
+let x: i32[] = [1, 2];
+
 fn main(): i32
 {
-    
+    printf("x[0] = %d\nx[1] = %d\n", x[0], x[1]);
     <- 0;
 }

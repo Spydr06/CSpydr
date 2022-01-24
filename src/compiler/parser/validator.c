@@ -726,9 +726,20 @@ static void typedef_end(ASTObj_T* tydef, va_list args)
     gen_id_path(v->current_scope, tydef->id);
 }
 
+static bool vla_to_array_type(Validator_T* v, ASTType_T* ty, ASTNode_T* value)
+{
+    ASTType_T* arr_ty = expand_typedef(v, value->data_type);
+    if(arr_ty->kind == TY_ARR && !arr_ty->is_vla && arr_ty->num_indices)
+    {
+        ty->num_indices = arr_ty->num_indices;
+        ty->is_vla = false;
+        return true;
+    }
+    return false;
+}
+
 static void global_start(ASTObj_T* global, va_list args)
 {
-
 }
 
 static void global_end(ASTObj_T* global, va_list args)
@@ -749,7 +760,7 @@ static void global_end(ASTObj_T* global, va_list args)
     gen_id_path(v->current_scope, global->id);
 
     // todo: check if type initializer is an array literal, if it is, calculate the size
-    if(global->data_type->is_vla)
+    if(global->data_type->is_vla && !vla_to_array_type(v, global->data_type, global->value))
         throw_error(ERR_TYPE_ERROR, global->data_type->tok, "vla type is not allowed for global variables");
 }
 
@@ -759,6 +770,8 @@ static void local_start(ASTObj_T* local, va_list args)
 
 static void local_end(ASTObj_T* local, va_list args)
 {
+    GET_VALIDATOR(args);
+
     if(!local->data_type)
     {
         if(!local->value->data_type)
@@ -771,7 +784,7 @@ static void local_end(ASTObj_T* local, va_list args)
     }
     // fixme: evaluate seperately for structs and unions
     // todo: check if type initializer is an array literal, if it is, calculate the size
-    if(local->data_type->is_vla)
+    if(local->data_type->is_vla && !vla_to_array_type(v, local->data_type, local->value))
         throw_error(ERR_TYPE_ERROR, local->data_type->tok, "vla type is not allowed for local variables");
 }
 
@@ -1264,7 +1277,7 @@ static void struct_lit(ASTNode_T* s_lit, va_list args)
     // and then assigning the struct literal to it
     // foo :: {0, 1} gets converted to:
     // let <anonymous>: foo = foo :: {0, 1};
-    if(global.ct == CT_ASM && !v->struct_or_array_assign)
+    if(v->scope_depth > 0 && global.ct == CT_ASM && !v->struct_or_array_assign)
     {
         static u64 count = 0;
         ASTObj_T* local = init_ast_obj(OBJ_LOCAL, s_lit->tok);
@@ -1312,7 +1325,7 @@ static void array_lit(ASTNode_T* a_lit, va_list args)
     // and then assigning the array literal to it
     // [0, 1, 2] gets converted to:
     // let <anonymous>: i32[3] = [0, 1, 2];
-    if(global.ct == CT_ASM && !v->struct_or_array_assign)
+    if(v->scope_depth > 0 && global.ct == CT_ASM && !v->struct_or_array_assign)
     {
         static u64 count = 0;
         ASTObj_T* local = init_ast_obj(OBJ_LOCAL, a_lit->tok);
