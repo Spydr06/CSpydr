@@ -1,9 +1,25 @@
 import "libc/libc.csp";
 
-let x: i32[] = [1, 2];
-
-fn main(): i32
+macro range(low, max) 
 {
-    printf("x[0] = %d\nx[1] = %d\n", x[0], x[1]);
+    let i: i64 = low; i < max; i++
+}
+
+fn print_iarr(n: u64, a: i32[])
+{
+    printf("[");
+    for range!(0, n); {
+        printf("%d", a[i]);
+        if(n - i > 1)
+            printf(", ");
+    }
+    printf("]\n");
+}
+
+fn main(argc: i32, argv: &&char): i32
+{
+    let x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    print_iarr(len x, x);
+
     <- 0;
 }

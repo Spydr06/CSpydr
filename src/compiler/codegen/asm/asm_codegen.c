@@ -407,7 +407,8 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
             for(size_t j = 0; j < obj->args->size; j++)
             {
                 ASTObj_T* var = obj->args->items[j];
-                if(var->offset || unpack(var->data_type)->kind == TY_VA_LIST)
+                ASTType_T* ty = unpack(var->data_type);
+                if(var->offset || ty->kind == TY_VA_LIST)
                     continue;
                 
                 // AMD64 System V ABI has a special alignment rule for an array of
@@ -415,8 +416,8 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
 			    // 16-byte boundaries. See p.14 of
 			    // https://github.com/hjl-tools/x86-psABI/wiki/x86-64-psABI-draft.pdf.
 			    
-                i32 align = var->data_type->kind == TY_ARR && var->data_type->size >= 16 ? MAX(16, var->data_type->align) : var->data_type->align;
-                bottom += var->data_type->size;
+                i32 align = ty->kind == TY_ARR && ty->size >= 16 ? MAX(16, ty->align) : ty->align;
+                bottom += ty->size;
                 bottom = align_to(bottom, align);
                 var->offset = -bottom;
             }
@@ -477,13 +478,13 @@ static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var, ASTNode_T* v
             } return;
         case ND_FLOAT:
             {
-                union { f32 f32; u8 bytes[sizeof(f32)]; } u = { .f32 = val->float_val};
+                union { f32 f32; u8 bytes[sizeof(f32)]; } u = { .f32 = val->float_val };
                 for(i32 i = 0; i < F32_S; i++)
                     asm_println(cg, "  .byte %d", u.bytes[i]);
             } return;
         case ND_DOUBLE:
             {
-                union { f64 f64; u8 bytes[sizeof(f64)]; } u = { .f64 = val->float_val};
+                union { f64 f64; u8 bytes[sizeof(f64)]; } u = { .f64 = val->double_val };
                 for(i32 i = 0; i < F64_S; i++)
                     asm_println(cg, "  .byte %d", u.bytes[i]);
             } return;
@@ -496,6 +497,9 @@ static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var, ASTNode_T* v
             {
                 LOG_ERROR("not implemented\n");
             } return;
+        case ND_CLOSURE:
+            asm_gen_relocation(cg, var, val->expr);
+            return;
         default:
             throw_error(ERR_CODEGEN, val->tok, "cannot generate relocation for `%s` (%d)", val->tok->value, val->kind);
     }

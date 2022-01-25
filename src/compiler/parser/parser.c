@@ -1654,7 +1654,7 @@ static ASTNode_T* parse_str_lit(Parser_T* p, bool keep_inline)
         globl->value = str_lit;
         globl->data_type = init_ast_type(TY_ARR, str_lit->tok);
         globl->data_type->num_indices = init_ast_node(ND_LONG, str_lit->tok);
-        globl->data_type->num_indices->long_val = strlen(str_lit->str_val);
+        globl->data_type->num_indices->long_val = strlen(str_lit->str_val) + 1;
         globl->data_type->base = (ASTType_T*) primitives[TY_CHAR];
         list_push(p->root_ref->objs, globl);
 
@@ -1663,11 +1663,11 @@ static ASTNode_T* parse_str_lit(Parser_T* p, bool keep_inline)
         caller->referenced_obj = globl;
         caller->data_type = (ASTType_T*) globl->data_type;
 
-        ASTNode_T* cast = init_ast_node(ND_CAST, str_lit->tok);
-        cast->data_type = (ASTType_T*) char_ptr_type;
-        cast->left = caller;
+        //ASTNode_T* cast = init_ast_node(ND_CAST, str_lit->tok);
+        //cast->data_type = (ASTType_T*) char_ptr_type;
+        //cast->left = caller;
 
-        return cast;
+        return caller;
     }
     else
         return str_lit;

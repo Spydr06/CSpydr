@@ -583,7 +583,7 @@ static i32 align_type(ASTType_T* ty)
     {
         case TY_ARR:
         case TY_PTR:
-            return MAX(pow(2, floor(log(ty->base->size)/log(2))), 1);
+            return MAX(pow(2, floor(log(ty->base->size)/log(2))), 8);
         default:
             return MAX(pow(2, floor(log(ty->size)/log(2))), 1);
     }
@@ -791,6 +791,10 @@ static void local_end(ASTObj_T* local, va_list args)
 static void fn_arg_start(ASTObj_T* arg, va_list args)
 {
     GET_VALIDATOR(args);
+
+    if(arg->data_type->kind == TY_ARR)
+        arg->data_type->kind = TY_PTR;
+
     scope_add_obj(v, arg);
 }
 
