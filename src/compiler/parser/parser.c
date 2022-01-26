@@ -1376,6 +1376,7 @@ static ASTNode_T* parse_local(Parser_T* p)
         parser_consume(p, TOKEN_ASSIGN, "expect assignment `=` after typeless variable declaration");
         assignment->left = id;
         assignment->right = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+        assignment->right->is_assigning = assignment->right->kind == ND_ARRAY || assignment->right->kind == ND_STRUCT;
         value = assignment;
 
         local->value = assignment->right;
@@ -1833,6 +1834,7 @@ static ASTNode_T* parse_assignment(Parser_T* p, ASTNode_T* left)
         case TOKEN_ASSIGN:
             parser_advance(p);
             assign->right = parse_expr(p, expr_parse_fns[p->tok->type].prec, TOKEN_EOF);
+            assign->right->is_assigning = assign->right->kind == ND_ARRAY || assign->right->kind == ND_STRUCT;
             break;
         default:   
             assign->right = generate_assignment_op_rval(p, left, assign_to_op[p->tok->type]);

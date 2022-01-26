@@ -33,7 +33,6 @@ typedef struct VALIDATOR_STRUCT
     VScope_T* current_scope;
     ASTObj_T* current_function;
     bool main_function_found;
-    bool struct_or_array_assign;
 
     u32 scope_depth;  // depth of the current scope
 } Validator_T;
@@ -347,6 +346,7 @@ static inline void begin_scope(Validator_T* v, ASTIdentifier_T* id)
     scope->prev = v->current_scope;
     scope->id = id;
     v->current_scope = scope;
+    v->scope_depth++;
 }
 
 static inline void end_scope(Validator_T* v)
@@ -355,6 +355,7 @@ static inline void end_scope(Validator_T* v)
     v->current_scope = scope->prev;
     free_list(scope->objs);
     free(scope);
+    v->scope_depth--;
 }
 
 static void scope_add_obj(Validator_T* v, ASTObj_T* obj)
@@ -1221,16 +1222,11 @@ static void cast(ASTNode_T* cast, va_list args)
 static void assignment_start(ASTNode_T* assign, va_list args)
 {
     GET_VALIDATOR(args);
-    ASTNode_T* unwrapped = unwrap_node(assign->right);
-    if(unwrapped->kind == ND_ARRAY || unwrapped->kind == ND_STRUCT) {
-        v->struct_or_array_assign = true;
-    }
 }
 
 static void assignment_end(ASTNode_T* assign, va_list args)
 {
     GET_VALIDATOR(args);
-    v->struct_or_array_assign = false;
 
     switch(assign->left->kind)
     {
@@ -1281,7 +1277,7 @@ static void struct_lit(ASTNode_T* s_lit, va_list args)
     // and then assigning the struct literal to it
     // foo :: {0, 1} gets converted to:
     // let <anonymous>: foo = foo :: {0, 1};
-    if(v->scope_depth > 0 && global.ct == CT_ASM && !v->struct_or_array_assign)
+    if(v->scope_depth > 1 && global.ct == CT_ASM && !s_lit->is_assigning)
     {
         static u64 count = 0;
         ASTObj_T* local = init_ast_obj(OBJ_LOCAL, s_lit->tok);
@@ -1289,7 +1285,7 @@ static void struct_lit(ASTNode_T* s_lit, va_list args)
         local->referenced = true;
         local->id = init_ast_identifier(s_lit->tok, "");
         sprintf(local->id->callee, "__csp_structlit_%ld__", count++);
-        list_push(v->current_scope->objs, local);
+        list_push(v->current_function->objs, local);
 
         ASTNode_T assignment = {
             .kind = ND_ASSIGN,
@@ -1329,7 +1325,7 @@ static void array_lit(ASTNode_T* a_lit, va_list args)
     // and then assigning the array literal to it
     // [0, 1, 2] gets converted to:
     // let <anonymous>: i32[3] = [0, 1, 2];
-    if(v->scope_depth > 0 && global.ct == CT_ASM && !v->struct_or_array_assign)
+    if(v->scope_depth > 1 && global.ct == CT_ASM && !a_lit->is_assigning)
     {
         static u64 count = 0;
         ASTObj_T* local = init_ast_obj(OBJ_LOCAL, a_lit->tok);
@@ -1337,7 +1333,7 @@ static void array_lit(ASTNode_T* a_lit, va_list args)
         local->referenced = true;
         local->id = init_ast_identifier(a_lit->tok, "");
         sprintf(local->id->callee, "__csp_arrlit_%ld__", count++);
-        list_push(v->current_scope->objs, local);
+        list_push(v->current_function->objs, local);
 
         ASTNode_T assignment = {
             .kind = ND_ASSIGN,
@@ -1348,6 +1344,7 @@ static void array_lit(ASTNode_T* a_lit, va_list args)
 
         assignment.right = init_ast_node(ND_ARRAY, a_lit->tok);
         *assignment.right = *a_lit;
+        assignment.right->is_assigning = true;
         
         assignment.left = init_ast_node(ND_ID, a_lit->tok);
         assignment.left->id = local->id;

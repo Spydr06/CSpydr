@@ -211,6 +211,8 @@ struct AST_NODE_STRUCT
         bool pass_by_stack: 1;   // call
     };
 
+    bool is_assigning: 1;
+
     // expression statement
     bool is_constant: 1;
     ASTNode_T* expr;

@@ -232,13 +232,9 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
     if(cg->embed_file_locations)
         asm_gen_file_descriptors(cg);
     asm_assign_lvar_offsets(cg, cg->ast->objs);
-
     asm_gen_data(cg, cg->ast->objs);
-
     asm_println(cg, "%s", asm_start_text);
-    
     asm_gen_text(cg, cg->ast->objs);
-
     write_code(cg, target);
 
     if(cg->print)
@@ -427,6 +423,7 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
                 for(size_t j = 0; j < obj->objs->size; j++)
                 {
                     ASTObj_T* var = obj->objs->items[j];
+                    printf("> %s\n", var->id->callee);
                     i32 align = var->data_type->kind == TY_ARR && var->data_type->size >= 16 ? MAX(16, var->data_type->align) : var->data_type->align;
                     bottom += var->data_type->size;
                     bottom = align_to(bottom, align);
@@ -1494,6 +1491,8 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                         };
 
                         asm_gen_expr(cg, &converted);
+
+                        asm_gen_expr(cg, node->left);
                     } return;
                 case ND_STRUCT:
                     // x = y :: {1, 2, 3} gets converted to x.z = 1, x.w = 2, x.u = 3
