@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "config.h"
+
 /*
  * Type definitions
  */
@@ -17,7 +19,7 @@ typedef int64_t i64;
 #ifdef __GNUC__
 typedef signed __int128 i128;
 #else
-typedef signed long long i128;
+typedef signed long long i128; // not quite 128 bits, but should do the job in most cases
 #endif
 
 // unsigned integers
@@ -29,7 +31,7 @@ typedef uint64_t u64;
 #ifdef __GNUC__
 typedef unsigned __int128 u128;
 #else
-typedef unsigned long long u128;
+typedef unsigned long long u128; // not quite 128 bits, but should do the job in most cases
 #endif
 
 // floats
@@ -37,10 +39,15 @@ typedef float f32;
 typedef double f64;
 typedef long double f80;
 
-#ifndef __GNUC__
+#ifndef CSPYDR_GNU_LIBC
 char *strsep(char **stringp, const char *delim);
 #endif
 
 bool str_starts_with(const char *a, const char *b);
+
+#if !defined(CSPYDR_PACKED_STRUCTS) || !defined(CSPYDR_GNU_LIBC)
+    #define __attribute__(_)
+    #define __attribute(_)
+#endif
 
 #endif

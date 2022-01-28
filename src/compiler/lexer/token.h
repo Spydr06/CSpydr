@@ -3,6 +3,7 @@
 
 #include "../io/file.h"
 #include "../globals.h"
+#include "../config.h"
 
 typedef enum TOKEN_TYPE {
     TOKEN_ID,           // names, types, etc.

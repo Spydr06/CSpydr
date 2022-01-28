@@ -943,9 +943,11 @@ static void call(ASTNode_T* call, va_list args)
         ASTObj_T* ret_buf = init_ast_obj(OBJ_LOCAL, call->tok);
         ret_buf->data_type = call->data_type;
         
-        list_push(v->current_scope->objs, ret_buf);
+        list_push(v->current_function->objs, ret_buf);
         call->return_buffer = ret_buf;
     }
+
+    call->expr->call = call;
 }
 
 static void identifier(ASTNode_T* id, va_list args)
@@ -1466,7 +1468,7 @@ static i32 get_struct_size(Validator_T* v, ASTType_T* s_type)
         member->int_val = size; // offset
         size += member->data_type->size;
     }
-    return size;
+    return pow(2, ceil(log(size)/log(2)));;
 }
 
 static i32 get_type_size(Validator_T* v, ASTType_T* type)

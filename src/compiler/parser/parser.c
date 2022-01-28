@@ -312,7 +312,7 @@ static inline bool is_executable(ASTNode_T* n)
 {
     if(n->kind == ND_CLOSURE)
         return is_executable(n->expr);
-    return n->kind == ND_CALL || n->kind == ND_ASSIGN || n->kind == ND_INC || n->kind == ND_DEC || n->kind == ND_CAST || n->kind == ND_MEMBER;
+    return n->kind == ND_CALL || n->kind == ND_ASSIGN || n->kind == ND_INC || n->kind == ND_DEC || n->kind == ND_CAST || n->kind == ND_MEMBER || n->kind == ND_ASM;
 }
 
 static bool check_type(ASTType_T* a, ASTType_T* b)
@@ -1385,7 +1385,7 @@ static ASTNode_T* parse_local(Parser_T* p)
     parser_consume(p, TOKEN_SEMICOLON, "expect `;` after variable definition");
                                                             // ND_FOR only for the for loop initializer
     if(!p->cur_block || (p->cur_block->kind != ND_BLOCK && p->cur_block->kind != ND_FOR))
-        throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot define a local variable outside a block statement");
+        throw_error(ERR_SYNTAX_ERROR, local->tok, "cannot define a local variable outside a block statement");
     list_push(p->cur_block->locals, local);
     return value;
 }

@@ -6,6 +6,7 @@
 #include "../list.h"
 #include "../lexer/token.h"
 #include "../globals.h"
+#include "../config.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -215,7 +216,11 @@ struct AST_NODE_STRUCT
 
     // expression statement
     bool is_constant: 1;
-    ASTNode_T* expr;
+    
+    union {
+        ASTNode_T* expr;
+        ASTNode_T* call;
+    };
 
     // sizeof
     ASTType_T* the_type;

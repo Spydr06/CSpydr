@@ -59,4 +59,7 @@
 #define ASM_GP_MAX 6
 #define ASM_FP_MAX 8
 
+// use __attribute__((packed))
+#define CSPYDR_PACKED_STRUCTS
+
 #endif
