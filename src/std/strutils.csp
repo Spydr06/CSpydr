@@ -37,10 +37,10 @@ fn itoa(num: i32, str: &char, base: i32): &char
     <- str;
 }
 
-fn reverse(str: char[], len: size_t)
+fn reverse(str: char[], size: size_t)
 {
     let start: size_t = 0;
-    let end: size_t = len - 1;
+    let end: size_t = size - 1;
 
     while start < end
     {

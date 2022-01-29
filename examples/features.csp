@@ -36,11 +36,11 @@ type data: struct {
 
 let program_data: data;
 
-fn va_test(x: i32, y: ...) {
+#[fn va_test(x: i32, y: ...) {
     let z = va_arg y: i32;
 
     printf("%d\n", x `utils::add` z);
-}
+}]# 
 
 fn delay(seconds: i32)
 {
@@ -49,7 +49,7 @@ fn delay(seconds: i32)
 
     time(&start);
     time(&current);
-    while (current-start) < seconds
+    while ((current: u64) - (start: u64)) < seconds
         time(&current);
 }
 
@@ -59,7 +59,7 @@ fn main(argc: i32, argv: &&char): i32 {
         utils::zero
     };
 
-    va_test(3, 4 + true: u8);
+   # va_test(3, 4 + true: u8);
 
     utils::putstr(std::string::substr(program_data.msg, 4, 16));
 

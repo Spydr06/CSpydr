@@ -1643,7 +1643,7 @@ static ASTNode_T* parse_str_lit(Parser_T* p, bool keep_inline)
 
     mem_add_ptr(str_lit->str_val);
 
-    if(global.ct == CT_ASM && !keep_inline)
+    if(global.ct == CT_ASM && !keep_inline && p->cur_fn)
     {
         static u64 i = 0;
         char id[256] = { '\0' };

@@ -1468,7 +1468,7 @@ static i32 get_struct_size(Validator_T* v, ASTType_T* s_type)
         member->int_val = size; // offset
         size += member->data_type->size;
     }
-    return pow(2, ceil(log(size)/log(2)));;
+    return size;
 }
 
 static i32 get_type_size(Validator_T* v, ASTType_T* type)

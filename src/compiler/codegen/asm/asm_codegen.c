@@ -496,6 +496,10 @@ static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var, ASTNode_T* v
         case ND_CLOSURE:
             asm_gen_relocation(cg, var, val->expr);
             return;
+        case ND_NEG:
+            val->right->int_val = -val->right->int_val;
+            asm_gen_relocation(cg, var, val->right);
+            return;
         default:
             throw_error(ERR_CODEGEN, val->tok, "cannot generate relocation for `%s` (%d)", val->tok->value, val->kind);
     }
@@ -1280,6 +1284,45 @@ static void asm_gen_inc(ASMCodegenData_T* cg, ASTNode_T* node)
     asm_gen_expr(cg, &converted);
 }
 
+static char asm_gen_char(ASMCodegenData_T* cg, ASTNode_T* node)
+{
+    if(node->str_val[0] == '\\')
+    {
+        switch(node->str_val[1])
+        {
+            case 'n':
+                return '\n';
+            case 't':
+                return '\t';
+            case 'b':
+                return '\b';
+            case 'r':
+                return '\r';
+            case 'a':
+                return '\a';
+            case '\'':
+                return '\'';
+            case '\"':
+                return '"';
+            case '?':
+                return '\?';
+            case '\\':
+                return '\\';
+            case 'f':
+                return '\f';
+            case 'v':
+                return '\v';
+            case '0':
+                return '\0';
+            default:
+                throw_error(ERR_SYNTAX_ERROR, node->tok, "invalid escape sequence `%c` (%d)", node->str_val[1], node->str_val[1]);
+                exit(1);
+        }
+    }
+
+    return node->str_val[0];
+}
+
 static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
 {
     if(node->tok && cg->embed_file_locations)
@@ -1310,6 +1353,9 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_INT:
             asm_println(cg, "  mov $%d, %%rax", node->int_val);
             return;
+        case ND_BOOL:   
+            asm_println(cg, "  mov $%d, %%rax", node->bool_val);
+            return;
         case ND_LONG:
             asm_println(cg, "  mov $%ld, %%rax", node->long_val);
             return;
@@ -1317,7 +1363,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_println(cg, "  mov $%lld, %%rax", (long long) node->llong_val);
             return;
         case ND_CHAR:
-            asm_println(cg, "  mov $%d, %%rax", node->str_val[0]);
+            asm_println(cg, "  mov $%d, %%rax", (i32) asm_gen_char(cg, node));
             return;
         case ND_NIL:
             asm_println(cg, "  mov $0, %%rax");
@@ -1395,7 +1441,6 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
 
                 node->right = &new_right;
             }
-            
             break;
         
         case ND_SUB:
@@ -1436,7 +1481,6 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                 return;
             }
             break;
-
         
         case ND_ID:
             asm_gen_addr(cg, node);
@@ -2068,6 +2112,10 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
 
         case ND_BREAK:
             asm_println(cg, "  jmp .L.break.%ld", asm_current_count());
+            return;
+        
+        case ND_MATCH_TYPE:
+            asm_gen_stmt(cg, node->body);
             return;
 
         default:

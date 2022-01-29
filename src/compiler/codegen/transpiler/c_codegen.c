@@ -752,7 +752,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, "]");
             break;
         case ND_ARRAY:
-            if(node->data_type)
+            if(node->data_type && cg->current_fn)
             {
                 print(cg, "(");
                 c_gen_type(cg, node->data_type, "");

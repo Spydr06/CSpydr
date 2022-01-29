@@ -8,7 +8,8 @@ type Foo: struct {
 };
 
 fn gen_foo(): Foo {
-    <- Foo :: {2, "hi", 0: i64, 0: i64};
+    let foo = Foo :: {2, "hi", 0: i64, 0: i64};
+    <- foo;
 }
 
 fn add(a: i64, b: i64): i64 ret a + b;
@@ -18,6 +19,8 @@ fn main(argc: i32, argv: &&char): i32
 
     let foo = gen_foo();
     printf("foo.a = %d\n", foo.a);
+
+    let x = 0;
 
     <- 0;
 }

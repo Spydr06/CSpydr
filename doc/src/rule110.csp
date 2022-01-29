@@ -1,7 +1,7 @@
 # rule110.csp
 import "libc/stdio.csp";
 
-macro board_cap { 100 }
+macro board_cap { 40 }
 let board: i32[board_cap!];
 
 fn main(argc: i32, argv: &&char): i32
