@@ -19,8 +19,10 @@ typedef struct ASM_CODEGEN_DATA_STRUCT
     char* current_fn_name;
     u64 depth;
 
-    u64 max_count;
-    u64 cur_count;
+    u64 max_count;  // current maximum label id
+    u64 cur_count;  // current label id
+    u64 cur_brk_id; // current statement id, which supports break; statements
+    u64 cur_cnt_id; // current statement id, which supports continue; statements
 } ASMCodegenData_T;
 
 void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast);

@@ -530,7 +530,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
             } break;
 
             case OBJ_GLOBAL:
-                if(obj->is_extern || obj->referenced)
+                if(obj->is_extern)
                     continue;
                 {
                     char* id = asm_gen_identifier(obj->id);
@@ -1986,7 +1986,12 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_FOR:
         {
             u64 pc = cg->cur_count;
-            u64 c = cg->cur_count = cg->max_count++;
+            u64 pbrk = cg->cur_brk_id;
+            u64 pcnt = cg->cur_cnt_id;
+            u64 c = cg->cur_brk_id 
+                  = cg->cur_count 
+                  = cg->max_count++;
+            
             if(node->init_stmt)
                 asm_gen_stmt(cg, node->init_stmt);
             asm_println(cg, ".L.begin.%ld:", c);
@@ -2001,13 +2006,21 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
                 asm_gen_expr(cg, node->expr);
             asm_println(cg, "  jmp .L.begin.%ld", c);
             asm_println(cg, ".L.break.%ld:", c);
+
             cg->cur_count = pc;
+            cg->cur_brk_id = pbrk;
+            cg->cur_cnt_id = pcnt;
         } return;
     
         case ND_WHILE:
         {
             u64 pc = cg->cur_count;
-            u64 c = cg->cur_count = cg->max_count++;
+            u64 pbrk = cg->cur_brk_id;
+            u64 pcnt = cg->cur_cnt_id; 
+            u64 c = cg->cur_brk_id 
+                  = cg->cur_count 
+                  = cg->max_count++;
+
             asm_println(cg, ".L.begin.%ld:", c);
             asm_gen_expr(cg, node->condition);
             asm_cmp_zero(cg, node->condition->data_type);
@@ -2016,26 +2029,38 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_println(cg, ".L.continue.%ld:", c);
             asm_println(cg, "  jmp .L.begin.%ld", c);
             asm_println(cg, ".L.break.%ld:", c);
+
             cg->cur_count = pc;
+            cg->cur_brk_id = pbrk;
+            cg->cur_cnt_id = pcnt;
         } return;
 
         case ND_LOOP:
         {
             u64 pc = cg->cur_count;
-            u64 c = cg->cur_count = cg->max_count++;
+            u64 pbrk = cg->cur_brk_id;
+            u64 pcnt = cg->cur_cnt_id; 
+            u64 c = cg->cur_brk_id 
+                  = cg->cur_count 
+                  = cg->max_count++;
+            
             asm_println(cg, ".L.begin.%ld:", c);
             asm_gen_stmt(cg, node->body);
             asm_println(cg, ".L.continue.%ld:", c);
             asm_println(cg, "  jmp .L.begin.%ld", c);
             asm_println(cg, ".L.break.%ld:", c);
+
             cg->cur_count = pc;
+            cg->cur_brk_id = pbrk;
+            cg->cur_cnt_id = pcnt;
         } return;
     
         case ND_MATCH:
             {
                 asm_gen_expr(cg, node->condition);
                 u64 pc = cg->cur_count;
-                u64 c = cg->cur_count = cg->max_count++;
+                u64 pbrk = cg->cur_brk_id;
+                u64 c = cg->cur_count = cg->cur_brk_id = cg->max_count++;
                 char* ax = (node->condition->data_type->size == 8) ? "%rax" : "%eax";
                 char* di = (node->condition->data_type->size == 8) ? "%rdi" : "%edi";
                 for(size_t i = 0; i < node->cases->size; i++)
@@ -2065,6 +2090,7 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
                 asm_println(cg, ".L.break.%ld:", c);
 
                 cg->cur_count = pc;
+                cg->cur_brk_id = pbrk;
             } return;
         
         case ND_CASE:
@@ -2105,11 +2131,11 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         
         case ND_CONTINUE:
-            asm_println(cg, "  jmp .L.continue.%ld", cg->cur_count);
+            asm_println(cg, "  jmp .L.continue.%ld", cg->cur_cnt_id);
             return;
 
         case ND_BREAK:
-            asm_println(cg, "  jmp .L.break.%ld", cg->cur_count);
+            asm_println(cg, "  jmp .L.break.%ld", cg->cur_brk_id);
             return;
         
         case ND_MATCH_TYPE:
