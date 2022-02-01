@@ -78,6 +78,9 @@ u64 const_u64(ASTNode_T* node)
             return node->the_type->size;
         case ND_CAST:
             return const_u64(node->left);
+        case ND_ID:
+            if(node->referenced_obj && node->referenced_obj->kind == OBJ_GLOBAL && node->referenced_obj->is_constant)
+                return const_u64(node->referenced_obj->value);
         default:
             throw_error(ERR_CONSTEXPR, node->tok, "`%s` is not a compile-time constant", node->tok->value);
             return 0;
