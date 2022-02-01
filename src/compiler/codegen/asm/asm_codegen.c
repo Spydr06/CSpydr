@@ -15,9 +15,6 @@
 
 enum { I8, I16, I32, I64, U8, U16, U32, U64, F32, F64, F80, LAST };
 
-// a counter variable for generating unique labels
-static u64 asm_c = 0;
-
 static char asm_start_text[] = 
     "  .globl _start\n"
     "  .text\n"
@@ -155,15 +152,10 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node);
 
 void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast)
 {
-    cg->ast = ast;
-    cg->print = false;
-    cg->silent = false;
-    cg->embed_file_locations = false;
+    memset(cg, 0, sizeof(struct ASM_CODEGEN_DATA_STRUCT));
 
+    cg->ast = ast;
     cg->code_buffer = open_memstream(&cg->buf, &cg->buf_len);
-    cg->current_fn = NULL;
-    cg->current_fn_name = NULL;
-    cg->depth = 0;
 }
 
 #ifdef __GNUC__
@@ -538,7 +530,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
             } break;
 
             case OBJ_GLOBAL:
-                if(obj->is_extern)
+                if(obj->is_extern || obj->referenced)
                     continue;
                 {
                     char* id = asm_gen_identifier(obj->id);
@@ -728,16 +720,6 @@ static i32 get_type_id(ASTType_T *ty) {
         default:
             return U64;
     }
-}
-
-static u64 asm_count(void) 
-{
-    return asm_c++;
-}
-
-static u64 asm_current_count(void)
-{
-    return asm_c;
 }
 
 static void asm_push(ASMCodegenData_T* cg) 
@@ -1599,7 +1581,8 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         
         case ND_AND:
         {
-            u64 c = asm_count();
+            u64 pc = cg->cur_count;
+            u64 c = cg->cur_count = cg->max_count++;
             asm_gen_expr(cg, node->left);
             asm_cmp_zero(cg, node->left->data_type);
             asm_println(cg, "  je .L.false.%ld", c);
@@ -1611,35 +1594,40 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_println(cg, ".L.false.%ld:", c);
             asm_println(cg, "  mov $0, %%rax");
             asm_println(cg, ".L.end.%ld:", c);
+            cg->cur_count = pc;
         } return;
 
         case ND_OR:
         {
-            u64 c = asm_count();
+            u64 pc = cg->cur_count;
+            u64 c = cg->cur_count = cg->max_count++;
             asm_gen_expr(cg, node->left);
             asm_cmp_zero(cg, node->left->data_type);
             asm_println(cg, "  jne .L.true.%ld", c);
             asm_gen_expr(cg, node->right);
             asm_cmp_zero(cg, node->right->data_type);
             asm_println(cg, "  jne .L.true.%ld", c);
-            asm_println(cg, "  mov $1, %%rax");
+            asm_println(cg, "  mov $0, %%rax");
             asm_println(cg, "  jmp .L.end.%ld", c);
             asm_println(cg, ".L.true.%ld:", c);
             asm_println(cg, "  mov $1, %%rax");
             asm_println(cg, ".L.end.%ld:", c);
+            cg->cur_count = pc;
         } return;
 
         case ND_IF_EXPR:
         {
-            u64 count = asm_count();
+            u64 pc = cg->cur_count;
+            u64 c = cg->cur_count = cg->max_count++;
             asm_gen_expr(cg, node->condition);
             asm_cmp_zero(cg, node->condition->data_type);
-            asm_println(cg, "  je .L.else.%ld", count);
+            asm_println(cg, "  je .L.else.%ld", c);
             asm_gen_expr(cg, node->if_branch);
-            asm_println(cg, "  jmp .L.end.%ld", count);
-            asm_println(cg, "  .L.else.%ld:", count);
+            asm_println(cg, "  jmp .L.end.%ld", c);
+            asm_println(cg, "  .L.else.%ld:", c);
             asm_gen_expr(cg, node->else_branch);
-            asm_println(cg, ".L.end.%ld:", count);
+            asm_println(cg, ".L.end.%ld:", c);
+            cg->cur_count = pc;
         } return;
 
         case ND_CALL:
@@ -1981,7 +1969,8 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         case ND_IF:
         {
-            u64 c = asm_count();
+            u64 pc = cg->cur_count;
+            u64 c = cg->cur_count = cg->max_count++;
             asm_gen_expr(cg, node->condition);
             asm_cmp_zero(cg, node->condition->data_type);
             asm_println(cg, "  je  .L.else.%ld", c);
@@ -1991,11 +1980,13 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             if(node->else_branch)
                 asm_gen_stmt(cg, node->else_branch);
             asm_println(cg, ".L.end.%ld:", c);
+            cg->cur_count = pc;
         } return;
 
         case ND_FOR:
         {
-            u64 c = asm_count();
+            u64 pc = cg->cur_count;
+            u64 c = cg->cur_count = cg->max_count++;
             if(node->init_stmt)
                 asm_gen_stmt(cg, node->init_stmt);
             asm_println(cg, ".L.begin.%ld:", c);
@@ -2010,11 +2001,13 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
                 asm_gen_expr(cg, node->expr);
             asm_println(cg, "  jmp .L.begin.%ld", c);
             asm_println(cg, ".L.break.%ld:", c);
+            cg->cur_count = pc;
         } return;
     
         case ND_WHILE:
         {
-            u64 c = asm_count();
+            u64 pc = cg->cur_count;
+            u64 c = cg->cur_count = cg->max_count++;
             asm_println(cg, ".L.begin.%ld:", c);
             asm_gen_expr(cg, node->condition);
             asm_cmp_zero(cg, node->condition->data_type);
@@ -2023,23 +2016,26 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_println(cg, ".L.continue.%ld:", c);
             asm_println(cg, "  jmp .L.begin.%ld", c);
             asm_println(cg, ".L.break.%ld:", c);
+            cg->cur_count = pc;
         } return;
 
         case ND_LOOP:
         {
-            u64 c = asm_count();
+            u64 pc = cg->cur_count;
+            u64 c = cg->cur_count = cg->max_count++;
             asm_println(cg, ".L.begin.%ld:", c);
             asm_gen_stmt(cg, node->body);
             asm_println(cg, ".L.continue.%ld:", c);
             asm_println(cg, "  jmp .L.begin.%ld", c);
             asm_println(cg, ".L.break.%ld:", c);
+            cg->cur_count = pc;
         } return;
     
         case ND_MATCH:
             {
                 asm_gen_expr(cg, node->condition);
-                asm_count();
-
+                u64 pc = cg->cur_count;
+                u64 c = cg->cur_count = cg->max_count++;
                 char* ax = (node->condition->data_type->size == 8) ? "%rax" : "%eax";
                 char* di = (node->condition->data_type->size == 8) ? "%rdi" : "%edi";
                 for(size_t i = 0; i < node->cases->size; i++)
@@ -2053,26 +2049,28 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
                     asm_pop(cg, "%rdi");
                     asm_println(cg, "  cmp %s, %s", ax, di);
                     asm_pop(cg, "%rax");
-                    asm_println(cg, "  je .L.case.%ld.%ld", i, asm_current_count());
+                    asm_println(cg, "  je .L.case.%ld.%ld", i, c);
                 }
 
                 if(node->default_case) 
                 {
                     node->default_case->long_val = node->cases->size;
-                    asm_println(cg, "  jmp .L.case.%ld.%ld", node->cases->size, asm_current_count());
+                    asm_println(cg, "  jmp .L.case.%ld.%ld", node->cases->size, c);
                 }
                 for(size_t i = 0; i < node->cases->size; i++)
                     asm_gen_stmt(cg, node->cases->items[i]);
                 if(node->default_case)
                     asm_gen_stmt(cg, node->default_case);
                 
-                asm_println(cg, ".L.break.%ld:", asm_current_count());
+                asm_println(cg, ".L.break.%ld:", c);
+
+                cg->cur_count = pc;
             } return;
         
         case ND_CASE:
-            asm_println(cg, ".L.case.%ld.%ld:", node->long_val, asm_current_count());
+            asm_println(cg, ".L.case.%ld.%ld:", node->long_val, cg->cur_count);
             asm_gen_stmt(cg, node->body);
-            asm_println(cg, "  jmp .L.break.%ld", asm_current_count());
+            asm_println(cg, "  jmp .L.break.%ld", cg->cur_count);
             return;
         
         case ND_BLOCK:
@@ -2107,11 +2105,11 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         
         case ND_CONTINUE:
-            asm_println(cg, "  jmp .L.continue.%ld", asm_current_count());
+            asm_println(cg, "  jmp .L.continue.%ld", cg->cur_count);
             return;
 
         case ND_BREAK:
-            asm_println(cg, "  jmp .L.break.%ld", asm_current_count());
+            asm_println(cg, "  jmp .L.break.%ld", cg->cur_count);
             return;
         
         case ND_MATCH_TYPE:

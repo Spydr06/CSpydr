@@ -1,26 +1,33 @@
 import "libc/libc.csp";
 
-type Foo: struct {
-    a: i32,
-    b: &char,
-    c: i64, 
-    d: i64
-};
-
-fn gen_foo(): Foo {
-    let foo = Foo :: {2, "hi", 0: i64, 0: i64};
-    <- foo;
+type Number: enum {
+    ZERO,
+    ONE,
+    TWO,
+    THREE,
+    FOUR,
+    FIVE,
+    SIX,
+    SEVEN,
+    EIGHT,
+    NINE
 }
-
-fn add(a: i64, b: i64): i64 ret a + b;
 
 fn main(argc: i32, argv: &&char): i32
 {
-
-    let foo = gen_foo();
-    printf("foo.a = %d\n", foo.a);
-
-    let x = 0;
-
+    match(argc)
+    {
+        Number::ONE => printf("no args\n");
+        Number::TWO => printf("one arg\n");
+        Number:: => printf("two args\n");
+        Number:: => printf("four args\n");
+        Number:: => printf("five args\n");
+        Number:: => printf("six args\n");
+        Number:: => printf("seven args\n");
+        Number:: => printf("eight args\n");
+        Number:: => printf("nine args\n");
+        _ => printf("ten or more args\n");
+    }
+    
     <- 0;
 }

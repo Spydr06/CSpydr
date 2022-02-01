@@ -18,6 +18,9 @@ typedef struct ASM_CODEGEN_DATA_STRUCT
     ASTObj_T* current_fn;
     char* current_fn_name;
     u64 depth;
+
+    u64 max_count;
+    u64 cur_count;
 } ASMCodegenData_T;
 
 void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast);

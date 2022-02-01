@@ -1,0 +1,120 @@
+import "libc/libc.csp";
+
+type Op: enum {
+    END,
+    INC_DP,
+    DEC_DP,
+    INC_VAL,
+    DEC_VAL,
+    OUT,
+    IN,
+    JMP_FWD,
+    JMP_BCK
+};
+
+type Status: enum {
+    SUCCESS,
+    FAILURE
+};
+
+type Instruction: struct {
+    operator: u16,
+    operand: u16
+};
+
+macro PROG_SIZE  { 4096  }
+macro STACK_SIZE { 512   }
+macro DATA_SIZE  { 65535 }
+
+let program: Instruction[PROG_SIZE!];
+let stack: u16[STACK_SIZE!];
+let sp: u32;
+
+fn compile(fp: &FILE): Status
+{
+    let pc: u16 = 0;
+    let jmp_pc: u16;
+    let c: i32;
+
+    while (c = getc(fp)) != EOF! && pc < PROG_SIZE!()
+    {
+        match c 
+        {
+            '>' => program[pc].operator = Op::INC_DP;
+            '<' => program[pc].operator = Op::DEC_DP;
+            '+' => program[pc].operator = Op::INC_VAL;
+            '-' => program[pc].operator = Op::DEC_VAL;
+            '.' => program[pc].operator = Op::OUT;
+            ',' => program[pc].operator = Op::IN;
+            '[' => {
+                program[pc].operator = Op::JMP_FWD;
+                if sp == STACK_SIZE! ret Status::FAILURE;
+                stack[sp++] = pc;
+            }
+            ']' => {
+                if sp == 0 ret Status::FAILURE;
+                jmp_pc = stack[sp -= 1];
+                program[pc].operator = Op::JMP_BCK;
+                program[pc].operand = jmp_pc;
+                program[jmp_pc].operand = pc;
+            }
+            _ => pc--;
+        }
+        pc++;
+    }
+
+    if sp != 0 || pc == PROG_SIZE! ret Status::FAILURE;
+
+    program[pc].operator = Op::END;
+
+    <- Status::SUCCESS;
+}
+
+fn execute(): Status
+{
+    let data: u16[DATA_SIZE!];
+    memset(data, 0, DATA_SIZE! * 2);
+
+    let pc: u16 = 0;
+    let ptr = 0;
+
+    while program[pc].operator != Op::END && ptr < DATA_SIZE!()
+    {
+        match program[pc].operator
+        {
+            Op::INC_DP  => ptr++;
+            Op::DEC_DP  => ptr--;
+            Op::INC_VAL => data[ptr]++;
+            Op::DEC_VAL => data[ptr]--;
+            Op::OUT     => putchar(data[ptr]);
+            Op::IN      => data[ptr] = getchar(): u16;
+            Op::JMP_FWD => if !data[ptr] pc = program[pc].operand;
+            Op::JMP_BCK => if data[ptr] pc = program[pc].operand;
+            _ => ret Status::FAILURE;
+        }
+        pc++;
+    }
+
+    <- Status::SUCCESS;
+}
+
+fn main(argc: i32, argv: &&char): i32
+{
+    let fp: &FILE = nil;
+
+    if argc != 2 || (fp = fopen(argv[1], "r")) == nil
+    {
+        fprintf(stderr, "Usage: %s filename\n", argv[0]);
+        <- Status::FAILURE;
+    }
+
+    let status = compile(fp);
+    fclose(fp);
+
+    match status {
+        Status::SUCCESS => status = execute();
+        Status::FAILURE => fprintf(stderr, "Error Compiling!\n");
+    }
+
+    <- status;
+}
