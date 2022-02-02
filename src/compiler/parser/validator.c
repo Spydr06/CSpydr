@@ -1514,7 +1514,12 @@ static i32 get_type_size(Validator_T* v, ASTType_T* type)
             return get_type_size(v, expand_typedef(v, type));
         case TY_ARR:
             if(type->num_indices)
-                return get_type_size(v, type->base) * const_u64(type->num_indices);
+            {
+                i64 len = const_i64(type->num_indices);
+                if(len < 1)
+                    throw_error(ERR_TYPE_ERROR, type->num_indices->tok, "cannot get array type with negative index size (%ld)", len);
+                return get_type_size(v, type->base) * len;
+            }
             else
                 return 0;
         case TY_STRUCT:
@@ -1525,6 +1530,7 @@ static i32 get_type_size(Validator_T* v, ASTType_T* type)
         case TY_OPAQUE_STRUCT:
         case TY_FN:
         case TY_VA_LIST:
+        default:
             return 0;
     }
     

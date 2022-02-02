@@ -1,10 +1,11 @@
 #include "constexpr.h"
+#include "ast/ast.h"
 #include "error/error.h"
 
-static u64 const_u64_infix(ASTNode_T* node)
+static u64 const_i64_infix(ASTNode_T* node)
 {
-    u64 a = const_u64(node->left);
-    u64 b = const_u64(node->right);
+    u64 a = const_i64(node->left);
+    u64 b = const_i64(node->right);
 
     switch(node->kind)
     {
@@ -46,15 +47,34 @@ static u64 const_u64_infix(ASTNode_T* node)
             return a & b;
         default:
             throw_error(ERR_CONSTEXPR, node->tok, "`%s` is not a compile type constant", node->tok->value);
+            return 0;
     }
 }
 
-u64 const_u64(ASTNode_T* node)
+static i64 const_i64_prefix(ASTNode_T* node)
+{
+    i64 a = const_i64(node->right);
+
+    switch(node->kind)
+    {
+        case ND_NEG:
+            return -a;
+        case ND_NOT:
+            return !a;
+        case ND_BIT_NEG:
+            return ~a;
+        default:
+            throw_error(ERR_CONSTEXPR, node->tok, "`%s` is not a compile type constant", node->tok->value);
+            return 0;
+    }
+}
+
+u64 const_i64(ASTNode_T* node)
 {
     switch(node->kind)
     {
         case ND_CLOSURE:
-            return const_u64(node->expr);
+            return const_i64(node->expr);
         case ND_INT:
             return node->int_val;
         case ND_LONG:
@@ -73,14 +93,18 @@ u64 const_u64(ASTNode_T* node)
             return 0;
         case ND_ADD...ND_MOD:
         case ND_EQ...ND_BIT_AND:
-            return const_u64_infix(node);
+            return const_i64_infix(node);
+        case ND_NEG:
+        case ND_NOT:
+        case ND_BIT_NEG:
+            return const_i64_prefix(node);
         case ND_SIZEOF:
             return node->the_type->size;
         case ND_CAST:
-            return const_u64(node->left);
+            return const_i64(node->left);
         case ND_ID:
             if(node->referenced_obj && node->referenced_obj->kind == OBJ_GLOBAL && node->referenced_obj->is_constant)
-                return const_u64(node->referenced_obj->value);
+                return const_i64(node->referenced_obj->value);
         default:
             throw_error(ERR_CONSTEXPR, node->tok, "`%s` is not a compile-time constant", node->tok->value);
             return 0;

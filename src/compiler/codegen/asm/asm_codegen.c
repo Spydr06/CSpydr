@@ -423,6 +423,9 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
 
             obj->stack_size = align_to(bottom, 16);
         } break;
+
+        default:
+            break;
         }
     }
 }
@@ -1116,6 +1119,8 @@ static void asm_load(ASMCodegenData_T* cg, ASTType_T *ty) {
         case TY_F80:
             asm_println(cg, "  fldt (%%rax)");
             return;
+        default:
+            break;
     }
 
     char *insn = is_unsigned(ty) ? "movz" : "movs";
@@ -1711,6 +1716,8 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                 case TY_U16:
                     asm_println(cg, "  movzwl %%al, %%eax");
                     return;
+                default:
+                    break;
             }
 
             // If the return type is a small struct, a value is returned
@@ -1720,6 +1727,9 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                 asm_println(cg, "  lea %d(%%rbp), %%rax", node->return_buffer->offset);
             }
         } return;
+        
+        default:
+            break;
     }
 
     switch(node->left->data_type->kind)
@@ -1787,6 +1797,8 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                     asm_println(cg, "  and $1, %%al");
                     asm_println(cg, "  movzb %%al, %%rax");
                     return;
+                default:
+                    break;
             }
             LOG_ERROR_F("unhandled expression (%d)\n", node->kind);
             return;
@@ -1843,10 +1855,15 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                     asm_println(cg, "  setae %%al");
                     asm_println(cg, "  movzb %%al, %%rax");
                     return;
+                default:
+                    break;
             }
 
             LOG_ERROR_F("unhandled expression (%d)\n", node->kind);
             return;
+
+        default:
+            break;
     }
 
     asm_gen_expr(cg, node->kind == ND_GE || node->kind == ND_GT ? node->left : node->right);
@@ -1945,9 +1962,9 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             else
                 asm_println(cg, "  sar %%cl, %s", ax);
             return;
+        default: 
+            LOG_ERROR_F("unhandled expression (%d)", node->kind);
     }
-
-    LOG_ERROR_F("unhandled expression (%d)", node->kind);
 }
 
 static void asm_init_zero(ASMCodegenData_T* cg, ASTObj_T* var)

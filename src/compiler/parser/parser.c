@@ -947,6 +947,8 @@ static void collect_locals(ASTNode_T* stmt, List_T* locals)
             if(stmt->default_case)
                 collect_locals(stmt->default_case, locals);
             break;
+        default:
+            break;
     }
 }
 

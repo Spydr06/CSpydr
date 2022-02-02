@@ -22,12 +22,12 @@ type Instruction: struct {
     operand: u16
 };
 
-macro PROG_SIZE  { 4096  }
-macro STACK_SIZE { 512   }
-macro DATA_SIZE  { 65535 }
+const PROG_SIZE  = 4096;
+const STACK_SIZE = 512;
+const DATA_SIZE  = 65535;
 
-let program: Instruction[PROG_SIZE!];
-let stack: u16[STACK_SIZE!];
+let program: Instruction[PROG_SIZE];
+let stack: u16[STACK_SIZE];
 let sp: u32;
 
 fn compile(fp: &FILE): Status
@@ -36,7 +36,7 @@ fn compile(fp: &FILE): Status
     let jmp_pc: u16;
     let c: i32;
 
-    while (c = getc(fp)) != EOF! && pc < PROG_SIZE!()
+    while (c = getc(fp)) != EOF! && pc < PROG_SIZE
     {
         match c 
         {
@@ -48,7 +48,7 @@ fn compile(fp: &FILE): Status
             ',' => program[pc].operator = Op::IN;
             '[' => {
                 program[pc].operator = Op::JMP_FWD;
-                if sp == STACK_SIZE! ret Status::FAILURE;
+                if sp == STACK_SIZE ret Status::FAILURE;
                 stack[sp++] = pc;
             }
             ']' => {
@@ -63,7 +63,7 @@ fn compile(fp: &FILE): Status
         pc++;
     }
 
-    if sp != 0 || pc == PROG_SIZE! ret Status::FAILURE;
+    if sp != 0 || pc == PROG_SIZE ret Status::FAILURE;
 
     program[pc].operator = Op::END;
 
@@ -72,13 +72,13 @@ fn compile(fp: &FILE): Status
 
 fn execute(): Status
 {
-    let data: u16[DATA_SIZE!];
-    memset(data, 0, DATA_SIZE! * 2);
+    let data: u16[DATA_SIZE];
+    memset(data, 0, DATA_SIZE * sizeof u16);
 
     let pc: u16 = 0;
     let ptr = 0;
 
-    while program[pc].operator != Op::END && ptr < DATA_SIZE!()
+    while program[pc].operator != Op::END && ptr < DATA_SIZE
     {
         match program[pc].operator
         {

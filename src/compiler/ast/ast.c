@@ -186,5 +186,7 @@ void ast_type_to_str(char* dest, ASTType_T* type)
         case TY_UNDEF:
             strcat(dest, type->id->callee);
             break;
+        default:
+            break;
     }
 }
