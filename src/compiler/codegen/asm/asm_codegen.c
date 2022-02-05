@@ -161,13 +161,23 @@ void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast)
 #ifdef __GNUC__
 __attribute((format(printf, 2, 3)))
 #endif
-static void asm_println(ASMCodegenData_T* cg, char* fmt, ...)
+static void asm_print(ASMCodegenData_T* cg, char* fmt, ...)
 {
     va_list va;
     va_start(va, fmt);
     vfprintf(cg->code_buffer, fmt, va);
     va_end(va);
-    fprintf(cg->code_buffer, "\n");
+}
+
+#ifdef __GNUC__
+__attribute((format(printf, 2, 3)))
+#endif
+static void asm_println(ASMCodegenData_T* cg, char* fmt, ...)
+{
+    va_list va;
+    va_start(va, fmt);
+    vfprintf(cg->code_buffer, fmt, va);
+    va_end(va);    fprintf(cg->code_buffer, "\n");
 }
 
 static void write_code(ASMCodegenData_T* cg, const char* target_bin)
@@ -1310,6 +1320,29 @@ static char asm_gen_char(ASMCodegenData_T* cg, ASTNode_T* node)
     return node->str_val[0];
 }
 
+static void asm_gen_id_ptr(ASMCodegenData_T* cg, ASTNode_T* id)
+{
+    switch(id->referenced_obj->kind)
+    {
+        case OBJ_FN_ARG:
+        case OBJ_LOCAL:
+            asm_print(cg, "%d(%%rbp)", id->referenced_obj->offset);
+            break;
+        case OBJ_GLOBAL:
+        case OBJ_ENUM_MEMBER:
+            asm_print(cg, "%s(%%rip)", asm_gen_identifier(id->id));
+            break;
+        case OBJ_FUNCTION:
+            if(id->referenced_obj->is_extern)
+                asm_print(cg, "%s@GOTPCREL(%%rip)", asm_gen_identifier(id->id));
+            else
+                asm_print(cg, "%s(%%rip)", asm_gen_identifier(id->id));
+            break;
+        default:
+            unreachable();
+    }
+}
+
 static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
 {
     if(node->tok && cg->embed_file_locations)
@@ -1323,7 +1356,30 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_gen_expr(cg, node->expr);
             return;
         case ND_ASM:
-            asm_println(cg, "  %s", node->expr->str_val);
+            asm_print(cg, "  ");
+            for(size_t i = 0; i < node->args->size; i++)
+            {
+                ASTNode_T* arg = node->args->items[i];
+                switch(arg->kind)
+                {
+                    case ND_STR:
+                        asm_print(cg, "%s",arg->str_val);
+                        break;
+                    case ND_INT:
+                        asm_print(cg, "$%d", arg->int_val);
+                        break;
+                    case ND_LONG:
+                        asm_print(cg, "$%ld", arg->long_val);
+                        break;
+                    case ND_LLONG:
+                        asm_print(cg, "$%lld", arg->llong_val);
+                        break;
+                    case ND_ID:
+                        asm_gen_id_ptr(cg, arg);
+                        break;
+                }
+            }
+            asm_print(cg, "\n");
             return;
         case ND_FLOAT:
         {

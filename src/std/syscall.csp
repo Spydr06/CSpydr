@@ -1,13 +1,15 @@
 import "types.csp";
 
 namespace std {
-    namespace syscall {
-        const EXIT = 60;
+    type Syscall: enum {
+        EXIT = 60
+    };
 
+    namespace syscall {
         fn exit(status: i32)
         {
-            asm "mov -12(%rbp), %rdi;"
-                "mov $60, %rax;"
+            asm "mov " status        ", %rdi;"
+                "mov " Syscall::EXIT ", %rax;"
                 "syscall";
         }
     }
