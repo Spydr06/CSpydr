@@ -1,0 +1,33 @@
+import "syscall.csp";
+
+macro stdin  {0}
+macro stdout {1}
+macro stderr {2}
+
+namespace std {
+    # flags for std::syscall::open
+    type OpenFlag: enum {
+        APPEND    = 1024,
+        ASYNC     = 8192,
+        CLOEXEC   = 524288,
+        CREAT     = 64,
+        DIRECT    = 16384,
+        DIRECTORY = 65536,
+        DSYNC     = 4096,
+        EXCL      = 128,
+        LARGEFILE = 32768,
+        NOATIME   = 262144,
+        NOCTTY    = 256,
+        NOFOLLOW  = 131072,
+        NONBLOCK  = 2048,
+        NDELAY    = 2048,
+        PATH      = 2097152,
+        SYNC      = 1052672,
+        TMPFILE   = 4259840,
+        TRUNC     = 512,
+    };
+
+    namespace io {
+        
+    }
+}

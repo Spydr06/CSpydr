@@ -1,16 +1,69 @@
 import "types.csp";
 
+macro syscall(id, rdi, rsi, rdx, r10, r8, r9)
+{
+    asm "mov " rdi ", %rdi;"
+        "mov " rsi ", %rsi;"
+        "mov " rdx ", %rdx;"
+        "mov " r10 ", %r10;"
+        "mov " r8  ", %r8;"
+        "mov " r9  ", %r9;"
+        "mov " id  ", %rax;"
+        "syscall" 
+}
+
 namespace std {
     type Syscall: enum {
+        READ,
+        WRITE,
+        OPEN,
+        CLOSE,
+        MMAP   = 9,
+        MUNMAP = 11,
+        BRK    = 12,
+
         EXIT = 60
     };
 
     namespace syscall {
+        fn read(fd: i32, buf: &void, count: usize): i64
+        {
+            syscall!(Syscall::READ, fd, buf, count, 0, 0, 0);
+        }
+
+        fn write(fd: i32, buf: const &void, count: usize): i64
+        {
+            syscall!(Syscall::WRITE, fd, buf, count, 0, 0, 0);
+        }
+
+        fn open(pathname: const &char, flags: i32, mode: Mode_T): i32
+        {
+            syscall!(Syscall::OPEN, pathname, flags, mode, 0, 0, 0);
+        }
+
+        fn close(fd: i32): i32
+        {
+            syscall!(Syscall::CLOSE, fd, 0, 0, 0, 0, 0);
+        }
+
+        fn mmap(addr: &void, length: usize, prot: i32, flags: i32, fd: i32, off: Off_T): &void
+        {
+            syscall!(Syscall::MMAP, addr, length, prot, flags, fd, off);
+        }
+
+        fn munmap(addr: &void, length: usize): i32
+        {
+            syscall!(Syscall::MUNMAP, addr, length, 0, 0, 0, 0);
+        }
+
+        fn brk(b: u64): i32
+        {
+            syscall!(Syscall::BRK, b, 0, 0, 0, 0, 0);
+        }
+
         fn exit(status: i32)
         {
-            asm "mov " status        ", %rdi;"
-                "mov " Syscall::EXIT ", %rax;"
-                "syscall";
+            syscall!(Syscall::EXIT, status, 0, 0, 0, 0, 0);
         }
     }
 }

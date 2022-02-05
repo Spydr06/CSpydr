@@ -1188,8 +1188,11 @@ static i32 asm_push_args(ASMCodegenData_T* cg, ASTNode_T* node)
     for(size_t i = 0; i < node->args->size; i++)
     {
         ASTNode_T* arg = node->args->items[i];
-        ASTType_T* ty = unpack(arg->data_type);
-
+        ASTType_T* ty;
+        if(arg->referenced_obj && arg->referenced_obj->kind == OBJ_GLOBAL)
+            ty = unpack(arg->referenced_obj->data_type);
+        else 
+            ty = unpack(arg->data_type);
         switch(ty->kind)
         {
             case TY_STRUCT:

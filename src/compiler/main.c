@@ -13,6 +13,7 @@
 // std includes
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 
 // compiler includes
 #include "toolchain.h"

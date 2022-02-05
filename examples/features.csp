@@ -1,5 +1,14 @@
-import "syscall.csp";
+import "io.csp";
+import "mem.csp";
 
 fn main(): i32 {    
-    std::syscall::exit(1);
+    std::syscall::write(stdout!, "Hello, World!\n", 15);
+
+    let x = alloc!(100);
+
+    x = realloc!(x, 200);
+
+    free!(x);
+
+    <- 0;
 }

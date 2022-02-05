@@ -1,0 +1,9 @@
+macro each(i, lo, hi) 
+{
+    let i = lo; i < hi; i++
+}
+
+macro range(lo, hi)
+{
+    let i = lo; i < hi; i++
+}

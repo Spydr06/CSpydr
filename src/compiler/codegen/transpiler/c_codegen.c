@@ -574,6 +574,9 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             }
             print(cg, ")");
             break;
+        case ND_ASM:
+            throw_error(ERR_CODEGEN, node->tok, "not implemented for transpiling");
+            break;
         case ND_ASSIGN:
             switch(node->right->kind)
             {

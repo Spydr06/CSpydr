@@ -1,3 +1,6 @@
 namespace std {
     type usize: u64;
+    
+    type Mode_T: i32;
+    type Off_T: i64;
 }
