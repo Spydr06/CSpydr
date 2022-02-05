@@ -1,9 +1,0 @@
-#
-# tuple.csp - a collection of default tuple data types
-# Part of the CSpydr standard library
-#
-
-
-namespace std {
-    type Tuple2i: struct { _0: i32, _1: i32 };
-}
