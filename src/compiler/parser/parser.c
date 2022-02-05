@@ -1530,7 +1530,6 @@ static ASTNode_T* parse_inline_asm(Parser_T* p)
     parser_advance(p);
     asm_stmt->expr = parse_str_lit(p, true);
     
-    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after `asm` statement");
     return asm_stmt;
 }
 

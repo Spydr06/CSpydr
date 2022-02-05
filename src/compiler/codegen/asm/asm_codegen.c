@@ -1323,7 +1323,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_gen_expr(cg, node->expr);
             return;
         case ND_ASM:
-            asm_println(cg, "%s", node->expr->str_val);
+            asm_println(cg, "  %s", node->expr->str_val);
             return;
         case ND_FLOAT:
         {

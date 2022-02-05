@@ -1,0 +1,14 @@
+import "types.csp";
+
+namespace std {
+    namespace syscall {
+        const EXIT = 60;
+
+        fn exit(status: i32)
+        {
+            asm "mov -12(%rbp), %rdi;"
+                "mov $60, %rax;"
+                "syscall";
+        }
+    }
+}
