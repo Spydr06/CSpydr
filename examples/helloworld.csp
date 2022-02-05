@@ -1,6 +1,10 @@
-import "libc/libc.csp";
-import "option.csp";
+# helloworld.csp
+import "libc/stdio.csp";
 
-fn main(): i32 {
-    ret 0;
+fn main(argc: i32, argv: &&char): i32
+{
+    let message = "Hello, World!";
+    puts(message);
+
+    <- 0;
 }

@@ -36,7 +36,7 @@
     #warn "Your current libc implementation is not yet supported and might lead to problems"
 #endif
 
-#define DEFAULT_COMPILE_TYPE CT_TRANSPILE
+#define DEFAULT_COMPILE_TYPE CT_ASM
 
 #define __CSP_MAX_TOKEN_SIZE 128
 #define __CSP_MAX_FN_NUM_ARGS 128
