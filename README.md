@@ -18,7 +18,7 @@ CSpydr is a low-level, static typed, compiled programming language inspired by R
 A list of all the features, that are/will be implemented.
 
 ##### cspc Compiler features:
-- [ ] Assembly compiler -> under construction
+- [x] Assembly compiler (only missing: va_lists, returnign of large structs)
 - [ ] move to an intermediate bytecode compiler
 - [x] C transpiler
 - [x] lexing symbols
