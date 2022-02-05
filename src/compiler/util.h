@@ -44,6 +44,7 @@ char *strsep(char **stringp, const char *delim);
 #endif
 
 bool str_starts_with(const char *a, const char *b);
+i64 align_to(i64 n, i64 align);
 
 #if !defined(CSPYDR_PACKED_STRUCTS) || !defined(CSPYDR_GNU_LIBC)
     #define __attribute__(_)

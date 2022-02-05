@@ -1461,14 +1461,16 @@ static i32 get_union_size(Validator_T* v, ASTType_T* u_type)
 
 static i32 get_struct_size(Validator_T* v, ASTType_T* s_type)
 {
-    i32 size = 0;
+    i64 bits = 0;
     for(size_t i = 0; i < s_type->members->size; i++)
     {
         ASTNode_T* member = s_type->members->items[i];
-        member->int_val = size; // offset
-        size += member->data_type->size;
+        bits = align_to(bits, align_type(member->data_type) * 8);
+        member->offset = bits / 8;
+        bits += member->data_type->size * 8;
     }
-    return size;
+
+    return align_to(bits, align_type(s_type) * 8) / 8;
 }
 
 static i32 get_type_size(Validator_T* v, ASTType_T* type)

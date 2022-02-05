@@ -14,10 +14,10 @@
 #include "../io/log.h"
 
 #define throw_error(...)          \
-    {                             \
+    do {                          \
         printf("\n");             \
         throw_error(__VA_ARGS__); \
-    }
+    } while(0)
 
 //
 // Base structs

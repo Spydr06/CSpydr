@@ -165,6 +165,7 @@ struct AST_NODE_STRUCT
     // literals
     union {
         i32 int_val;
+        i64 offset;
         i64 long_val;
         i128 llong_val;
         f32 float_val;

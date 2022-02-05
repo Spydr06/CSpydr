@@ -85,14 +85,6 @@ bool is_unsigned(ASTType_T* ty)
     return ty->kind == TY_U8 || ty->kind == TY_U16 || ty->kind == TY_U32 || ty->kind == TY_U64;
 }
 
-// Round up `n` to the nearest multiple of `align`.
-i32 align_to(i32 n, i32 align) 
-{
-    if(!align)
-        align = 1;
-    return (n + align - 1) / align * align;
-}
-
 static char *find_file(char *pattern) {
     char *path = NULL;
     glob_t buf = {};

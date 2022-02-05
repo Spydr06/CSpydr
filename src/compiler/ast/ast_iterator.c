@@ -5,14 +5,16 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#define list_fn(fn, ast, custom_args) \
-    if(fn && ast)                     \
-    {                                 \
-        va_list copy;                 \
-        va_copy(copy, custom_args);   \
-        fn(ast, copy);                \
-    }
-
+#define list_fn(fn, ast, custom_args)   \
+    do {                                \
+        if(fn && ast)                   \
+        {                               \
+            va_list copy;               \
+            va_copy(copy, custom_args); \
+            fn(ast, copy);              \
+        }                               \
+    } while(0)
+                          
 static void ast_obj(ASTIteratorList_T* list, ASTObj_T* obj, va_list custom_args);
 static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_args);
 static void ast_type(ASTIteratorList_T* list, ASTType_T* type, va_list custom_args);

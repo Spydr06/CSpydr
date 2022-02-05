@@ -839,7 +839,7 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         case ND_MEMBER:
             asm_gen_addr(cg, node->left);
-            asm_println(cg, "  add $%d, %%rax", node->body->int_val);
+            asm_println(cg, "  add $%ld, %%rax", node->body->offset);
             return;
         case ND_INDEX:
             {
@@ -869,7 +869,7 @@ static bool asm_has_flonum(ASTType_T* ty, i32 lo, i32 hi, i32 offset)
         for(size_t i = 0; i < ty->members->size; i++)
         {
             ASTNode_T* member = ty->members->items[i];
-            if(!asm_has_flonum(member->data_type, lo, hi, offset + member->int_val /*offset*/))
+            if(!asm_has_flonum(member->data_type, lo, hi, offset + member->offset /*offset*/))
                 return false;
         }
         return true;
@@ -882,7 +882,7 @@ static bool asm_has_flonum(ASTType_T* ty, i32 lo, i32 hi, i32 offset)
         return true;
     }
 
-    return offset < lo || hi <= offset || ty->kind == TY_F32 || ty->kind == TY_F64 || ty->kind == TY_F80; 
+    return offset < lo || hi <= offset || ty->kind == TY_F32 || ty->kind == TY_F64; 
 }
 
 static bool asm_has_flonum_1(ASTType_T* ty)
