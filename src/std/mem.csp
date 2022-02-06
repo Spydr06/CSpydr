@@ -12,17 +12,33 @@ namespace std {
     # memory protection types for std::syscall::mmap
     type Prot: enum {
         NONE,
-        READ,
-        WRITE,
-        EXEC
+        READ  = 0x1,
+        WRITE = 0x2,
+        EXEC  = 0x4,
+        # SEM
+        GROWSUP   = 0x02000000,
+        GROWSDOWN = 0x01000000
     };  
 
     # flags for std::syscall::mmap
     type Map: enum {
-        SHARED  = 0x01,
-        PRIVATE = 0x02,
-        FIXED   = 0x10,
-        ANON    = 0x20,
+        SHARED          = 0x01,
+        SHARED_VALIDATE = 0x03,
+        PRIVATE         = 0x02,
+        # 32BIT
+        ANONYMOUS       = 0x20,
+        FIXED           = 0x10,
+        # FIXED_NOREPLACE
+        GROWSDOWN       = 0x01000000,
+        # HUGETB
+        # HUGE_1MB
+        # HUGE_2MB
+        # LOCKED
+        # NONBLOCK
+        # NORESERVE
+        # POPULATE
+        # STACK
+        # UNINITIALIZED
     };
 
     namespace mem {
@@ -31,7 +47,7 @@ namespace std {
         fn alloc(size: usize): &void
         {
             let length = size + sizeof usize;
-            let plen: &usize = syscall::mmap(0, length, Prot::READ | Prot::WRITE, Map::PRIVATE | Map::ANON, 0, 0);
+            let plen: &usize = syscall::mmap(0, length, Prot::READ | Prot::WRITE, Map::PRIVATE | Map::ANONYMOUS, 0, 0);
             if plen == MMAP_FAILED ret nil;
             
             *plen = length;

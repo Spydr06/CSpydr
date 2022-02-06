@@ -7,26 +7,5 @@ import "vec.csp";
 fn main(): i32 {    
     std::io::write(stdout!, "Hello, World!\n");
 
-    let x = alloc!(100);
-
-    x = realloc!(x, 200);
-
-    free!(x);
-
-    let string = str!("Hi!\n");
-
-    std::io::write(stdout!, string);
-
-    std::string::free(string);
-
-    let vec = vec![i32];
-    vec_add!(vec, 2);
-    vec_add!(vec, 3);
-    vec_add!(vec, 4);
-    vec_add!(vec, 5);
-
-    vec_remove!(vec, 2);
-    vec_insert!(vec, 1, 23);
-
-    <- vec[1];
+    <- 0;
 }

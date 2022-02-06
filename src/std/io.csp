@@ -1,5 +1,6 @@
 import "syscall.csp";
 import "str.csp";
+import "types.csp";
 
 macro stdin  {0}
 macro stdout {1}
@@ -26,6 +27,33 @@ namespace std {
         SYNC      = 1052672,
         TMPFILE   = 4259840,
         TRUNC     = 512,
+    };
+
+    type Stat: struct {
+        st_dev: dev_t,
+        st_ino: ino_t,
+        st_mode: mode_t,
+        st_nlink: nlink_t,
+        st_uid: uid_t,
+        st_gid: gid_t,
+        st_rdev: dev_t,
+        st_size: off_t,
+        st_blksize: blksize_t,
+        st_blocks: blkcnt_t,
+        st_atime: time_t,
+        st_mtime: time_t,
+        st_ctime: time_t
+    };
+
+    type PollFd: struct {
+        fd: i32,
+        events: i16,
+        revents: i16
+    };
+
+    type IOVec: struct {
+        iov_base: &void,
+        iov_len: usize
     };
 
     namespace io {

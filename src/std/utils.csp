@@ -7,3 +7,21 @@ macro range(lo, hi)
 {
     let i = lo; i < hi; i++
 }
+
+macro xor_swap(a, b)
+{
+    {
+        (a) ^= (b);
+        (b) ^= (a);
+        (a) ^= (b);
+    }
+}
+
+macro swap(a, b)
+{
+    {
+        let __swap_tmp = (a);
+        (a) = (b);
+        (b) = __swap_tmp;
+    }
+}

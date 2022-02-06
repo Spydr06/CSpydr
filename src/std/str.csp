@@ -1,14 +1,10 @@
 import "mem.csp";
 import "types.csp";
+import "utils.csp";
 
 # a macro to crate a string
 macro str(chptr) {
     (::std::string::init(chptr))
-}
-
-# a macro to concatenate two strings
-macro concat(a, b) {
-    (::std::string::concat(&a, b))
 }
 
 # a macro to concatenate two strings
@@ -171,6 +167,77 @@ namespace std {
             for i = 0; (ta[str[i] >> 3] >> (str[i] % 8)) & 0x1; i++;
                 noop;
             <- i;
+        }
+
+        fn reverse(str: &char)
+        {
+            let size = get_len(str);
+            for let i: usize = 0; i < size / 2; i++;
+                swap!(str[i], str[size - i - 1]);
+        }
+
+        fn from_int(num: i64, str: &char, base: i32): &char 
+        {
+            let i: i64 = 0;
+            let is_negative: bool = false;
+
+            if num == 0 {
+                str[i++] = '0';
+                str[i] = '\0';
+                <- str;
+            }
+
+            if num < 0 && base == 10 {
+                is_negative = true;
+                num = -num;
+            }
+
+            while num != 0 {
+                let rem: i64 = num % base;
+                if rem > 9 
+                    str[i++] = ((rem - 10) + 'a');
+                else
+                    str[i++] = rem + '0';
+                num = num / base;
+            }
+
+            if is_negative
+                str[i++] = '-';
+
+            str[i] = '\0';
+            reverse(str);
+            
+            <- str;
+        }
+
+        fn from_uint(num: u64, str: &char, base: i32): &char 
+        {
+            let i: u64 = 0;
+
+            if num == 0 {
+                str[i++] = '0';
+                str[i] = '\0';
+                <- str;
+            }
+
+            while num != 0 {
+                let rem: u64 = num % base;
+                if rem > 9 
+                    str[i++] = ((rem - 10) + 'a');
+                else
+                    str[i++] = rem + '0';
+                num = num / base;
+            }
+
+            str[i] = '\0';
+            reverse(str);
+            <- str;
+        }
+
+        fn from_bool(b: bool, str: &char): &char
+        {
+            copy(str, if b => "true" else "false");
+            <- str;
         }
     }
 }

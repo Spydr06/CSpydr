@@ -1,6 +1,17 @@
 namespace std {
     type usize: u64;
     
-    type Mode_T: i32;
-    type Off_T: i64;
+    # default "simple" types for syscalls
+    type dev_t: u64;
+    type ino_t: u64;
+    type mode_t: u32;
+    type nlink_t: u64;
+    type uid_t: u32;
+    type gid_t: u32;
+    type off_t: i64;
+    type blksize_t: i64;
+    type blkcnt_t: i64;
+    type time_t: i64;
+    type nfds_t: u32;
+    type ssize_t: i64;
 }
