@@ -1,4 +1,5 @@
 import "syscall.csp";
+import "str.csp";
 
 macro stdin  {0}
 macro stdout {1}
@@ -28,6 +29,12 @@ namespace std {
     };
 
     namespace io {
-        
+        fn write(fd: i32, buf: const &char) 
+        {
+            if syscall::write(fd, buf, c_str::get_len(buf) + 1) <= 0
+            {
+                # todo: fail assertion
+            }
+        }
     }
 }

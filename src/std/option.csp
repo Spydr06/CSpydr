@@ -1,0 +1,44 @@
+macro some(value) 
+{
+    (::std::option::some(value))
+}
+
+macro none()
+{
+    (::std::option::none())
+}
+
+namespace std {
+    type Option: struct {
+        is_some: bool,
+        value: &void
+    };
+
+    namespace option {
+        fn init(is_some: bool, value: &void): std::Option
+            <- Option :: {is_some, value};
+
+        fn some(value: &void): std::Option
+            <- init(true, value);
+
+        fn none(): std::Option
+            <- init(false, nil);
+
+        fn is_some(opt: Option): bool
+            <- opt.is_some;
+        
+        fn unwrap(opt: Option): &void
+            <- if opt.is_some => opt.value else nil;
+
+        fn unwrap_or(opt: Option, then: fn()): &void
+        {
+            if opt.is_some 
+                ret opt.value;
+            else
+            {
+                then();
+                ret nil;
+            }
+        }
+    }
+}

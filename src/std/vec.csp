@@ -1,0 +1,170 @@
+import "mem.csp";
+import "types.csp";
+
+# macro to quickly create a new vector
+macro vec(datatype) {
+    (std::vec::init(): &datatype)
+}
+
+# macro to add a value to the vector
+macro vec_add(addr, value) {
+    (*(
+        ::std::vec::__internal_add((&addr): &&void, sizeof typeof *(addr)): typeof (addr)
+    ) = (value))
+}
+
+# macro to insert a value in the vector
+macro vec_insert(addr, pos, value) {
+    (*(
+        ::std::vec::__internal_insert((&addr): &&void, sizeof typeof *(addr), pos): typeof (addr)
+    ) = (value))
+}
+
+# macro to erase a part of a vector
+macro vec_erase(addr, pos, length) {
+    ::std::vec::__internal_erase((addr): &void, sizeof typeof *(addr), pos, length)
+}
+
+# macro to remove one item of a vector
+macro vec_remove(addr, pos) {
+    ::std::vec::__internal_remove((addr): &void, sizeof typeof *(addr), pos)
+}
+
+# macro to copy a vector
+macro vec_copy(addr) {
+    (::std::vec::__internal_copy((addr): &void, sizeof typeof *(addr)): typeof (addr));
+}
+
+# macro to iterate over every index of a vector
+macro vec_foreach(addr, i, v, code) {
+    {
+        for let i: u64 = 0; i < ::std::vec::size(addr); i++; {
+            let v = addr[i];
+            code;
+        }
+    }
+}
+
+# macro to free the memory allocated by a vector
+macro vec_free(addr) {
+    (::std::vec::free(addr))
+}
+
+namespace std {
+    namespace vec {
+        type VecData: struct {
+            alloc: u64,
+            size: u64,
+            buff: u8[]
+        };
+
+        fn init(): &void 
+        {
+            let vec_data: &VecData = mem::alloc(sizeof VecData);
+            vec_data.alloc = 0;
+            vec_data.size = 0;
+
+            <- &vec_data.buff;
+        }
+
+        fn free(vec: &void) 
+        {
+            mem::free(get_data(vec));
+        }
+
+        fn get_data(vec: &void): &VecData 
+        {
+            <- &(vec: &VecData)[-1];
+        }
+
+        fn size(vec: &void): u64
+        {
+            <- get_data(vec).size;
+        }
+
+        fn allocated(vec: &void): u64 
+        {
+            <- get_data(vec).alloc;
+        }
+
+        fn reallocate(v_data: &VecData, type_size: u8): &VecData 
+        {
+            let new_alloc: u64;
+            if v_data.alloc == 0
+                new_alloc = 1;
+            else
+                new_alloc = v_data.alloc * 2;
+            
+            let new_v_data: &VecData = mem::realloc(v_data, (sizeof VecData) + new_alloc * type_size);
+            new_v_data.alloc = new_alloc;
+
+            <- new_v_data;
+        }
+
+        fn has_space(v_data: &VecData): bool 
+        {
+            <- (v_data.alloc - v_data.size) > 0;
+        }
+
+        fn __internal_add(addr: &&void, type_size: u8): &void 
+        {
+            let v_data = get_data(*addr);
+
+            if !has_space(v_data) {
+                v_data = reallocate(v_data, type_size);
+                *addr = v_data.buff;
+            }
+
+            <- &(v_data.buff[type_size * (v_data.size++)]);
+        }
+
+        fn __internal_insert(addr: &&void, type_size: u8, pos: u64): &void 
+        {
+            let v_data = get_data(*addr);
+            let new_length = size(*addr) + 1;
+
+            if !has_space(v_data) {
+                v_data = reallocate(v_data, type_size);
+                *addr = v_data.buff;
+            }
+
+            mem::move(&(v_data.buff[(pos + 1) * type_size]),
+                    &(v_data.buff[pos * type_size]),
+                    (v_data.size - pos) * type_size);
+
+            v_data.size = new_length;
+            <- &(v_data.buff[pos * type_size]);
+        }
+
+        fn __internal_erase(vec: &void, type_size: u8, pos: u64, length: u64) 
+        {
+            let v_data = get_data(vec);
+            # todo: index validation
+            mem::move(&(v_data.buff[pos * type_size]),
+                    &(v_data.buff[(pos + length) * type_size]),
+                    (v_data.size - pos - length) * type_size);
+            v_data.size = (v_data.size - length);
+        }
+
+        fn __internal_remove(vec: &void, type_size: u8, pos: u64) 
+        {
+            __internal_erase(vec, type_size, pos, 1);
+        }
+
+        fn __internal_copy(vec: &void, type_size: u8): &void 
+        {
+            let v_data = get_data(vec);
+            let size = v_data.size;
+            let alloc_size = sizeof(VecData) + size * type_size;
+            let copy: &VecData = mem::alloc(alloc_size);
+            
+            mem::copy(copy, v_data, alloc_size);
+            <- &copy.buff;
+        }
+
+        fn pop(vec: &void) 
+        {
+            get_data(vec).size--;
+        }
+    }
+}

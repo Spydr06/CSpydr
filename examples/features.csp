@@ -1,8 +1,11 @@
 import "io.csp";
 import "mem.csp";
+import "option.csp";
+import "str.csp";
+import "vec.csp";
 
 fn main(): i32 {    
-    std::syscall::write(stdout!, "Hello, World!\n", 15);
+    std::io::write(stdout!, "Hello, World!\n");
 
     let x = alloc!(100);
 
@@ -10,5 +13,20 @@ fn main(): i32 {
 
     free!(x);
 
-    <- 0;
+    let string = str!("Hi!\n");
+
+    std::io::write(stdout!, string);
+
+    std::string::free(string);
+
+    let vec = vec![i32];
+    vec_add!(vec, 2);
+    vec_add!(vec, 3);
+    vec_add!(vec, 4);
+    vec_add!(vec, 5);
+
+    vec_remove!(vec, 2);
+    vec_insert!(vec, 1, 23);
+
+    <- vec[1];
 }

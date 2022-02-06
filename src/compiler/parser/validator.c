@@ -363,7 +363,7 @@ static void scope_add_obj(Validator_T* v, ASTObj_T* obj)
     ASTObj_T* found = search_in_current_scope(v->current_scope, obj->id->callee);
     if(found)
     {
-        throw_error(ERR_SYNTAX_WARNING, obj->id->tok, 
+        throw_error(ERR_REDEFINITION, obj->id->tok, 
             "redefinition of %s `%s`.\nfirst defined in " COLOR_BOLD_WHITE "%s " COLOR_RESET "at line " COLOR_BOLD_WHITE "%lld" COLOR_RESET " as %s.", 
             obj_kind_to_str(obj->kind), obj->id->callee, 
             found->tok->source->short_path ? found->tok->source->short_path : found->tok->source->path, 

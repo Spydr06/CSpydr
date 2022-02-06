@@ -41,7 +41,7 @@ namespace std {
         fn realloc(src: &void, size: usize): &void
         {
             let new = alloc(size);
-            copy(new, src, size);
+            move(new, src, size);
             free(src);
             <- new;
         }
@@ -69,6 +69,16 @@ namespace std {
             <- 0; # success
         }
 
+        fn move(dest: &void, src: &void, n: usize): &void
+        {
+            let tmp: &u8 = alloc(n); # allocate memory for a temporary array
+            copy(tmp, src, n);       # copy the source to tmp 
+            copy(dest, tmp, n);      # copy tmp to source
+
+            free(tmp);
+            <- dest;
+        }
+
         fn eq(a: &void, b: &void, n: usize): bool
         {
             let x: &u8 = a;
@@ -79,6 +89,15 @@ namespace std {
 
             <- true; # equal
         }
+
+        fn set(ptr: &void, n: i32, size: usize)
+        {
+            for let i: usize = 0; i < size; i++; 
+                (ptr: &u8)[i] = n;
+        }
+
+        fn zero(ptr: &void, size: usize)
+            set(ptr, 0, size);
 
         # function to check if two pointer overlap
         fn ptr_overlap(a: &void, b: &void, n: usize): bool

@@ -1262,7 +1262,8 @@ static void asm_gen_inc(ASMCodegenData_T* cg, ASTNode_T* node)
     //         x-- to (x = x + -1) - -1
     ASTNode_T addend = {
         .kind = ND_INT,
-        .int_val = node->kind == ND_INC ? 1 : -1
+        .int_val = node->kind == ND_INC ? 1 : -1,
+        .data_type = (ASTType_T*) primitives[TY_I32]
     };
 
     ASTNode_T converted = {
@@ -1277,6 +1278,7 @@ static void asm_gen_inc(ASMCodegenData_T* cg, ASTNode_T* node)
                 .kind = ND_ADD,
                 .left = node->left,
                 .right = &addend,
+                .data_type = node->left->data_type
             } 
         }
     };
@@ -1494,6 +1496,9 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             {
                 // if we subtract a number from a pointer, multiply the second argument with the base type size
                 // a - b -> a - b * sizeof *a
+
+                node->bool_val = true;
+
                 ASTNode_T new_right = {
                     .kind = ND_MUL,
                     .data_type = node->right->data_type,
@@ -1507,10 +1512,12 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
 
                 node->right = &new_right;
             }
-            else if(unpack(node->left->data_type)->base && unpack(node->left->data_type)->base)
+            else if(unpack(node->left->data_type)->base && unpack(node->left->data_type)->base && !node->bool_val)
             {
                 // if both subtraction arguments are pointers, return the number of elements in between
                 // a - b -> (a - b) / sizeof *a
+
+                node->bool_val = true;
 
                 ASTNode_T converted = {
                     .kind = ND_DIV,
