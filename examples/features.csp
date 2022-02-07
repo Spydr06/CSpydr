@@ -3,9 +3,18 @@ import "mem.csp";
 import "option.csp";
 import "str.csp";
 import "vec.csp";
+import "time.csp";
 
 fn main(): i32 {    
     std::io::write(stdout!, "Hello, World!\n");
+    let buf: char[100];
+
+    let t: std::Time;
+
+    std::time::get(&t);
+    let str = std::time::format("{h}:{m}:{s} on {D}.{M}.{Y}\nunix time {u}s\n", &t);
+
+    std::io::write(stdout!, str);
 
     <- 0;
 }

@@ -39,7 +39,8 @@ namespace std {
         ACCESS,
         PIPE,
 
-        EXIT = 60
+        EXIT = 60,
+        TIME = 201
     };
 
     namespace syscall {
@@ -108,5 +109,8 @@ namespace std {
         
         fn exit(status: i32)
             syscall!(Syscall::EXIT, status, 0, 0, 0, 0, 0);
+
+        fn time(time: &time_t): std::time_t
+            syscall!(Syscall::TIME, time, 0, 0, 0, 0, 0);
     }
 }

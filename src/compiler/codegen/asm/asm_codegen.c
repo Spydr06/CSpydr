@@ -1777,10 +1777,10 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                     asm_println(cg, "  movzbl %%al, %%eax");
                     return;
                 case TY_I16:
-                    asm_println(cg, "  movswl %%al, %%eax");
+                    asm_println(cg, "  movswl %%ax, %%eax");
                     return;
                 case TY_U16:
-                    asm_println(cg, "  movzwl %%al, %%eax");
+                    asm_println(cg, "  movzwl %%ax, %%eax");
                     return;
                 default:
                     break;
@@ -2222,7 +2222,8 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         
         case ND_MATCH_TYPE:
-            asm_gen_stmt(cg, node->body);
+            if(node->body)
+                asm_gen_stmt(cg, node->body);
             return;
 
         default:

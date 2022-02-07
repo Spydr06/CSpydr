@@ -858,9 +858,16 @@ static void match_type_end(ASTNode_T* match, va_list args)
     {
         ASTNode_T* case_stmt = match->cases->items[i];
 
-        if(types_equal(match->data_type, case_stmt->data_type))
+        if(types_equal(match->data_type, case_stmt->data_type)) 
+        {
             match->body = case_stmt->body;
+            return;
+        }
     }
+
+    if(match->default_case)
+        match->body = match->default_case->body;
+
 }
 static bool compatible(Validator_T* v, ASTType_T* a, ASTType_T* b)
 {

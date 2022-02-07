@@ -9,7 +9,7 @@ macro str(chptr) {
 
 # a macro to concatenate two strings
 macro concat(a, b) {
-    (::std::string::concat(&a, b))
+    (::std::string::concat(&(a), (b)));
 }
 
 namespace std {
@@ -55,13 +55,13 @@ namespace std {
         fn concat(dest: &String, src: String) 
         {
             let str_data = get_data(*dest);
-
+            let str_len = c_str::get_len(*dest);
             str_data.alloc = str_data.alloc + c_str::get_len(src);
             str_data.size = str_data.size + c_str::get_len(src);
             str_data = mem::realloc(str_data, sizeof StringData + str_data.alloc + 1);
+            c_str::copy(&(str_data.buff[str_len]), src);
 
-            c_str::copy(&(str_data.buff[c_str::get_len(*dest)]), src);
-
+            str_data.buff[str_len + c_str::get_len(src)] = '\0';
             *dest = &(str_data.buff[0]);
         }
 
@@ -121,7 +121,7 @@ namespace std {
         # similar to c_str::copy
         fn copy(dest: &char, src: const &char)
         {
-            mem::copy(dest, src, get_len(src) + 1);
+            mem::move(dest, src, get_len(src));
         }
 
         fn strstr(str: &char, substr: &char): &char
