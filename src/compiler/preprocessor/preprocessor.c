@@ -65,15 +65,11 @@ Macro_T* init_macro(Token_T* tok)
     return mac;
 }
 
-static Macro_T* find_macro(Preprocessor_T* pp, char* callee);
+static Macro_T* find_macro(Preprocessor_T* pp, char* callee, u8 argc);
 
 static void init_macro_call(Preprocessor_T* pp, MacroCall_T* call, Token_T* tok)
 {
     call->tok = tok;
-    call->macro = find_macro(pp, tok->value);
-    if(!call->macro)
-        throw_error(ERR_UNDEFINED, tok, "undefined macro `%s`", tok->value);
-    call->macro->used = true;
 
     call->argc = 0;
     memset(call->args, 0, sizeof(*call->args));
@@ -296,12 +292,12 @@ static Macro_T* parse_macro_def(Preprocessor_T* pp, size_t* i)
     return macro;
 }
 
-static Macro_T* find_macro(Preprocessor_T* pp, char* callee)
+static Macro_T* find_macro(Preprocessor_T* pp, char* callee, u8 argc)
 {
     for(size_t i = 0; i < pp->macros->size; i++)
     {
         Macro_T* mac = (Macro_T*) pp->macros->items[i];
-        if(strcmp(mac->tok->value, callee) == 0)
+        if(strcmp(mac->tok->value, callee) == 0 && mac->argc == argc)
             return mac;
     }
     return NULL;
@@ -383,9 +379,12 @@ static void parse_macro_call(Preprocessor_T* pp, MacroCall_T* call, List_T* toke
             break;
     }
 
-    if(call->argc != call->macro->argc)
-        throw_error(ERR_SYNTAX_ERROR, call->tok, "macro `%s` expects %d argument%s, got %d", 
-                    call->tok->value, call->macro->argc, call->macro->argc == 1 ? "" : "s", call->argc);
+    if(!(call->macro = find_macro(pp, call->tok->value, call->argc)))
+    {
+        throw_error(ERR_SYNTAX_ERROR, call->tok, "undefined macro `%s` with `%d` arguments", call->tok->value, call->argc);
+    }
+    else
+        call->macro->used = true;
 }
 
 //

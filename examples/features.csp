@@ -1,20 +1,18 @@
 import "io.csp";
-import "mem.csp";
-import "option.csp";
-import "str.csp";
-import "vec.csp";
-import "time.csp";
+
+macro t(a, b) {
+    a * b
+}
+
+macro t(a) {
+    a
+}
 
 fn main(): i32 {    
-    std::io::write(stdout!, "Hello, World!\n");
-    let buf: char[100];
 
-    let t: std::Time;
-
-    std::time::get(&t);
-    let str = std::time::format("{h}:{m}:{s} on {D}.{M}.{Y}\nunix time {u}s\n", &t);
-
-    std::io::write(stdout!, str);
+    let buf: char[3];
+    std::io::write(stdout!, std::c_str::from_int(t!(5), buf, 10));
+    std::io::write(stdout!, std::c_str::from_int(t!(5, 2), buf, 10));
 
     <- 0;
 }
