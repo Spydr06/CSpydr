@@ -1,55 +1,44 @@
-#
-# option.csp - Error handling utilities
-# Part of the CSpydr standard library
-#
-
-macro ok(value) {
-    (::std::option::ok(value))
+macro some(value) 
+{
+    (::std::option::some(value))
 }
 
-macro err(value) {
-    (::std::option::err(value))
+macro none()
+{
+    (::std::option::none())
 }
 
 namespace std {
     type Option: struct {
-        is_err: bool,
+        is_some: bool,
         value: &void
     };
 
     namespace option {
-        fn ok(value: &void): ::std::Option {
-            <- Option :: {
-                false,
-                value
-            };
-        }
+        fn init(is_some: bool, value: &void): std::Option
+            <- Option :: {is_some, value};
 
-        fn err(value: &void): ::std::Option {
-            <- Option :: {
-                true,
-                value
-            };
-        }
+        fn some(value: &void): std::Option
+            <- init(true, value);
 
-        fn is_err(opt: Option): bool {
-            <- opt.is_err;
-        }
+        fn none(): std::Option
+            <- init(false, nil);
 
-        fn unwrap(opt: Option): &void {
-            if opt.is_err
-                <- nil;
-            else 
-                <- opt.value;
-        }
+        fn is_some(opt: Option): bool
+            <- opt.is_some;
+        
+        fn unwrap(opt: Option): &void
+            <- if opt.is_some => opt.value else nil;
 
-        fn unwrap_or(opt: Option, lambda: fn<void>(&void)): &void {
-            if opt.is_err {
-                lambda(opt.value);
-                <- nil;
+        fn unwrap_or(opt: Option, then: fn()): &void
+        {
+            if opt.is_some 
+                ret opt.value;
+            else
+            {
+                then();
+                ret nil;
             }
-            else 
-                <- opt.value;
         }
     }
 }

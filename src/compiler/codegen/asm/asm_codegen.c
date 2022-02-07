@@ -161,13 +161,23 @@ void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast)
 #ifdef __GNUC__
 __attribute((format(printf, 2, 3)))
 #endif
-static void asm_println(ASMCodegenData_T* cg, char* fmt, ...)
+static void asm_print(ASMCodegenData_T* cg, char* fmt, ...)
 {
     va_list va;
     va_start(va, fmt);
     vfprintf(cg->code_buffer, fmt, va);
     va_end(va);
-    fprintf(cg->code_buffer, "\n");
+}
+
+#ifdef __GNUC__
+__attribute((format(printf, 2, 3)))
+#endif
+static void asm_println(ASMCodegenData_T* cg, char* fmt, ...)
+{
+    va_list va;
+    va_start(va, fmt);
+    vfprintf(cg->code_buffer, fmt, va);
+    va_end(va);    fprintf(cg->code_buffer, "\n");
 }
 
 static void write_code(ASMCodegenData_T* cg, const char* target_bin)
@@ -1178,8 +1188,11 @@ static i32 asm_push_args(ASMCodegenData_T* cg, ASTNode_T* node)
     for(size_t i = 0; i < node->args->size; i++)
     {
         ASTNode_T* arg = node->args->items[i];
-        ASTType_T* ty = unpack(arg->data_type);
-
+        ASTType_T* ty;
+        if(arg->referenced_obj && arg->referenced_obj->kind == OBJ_GLOBAL)
+            ty = unpack(arg->referenced_obj->data_type);
+        else 
+            ty = unpack(arg->data_type);
         switch(ty->kind)
         {
             case TY_STRUCT:
@@ -1249,7 +1262,8 @@ static void asm_gen_inc(ASMCodegenData_T* cg, ASTNode_T* node)
     //         x-- to (x = x + -1) - -1
     ASTNode_T addend = {
         .kind = ND_INT,
-        .int_val = node->kind == ND_INC ? 1 : -1
+        .int_val = node->kind == ND_INC ? 1 : -1,
+        .data_type = (ASTType_T*) primitives[TY_I32]
     };
 
     ASTNode_T converted = {
@@ -1264,6 +1278,7 @@ static void asm_gen_inc(ASMCodegenData_T* cg, ASTNode_T* node)
                 .kind = ND_ADD,
                 .left = node->left,
                 .right = &addend,
+                .data_type = node->left->data_type
             } 
         }
     };
@@ -1310,6 +1325,29 @@ static char asm_gen_char(ASMCodegenData_T* cg, ASTNode_T* node)
     return node->str_val[0];
 }
 
+static void asm_gen_id_ptr(ASMCodegenData_T* cg, ASTNode_T* id)
+{
+    switch(id->referenced_obj->kind)
+    {
+        case OBJ_FN_ARG:
+        case OBJ_LOCAL:
+            asm_print(cg, "%d(%%rbp)", id->referenced_obj->offset);
+            break;
+        case OBJ_GLOBAL:
+        case OBJ_ENUM_MEMBER:
+            asm_print(cg, "%s(%%rip)", asm_gen_identifier(id->id));
+            break;
+        case OBJ_FUNCTION:
+            if(id->referenced_obj->is_extern)
+                asm_print(cg, "%s@GOTPCREL(%%rip)", asm_gen_identifier(id->id));
+            else
+                asm_print(cg, "%s(%%rip)", asm_gen_identifier(id->id));
+            break;
+        default:
+            unreachable();
+    }
+}
+
 static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
 {
     if(node->tok && cg->embed_file_locations)
@@ -1323,7 +1361,30 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_gen_expr(cg, node->expr);
             return;
         case ND_ASM:
-            asm_println(cg, "%s", node->expr->str_val);
+            asm_print(cg, "  ");
+            for(size_t i = 0; i < node->args->size; i++)
+            {
+                ASTNode_T* arg = node->args->items[i];
+                switch(arg->kind)
+                {
+                    case ND_STR:
+                        asm_print(cg, "%s",arg->str_val);
+                        break;
+                    case ND_INT:
+                        asm_print(cg, "$%d", arg->int_val);
+                        break;
+                    case ND_LONG:
+                        asm_print(cg, "$%ld", arg->long_val);
+                        break;
+                    case ND_LLONG:
+                        asm_print(cg, "$%lld", arg->llong_val);
+                        break;
+                    case ND_ID:
+                        asm_gen_id_ptr(cg, arg);
+                        break;
+                }
+            }
+            asm_print(cg, "\n");
             return;
         case ND_FLOAT:
         {
@@ -1435,6 +1496,9 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             {
                 // if we subtract a number from a pointer, multiply the second argument with the base type size
                 // a - b -> a - b * sizeof *a
+
+                node->bool_val = true;
+
                 ASTNode_T new_right = {
                     .kind = ND_MUL,
                     .data_type = node->right->data_type,
@@ -1448,10 +1512,12 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
 
                 node->right = &new_right;
             }
-            else if(unpack(node->left->data_type)->base && unpack(node->left->data_type)->base)
+            else if(unpack(node->left->data_type)->base && unpack(node->left->data_type)->base && !node->bool_val)
             {
                 // if both subtraction arguments are pointers, return the number of elements in between
                 // a - b -> (a - b) / sizeof *a
+
+                node->bool_val = true;
 
                 ASTNode_T converted = {
                     .kind = ND_DIV,
@@ -1711,10 +1777,10 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                     asm_println(cg, "  movzbl %%al, %%eax");
                     return;
                 case TY_I16:
-                    asm_println(cg, "  movswl %%al, %%eax");
+                    asm_println(cg, "  movswl %%ax, %%eax");
                     return;
                 case TY_U16:
-                    asm_println(cg, "  movzwl %%al, %%eax");
+                    asm_println(cg, "  movzwl %%ax, %%eax");
                     return;
                 default:
                     break;
@@ -2156,7 +2222,8 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         
         case ND_MATCH_TYPE:
-            asm_gen_stmt(cg, node->body);
+            if(node->body)
+                asm_gen_stmt(cg, node->body);
             return;
 
         default:

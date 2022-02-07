@@ -1,36 +1,17 @@
-
-# rename u64 to usize for more clear code
-type usize: u64;
-
-# --- MIN and MAX macros for all the different primitive number data types ---
-
-# signed integer:
-macro I8_MIN { -0x7F }
-macro I8_MAX { 0x7F }
-
-macro I16_MIN { -0x7FFF }
-macro I16_MAX { 0x7FFF }
-
-macro I32_MIN { -0x7FFFFFFF }
-macro I32_MAX { 0x7FFFFFFF }
-
-macro I64_MIN { -0x7FFFFFFFFFFFFFFF }
-macro I64_MAX { 0x7FFFFFFFFFFFFFFF }
-
-# unsigned integer:
-macro U8_MIN { 0 }
-macro U8_MAX { 0xFE }
-
-macro U16_MIN { 0 }
-macro U16_MAX { 0xFFFE }
-
-macro U32_MIN { 0 }
-macro U32_MAX { 0xFFFFFFFE }
-
-macro U64_MIN { 0 }
-macro U64_MAX { 0xFFFFFFFFFFFFFFFE }
-
-# floating point numbers
-# TODO
-
-# ----------------------------------------------------------------------------
+namespace std {
+    type usize: u64;
+    
+    # default "simple" types for syscalls
+    type dev_t: u64;
+    type ino_t: u64;
+    type mode_t: u32;
+    type nlink_t: u64;
+    type uid_t: u32;
+    type gid_t: u32;
+    type off_t: i64;
+    type blksize_t: i64;
+    type blkcnt_t: i64;
+    type time_t: i64;
+    type nfds_t: u32;
+    type ssize_t: i64;
+}

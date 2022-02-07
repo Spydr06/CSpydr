@@ -1,0 +1,126 @@
+import "syscall.csp";
+import "types.csp";
+import "utils.csp";
+
+# macros for quick access
+macro alloc(size) { (::std::mem::alloc(size)) }
+macro realloc(src, size) { (::std::mem::realloc(src, size)) }
+macro free(ptr) { (::std::mem::free(ptr)) }
+
+# actual memory allocator implementation
+namespace std {
+    # memory protection types for std::syscall::mmap
+    type Prot: enum {
+        NONE,
+        READ  = 0x1,
+        WRITE = 0x2,
+        EXEC  = 0x4,
+        # SEM
+        GROWSUP   = 0x02000000,
+        GROWSDOWN = 0x01000000
+    };  
+
+    # flags for std::syscall::mmap
+    type Map: enum {
+        SHARED          = 0x01,
+        SHARED_VALIDATE = 0x03,
+        PRIVATE         = 0x02,
+        # 32BIT
+        ANONYMOUS       = 0x20,
+        FIXED           = 0x10,
+        # FIXED_NOREPLACE
+        GROWSDOWN       = 0x01000000,
+        # HUGETB
+        # HUGE_1MB
+        # HUGE_2MB
+        # LOCKED
+        # NONBLOCK
+        # NORESERVE
+        # POPULATE
+        # STACK
+        # UNINITIALIZED
+    };
+
+    namespace mem {
+        const MMAP_FAILED: &void = -1;
+
+        fn alloc(size: usize): &void
+        {
+            let length = size + sizeof usize;
+            let plen: &usize = syscall::mmap(0, length, Prot::READ | Prot::WRITE, Map::PRIVATE | Map::ANONYMOUS, 0, 0);
+            if plen == MMAP_FAILED ret nil;
+            
+            *plen = length;
+            <- (&plen[1]): &void;
+        }
+
+        fn realloc(src: &void, size: usize): &void
+        {
+            let new = alloc(size);
+            move(new, src, size);
+            free(src);
+            <- new;
+        }
+
+        fn free(ptr: &void)
+        {
+            if ptr == nil ret;
+
+            let plen = &(ptr: &usize)[-1];
+            let length = *plen;
+
+            syscall::munmap(plen: &void, length);
+        }
+
+        fn copy(dest: &void, src: &void, n: usize): i32
+        {
+            if ptr_overlap(dest, src, n) ret -1; # error
+
+            let x: &u8 = dest;
+            let y: &u8 = src;
+
+            for let i: usize = 0; i < n; i++;
+                x[i] = y[i];
+
+            <- 0; # success
+        }
+
+        fn move(dest: &void, src: &void, n: usize): &void
+        {
+            let tmp: &u8 = alloc(n); # allocate memory for a temporary array
+            copy(tmp, src, n);       # copy the source to tmp 
+            copy(dest, tmp, n);      # copy tmp to source
+
+            free(tmp);
+            <- dest;
+        }
+
+        fn eq(a: &void, b: &void, n: usize): bool
+        {
+            let x: &u8 = a;
+            let y: &u8 = b;
+
+            for let i: usize = 0; i < n; i++;
+                if x[i] != y[i] ret false; # not equal
+
+            <- true; # equal
+        }
+
+        fn set(ptr: &void, n: i32, size: usize)
+        {
+            for let i: usize = 0; i < size; i++; 
+                (ptr: &u8)[i] = n;
+        }
+
+        fn zero(ptr: &void, size: usize)
+            set(ptr, 0, size);
+
+        # function to check if two pointer overlap
+        fn ptr_overlap(a: &void, b: &void, n: usize): bool
+        {
+            let x: &u8 = a;
+            let y: &u8 = b;
+            <- (x <= y && x + n > y) || (y <= x && y + n > x);
+        }
+    }
+}

@@ -152,6 +152,11 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
                 ast_type(list, node->data_type, custom_args);
             break;
 
+        case ND_ASM:
+            for(size_t i = 0; i < node->args->size; i++)
+                ast_node(list, node->args->items[i], custom_args);
+            break;
+
         // x.y
         case ND_MEMBER:
             ast_node(list, node->left, custom_args);
@@ -249,6 +254,7 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
             ast_node(list, node->body, custom_args);
             for(size_t i = 0; i < node->cases->size; i++)
                 ast_node(list, node->cases->items[i], custom_args);
+            ast_node(list, node->default_case, custom_args);
             ast_node(list, node->body, custom_args);
             break;
 

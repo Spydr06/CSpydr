@@ -363,7 +363,7 @@ static void scope_add_obj(Validator_T* v, ASTObj_T* obj)
     ASTObj_T* found = search_in_current_scope(v->current_scope, obj->id->callee);
     if(found)
     {
-        throw_error(ERR_SYNTAX_WARNING, obj->id->tok, 
+        throw_error(ERR_REDEFINITION, obj->id->tok, 
             "redefinition of %s `%s`.\nfirst defined in " COLOR_BOLD_WHITE "%s " COLOR_RESET "at line " COLOR_BOLD_WHITE "%lld" COLOR_RESET " as %s.", 
             obj_kind_to_str(obj->kind), obj->id->callee, 
             found->tok->source->short_path ? found->tok->source->short_path : found->tok->source->path, 
@@ -858,9 +858,16 @@ static void match_type_end(ASTNode_T* match, va_list args)
     {
         ASTNode_T* case_stmt = match->cases->items[i];
 
-        if(types_equal(match->data_type, case_stmt->data_type))
+        if(types_equal(match->data_type, case_stmt->data_type)) 
+        {
             match->body = case_stmt->body;
+            return;
+        }
     }
+
+    if(match->default_case)
+        match->body = match->default_case->body;
+
 }
 static bool compatible(Validator_T* v, ASTType_T* a, ASTType_T* b)
 {

@@ -1,0 +1,243 @@
+import "mem.csp";
+import "types.csp";
+import "utils.csp";
+
+# a macro to crate a string
+macro str(chptr) {
+    (::std::string::init(chptr))
+}
+
+# a macro to concatenate two strings
+macro concat(a, b) {
+    (::std::string::concat(&(a), (b)));
+}
+
+namespace std {
+    type String: &char;
+
+    namespace string {
+        type StringData: struct {
+            alloc: u64,
+            size: u64,
+            buff: char[]
+        };
+
+        fn init(value: String): ::std::String 
+        {
+            let str_data: &StringData;
+
+            if value == nil {
+                str_data = mem::alloc(sizeof StringData);
+                str_data.alloc = 1;
+                str_data.size = 0;
+            }
+            else {
+                let v_len = c_str::get_len(value);
+                str_data = mem::alloc(sizeof StringData + v_len + 1);
+                str_data.alloc = v_len;
+                str_data.size = v_len;
+                
+                c_str::copy(str_data.buff, value);
+            }
+            <- &(str_data.buff[0]);
+        }
+
+        fn free(str: String) 
+        {
+            mem::free(get_data(str));
+        } 
+
+        fn get_data(str: String): &StringData 
+        {
+            <- &(str: &StringData)[-1];
+        }
+
+        fn concat(dest: &String, src: String) 
+        {
+            let str_data = get_data(*dest);
+            let str_len = c_str::get_len(*dest);
+            str_data.alloc = str_data.alloc + c_str::get_len(src);
+            str_data.size = str_data.size + c_str::get_len(src);
+            str_data = mem::realloc(str_data, sizeof StringData + str_data.alloc + 1);
+            c_str::copy(&(str_data.buff[str_len]), src);
+
+            str_data.buff[str_len + c_str::get_len(src)] = '\0';
+            *dest = &(str_data.buff[0]);
+        }
+
+        fn copy(str: String): ::std::String 
+        {   
+            <- init(str);
+        }
+
+        fn contains(str: String, substr: String): bool 
+        {
+            <- c_str::strstr(str, substr) != nil;
+        }
+
+       # fn split(str: String, delim: String): &::std::String {
+       #     let str_vec = vec![String];
+#
+       #     let token: &char;
+       #     while (token = ::strsep(&str, delim)) != nil {
+       #         let part = init(token);
+       #         vec_add!(str_vec, part);
+       #     }
+#
+       #     <- str_vec;
+       # }
+
+        fn size(str: String): u64 
+        {
+            <- c_str::get_len(str);
+        }
+
+        fn substr(str: ::std::String, from: i64, to: i64): ::std::String 
+        {
+            if to - from < 0 || to - from >= size(str)
+                 ret nil;
+
+            let ch_arr: &char = mem::alloc((to - from + 2) * sizeof char);
+            for let i: i64 = from; i < to; i++; {
+                ch_arr[i - from] = str[i];
+            }
+            #ch_arr[from - to] = '\0';
+            
+            let sub_str = init(ch_arr);
+            mem::free(ch_arr);
+            <- sub_str;
+        }
+    }
+
+    namespace c_str {
+        # gets the length of a traditional C string without the null terminator
+        fn get_len(str: const &char): usize
+        {
+            let length: usize = 0;
+            while str[length] != nil length++;
+            <- length;
+        }
+
+        # similar to c_str::copy
+        fn copy(dest: &char, src: const &char)
+        {
+            mem::move(dest, src, get_len(src));
+        }
+
+        fn strstr(str: &char, substr: &char): &char
+        {
+            let size: usize = get_len(substr);
+            let ref = substr;
+
+            while (*str) != 0 && (*ref) != 0 {
+                if (*str)++ == (*ref) ref++;
+                if (*ref) == 0 ret str - size;
+                if (size == (ref - substr)) 
+                    ref = substr;
+            }
+
+            <- nil;
+        }
+
+        fn strsep(stringp: &&char, delim: const &char): &char
+        {
+            let begin = *stringp;
+            if begin == nil ret nil;
+
+            let end: &char = begin + 0;#strspn(begin, delim);
+
+            if (*end) != 0 {
+                (*end)++;
+                (*stringp) = end;
+            }
+            else
+                (*stringp) = nil;
+            
+            <- begin;
+        }
+        
+        # only works with unsigned character (u8)
+        fn strspn(str: const &u8, chrs: const &u8): usize
+        {
+            let ta: u8[32];
+            mem::zero(ta, sizeof typeof ta);
+            let i: usize;
+            for i = 0; chrs[i] != 0; i++;
+                ta[chrs[i] >> 3] |= 0x1 << (chrs[i] % 8);
+            for i = 0; (ta[str[i] >> 3] >> (str[i] % 8)) & 0x1; i++;
+                noop;
+            <- i;
+        }
+
+        fn reverse(str: &char)
+        {
+            let size = get_len(str);
+            for let i: usize = 0; i < size / 2; i++;
+                swap!(str[i], str[size - i - 1]);
+        }
+
+        fn from_int(num: i64, str: &char, base: i32): &char 
+        {
+            let i: i64 = 0;
+            let is_negative: bool = false;
+
+            if num == 0 {
+                str[i++] = '0';
+                str[i] = '\0';
+                <- str;
+            }
+
+            if num < 0 && base == 10 {
+                is_negative = true;
+                num = -num;
+            }
+
+            while num != 0 {
+                let rem: i64 = num % base;
+                if rem > 9 
+                    str[i++] = ((rem - 10) + 'a');
+                else
+                    str[i++] = rem + '0';
+                num = num / base;
+            }
+
+            if is_negative
+                str[i++] = '-';
+
+            str[i] = '\0';
+            reverse(str);
+            
+            <- str;
+        }
+
+        fn from_uint(num: u64, str: &char, base: i32): &char 
+        {
+            let i: u64 = 0;
+
+            if num == 0 {
+                str[i++] = '0';
+                str[i] = '\0';
+                <- str;
+            }
+
+            while num != 0 {
+                let rem: u64 = num % base;
+                if rem > 9 
+                    str[i++] = ((rem - 10) + 'a');
+                else
+                    str[i++] = rem + '0';
+                num = num / base;
+            }
+
+            str[i] = '\0';
+            reverse(str);
+            <- str;
+        }
+
+        fn from_bool(b: bool, str: &char): &char
+        {
+            copy(str, if b => "true" else "false");
+            <- str;
+        }
+    }
+}

@@ -1,0 +1,116 @@
+import "types.csp";
+import "io.csp";
+
+macro syscall(id, rdi, rsi, rdx, r10, r8, r9)
+{
+    asm "mov " rdi ", %rdi;"
+        "mov " rsi ", %rsi;"
+        "mov " rdx ", %rdx;"
+        "mov " r10 ", %r10;"
+        "mov " r8  ", %r8;"
+        "mov " r9  ", %r9;"
+        "mov " id  ", %rax;"
+        "syscall" 
+}
+
+namespace std {
+    type Syscall: enum {
+        READ,
+        WRITE,
+        OPEN,
+        CLOSE,
+        STAT,
+        FSTAT,
+        LSTAT,
+        POLL,
+        LSEEK,
+        MMAP,
+        MPROTECT,
+        MUNMAP,
+        BRK,
+        RT_SIGACTION, # not implemented
+        RT_SIGPROCMASK, # not implemented
+        RT_SIGRETURN,
+        IOCTL,
+        PREAD64,
+        PWRITE64,
+        READV,
+        WRITEV,
+        ACCESS,
+        PIPE,
+
+        EXIT = 60,
+        TIME = 201
+    };
+
+    namespace syscall {
+        fn read(fd: i32, buf: &void, count: usize): ssize_t
+            syscall!(Syscall::READ, fd, buf, count, 0, 0, 0);
+
+        fn write(fd: i32, buf: const &void, count: usize): ssize_t
+            syscall!(Syscall::WRITE, fd, buf, count, 0, 0, 0);
+
+        fn open(pathname: const &char, flags: i32, mode: mode_t): i32
+            syscall!(Syscall::OPEN, pathname, flags, mode, 0, 0, 0);
+
+        fn close(fd: i32): i32
+            syscall!(Syscall::CLOSE, fd, 0, 0, 0, 0, 0);
+
+        fn stat(filename: const &char, buf: &Stat): i32
+            syscall!(Syscall::STAT, filename, buf, 0, 0, 0, 0);
+
+        fn fstat(fd: i32, buf: &Stat): i32
+            syscall!(Syscall::FSTAT, fd, buf, 0, 0, 0, 0);
+
+        fn lstat(path: const &char, buf: &Stat): i32
+            syscall!(Syscall::LSTAT, path, buf, 0, 0, 0, 0);
+        
+        fn poll(fds: &PollFd, nfds: nfds_t, timeout: i32): i32
+            syscall!(Syscall::POLL, fds, nfds, timeout, 0, 0, 0);
+
+        fn lseek(fd: i32, offset: off_t, whence: i32): off_t
+            syscall!(Syscall::LSEEK, fd, offset, whence, 0, 0, 0);
+
+        fn mmap(addr: &void, length: usize, prot: i32, flags: i32, fd: i32, off: off_t): &void
+            syscall!(Syscall::MMAP, addr, length, prot, flags, fd, off);
+
+        fn mprotect(addr: &void, length: usize, prot: i32): i32
+            syscall!(Syscall::MPROTECT, addr, length, prot, 0, 0, 0);
+
+        fn munmap(addr: &void, length: usize): i32
+            syscall!(Syscall::MUNMAP, addr, length, 0, 0, 0, 0);
+
+        fn brk(b: u64): i32
+            syscall!(Syscall::BRK, b, 0, 0, 0, 0, 0);
+
+        fn rt_sigreturn(__unused: u64): i32
+            syscall!(Syscall::RT_SIGRETURN, __unused, 0, 0, 0, 0, 0);
+        
+        fn ioctl(fd: i32, cmd: i32, arg: u64): i32
+            syscall!(Syscall::IOCTL, fd, cmd, arg, 0, 0, 0);
+        
+        fn pread64(fd: i32, buf: &void, count: usize, offset: off_t): ssize_t
+            syscall!(Syscall::PREAD64, fd, buf, count, offset, 0, 0);
+
+        fn pwrite64(fd: i32, buf: &void, count: usize, offset: off_t): ssize_t
+            syscall!(Syscall::PWRITE64, fd, buf, count, offset, 0, 0);
+
+        fn readv(fd: i32, iov: &IOVec, iovcnt: i32): ssize_t
+            syscall!(Syscall::READV, fd, iov, iovcnt, 0, 0, 0);
+        
+        fn writev(fd: i32, iov: &IOVec, iovcnt: i32): ssize_t
+            syscall!(Syscall::WRITEV, fd, iov, iovcnt, 0, 0, 0);
+
+        fn access(pathname: const &char, mode: i32): i32
+            syscall!(Syscall::ACCESS, pathname, mode, 0, 0, 0, 0);
+        
+        fn pipe(pipefd: i32[2]): i32
+            syscall!(Syscall::PIPE, pipefd, 0, 0, 0, 0, 0);
+        
+        fn exit(status: i32)
+            syscall!(Syscall::EXIT, status, 0, 0, 0, 0, 0);
+
+        fn time(time: &time_t): std::time_t
+            syscall!(Syscall::TIME, time, 0, 0, 0, 0, 0);
+    }
+}

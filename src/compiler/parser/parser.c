@@ -3,6 +3,8 @@
 #include "ast/ast.h"
 #include "../util.h"
 #include "error/error.h"
+#include "lexer/token.h"
+#include "list.h"
 #include "validator.h"
 #include "../io/log.h"
 #include "../io/io.h"
@@ -1527,10 +1529,28 @@ static ASTNode_T* parse_id(Parser_T* p)
 static ASTNode_T* parse_inline_asm(Parser_T* p)
 {
     ASTNode_T* asm_stmt = init_ast_node(ND_ASM, p->tok);
+    asm_stmt->args = init_list(sizeof(struct AST_NODE_STRUCT*));
+    mem_add_list(asm_stmt->args);
     parser_advance(p);
-    asm_stmt->expr = parse_str_lit(p, true);
-    
-    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after `asm` statement");
+
+    while(!tok_is(p, TOKEN_SEMICOLON))
+    {
+        switch (p->tok->type) {
+            case TOKEN_STRING:
+                list_push(asm_stmt->args, parse_str_lit(p, true));
+                break;
+            case TOKEN_INT:
+                list_push(asm_stmt->args, parse_int_lit(p));
+                break;
+            case TOKEN_ID:
+            case TOKEN_STATIC_MEMBER:
+                list_push(asm_stmt->args, parse_id(p));
+                break;
+            default:
+                throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s` in `asm` statement", p->tok->value);
+        }
+    }
+
     return asm_stmt;
 }
 

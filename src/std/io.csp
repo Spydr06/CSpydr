@@ -1,53 +1,68 @@
-#
-# io.csp - Utilities for handling Input/Output in CSpydr
-# Part of the CSpydr standard library
-#
+import "syscall.csp";
+import "str.csp";
+import "types.csp";
 
-import "string.csp";
-import "libc/stdio.csp";
-import "libc/time.csp";
-
-macro print(str) {
-    (::std::io::print(::stdout, "%s", (str)))
-}
-
-macro println(str) {
-    (::std::io::print(::stdout, "%s\n", (str)))
-}
-
-macro error(str) {
-    (::std::io::print(::stderr, "%s", (str))
-}
-
-macro errorln(str) {
-    (::std::io::print(::stderr, "%s\n", (str))
-}
+macro stdin  {0}
+macro stdout {1}
+macro stderr {2}
 
 namespace std {
+    # flags for std::syscall::open
+    type OpenFlag: enum {
+        APPEND    = 1024,
+        ASYNC     = 8192,
+        CLOEXEC   = 524288,
+        CREAT     = 64,
+        DIRECT    = 16384,
+        DIRECTORY = 65536,
+        DSYNC     = 4096,
+        EXCL      = 128,
+        LARGEFILE = 32768,
+        NOATIME   = 262144,
+        NOCTTY    = 256,
+        NOFOLLOW  = 131072,
+        NONBLOCK  = 2048,
+        NDELAY    = 2048,
+        PATH      = 2097152,
+        SYNC      = 1052672,
+        TMPFILE   = 4259840,
+        TRUNC     = 512,
+    };
+
+    type Stat: struct {
+        st_dev: dev_t,
+        st_ino: ino_t,
+        st_mode: mode_t,
+        st_nlink: nlink_t,
+        st_uid: uid_t,
+        st_gid: gid_t,
+        st_rdev: dev_t,
+        st_size: off_t,
+        st_blksize: blksize_t,
+        st_blocks: blkcnt_t,
+        st_atime: time_t,
+        st_mtime: time_t,
+        st_ctime: time_t
+    };
+
+    type PollFd: struct {
+        fd: i32,
+        events: i16,
+        revents: i16
+    };
+
+    type IOVec: struct {
+        iov_base: &void,
+        iov_len: usize
+    };
+
     namespace io {
-    }
-
-    namespace log {
-        type Priority: enum {
-            TRACE,
-            DEBUG,
-            INFO,
-            WARN,
-            ERROR,
-            FATAL
-        };
-
-        namespace colors {
-            const RESET   = "\033[0m";
-            const BOLD    = "\033[1m";
-            const BLACK   = "\033[30m";
-            const RED     = "\033[31m";
-            const GREEN   = "\033[32m";
-            const YELLOW  = "\033[33m";
-            const BLUE    = "\033[34m";     
-            const MAGENTA = "\033[35m";     
-            const CYAN    = "\033[36m";     
-            const WHITE   = "\033[37m"; 
-        } 
+        fn write(fd: i32, buf: const &char) 
+        {
+            if syscall::write(fd, buf, c_str::get_len(buf) + 1) <= 0
+            {
+                # todo: fail assertion
+            }
+        }
     }
 }

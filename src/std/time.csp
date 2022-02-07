@@ -1,0 +1,106 @@
+import "types.csp";
+import "syscall.csp";
+import "str.csp";
+
+namespace std {
+    type Time: struct {
+        unix_secs: time_t,
+        year: u16,  # 2022 (0 to 65535)
+        month: u8,  # 02   (1 to 12)
+        day: u8,    # 07   (1 to 31)
+        hour: u8,   # 10   (0 to 23)
+        minute: u8, # 12   (0 to 59)
+        second: u8  # 36   (0 to 59)
+    };
+
+    namespace time {
+        fn get(buf: &Time)
+        {
+            let t = unix::secs();
+            if t <= 0 ret; # negative values are not supported for now
+
+            buf.unix_secs = t;
+            buf.second = t % 60;
+            t /= 60;
+            buf.minute = t % 60;
+            t /= 60;
+            buf.hour = t % 24;
+            t /= 24;
+
+            let a = ((4 * t + 102032) / 146097 + 15): u32;
+            let b = (t + 2442113 + a - a / 4): u32;
+            let c = ((20 * b - 2442) / 7305): u32;
+            let d = b - 365 * c - c / 4;
+            let e = d * 1000 / 30601;
+            let f = d - e * 30 - e * 601 / 1000;
+
+            if e <= 13 {
+                c -= 4716;
+                e -= 1;
+            }
+            else {
+                c -= 4715;
+                e -= 13;
+            }
+
+            buf.year = c;
+            buf.month = e;
+            buf.day = f;
+        }
+
+        # formats a string like "{h}:{m}:{s} on {D}.{M}.{Y}" to "10:12:36 on 07.02.2022" using a given timepoint
+        fn format(fmt: const &char, time: &Time): std::String
+        {
+            let buf = str!(nil);
+
+            for let i: usize = 0; fmt[i] != 0; i++;
+            {
+                if(fmt[i] == '{' && fmt[i + 1] != 0 && fmt[i + 2] == '}')
+                {
+                   let c: char[32];
+                   mem::zero(c, sizeof char * len c);
+                   match fmt[(i += 2) - 1]
+                   {
+                        'Y' => { # Year
+                            c_str::from_uint(time.year, c, 10);
+                        }
+                        'M' => { # Month
+                            c_str::from_uint(time.month, c, 10);
+                        }
+                        'D' => { # Day
+                            c_str::from_uint(time.day, c, 10);
+                        }
+                        'h' => { # hour
+                            c_str::from_uint(time.hour, c, 10);
+                        }
+                        'm' => { # minute
+                            c_str::from_uint(time.month, c, 10);
+                        }
+                        's' => { # second
+                            c_str::from_uint(time.second, c, 10);
+                        }
+                        'u' => { # unix time
+                            c_str::from_int(time.unix_secs, c, 10);
+                        }
+                        _ => ret nil; # error: undefined format
+                   }
+
+                   concat!(buf, c);
+                }
+                else
+                {
+                    let c = [fmt[i], '\0'];
+                    concat!(buf, c);
+                }
+            }
+            <- buf;
+        }
+
+        namespace unix {
+            fn secs(): std::time_t
+            {
+                <- syscall::time(nil);
+            }
+        }
+    }
+}
