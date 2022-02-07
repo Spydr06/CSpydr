@@ -270,7 +270,6 @@ static Macro_T* parse_macro_def(Preprocessor_T* pp, size_t* i)
     if(next->type != TOKEN_LBRACE)
         throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `{` to begin the macro body", next->value);
 
-
     size_t depth = 0;
     for(next = pp->tokens->items[(*i)++]; next->type != TOKEN_EOF; next = pp->tokens->items[(*i)++])
     {
@@ -288,6 +287,12 @@ static Macro_T* parse_macro_def(Preprocessor_T* pp, size_t* i)
 
     if(next->type != TOKEN_RBRACE)
         throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `}` to begin the macro body", next->value);
+
+    Macro_T* found = find_macro(pp, macro->tok->value, macro->argc);
+    if(found && found->tok)
+        throw_error(ERR_REDEFINITION, macro->tok, "redefinition of macro `%s` with %d arguments\nfirst defined in `%s` at line %d", macro->tok->value, macro->argc, found->tok->source->path ? found->tok->source->path : found->tok->source->short_path, found->tok->line + 1);
+    else if(found)
+        throw_error(ERR_SYNTAX_ERROR, macro->tok, "redefinition of macro `%s` with %d arguments", macro->tok->value, macro->argc);
 
     return macro;
 }

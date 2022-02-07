@@ -8,6 +8,10 @@ macro t(a) {
     a
 }
 
+macro t(a) {
+    a²
+}
+
 fn main(): i32 {    
 
     let buf: char[3];
