@@ -24,11 +24,14 @@ static struct { const char* as_str; bool force_exit; } error_types[ERR_INTERNAL 
     [ERR_CONSTEXPR_WARN]    = {"constexpr", false},
 };
 
+#ifdef __GNUC__
+__attribute((format(printf, 3, 4)))
+#endif
 void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
 {
     const char* err_tmp1 = COLOR_BOLD_WHITE "%s:%ld:%ld"           // file, line and character
                           COLOR_RESET " => %s[%s]"                 // type of the error
-                          COLOR_RESET ": ";                        //before the error message
+                          COLOR_RESET ": ";                        // before the error message
     const char* err_tmp2 = COLOR_RESET "\n"                        // after the error message
                           " %*d | %s %s"                           // the line number and source code line
                           "%*s | " COLOR_BOLD_BLUE "%*s^~here"     // the pointer to the error in the source

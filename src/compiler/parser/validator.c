@@ -8,6 +8,7 @@
 #include "../toolchain.h"
 #include "../ast/types.h"
 #include "ast/ast.h"
+#include "lexer/token.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -108,6 +109,7 @@ static void array_lit(ASTNode_T* a_lit, va_list args);
 static void if_expr(ASTNode_T* if_expr, va_list args);
 static void closure(ASTNode_T* closure, va_list args);
 static void len(ASTNode_T* len, va_list args);
+static void type_cmp(ASTNode_T* cmp, va_list args);
 
 //types
 static void struct_type(ASTType_T* s_type, va_list args);
@@ -174,6 +176,7 @@ static ASTIteratorList_T main_iterator_list =
         [ND_IF_EXPR] = if_expr,
         [ND_CLOSURE] = closure,
         [ND_LEN]     = len,
+        [ND_TYPE_CMP] = type_cmp,
     },
 
     .type_fns = 
@@ -1381,6 +1384,43 @@ static void len(ASTNode_T* len, va_list args)
     ASTType_T* ty = expand_typedef(v, len->expr->data_type);
     if(ty->kind != TY_ARR || ty->is_vla)
         throw_error(ERR_TYPE_ERROR, len->tok, "cannot get length of given expression");
+}
+
+static void type_cmp(ASTNode_T* cmp, va_list args)
+{
+    GET_VALIDATOR(args);
+
+    // type comparisons have to be evaluated at compile-time
+    bool result = false;
+
+    switch(cmp->cmp_kind)
+    {
+        case TOKEN_EQ:
+            result = types_equal(cmp->l_type, cmp->r_type);
+            break;
+        case TOKEN_NOT_EQ:
+            result = !types_equal(cmp->l_type, cmp->r_type);
+            break;
+        case TOKEN_GT:
+            result = cmp->l_type->size > cmp->r_type->size;
+            break;
+        case TOKEN_GT_EQ:
+            result = cmp->l_type->size >= cmp->r_type->size;
+            break;
+        case TOKEN_LT:
+            result = cmp->l_type->size < cmp->r_type->size;
+            break;
+        case TOKEN_LT_EQ:
+            result = cmp->l_type->size <= cmp->r_type->size;
+            break;
+        default:
+            unreachable();
+    }   
+
+    // convert the expression to a constant value
+    cmp->kind = ND_BOOL;
+    cmp->bool_val = result;
+    cmp->data_type = (ASTNode_T*) primitives[TY_BOOL];
 }
 
 // types

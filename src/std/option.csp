@@ -1,11 +1,21 @@
 macro some(value) 
 {
-    (::std::option::some(value))
+    (::std::option::some((value): &void))
 }
 
 macro none()
 {
     (::std::option::none())
+}
+
+macro unwrap(opt)
+{
+    (::std::option::unwrap((opt): ::std::Option))
+}
+
+macro unwrap_or(opt, then)
+{
+    (::std::option::unwrap((opt): ::std::Option, (then): fn<&void>()))
 }
 
 namespace std {
@@ -30,14 +40,13 @@ namespace std {
         fn unwrap(opt: Option): &void
             <- if opt.is_some => opt.value else nil;
 
-        fn unwrap_or(opt: Option, then: fn()): &void
+        fn unwrap_or(opt: Option, then: fn<&void>()): &void
         {
             if opt.is_some 
                 ret opt.value;
             else
             {
-                then();
-                ret nil;
+                ret then();
             }
         }
     }

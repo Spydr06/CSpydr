@@ -1,10 +1,15 @@
 import "mem.csp";
 import "types.csp";
 import "utils.csp";
+import "option.csp";
 
 # a macro to crate a string
+macro str() {
+    (::std::string::init(nil))
+}
+
 macro str(chptr) {
-    (::std::string::init(chptr))
+    (::std::string::init((chptr): &char))
 }
 
 # a macro to concatenate two strings
@@ -73,6 +78,26 @@ namespace std {
         fn contains(str: String, substr: String): bool 
         {
             <- c_str::strstr(str, substr) != nil;
+        }
+
+        # checks if a string contains a char
+        fn contains_char(str: String, c: char): bool
+        {
+            if !str ret false;
+            for let i: usize = 0; i < c_str::get_len(str); i++; {
+                if str[i] == c ret true;
+            }
+            <- false;
+        }
+
+        # finds a char in a string and returns the index of the first found char
+        fn find_char(str: String, c: char): std::Option
+        {
+            if !str ret none!();
+            for let i: usize = 0; i < c_str::get_len(str); i++; {
+                if str[i] == c ret some!(i);
+            }
+            <- none!();
         }
 
        # fn split(str: String, delim: String): &::std::String {

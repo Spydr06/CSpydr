@@ -79,6 +79,8 @@ typedef enum {
     ND_SIZEOF,  // sizeof x
     ND_ALIGNOF, // alignof x
 
+    ND_TYPE_CMP, // type comparisons: "(type) T == U"
+
     // statements
     ND_BLOCK,   // {...}
     ND_IF,      // if x {}
@@ -87,7 +89,7 @@ typedef enum {
     ND_WHILE,   // while x {}
     ND_FOR,     // for let i: i32 = 0; i < x; i++ {}
     ND_MATCH,   // match x {}
-    ND_MATCH_TYPE, // match type T {}
+    ND_MATCH_TYPE, // match (type) T {}
     ND_CASE,    // x => {} !!only in match statements!!
     ND_CASE_TYPE, // i32 => {}
     ND_RETURN,  // ret x;
@@ -172,6 +174,8 @@ struct AST_NODE_STRUCT
         f64 double_val;
         bool bool_val;
         char* str_val;  // also used for chars
+
+        TokenType_T cmp_kind; // kind of type comparisons
     };
 
     // references
@@ -181,9 +185,17 @@ struct AST_NODE_STRUCT
     };
 
     // op
-    ASTNode_T* left;
-    ASTNode_T* right;
-    
+    union {
+        struct {
+            ASTNode_T* left;
+            ASTNode_T* right;
+        };
+        struct {
+            ASTType_T* l_type;
+            ASTType_T* r_type;
+        };
+    };
+
     // block
     List_T* stmts;  // list of ASTNode_Ts
     List_T* locals; // list of ASTObj_Ts

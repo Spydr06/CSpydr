@@ -1,0 +1,21 @@
+macro max(a, b) {
+    (if (a) > (b) => (a) else (b))
+}
+
+macro min(a, b) {
+    (if (a) < (b) => (a) else (b))
+}
+
+namespace std {
+    namespace math {
+        fn nan(): f32 {
+            let n = 0x7fc00000;
+            <- *((&n): &f32);
+        }
+        
+        fn inf(): f32 {
+            let i = 0x7F800000;
+            <- *((&n): &f32);
+        }
+    }
+}

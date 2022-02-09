@@ -306,6 +306,11 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
             ast_type(list, node->data_type, custom_args);
             break;
         
+        case ND_TYPE_CMP:
+            ast_type(list, node->l_type, custom_args);
+            ast_type(list, node->r_type, custom_args);
+            break;
+        
         default:
             // ignore
             break;

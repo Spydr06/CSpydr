@@ -32,6 +32,9 @@ typedef enum ERROR_TYPE
     ERR_INTERNAL,
 } ErrorType_T;
 
+#ifdef __GNUC__
+__attribute((format(printf, 3, 4)))
+#endif
 void throw_error(ErrorType_T ty, Token_T* tok, const char* msg, ...);
 
 #endif

@@ -64,5 +64,24 @@ namespace std {
                 # todo: fail assertion
             }
         }
+
+        fn write_int(fd: i32, int: i64)
+        {
+            let buf: char[32];
+            mem::zero(buf, sizeof char * len buf);
+
+            c_str::from_int(int, buf, 10);
+            write(fd, buf);
+        }
+
+        fn write_uint(fd: i32, uint: u64)
+        {
+
+        }
+
+        fn write_ptr(fd: i32, ptr: &void)
+        {
+            
+        }
     }
 }

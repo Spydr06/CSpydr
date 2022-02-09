@@ -1262,6 +1262,8 @@ static ASTNode_T* parse_type_case(Parser_T* p)
 static ASTNode_T* parse_type_match(Parser_T* p, ASTNode_T* match)
 {
     parser_advance(p);
+    parser_advance(p);
+    parser_consume(p, TOKEN_RPAREN, "expect `)` after `type`");
 
     match->kind = ND_MATCH_TYPE;
     match->data_type = parse_type(p);
@@ -1297,7 +1299,7 @@ static ASTNode_T* parse_match(Parser_T* p)
 
     parser_consume(p, TOKEN_MATCH, "expect `match` keyword to match an expression");
 
-    if(tok_is(p, TOKEN_TYPE))
+    if(tok_is(p, TOKEN_LPAREN) && parser_peek(p, 1)->type == TOKEN_TYPE)
         return parse_type_match(p, match);
 
     match->condition = parse_expr(p, LOWEST, TOKEN_LBRACE);
@@ -1930,8 +1932,42 @@ static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left)
     return index;
 }
 
+static ASTNode_T* parse_type_cmp(Parser_T* p)
+{
+    ASTNode_T* cmp = init_ast_node(ND_TYPE_CMP, p->tok);
+    parser_consume(p, TOKEN_LPAREN, "expect `(` for type comparison");
+    parser_consume(p, TOKEN_TYPE, "expect `type` for type comparison");
+    parser_consume(p, TOKEN_RPAREN, "expect `)` after `type` keyword");
+
+    cmp->l_type = parse_type(p);
+    
+    switch(p->tok->type)
+    {
+        case TOKEN_EQ:
+        case TOKEN_NOT_EQ:
+        case TOKEN_GT:
+        case TOKEN_GT_EQ:
+        case TOKEN_LT:
+        case TOKEN_LT_EQ:
+            cmp->cmp_kind = p->tok->type;
+            parser_advance(p);
+            break;
+        
+        default:
+            throw_error(ERR_SYNTAX_ERROR, p->tok, "expect one of `==` `!=` `>` `>=` `<` `<=`, got `%s`", p->tok->value);
+    }
+
+    cmp->r_type = parse_type(p);
+    cmp->data_type = (ASTType_T*) primitives[TY_BOOL];
+
+    return cmp;
+}
+
 static ASTNode_T* parse_closure(Parser_T* p)
 {
+    if(parser_peek(p, 1)->type == TOKEN_TYPE)
+        return parse_type_cmp(p);
+
     // if compiled to C, closures must be represented in the AST
     if(global.ct == CT_TRANSPILE)
     {

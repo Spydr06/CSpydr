@@ -1,18 +1,20 @@
 import "io.csp";
-
-macro t(a, b) {
-    a * b
-}
-
-macro t(a) {
-    a
-}
+import "str.csp";
 
 fn main(): i32 {    
+    let x = 0;
 
-    let buf: char[3];
-    std::io::write(stdout!, std::c_str::from_int(t!(5), buf, 10));
-    std::io::write(stdout!, std::c_str::from_int(t!(5, 2), buf, 10));
+    match (type) typeof x {
+        i32 => {
+            std::io::write(stdout!, "x is of type i32\n");
+        }
+
+        _ => ret 1;
+    }
+
+    if (type) (typeof x) < i32 {
+        std::io::write(stdout!, "x is of type i32\n");
+    }
 
     <- 0;
 }
