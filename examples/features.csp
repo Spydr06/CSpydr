@@ -1,20 +1,9 @@
 import "io.csp";
 import "str.csp";
+import "vec.csp";
 
 fn main(): i32 {    
-    let x = 0;
-
-    match (type) typeof x {
-        i32 => {
-            std::io::write(stdout!, "x is of type i32\n");
-        }
-
-        _ => ret 1;
-    }
-
-    if (type) (typeof x) < i32 {
-        std::io::write(stdout!, "x is of type i32\n");
-    }
+    std::io::writeln(stdout!, to_str!(23));
 
     <- 0;
 }

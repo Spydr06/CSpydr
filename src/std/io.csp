@@ -62,6 +62,22 @@ namespace std {
             if syscall::write(fd, buf, c_str::get_len(buf) + 1) <= 0
             {
                 # todo: fail assertion
+                ret;
+            }
+        }
+
+        fn writeln(fd: i32, buf: const &char)
+        {
+            if syscall::write(fd, buf, c_str::get_len(buf) + 1) <= 0
+            {
+                # todo: fail assertion
+                ret;
+            }
+
+            if syscall::write(fd, "\n", 2) <= 0
+            {
+                # todo: fail assertion
+                ret;
             }
         }
 

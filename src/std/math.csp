@@ -15,7 +15,7 @@ namespace std {
         
         fn inf(): f32 {
             let i = 0x7F800000;
-            <- *((&n): &f32);
+            <- *((&i): &f32);
         }
     }
 }

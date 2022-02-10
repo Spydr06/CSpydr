@@ -2,6 +2,7 @@ import "mem.csp";
 import "types.csp";
 import "utils.csp";
 import "option.csp";
+import "math.csp";
 
 # a macro to crate a string
 macro str() {
@@ -15,6 +16,36 @@ macro str(chptr) {
 # a macro to concatenate two strings
 macro concat(a, b) {
     (::std::string::concat(&(a), (b)));
+}
+
+# convert any given value to a string
+macro to_str(v) {
+    (
+        if (type) (typeof (v)) == i8  || 
+            (type) (typeof (v)) == i16 || 
+            (type) (typeof (v)) == i32 || 
+            (type) (typeof (v)) == i64 
+            => ::std::string::from_int(v)
+        else if (type) (typeof (v)) == u8 || 
+            (type) (typeof (v)) == u16 || 
+            (type) (typeof (v)) == u32 || 
+            (type) (typeof (v)) == u64
+            => ::std::string::from_uint(v)
+        else if (type) (typeof (v)) == bool
+            => if (v) == true =>
+                str!{"true"}
+            else
+                str!{"false"}
+        else if (type) (typeof (v)) == void
+            => str!{"void"}
+        else if (type) (typeof (v)) == char
+            => ::std::string::from_char(v)
+        else if (type) (typeof (v)) == ::std::String
+            => (v)
+        else if (type) (typeof (v)) == &char
+            => ::std::string::init(v)
+        else str! {nil}
+    )
 }
 
 namespace std {
@@ -131,6 +162,25 @@ namespace std {
             let sub_str = init(ch_arr);
             mem::free(ch_arr);
             <- sub_str;
+        }
+
+        fn from_int(int: i64): ::std::String
+        {
+            let buf: char[100];
+            c_str::from_int(int, buf, 10);
+            <- str!{buf};
+        }
+
+        fn from_uint(uint: u64): ::std::String
+        {
+            let buf: char[100];
+            c_str::from_uint(uint, buf, 10);
+            <- str!{buf};
+        }
+
+        fn from_char(c: char): ::std::String
+        {
+            <- str!{[c, '\0']};
         }
     }
 

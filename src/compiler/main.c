@@ -20,6 +20,7 @@
 #include "io/log.h"
 #include "codegen/transpiler/c_codegen.h"
 #include "platform/platform_bindings.h"
+#include "util.h"
 #include "version.h"
 #include "config.h"
 
@@ -71,10 +72,8 @@ const char help_text[] = "%s"
                        "      --print-code       | Prints the generated code (C | Assembly | LLVM IR)\n"
                        "      --silent           | Disables all command line output except error messages\n"
                        "      --cc [compiler]    | Sets the C compiler being used after transpiling (default: " DEFAULT_CC ")\n"
-                       "      --cc-flags [flags] | Sets the C compiler flags, must be last argument (default: " DEFAULT_CC_FLAGS ")\n"
                        "\n"
-                       "If you are unsure, what CSpydr is (or how to use it), please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n"
-                       /*"Help and community support: " CSPYDR_SUBREDDIT ".\n"*/;
+                       "If you are unsure, what CSpydr is (or how to use it), please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n";
 
 // this text gets shown if -v or --version is used
 const char version_text[] = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAGE COMPILER **\n" COLOR_RESET
@@ -191,12 +190,6 @@ i32 main(i32 argc, char* argv[])
                 exit(1);
             }
             cc = argv[i];
-        }
-        else if(streq(arg, "--cc-flags"))
-        {
-            for(i++; i < argc; i++)
-                list_push(global.compiler_flags, argv[i]);
-            break;
         }
         else
             evaluate_info_flags(argv[i]);
