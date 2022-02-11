@@ -3,7 +3,7 @@ import "str.csp";
 import "vec.csp";
 
 fn main(): i32 {    
-    std::io::writeln(stdout!, to_str!(23));
+    std::io::eputs("Hello, World");
 
     <- 0;
 }

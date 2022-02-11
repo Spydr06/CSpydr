@@ -100,13 +100,11 @@ A simple [hello-world](https://github.com/Spydr06/CSpydr/blob/main/doc/src/hello
 
 ```cspydr
 # helloworld.csp
-import "libc/stdio.csp";
+import "io.csp";
 
-fn main(argv: i32, argc: &&char): i32
+fn main(): i32
 {
-    let message = "Hello, World!";
-    puts(message);
-
+    std::io::puts("Hello, World!");
     <- 0;
 }
 ```

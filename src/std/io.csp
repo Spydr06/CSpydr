@@ -57,6 +57,30 @@ namespace std {
     };
 
     namespace io {
+        const EOF = -1;
+
+        fn puts(str: const &char)  fputs(str, stdout!);
+        fn putc(c: char)           fputc(c, stdout!);
+        fn eputs(str: const &char) fputs(str, stderr!);
+        fn eputc(c: char)          fputc(c, stderr!);
+
+        fn fputs(str: const &char, fp: i32)
+        {
+            write(fp, str);
+            write(fp, "\n");
+        }
+
+        fn fputc(c: char, fp: i32)
+        {
+            let str = [c, '\0'];
+            write(fp, str);
+        }
+
+        fn close(fd: i32)
+        {
+            syscall::close(fd); # error handling
+        }
+
         fn write(fd: i32, buf: const &char) 
         {
             if syscall::write(fd, buf, c_str::get_len(buf) + 1) <= 0

@@ -1,5 +1,5 @@
 # rule110.csp
-import "libc/stdio.csp";
+import "io.csp";
 
 macro board_cap { 40 }
 let board: i32[board_cap!];
@@ -13,9 +13,9 @@ fn main(argc: i32, argv: &&char): i32
         for let j = 0; j < board_cap!; j++;
         {
             let c = " *"[board[j]];
-            fputc(c, stdout);
+            std::io::putc(c);
         }
-        fputc('\n', stdout);
+        std::io::putc('\n');
 
         let pattern = ((board[0] << 1) | board[1]);
         for let j = 1; j < board_cap! - 1; j++;
