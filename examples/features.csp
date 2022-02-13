@@ -1,9 +1,12 @@
-import "io.csp";
-import "str.csp";
-import "vec.csp";
+import "libc/stdio.csp";
+
+fn t1(t: fn())
+{
+    t();
+}
 
 fn main(): i32 {    
-    std::io::eputs("Hello, World");
+    t1(|| => printf("Hi\n"));
 
     <- 0;
 }

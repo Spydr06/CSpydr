@@ -155,6 +155,7 @@ void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast)
     memset(cg, 0, sizeof(struct ASM_CODEGEN_DATA_STRUCT));
 
     cg->ast = ast;
+    cg->embed_file_locations = true;
     cg->code_buffer = open_memstream(&cg->buf, &cg->buf_len);
 }
 
@@ -1705,6 +1706,9 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         {
             i32 stack_args = asm_push_args(cg, node);
             asm_gen_addr(cg, node->expr);
+
+            if(node->expr->referenced_obj->kind == OBJ_LOCAL || node->expr->referenced_obj->kind == OBJ_FN_ARG)
+                asm_println(cg, "  mov (%%rax), %%rax");
 
             i32 gp = 0, fp = 0;
 

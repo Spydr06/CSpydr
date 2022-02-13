@@ -43,6 +43,7 @@ typedef long double f80;
 char *strsep(char **stringp, const char *delim);
 #endif
 
+bool is_http_url(const char* url);
 bool str_starts_with(const char *a, const char *b);
 i64 align_to(i64 n, i64 align);
 

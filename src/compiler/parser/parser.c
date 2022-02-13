@@ -141,7 +141,7 @@ static struct { PrefixParseFn_T pfn; InfixParseFn_T ifn; Precedence_T prec; } ex
     [TOKEN_GT_EQ]    = {NULL, parse_bool_op, GT},    
     [TOKEN_LT]       = {NULL, parse_bool_op, LT}, 
     [TOKEN_LT_EQ]    = {NULL, parse_bool_op, LT},          
-    [TOKEN_OR]       = {NULL, parse_bool_op, LOGIC_OR},
+    [TOKEN_OR]       = {parse_lambda_lit, parse_bool_op, LOGIC_OR},
     [TOKEN_AND]      = {NULL, parse_bool_op, LOGIC_AND}, 
     [TOKEN_INC]      = {NULL, parse_postfix, INC},  
     [TOKEN_DEC]      = {NULL, parse_postfix, DEC},  
@@ -861,7 +861,7 @@ List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok)
     return arg_list;
 }
 
-static ASTNode_T* parse_stmt(Parser_T* p);
+static ASTNode_T* parse_stmt(Parser_T* p, bool needs_semicolon);
 
 static List_T* parse_template_list(Parser_T* p)
 {
@@ -959,7 +959,7 @@ static ASTObj_T* parse_fn(Parser_T* p)
     ASTObj_T* fn = parse_fn_def(p);
 
     p->cur_fn = fn;
-    fn->body = parse_stmt(p);
+    fn->body = parse_stmt(p, true);
 
     if(global.ct == CT_ASM)
     {
@@ -1116,7 +1116,7 @@ static ASTNode_T* parse_block(Parser_T* p)
     ASTNode_T* prev_block = p->cur_block;
     p->cur_block = block;
     while(p->tok->type != TOKEN_RBRACE)
-        list_push(block->stmts, parse_stmt(p));
+        list_push(block->stmts, parse_stmt(p, true));
     p->cur_block = prev_block;
 
     parser_consume(p, TOKEN_RBRACE, "expect `}` at the end of a block statement");
@@ -1151,12 +1151,12 @@ static ASTNode_T* parse_if(Parser_T* p)
     parser_consume(p, TOKEN_IF, "expect `if` keyword for an if statement");
 
     if_stmt->condition = parse_expr(p, LOWEST, TOKEN_EOF);
-    if_stmt->if_branch = parse_stmt(p);
+    if_stmt->if_branch = parse_stmt(p, true);
 
     if(tok_is(p, TOKEN_ELSE))
     {
         parser_advance(p);
-        if_stmt->else_branch = parse_stmt(p);
+        if_stmt->else_branch = parse_stmt(p, true);
     }
 
     return if_stmt;
@@ -1168,7 +1168,7 @@ static ASTNode_T* parse_loop(Parser_T* p)
 
     parser_consume(p, TOKEN_LOOP, "expect `loop` keyword for a endless loop");
 
-    loop->body = parse_stmt(p);
+    loop->body = parse_stmt(p, true);
 
     return loop;
 }
@@ -1180,7 +1180,7 @@ static ASTNode_T* parse_while(Parser_T* p)
     parser_consume(p, TOKEN_WHILE, "expect `while` for a while loop statement");
 
     loop->condition = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
-    loop->body = parse_stmt(p);
+    loop->body = parse_stmt(p, true);
 
     return loop;
 }
@@ -1200,7 +1200,7 @@ static ASTNode_T* parse_for(Parser_T* p)
     size_t num_locals = p->cur_block->locals->size;
     if(!tok_is(p, TOKEN_SEMICOLON))
     {
-        ASTNode_T* init_stmt = parse_stmt(p);
+        ASTNode_T* init_stmt = parse_stmt(p, true);
         if(init_stmt->kind != ND_EXPR_STMT)
             throw_error(ERR_SYNTAX_ERROR, init_stmt->tok, "can only have expression-like statements in for-loop initializer");
         loop->init_stmt = init_stmt;
@@ -1216,7 +1216,7 @@ static ASTNode_T* parse_for(Parser_T* p)
         loop->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
     parser_advance(p);
 
-    loop->body = parse_stmt(p);
+    loop->body = parse_stmt(p, true);
 
     p->cur_block = prev_block;
 
@@ -1236,7 +1236,7 @@ static ASTNode_T* parse_case(Parser_T* p)
         case_stmt->condition = parse_expr(p, LOWEST, TOKEN_ARROW);
 
     parser_consume(p, TOKEN_ARROW, "expect `=>` after case condition");
-    case_stmt->body = parse_stmt(p);
+    case_stmt->body = parse_stmt(p, true);
 
     return case_stmt;
 }
@@ -1254,7 +1254,7 @@ static ASTNode_T* parse_type_case(Parser_T* p)
         case_stmt->data_type = parse_type(p);
     
     parser_consume(p, TOKEN_ARROW, "expect `=>` after case condition");
-    case_stmt->body = parse_stmt(p);
+    case_stmt->body = parse_stmt(p, true);
 
     return case_stmt;
 }
@@ -1326,7 +1326,7 @@ static ASTNode_T* parse_match(Parser_T* p)
     return match;
 }
 
-static ASTNode_T* parse_expr_stmt(Parser_T* p)
+static ASTNode_T* parse_expr_stmt(Parser_T* p, bool needs_semicolon)
 {
     ASTNode_T* stmt = init_ast_node(ND_EXPR_STMT, p->tok);
     stmt->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
@@ -1337,7 +1337,8 @@ static ASTNode_T* parse_expr_stmt(Parser_T* p)
 
     if(!is_executable(node))
         throw_error(ERR_SYNTAX_ERROR, stmt->expr->tok, "cannot treat `%s` as a statement, expect function call, assignment or similar", stmt->expr->tok->value);
-    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after expression statement");
+    if(needs_semicolon)
+        parser_consume(p, TOKEN_SEMICOLON, "expect `;` after expression statement");
 
     return stmt;
 }
@@ -1396,25 +1397,29 @@ static ASTNode_T* parse_local(Parser_T* p)
     return value;
 }
 
-static ASTNode_T* parse_break(Parser_T* p)
+static ASTNode_T* parse_break(Parser_T* p, bool needs_semicolon)
 {
     ASTNode_T* break_stmt = init_ast_node(ND_BREAK, p->tok);
     parser_consume(p, TOKEN_BREAK, "expect `break` keyword");
-    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after break statement");
+   
+    if(needs_semicolon) 
+        parser_consume(p, TOKEN_SEMICOLON, "expect `;` after break statement");
 
     return break_stmt;
 }
 
-static ASTNode_T* parse_continue(Parser_T* p)
+static ASTNode_T* parse_continue(Parser_T* p, bool needs_semicolon)
 {
     ASTNode_T* continue_stmt = init_ast_node(ND_CONTINUE, p->tok);
     parser_consume(p, TOKEN_CONTINUE, "expect `continue` keyword");
-    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after continue statement");
+
+    if(needs_semicolon)
+        parser_consume(p, TOKEN_SEMICOLON, "expect `;` after continue statement");
 
     return continue_stmt;
 }
 
-static ASTNode_T* parse_stmt(Parser_T* p)
+static ASTNode_T* parse_stmt(Parser_T* p, bool needs_semicolon)
 {
 
     switch(p->tok->type)
@@ -1444,9 +1449,9 @@ static ASTNode_T* parse_stmt(Parser_T* p)
                 return stmt;
             }
         case TOKEN_BREAK:
-            return parse_break(p);
+            return parse_break(p, needs_semicolon);
         case TOKEN_CONTINUE:
-            return parse_continue(p);
+            return parse_continue(p, needs_semicolon);
         case TOKEN_SEMICOLON:   // skip random semicolons in the code
         case TOKEN_NOOP:
             {
@@ -1455,15 +1460,17 @@ static ASTNode_T* parse_stmt(Parser_T* p)
                 if(tok_is(p, TOKEN_NOOP))
                 {
                     parser_advance(p);
-                    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after `noop` statement");
-                } else 
+                    if(needs_semicolon)
+                        parser_consume(p, TOKEN_SEMICOLON, "expect `;` after `noop` statement");
+                } 
+                else 
                 {
-                parser_advance(p);
+                    parser_advance(p);
                 }
                 return noop;
             }
         default:
-            return parse_expr_stmt(p);
+            return parse_expr_stmt(p, needs_semicolon);
     }
 
     // satisfy -Wall
@@ -1733,25 +1740,31 @@ static ASTNode_T* parse_anonymous_struct_lit(Parser_T* p)
 static ASTNode_T* parse_lambda_lit(Parser_T* p)
 {
     ASTObj_T* lambda = init_ast_obj(OBJ_FUNCTION, p->tok);
-    parser_consume(p, TOKEN_BIT_OR, "expect `|` for lambda expression");
-
     lambda->args = init_list(sizeof(struct AST_OBJ_STRUCT*));
     mem_add_list(lambda->args);
 
-    while(!tok_is(p, TOKEN_BIT_OR) && !tok_is(p, TOKEN_EOF))
+    if(tok_is(p, TOKEN_BIT_OR))
     {
-        // parse a lambda arguments
-        ASTObj_T* arg = init_ast_obj(OBJ_FN_ARG, p->tok);
-        arg->id = parse_simple_identifier(p);
-        parser_consume(p, TOKEN_COLON, "expect `:` after lambda argument");
+        parser_advance(p);
+        while(!tok_is(p, TOKEN_BIT_OR) && !tok_is(p, TOKEN_EOF))
+        {
+            // parse a lambda arguments
+            ASTObj_T* arg = init_ast_obj(OBJ_FN_ARG, p->tok);
+            arg->id = parse_simple_identifier(p);
+            parser_consume(p, TOKEN_COLON, "expect `:` after lambda argument");
 
-        arg->data_type = parse_type(p);
-        list_push(lambda->args, arg);
+            arg->data_type = parse_type(p);
+            list_push(lambda->args, arg);
 
-        if(!tok_is(p, TOKEN_BIT_OR))
-            parser_consume(p, TOKEN_COMMA, "expect `,` between lambda arguments");
+            if(!tok_is(p, TOKEN_BIT_OR))
+                parser_consume(p, TOKEN_COMMA, "expect `,` between lambda arguments");
+        }
+        parser_consume(p, TOKEN_BIT_OR, "expect `|` after lambda args");
     }
-    parser_consume(p, TOKEN_BIT_OR, "expect `|` after lambda args");
+    else if(tok_is(p, TOKEN_OR))
+        parser_advance(p);
+    else
+        throw_error(ERR_SYNTAX_ERROR, p->tok, "expect `|` for lambda literal, got `%s`", p->tok->value);
 
     lambda->return_type = tok_is(p, TOKEN_ARROW) ? (ASTType_T*) primitives[TY_VOID] : parse_type(p);
     parser_consume(p, TOKEN_ARROW, "expect `=>` after lambda return type");
@@ -1766,7 +1779,7 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p)
 
     ASTObj_T* prev_fn = p->cur_fn;
     p->cur_fn = lambda;
-    lambda->body = parse_stmt(p);
+    lambda->body = parse_stmt(p, false);
     p->cur_fn = prev_fn;
 
     if(global.ct == CT_ASM)

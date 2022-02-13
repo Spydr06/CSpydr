@@ -17,6 +17,11 @@ char *strsep(char **stringp, const char *delim)
 }
 #endif
 
+bool is_http_url(const char* url)
+{
+    return str_starts_with(url, "http://") || str_starts_with(url, "https://");
+}
+
 bool str_starts_with(const char *a, const char *b)
 {
     return !strncmp(a, b, strlen(b));
