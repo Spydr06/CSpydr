@@ -631,6 +631,8 @@ static void gen_id_path(VScope_T* v, ASTIdentifier_T* id)
 static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
 {
     main_fn->referenced = true;
+    main_fn->is_entry_point = true;
+    v->ast->entry_point = main_fn;
 
     ASTType_T* return_type = expand_typedef(v, main_fn->return_type);
     if(return_type->kind != TY_I32)
@@ -642,10 +644,22 @@ static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
     switch(main_fn->args->size)
     {
         case 0:
+            // ()
             return;
         
+        case 1:
+            // check the types of the one argument (&&char)
+            {
+                ASTType_T* arg_type = expand_typedef(v, ((ASTObj_T*) main_fn->args->items[0])->data_type);
+                if(arg_type->kind != TY_PTR || arg_type->base->kind != TY_PTR || arg_type->base->base->kind != TY_CHAR)
+                {
+                    throw_error(ERR_TYPE_ERROR, ((ASTObj_T*) main_fn->args->items[0])->data_type->tok, "expect argument of function `main` to be `&&char`");
+                    return;
+                }
+            } break;
+        
         case 2:
-            // check the types of the two arguments
+            // check the types of the two arguments (i32, &%char)
             {
                 ASTType_T* arg0_type = expand_typedef(v, ((ASTObj_T*)main_fn->args->items[0])->data_type);
                 if(arg0_type->kind != TY_I32)

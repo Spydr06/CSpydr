@@ -5,7 +5,8 @@ fn t1(t: fn())
     t();
 }
 
-fn main(): i32 {    
+fn main(argv: &&char): i32 {    
+    printf("> %s\n", argv[0]);
     t1(|| => printf("Hi\n"));
 
     <- 0;

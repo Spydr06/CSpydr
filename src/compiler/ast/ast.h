@@ -294,9 +294,10 @@ struct AST_OBJ_STRUCT
     i32 stack_size;
 
     // variables
-    bool is_constant : 1;
-    bool is_extern : 1;
-    bool referenced : 1;
+    bool is_constant    : 1;
+    bool is_extern      : 1;
+    bool referenced     : 1;
+    bool is_entry_point : 1;
 
     ASTType_T* data_type;
     ASTNode_T* value;
@@ -321,6 +322,8 @@ typedef struct AST_PROG_STRUCT
 
     List_T* imports;
     List_T* tuple_structs;
+
+    ASTObj_T* entry_point;
 
     List_T* objs;   // list of ASTObj_Ts
 } ASTProg_T;

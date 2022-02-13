@@ -454,6 +454,10 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
         case OBJ_FUNCTION:
             c_gen_type(cg, obj->return_type, "");
             print(cg, " %s(", obj_callee);
+
+            if(obj->is_entry_point && obj->args->size == 1)
+                print(cg, "int _,");
+
             if(obj->args)
                 c_gen_fn_arg_list(cg, obj->args);
             println(cg, ");");
@@ -503,6 +507,9 @@ static void c_gen_obj(CCodegenData_T* cg, ASTObj_T* obj)
                 c_gen_type(cg, obj->return_type, "");
                 print(cg, " %s(", c_gen_identifier(cg, obj->id));
 
+                if(obj->is_entry_point && obj->args->size == 1)
+                    print(cg, "int _,");
+                    
                 bool has_va_list = false;
 
                 if(obj->args)

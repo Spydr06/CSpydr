@@ -15,23 +15,47 @@
 
 enum { I8, I16, I32, I64, U8, U16, U32, U64, F32, F64, F80, LAST };
 
-static char asm_start_text[] = 
-    "  .globl _start\n"
-    "  .text\n"
-    "_start:\n"
-    "  xorl %ebp, %ebp\n"
-    "  popq %rdi\n"
-    "  movq %rsp, %rsi\n"
-    "  andq $~15, %rsp\n"
-    "  call main\n"
-    "  movq %rax, %rdi\n"
-    "  movq $60, %rax\n"
-    "  syscall";
+static const char* asm_start_text[] = 
+{
+    [0] =
+        "  .globl _start\n"
+        "  .text\n"
+        "_start:\n"
+        "  call main\n"
+        "  movq %rax, %rdi\n"
+        "  movq $60, %rax\n"
+        "  syscall",
 
-static char *argreg8[]  = {"%dil", "%sil", "%dl", "%cl", "%r8b", "%r9b"};
-static char *argreg16[] = {"%di", "%si", "%dx", "%cx", "%r8w", "%r9w"};
-static char *argreg32[] = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d"};
-static char *argreg64[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
+    [1] =
+        "  .globl _start\n"
+        "  .text\n"
+        "_start:\n"
+        "  xorl %ebp, %ebp\n"
+        "  popq %rdi\n"
+        "  movq %rsp, %rdi\n"
+        "  call main\n"
+        "  movq %rax, %rdi\n"
+        "  movq $60, %rax\n"
+        "  syscall",
+
+    [2] =
+        "  .globl _start\n"
+        "  .text\n"
+        "_start:\n"
+        "  xorl %ebp, %ebp\n"
+        "  popq %rdi\n"
+        "  movq %rsp, %rsi\n"
+        "  andq $~15, %rsp\n"
+        "  call main\n"
+        "  movq %rax, %rdi\n"
+        "  movq $60, %rax\n"
+        "  syscall",
+};
+
+static char* argreg8[]  = {"%dil", "%sil", "%dl", "%cl", "%r8b", "%r9b"};
+static char* argreg16[] = {"%di", "%si", "%dx", "%cx", "%r8w", "%r9w"};
+static char* argreg32[] = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d"};
+static char* argreg64[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
 
 // The table for type casts
 static char i32i8[]  = "movsbl %al, %eax";
@@ -236,7 +260,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         asm_gen_file_descriptors(cg);
     asm_assign_lvar_offsets(cg, cg->ast->objs);
     asm_gen_data(cg, cg->ast->objs);
-    asm_println(cg, "%s", asm_start_text);
+    asm_println(cg, "%s", asm_start_text[cg->ast->entry_point->args->size]);
     asm_gen_text(cg, cg->ast->objs);
     write_code(cg, target);
 
