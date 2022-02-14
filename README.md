@@ -18,51 +18,49 @@ CSpydr is a low-level, static typed, compiled programming language inspired by R
 A list of all the features, that are/will be implemented.
 
 ##### cspc Compiler features:
-- [x] Assembly compiler (only missing: va_lists, returnign of large structs)
+- [x] Assembly compiler (only missing: va_lists, returnign of large structs) (only `x86_64-linux` platform)
+- [ ] LLVM codegen target (maybe even WASM?)
 - [ ] move to an intermediate bytecode compiler
-- [x] C transpiler
-- [x] lexing symbols
+- [x] C transpiler (deprecated)
+- [x] lexing tokens
+- [x] `macro` and `import` preprocessor
 - [x] parsing an AST
-- [x] validating the code (happens during parsing)
+- [x] validating the code
 - [x] type evaluator
-- [x] type validator
-- [x] function validation
+- [ ] type checking (1/2 done)
+- [x] scope validation
 - [x] CLI and error handling
 - [x] memory management
 
 ##### CSpydr Language features:
-- [x] functions
-- [x] function arguments 
-- [x] global/local variables
-- [x] structs/enums
-- [x] typedefs
-- [x] control statements
-- [x] expressions
-- [x] arrays
-- [x] file imports
-- [x] `extern` functions and globals
-- [x] `sizeof` keyword
-- [x] `typeof` data type
+- [x] primitive data types `i8` `i16` `i32` `i64` `u8` `u16` `u32` `u64` `f32` `f64` `f80` `bool` `char` `void`
+- [x] pointers and arrays `&` `[]`
+- [x] custom data types `struct` `union` `enum` `{}` (tuples)
+- [x] control statements `if` `match` `for` `while` `loop` `ret` `break` `continue` `noop`
 - [x] different loop types: `for`, `while` and `loop`
-- [x] macros
-- [x] namespaces
-- [x] public functions, globals, types and struct members
-- [ ] functions inside of structs
+- [x] expressions
+- [x] `extern` functions and globals
+- [x] type-related keywords `sizeof` `typeof` `alignof` `len`
+- [x] file imports
+- [x] macros and macro-overloading
+- [x] default macros `__version__` `__system__` `__architecture__` `__time__` `__compile_type__` `__main_file__` `__file__` `__line__` `__func__` 
+- [x] namespaces, functions, globals, typedefs
+- [x] inline `asm` code blocks
 - [x] lambda expressions (not asynchronous)
-- [x] tuples
-- [ ] generics in functions and structs
 - [ ] templates in fuctions and structs
+- [ ] va lists
+- [ ] functions as struct members
 
 ##### CSpydr Standard library features
 - [x] basic `c17` `libc`-header implementation
-- [ ] from-the-ground custom written `stdlib` basing on linux syscalls
-- [ ] control- and safety-structs and -functions (like in Rust)
-- [ ] higher-level wrapper-functions and -structs for the `libc` functions
+- [x] `glfw` and `OpenGL`/`GLU` header files 
+- [ ] from-the-ground custom written `stdlib` based on linux syscalls (in progress)
+- [ ] control- and safety-structs and -functions (like in Rust) (in progress)
 
-## Installation
+## Building | Installation
 
-Currently, CSpydr is only available for Linux. Once a first major release is in sight I will create an [AUR](https://aur.archlinux.org/) repository for [Arch Linux](https://archlinux.org/) and port it over to [Windows](https://www.microsoft.com/windows), but at the moment Installation is done via CMake.
-Finally, enter these commands:
+Currently, CSpydr is only available for Linux. Once a first major release is in sight I will create an [AUR](https://aur.archlinux.org/) repository for [Arch Linux](https://archlinux.org/), but at the moment Installation is done via CMake.
+To build CSpydr on your computer enter these following commands in a terminal
 
 ```bash
 git clone https://github.com/spydr06/cspydr.git --recursive
@@ -73,7 +71,7 @@ cmake .
 make
 ```
 
-To install CSpydr with all of it's components (cspc - The CSpydr Compiler and the CSpydr Standard Library), enter this command (as root):
+To install CSpydr with all of it's components (cspc - The CSpydr Compiler and the CSpydr Standard Library), enter this command (with root privileges):
 ```bash
 sudo make install
 ```
@@ -88,6 +86,12 @@ To directly run a program use this command:
 ```bash
 cspc run <your file>
 ```
+To launch a special debug shell, start your program using the `debug` action:
+<br/>
+*(not finished yet!)*
+```bash
+cspc debug <your file>
+```
 
 Get help using this command:
 ```bash
@@ -99,7 +103,6 @@ cspc --help
 A simple [hello-world](https://github.com/Spydr06/CSpydr/blob/main/doc/src/helloworld.csp) program:
 
 ```cspydr
-# helloworld.csp
 import "io.csp";
 
 fn main(): i32
@@ -113,6 +116,10 @@ Running this program is as easy as entering the following command:
 ```bash
 cspc run hello-world.csp
 ```
+
+### Examples
+
+For more examples, please refer to the `examples/` directory in this repository.
 
 *(I will write a proper documentation in the future!)*
 
