@@ -1,5 +1,12 @@
 import "types.csp";
 import "io.csp";
+import "time.csp";
+
+macro syscall(id)
+{
+    asm "mov " id ", %rax;"
+        "syscall"
+}
 
 macro syscall(id, rdi)
 {
@@ -83,6 +90,23 @@ namespace std {
         WRITEV,
         ACCESS,
         PIPE,
+        SELECT, # not implemented
+        SCHED_YIELD,
+        MREMAP,
+        MSYNC,
+        MINCORE,
+        MADVISE,
+        SHMGET,
+        SHMAT,
+        SHMCTL, # not implemented
+        DUP,
+        DUP2,
+        PAUSE,
+        NANOSLEEP,
+        GETITIMER, # not implemented
+        ALARM,
+        SETITIMER, # not implemented
+        GETPID,
 
         EXIT = 60,
         TIME = 201
@@ -157,5 +181,44 @@ namespace std {
 
         fn time(time: &time_t): std::time_t
             syscall!(Syscall::TIME, time);
+        
+        fn shed_yield(): i32
+            syscall!(Syscall::SCHED_YIELD);
+        
+        fn mremap(old_addr: &void, old_size: usize, new_size: usize, flags: i32, new_addr: &void): &void
+            syscall!(Syscall::MREMAP, old_addr, old_size, new_size, flags, new_addr);
+        
+        fn msync(addr: &void, length: usize, flags: i32): i32
+            syscall!(Syscall::MSYNC, addr, length, flags);
+        
+        fn mincore(addr: &void, length: usize, vec: &u8): i32
+            syscall!(Syscall::MINCORE, addr, length, vec);
+        
+        fn madvise(addr: &void, length: usize, advice: i32): i32
+            syscall!(Syscall::MADVISE, addr, length, advice);
+        
+        fn shmget(key: key_t, size: usize, shmflg: i32): i32
+            syscall!(Syscall::SHMGET, key, size, shmflg);
+        
+        fn shmat(shmid: i32, shmaddr: const &void, shmflg: i32): &void
+            syscall!(Syscall::SHMAT, shmid, shmaddr, shmflg);
+        
+        fn dup(oldfd: i32): i32
+            syscall!(Syscall::DUP, oldfd);
+
+        fn dup2(oldfd: i32, newfd: i32): i32
+            syscall!(Syscall::DUP2, oldfd, newfd);
+        
+        fn pause(): i32
+            syscall!(Syscall::PAUSE);
+        
+        fn nanosleep(req: const &TimeSpec, rem: &TimeSpec): i32
+            syscall!(Syscall::NANOSLEEP, req, rem);
+    
+        fn alarm(seconds: u32): u32
+            syscall!(Syscall::ALARM, seconds);
+        
+        fn getpid(): pid_t
+            syscall!(Syscall::GETPID);
     }
 }

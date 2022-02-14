@@ -38,4 +38,6 @@ namespace std {
     type time_t: i64;
     type nfds_t: u32;
     type ssize_t: i64;
+    type key_t: i32;
+    type pid_t: i32;
 }

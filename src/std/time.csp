@@ -13,6 +13,11 @@ namespace std {
         second: u8  # 36   (0 to 59)
     };
 
+    type TimeSpec: struct {
+        tv_sec: time_t,
+        tv_nsec: i64
+    };
+
     namespace time {
         fn get(buf: &Time)
         {

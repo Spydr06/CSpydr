@@ -21,7 +21,7 @@ namespace std {
     };  
 
     # flags for std::syscall::mmap
-    type Map: enum {
+    type MMap: enum {
         SHARED          = 0x01,
         SHARED_VALIDATE = 0x03,
         PRIVATE         = 0x02,
@@ -41,13 +41,33 @@ namespace std {
         # UNINITIALIZED
     };
 
+    # TODO: implement correct values
+    type MAdv: enum {
+        NORMAL,
+        RANDOM,
+        SEQUENTIAL,
+        WILLNEED,
+        DONTNEED
+    };
+
     namespace mem {
         const MMAP_FAILED: &void = -1;
+        
+        # TODO: implement correct values
+        const IPC_CREAT = 0;
+        const IPC_EXCL = 0;
+
+        const SHM_HUGETLB = 0;
+        const SHM_HUGE_1GB = 0;
+        const SHM_HUGE_2M = 0;
+        const SHM_NORESERVE = 0;
+        const SHM_REMAP = 0;
+        const SHM_RDONLY = 0;
 
         fn alloc(size: usize): &void
         {
             let length = size + sizeof usize;
-            let plen: &usize = syscall::mmap(0, length, Prot::READ | Prot::WRITE, Map::PRIVATE | Map::ANONYMOUS, 0, 0);
+            let plen: &usize = syscall::mmap(0, length, Prot::READ | Prot::WRITE, MMap::PRIVATE | MMap::ANONYMOUS, 0, 0);
             if plen == MMAP_FAILED ret nil;
             
             *plen = length;
