@@ -661,17 +661,17 @@ static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
         case 2:
             // check the types of the two arguments (i32, &%char)
             {
-                ASTType_T* arg0_type = expand_typedef(v, ((ASTObj_T*)main_fn->args->items[0])->data_type);
+                ASTType_T* arg0_type = expand_typedef(v, ((ASTObj_T*) main_fn->args->items[0])->data_type);
                 if(arg0_type->kind != TY_I32)
                 {
-                    throw_error(ERR_TYPE_ERROR, ((ASTObj_T*)main_fn->args->items[0])->data_type->tok, "expect first argument of function `main` to be `i32`");
+                    throw_error(ERR_TYPE_ERROR, ((ASTObj_T*) main_fn->args->items[0])->data_type->tok, "expect first argument of function `main` to be `i32`");
                     return;
                 }
 
-                ASTType_T* arg1_type = expand_typedef(v, ((ASTObj_T*)main_fn->args->items[1])->data_type);
+                ASTType_T* arg1_type = expand_typedef(v, ((ASTObj_T*) main_fn->args->items[1])->data_type);
                 if(arg1_type->kind != TY_PTR || arg1_type->base->kind != TY_PTR || arg1_type->base->base->kind != TY_CHAR)
                 {
-                    throw_error(ERR_TYPE_ERROR, ((ASTObj_T*)main_fn->args->items[1])->data_type->tok, "expect first argument of function `main` to be `&&char`");
+                    throw_error(ERR_TYPE_ERROR, ((ASTObj_T*) main_fn->args->items[1])->data_type->tok, "expect first argument of function `main` to be `&&char`");
                     return;
                 }
             } break;

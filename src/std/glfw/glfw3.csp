@@ -3,8 +3,6 @@
 # link with the glfw shared library
 [link("glfw")]
 
-import "libc/stddef.csp";
-import "types.csp";
 import "gl/gl.csp";
 
 macro GLFW_VERSION_MAJOR    { 3 }
@@ -302,7 +300,7 @@ macro GLFW_DEPTH_BITS       { 0x00021005 }
 macro GLFW_STENCIL_BITS     { 0x00021006 }
 macro GLFW_ACCUM_RED_BITS   { 0x00021007 }
 macro GLFW_ACCUM_GREEN_BITS { 0x00021008 }
-macro GLFW_BLUE_BITS        { 0x00021009 }
+macro GLFW_ACCUM_BLUE_BITS  { 0x00021009 }
 macro GLFW_ACCUM_ALPHA_BITS { 0x0002100A }
 # framebuffer auxiliary buffer hint
 macro GLFW_AUX_BUFFERS { 0x0002100B }

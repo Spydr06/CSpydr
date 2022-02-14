@@ -13,6 +13,8 @@
 #include <assert.h>
 #include <string.h>
 
+#define CSPC_ASM_EXTERN_FN_POSTFIX "@GOTPCREL"
+
 enum { I8, I16, I32, I64, U8, U16, U32, U64, F32, F64, F80, LAST };
 
 static const char* asm_start_text[] = 
@@ -844,7 +846,7 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
                     if(node->call)
                     {
                         if(node->call->referenced_obj->is_extern)
-                            asm_println(cg, "  mov %s@GOTPCREL(%%rip), %%rax", asm_gen_identifier(node->id));
+                            asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", asm_gen_identifier(node->id));
                         else if(node->call->referenced_obj->kind != OBJ_FUNCTION)
                         {
                             asm_println(cg, "  lea %d(%%rbp), %%rax", node->referenced_obj->offset);

@@ -1,15 +1,2 @@
 # all link flags necessary to compile these libc "headers"
-
-[link_dir(
-    "/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0",
-    "/usr/lib/x86_64-linux-gnu",
-    "/usr/lib/x86_64-pc-linux-gnu",
-    "/usr/lib/x86_64-redhat-linux"
-)]
-
-[link(
-    "c",
-    "gcc",
-    "gcc_s"
-)]
-
+[link("c")]
