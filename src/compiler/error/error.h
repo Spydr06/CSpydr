@@ -15,6 +15,7 @@ typedef enum ERROR_TYPE
     ERR_SYNTAX_WARNING,
     ERR_REDEFINITION,
     ERR_UNDEFINED,
+    ERR_UNDEFINED_UNCR, // same as ERR_TYPE_ERROR, but no exit(1) call
     ERR_MISC,
     ERR_OUT_OF_SCOPE,
     ERR_UNUSED,
@@ -27,6 +28,7 @@ typedef enum ERROR_TYPE
     ERR_TYPE_CAST_WARN,
 
     ERR_TYPE_ERROR,
+    ERR_TYPE_ERROR_UNCR, // same as ERR_TYPE_ERROR, but no exit(1) call
     ERR_CONST_ASSIGN,
 
     ERR_INTERNAL,

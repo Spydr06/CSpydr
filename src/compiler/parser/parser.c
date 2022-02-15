@@ -714,7 +714,7 @@ static ASTType_T* parse_type(Parser_T* p)
                     if(!tok_is(p, TOKEN_RBRACE))
                         parser_consume(p, TOKEN_COMMA, "expect `,` between tuple argument types");
                 }
-                parser_consume(p, TOKEN_RBRACE, "expect `]` after tuple argument types");
+                parser_consume(p, TOKEN_RBRACE, "expect `}` after tuple argument types");
                 parser_generate_tuple_type(p, type);
                 break;
             case TOKEN_TYPEOF:

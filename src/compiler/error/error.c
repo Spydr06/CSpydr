@@ -6,22 +6,24 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-static struct { const char* as_str; bool force_exit; } error_types[ERR_INTERNAL + 1] = {
-    [ERR_SYNTAX_ERROR]      = {"syntax", true},
-    [ERR_SYNTAX_WARNING]    = {"warning", false},
-    [ERR_UNDEFINED]         = {"undef", true},
-    [ERR_REDEFINITION]      = {"redef", true},
-    [ERR_UNUSED]            = {"unused", false},
-    [ERR_ILLEGAL_TYPE_CAST] = {"illegal cast", true},
-    [ERR_TYPE_CAST_WARN]    = {"cast warning", false},
-    [ERR_INTERNAL]          = {"internal", true},
-    [ERR_TYPE_ERROR]        = {"type", true},
-    [ERR_MISC]              = {"misc", false},       // miscellaneous errors, who cannot get categorized
-    [ERR_CONST_ASSIGN]      = {"const assign", true},
-    [ERR_CODEGEN]           = {"codegen", true},
-    [ERR_CODEGEN_WARN]      = {"codegen warn", false},
-    [ERR_CONSTEXPR]         = {"constexpr", true},
-    [ERR_CONSTEXPR_WARN]    = {"constexpr", false},
+static struct { const char* as_str; bool force_exit; bool is_error; } error_types[ERR_INTERNAL + 1] = {
+    [ERR_SYNTAX_ERROR]      = {"syntax", true        , true},
+    [ERR_SYNTAX_WARNING]    = {"warning", false      , false},
+    [ERR_UNDEFINED]         = {"undef", true         , true},
+    [ERR_UNDEFINED_UNCR]    = {"undef", false        , true},
+    [ERR_REDEFINITION]      = {"redef", true         , true},
+    [ERR_UNUSED]            = {"unused", false       , false},
+    [ERR_ILLEGAL_TYPE_CAST] = {"illegal cast", true  , true},
+    [ERR_TYPE_CAST_WARN]    = {"cast warning", false , false},
+    [ERR_INTERNAL]          = {"internal", true      , true},
+    [ERR_TYPE_ERROR]        = {"type", true          , true},
+    [ERR_TYPE_ERROR_UNCR]   = {"type", false         , true},
+    [ERR_MISC]              = {"misc", false         , true},       // miscellaneous errors, who cannot get categorized
+    [ERR_CONST_ASSIGN]      = {"const assign", true  , true},
+    [ERR_CODEGEN]           = {"codegen", true       , true},
+    [ERR_CODEGEN_WARN]      = {"codegen warn", false , false},
+    [ERR_CONSTEXPR]         = {"constexpr", true     , true},
+    [ERR_CONSTEXPR_WARN]    = {"constexpr", false    , false},
 };
 
 #ifdef __GNUC__
@@ -49,7 +51,7 @@ void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
     va_start(arg_list, format);
 
     // print the error
-    fprintf(ERR_OUTPUT_STREAM, err_tmp1, source_file_path, line, character, error_types[ty].force_exit ? COLOR_BOLD_RED : COLOR_BOLD_YELLOW, err_ty_str);
+    fprintf(ERR_OUTPUT_STREAM, err_tmp1, source_file_path, line, character, error_types[ty].is_error ? COLOR_BOLD_RED : COLOR_BOLD_YELLOW, err_ty_str);
     vfprintf(ERR_OUTPUT_STREAM, format, arg_list);
     fprintf(ERR_OUTPUT_STREAM, err_tmp2, ERR_LINE_NUMBER_SPACES, line, src_line, src_line[strlen(src_line) - 1] == '\n' ? "" : "\n ", ERR_LINE_NUMBER_SPACES, "", character - strlen(tok->value), "");
 

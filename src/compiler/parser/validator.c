@@ -18,6 +18,8 @@
 #define MIN(a, b) (a < b ? a : b)
 #define MAX(a, b) (a > b ? a : b)
 
+#define uncr(v) (v)->uncritical_errors++
+
 // validator structs
 typedef struct VALIDATOR_SCOPE_STRUCT VScope_T;
 struct VALIDATOR_SCOPE_STRUCT
@@ -36,6 +38,10 @@ typedef struct VALIDATOR_STRUCT
     bool main_function_found;
 
     u32 scope_depth;  // depth of the current scope
+
+    size_t uncritical_errors;   // errors, which are not critical at compile time, 
+                                // the validator will stop after its pass that more
+                                // than one error message can be generated
 } Validator_T;
 
 static VScope_T* global_scope;
@@ -234,7 +240,13 @@ void validate_ast(ASTProg_T* ast)
 
     if(!v.main_function_found)
     {
-        LOG_ERROR("[ERROR]: mssing entrypoint; no `main` function declared");
+        LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " mssing entrypoint; no `main` function declared.\n");
+        v.uncritical_errors++;
+    }
+
+    if(v.uncritical_errors)
+    {
+        LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " %ld error%s thrown during code validation; aborting.\n", v.uncritical_errors, v.uncritical_errors == 1 ? "" : "s");
         exit(1);
     }
 }
@@ -637,8 +649,8 @@ static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
     ASTType_T* return_type = expand_typedef(v, main_fn->return_type);
     if(return_type->kind != TY_I32)
     {
-        throw_error(ERR_TYPE_ERROR, main_fn->return_type->tok, "expect type `i32` as return type for function `main`");
-        return;
+        throw_error(ERR_TYPE_ERROR_UNCR, main_fn->return_type->tok ? main_fn->return_type->tok : main_fn->tok, "expect type `i32` as return type for function `main`");
+        uncr(v);
     }
 
     switch(main_fn->args->size)
@@ -651,9 +663,10 @@ static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
             // check the types of the one argument (&&char)
             {
                 ASTType_T* arg_type = expand_typedef(v, ((ASTObj_T*) main_fn->args->items[0])->data_type);
-                if(arg_type->kind != TY_PTR || arg_type->base->kind != TY_PTR || arg_type->base->base->kind != TY_CHAR)
+                if(arg_type->kind != TY_PTR || !arg_type->base ||arg_type->base->kind != TY_PTR || !arg_type->base->base || arg_type->base->base->kind != TY_CHAR)
                 {
-                    throw_error(ERR_TYPE_ERROR, ((ASTObj_T*) main_fn->args->items[0])->data_type->tok, "expect argument of function `main` to be `&&char`");
+                    throw_error(ERR_TYPE_ERROR_UNCR, ((ASTObj_T*) main_fn->args->items[0])->tok, "expect argument of function `main` to be `&&char`");
+                    uncr(v);
                     return;
                 }
             } break;
@@ -664,20 +677,24 @@ static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
                 ASTType_T* arg0_type = expand_typedef(v, ((ASTObj_T*) main_fn->args->items[0])->data_type);
                 if(arg0_type->kind != TY_I32)
                 {
-                    throw_error(ERR_TYPE_ERROR, ((ASTObj_T*) main_fn->args->items[0])->data_type->tok, "expect first argument of function `main` to be `i32`");
+                    throw_error(ERR_TYPE_ERROR_UNCR, ((ASTObj_T*) main_fn->args->items[0])->tok, "expect first argument of function `main` to be `i32`");
+                    uncr(v);
                     return;
                 }
 
                 ASTType_T* arg1_type = expand_typedef(v, ((ASTObj_T*) main_fn->args->items[1])->data_type);
                 if(arg1_type->kind != TY_PTR || arg1_type->base->kind != TY_PTR || arg1_type->base->base->kind != TY_CHAR)
                 {
-                    throw_error(ERR_TYPE_ERROR, ((ASTObj_T*) main_fn->args->items[1])->data_type->tok, "expect first argument of function `main` to be `&&char`");
+                    throw_error(ERR_TYPE_ERROR_UNCR, ((ASTObj_T*) main_fn->args->items[1])->tok, "expect first argument of function `main` to be `&&char`");
+                    uncr(v);
                     return;
                 }
             } break;
 
         default:
-            throw_error(ERR_MISC, main_fn->tok, "expect 0 or 2 arguments for function `main`, got %ld", main_fn->args->size);
+            throw_error(ERR_UNDEFINED_UNCR, main_fn->tok, "expect 0 or 2 arguments for function `main`, got %ld", main_fn->args->size);
+            uncr(v);
+            return;
     }
 }
 
@@ -698,8 +715,11 @@ static void fn_end(ASTObj_T* fn, va_list args)
         check_main_fn(v, fn);
     }
 
-    if(expand_typedef(v, fn->return_type)->kind == TY_ARR)
-        throw_error(ERR_TYPE_ERROR, fn->return_type->tok, "cannot return an array type from a function");
+    if(expand_typedef(v, fn->return_type)->kind == TY_ARR) 
+    {
+        throw_error(ERR_TYPE_ERROR_UNCR, fn->return_type->tok ? fn->return_type->tok : fn->tok, "cannot return an array type from a function");
+        uncr(v);
+    }
 
     end_scope(v);
 
@@ -711,7 +731,10 @@ static void fn_end(ASTObj_T* fn, va_list args)
     {
         ASTObj_T* arg = fn->args->items[i];
         if(arg->data_type->is_vla && fn->args->size - i > 1)
-            throw_error(ERR_TYPE_ERROR, arg->tok, "argument of type `vla` has to be the last");
+        {
+            throw_error(ERR_TYPE_ERROR_UNCR, arg->tok, "argument of type `vla` has to be the last");
+            uncr(v);
+        }
     }
 }
 
@@ -774,12 +797,13 @@ static void global_end(ASTObj_T* global, va_list args)
 
         global->data_type = global->value->data_type;
     }
-    // fixme: evaluate seperately for structs and unions
     gen_id_path(v->current_scope, global->id);
 
-    // todo: check if type initializer is an array literal, if it is, calculate the size
     if(global->data_type->is_vla && !vla_to_array_type(v, global->data_type, global->value))
         throw_error(ERR_TYPE_ERROR, global->data_type->tok, "vla type is not allowed for global variables");
+    
+    if(global->data_type->is_constant)
+        global->is_constant = true;
 }
 
 static void local_start(ASTObj_T* local, va_list args)
@@ -800,10 +824,12 @@ static void local_end(ASTObj_T* local, va_list args)
 
         local->data_type = local->value->data_type;
     }
-    // fixme: evaluate seperately for structs and unions
-    // todo: check if type initializer is an array literal, if it is, calculate the size
+
     if(local->data_type->is_vla && !vla_to_array_type(v, local->data_type, local->value))
         throw_error(ERR_TYPE_ERROR, local->data_type->tok, "vla type is not allowed for local variables");
+
+    if(local->data_type->is_constant)
+        local->is_constant = true;    
 }
 
 static void fn_arg_start(ASTObj_T* arg, va_list args)
@@ -818,6 +844,8 @@ static void fn_arg_start(ASTObj_T* arg, va_list args)
 
 static void fn_arg_end(ASTObj_T* arg, va_list args)
 {
+    if(arg->data_type->is_constant)
+        arg->is_constant = true;
 }
 
 static void enum_member_end(ASTObj_T* e_member, va_list args)
@@ -981,7 +1009,8 @@ static void identifier(ASTNode_T* id, va_list args)
     ASTObj_T* refferred_obj = search_identifier(v->current_scope, id->id);
     if(!refferred_obj)
     {
-        throw_error(ERR_SYNTAX_WARNING, id->id->tok, "refferring to undefined identifier `%s`", id->id->callee);
+        throw_error(ERR_UNDEFINED_UNCR, id->id->tok, "refferring to undefined identifier `%s`", id->id->callee);
+        uncr(v);
         return;
     }
 
@@ -1292,6 +1321,11 @@ static void assignment_end(ASTNode_T* assign, va_list args)
     }
 
     assign->data_type = assign->left->data_type;
+
+    if(assign->left->is_constant || assign->left->data_type->is_constant)
+    {
+        throw_error(ERR_CONST_ASSIGN, assign->left->tok, "cannot assign value to constant `%s`", assign->left->tok->value);
+    }
 }
 
 static void struct_lit(ASTNode_T* s_lit, va_list args)

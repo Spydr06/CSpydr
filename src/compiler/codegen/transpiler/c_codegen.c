@@ -14,6 +14,7 @@
 
 #include "../../platform/platform_bindings.h"
 #include "../../mem/mem.h"
+#include "ast/ast.h"
 
 char* cc = DEFAULT_CC;
 char* cc_flags = DEFAULT_CC_FLAGS;
@@ -537,6 +538,65 @@ static void c_gen_obj(CCodegenData_T* cg, ASTObj_T* obj)
     }
 }
 
+static void c_gen_asm(CCodegenData_T* cg, ASTNode_T* node)
+{
+    print(cg, "asm (\"");
+
+    size_t id_count = 0;
+
+    for(size_t i = 0; i < node->args->size; i++)
+    {
+        ASTNode_T* arg = node->args->items[i];
+        switch(arg->kind)
+        {
+            case ND_INT:
+                print(cg, "$%d", arg->int_val);
+                break;
+            case ND_LONG:
+                print(cg, "$%ld", arg->long_val);
+                break;
+            case ND_LLONG:
+                print(cg, "$%lld", arg->llong_val);
+                break;
+            case ND_ID:
+                print(cg, "%%%ld", id_count++);
+                break;
+            case ND_STR:
+                for(size_t j = 0; j < strlen(arg->str_val); j++)
+                {
+                    switch(arg->str_val[j])
+                    {
+                        case '%':
+                        case '{':
+                        case '|':
+                        case '}':
+                            print(cg, "%%");
+                        default:
+                            print(cg, "%c", arg->str_val[j]);
+                    }
+                }
+                break;
+        }
+    }
+
+    print(cg, "\"::");
+
+    if(id_count > 0)
+    {
+        size_t ids_used = 0;
+        for(size_t i = 0; i < node->args->size; i++)
+        {
+            ASTNode_T* arg = node->args->items[i];
+            if(arg->kind == ND_ID)
+            {
+                print(cg, "\"\" (%s)%s", c_gen_identifier(cg, arg->id), id_count - ++ids_used <= 0 ? "" : ",");
+            }
+        }
+    }
+
+    print(cg, ")");
+}
+
 static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
 {
     switch(node->kind)
@@ -582,7 +642,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, ")");
             break;
         case ND_ASM:
-            throw_error(ERR_CODEGEN, node->tok, "not implemented for transpiling");
+            c_gen_asm(cg, node);
             break;
         case ND_ASSIGN:
             switch(node->right->kind)
