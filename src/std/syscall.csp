@@ -220,5 +220,7 @@ namespace std {
         
         fn getpid(): pid_t
             syscall!(Syscall::GETPID);
+
+        [no_return("*")] # every function in this scope will not return anything via the `ret` statement.
     }
 }

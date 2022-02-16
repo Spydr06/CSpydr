@@ -22,9 +22,9 @@ type Instruction: struct {
     operand: u16
 };
 
-const PROG_SIZE  = 4096;
-const STACK_SIZE = 512;
-const DATA_SIZE  = 65535;
+const PROG_SIZE: i32 = 4096;
+const STACK_SIZE: i32 = 512;
+const DATA_SIZE: i32 = 65535;
 
 let program: Instruction[PROG_SIZE];
 let stack: u16[STACK_SIZE];

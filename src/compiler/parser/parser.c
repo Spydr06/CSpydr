@@ -368,7 +368,7 @@ static ASTObj_T* get_compatible_tuple(Parser_T* p, ASTType_T* tuple)
 /////////////////////////////////
 
 static void parse_obj(Parser_T* p, List_T* obj_list);
-static void parse_compiler_directives(Parser_T* p);
+static void parse_compiler_directives(Parser_T* p, List_T* obj_list);
 
 void parse(ASTProg_T* ast, List_T* files, bool is_silent)
 {
@@ -404,9 +404,6 @@ void parse(ASTProg_T* ast, List_T* files, bool is_silent)
                 parser_consume(&parser, TOKEN_STRING, "expect file to import as string");
                 parser_consume(&parser, TOKEN_SEMICOLON, "expect `;` after import statement");
                 break;
-            case TOKEN_LBRACKET:
-                parse_compiler_directives(&parser);
-                break;
             default: 
                 parse_obj(&parser, ast->objs);
         }
@@ -424,7 +421,7 @@ void parse(ASTProg_T* ast, List_T* files, bool is_silent)
 // Compiler Directives Parser  //
 /////////////////////////////////+
 
-static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value)
+static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, List_T* obj_list)
 {
     if(streq(field->value, "link"))
     {
@@ -444,11 +441,35 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value)
     }
     else if(streq(field->value, "link_obj"))
         list_push(global.linker_flags, value);
+    else if(streq(field->value, "no_return"))
+    {
+        for(size_t i = 0; i < obj_list->size; i++)
+        {
+            ASTObj_T* obj = obj_list->items[i];
+            if(streq(obj->id->callee, value))
+            {
+                if(obj->kind != OBJ_FUNCTION)
+                    throw_error(ERR_TYPE_ERROR, p->tok, "`%s` is not a function, thus cannot have the `no_return` attribute", value);
+
+                obj->no_return = true;
+                return;
+            }
+            else if(streq("*", value))
+            {
+                if(obj->kind != OBJ_FUNCTION) 
+                    continue;
+                obj->no_return = true;
+            }
+        }
+        
+        if(!streq("*", value))
+            throw_error(ERR_SYNTAX_ERROR, p->tok, "could not find function `%s` in current scope", value);        
+    }
     else
         throw_error(ERR_SYNTAX_WARNING, field, "undefined compiler directive `%s`", field->value);
 }
 
-static void parse_compiler_directives(Parser_T* p)
+static void parse_compiler_directives(Parser_T* p, List_T* obj_list)
 {
     parser_consume(p, TOKEN_LBRACKET, "expect `[` for compiler directive");
 
@@ -459,13 +480,12 @@ static void parse_compiler_directives(Parser_T* p)
     do {
         if(tok_is(p, TOKEN_COMMA))
             parser_advance(p);
-        eval_compiler_directive(p, field_token, p->tok->value);
+        eval_compiler_directive(p, field_token, p->tok->value, obj_list);
         parser_consume(p, TOKEN_STRING, "expect value as string");
     } while(tok_is(p, TOKEN_COMMA));
 
     parser_consume(p, TOKEN_RPAREN, "expect `)` after value");
     parser_consume(p, TOKEN_RBRACKET, "expect `]` after compiler directive");
-
 }
 
 /////////////////////////////////
@@ -1084,6 +1104,9 @@ static void parse_obj(Parser_T* p, List_T* obj_list)
                 break;
             case TOKEN_NAMESPACE:
                 parse_namespace(p, obj_list);
+                break;
+            case TOKEN_LBRACKET:
+                parse_compiler_directives(p, obj_list);
                 break;
             default:
                 throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect [import, type, let, const, fn]", p->tok->value);

@@ -705,6 +705,34 @@ static void fn_start(ASTObj_T* fn, va_list args)
     v->current_function = fn;
 }
 
+static bool stmt_returns_value(ASTNode_T* node)
+{
+    switch(node->kind)
+    {
+        case ND_RETURN:
+            return true;
+        case ND_BLOCK:
+            for(size_t i = 0; i < node->stmts->size; i++)
+            {
+                if(stmt_returns_value(node->stmts->items[i]))
+                {
+                    if(node->stmts->size - i > 1)
+                        throw_error(ERR_UNREACHABLE, ((ASTNode_T*) node->stmts->items[i])->tok, "unreachable code after return statement");
+                    return true;
+                }
+            }
+            return false;
+        case ND_IF:
+            return stmt_returns_value(node->if_branch) && node->else_branch ? stmt_returns_value(node->else_branch) : false;
+        case ND_LOOP:
+        case ND_FOR:
+        case ND_WHILE:
+            return stmt_returns_value(node->body);
+        default: 
+            return false;
+    }
+}
+
 static void fn_end(ASTObj_T* fn, va_list args)
 {
     GET_VALIDATOR(args);
@@ -715,7 +743,8 @@ static void fn_end(ASTObj_T* fn, va_list args)
         check_main_fn(v, fn);
     }
 
-    if(expand_typedef(v, fn->return_type)->kind == TY_ARR) 
+    ASTType_T* return_type = expand_typedef(v, fn->return_type);
+    if(return_type->kind == TY_ARR) 
     {
         throw_error(ERR_TYPE_ERROR_UNCR, fn->return_type->tok ? fn->return_type->tok : fn->tok, "cannot return an array type from a function");
         uncr(v);
@@ -724,6 +753,12 @@ static void fn_end(ASTObj_T* fn, va_list args)
     end_scope(v);
 
     gen_id_path(v->current_scope, fn->id);
+
+    if(return_type->kind != TY_VOID && !fn->is_extern && !fn->no_return && !stmt_returns_value(fn->body))
+    {
+        throw_error(ERR_NORETURN, fn->tok, "function `%s` does not return a value", fn->id->callee);
+        v->uncritical_errors++;
+    }
 
     v->current_function = NULL;
 

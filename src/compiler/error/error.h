@@ -11,27 +11,29 @@
 
 typedef enum ERROR_TYPE
 {   
-    ERR_SYNTAX_ERROR,
-    ERR_SYNTAX_WARNING,
-    ERR_REDEFINITION,
-    ERR_UNDEFINED,
+    ERR_SYNTAX_ERROR,   // syntax error
+    ERR_SYNTAX_WARNING, // syntax warning
+    ERR_REDEFINITION,   // redefinition of identifier/type
+    ERR_UNDEFINED,      // undefined error
     ERR_UNDEFINED_UNCR, // same as ERR_TYPE_ERROR, but no exit(1) call
-    ERR_MISC,
-    ERR_OUT_OF_SCOPE,
-    ERR_UNUSED,
-    ERR_CODEGEN,
-    ERR_CODEGEN_WARN,
-    ERR_CONSTEXPR,
-    ERR_CONSTEXPR_WARN,
+    ERR_MISC,           // miscellaneous errors
+    ERR_OUT_OF_SCOPE,   // variable or object out of scope
+    ERR_UNUSED,         // unused variable or function
+    ERR_CODEGEN,        // error during code generation
+    ERR_CODEGEN_WARN,   // warning during code generation
+    ERR_CONSTEXPR,      // error in a constant expression
+    ERR_CONSTEXPR_WARN, // warning in a constant expression
+    ERR_NORETURN,       // function does not return a value
+    ERR_UNREACHABLE,    // "unreachable" code found after a return statement
 
-    ERR_ILLEGAL_TYPE_CAST,
-    ERR_TYPE_CAST_WARN,
+    ERR_ILLEGAL_TYPE_CAST, // illegal cast from/to a type
+    ERR_TYPE_CAST_WARN,    // warning when casting (implicit casts, etc.)
 
-    ERR_TYPE_ERROR,
+    ERR_TYPE_ERROR,      // error when converting/using a type
     ERR_TYPE_ERROR_UNCR, // same as ERR_TYPE_ERROR, but no exit(1) call
-    ERR_CONST_ASSIGN,
+    ERR_CONST_ASSIGN,    // error when assigning a value to a constant variable
 
-    ERR_INTERNAL,
+    ERR_INTERNAL, // internal error, user should never see this...
 } ErrorType_T;
 
 #ifdef __GNUC__

@@ -298,6 +298,7 @@ struct AST_OBJ_STRUCT
     bool is_extern      : 1;
     bool referenced     : 1;
     bool is_entry_point : 1;
+    bool no_return      : 1;
 
     ASTType_T* data_type;
     ASTNode_T* value;

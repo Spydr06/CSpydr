@@ -24,6 +24,8 @@ static struct { const char* as_str; bool force_exit; bool is_error; } error_type
     [ERR_CODEGEN_WARN]      = {"codegen warn", false , false},
     [ERR_CONSTEXPR]         = {"constexpr", true     , true},
     [ERR_CONSTEXPR_WARN]    = {"constexpr", false    , false},
+    [ERR_NORETURN]          = {"no return", false    , true},
+    [ERR_UNREACHABLE]       = {"unreachable", false  , false},
 };
 
 #ifdef __GNUC__
