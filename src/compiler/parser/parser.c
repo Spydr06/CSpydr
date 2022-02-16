@@ -314,6 +314,8 @@ static inline bool is_executable(ASTNode_T* n)
 {
     if(n->kind == ND_CLOSURE)
         return is_executable(n->expr);
+    if(n->kind == ND_IF_EXPR)
+        return is_executable(n->if_branch) && is_executable(n->else_branch);
     return n->kind == ND_CALL || n->kind == ND_ASSIGN || n->kind == ND_INC || n->kind == ND_DEC || n->kind == ND_CAST || n->kind == ND_MEMBER || n->kind == ND_ASM;
 }
 
@@ -986,24 +988,11 @@ static ASTObj_T* parse_global(Parser_T* p)
     
     global->id = parse_simple_identifier(p);
 
-    if(tok_is(p, TOKEN_COLON))
+    parser_consume(p, TOKEN_COLON, "expect `:` after variable name");
+    global->data_type = parse_type(p);
+    if(tok_is(p, TOKEN_ASSIGN))
     {
-        parser_consume(p, TOKEN_COLON, "expect `:` after variable name");
-        global->data_type = parse_type(p);
-
-        if(tok_is(p, TOKEN_ASSIGN))
-        {
-            parser_advance(p);
-            global->value = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
-            /*if(!global->value->is_constant)
-                throw_error(ERR_UNDEFINED, p->tok, "assigned value unknown at compile-time");*/
-        }
-    }
-    else
-    {
-        global->data_type = NULL;
-
-        parser_consume(p, TOKEN_ASSIGN, "expect assignment `=` after typeless variable definition");
+        parser_advance(p);
         global->value = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
     }
     

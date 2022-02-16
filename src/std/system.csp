@@ -2,10 +2,6 @@ import "syscall.csp";
 
 namespace std {
     namespace system {
-        const stdin  = 0;
-        const stdout = 1;
-        const stderr = 2;
-
         fn exit(exit_code: i32) 
         {
             syscall::exit(exit_code);

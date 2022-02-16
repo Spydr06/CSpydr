@@ -475,8 +475,9 @@ static Token_T* lexer_get_symbol(Lexer_T* lexer)
         default: {
             if(!lexer->c || lexer->c == -1) 
             {
-                LOG_ERROR_F(COLOR_BOLD_WHITE "%s" COLOR_RESET " => " COLOR_BOLD_RED "[IO]" COLOR_RESET ": file is empty.\n", lexer->file->path);
-                exit(1);
+                // file is empty, throw a warning and return EOF
+                LOG_WARN_F(COLOR_BOLD_YELLOW "[IO]" COLOR_RESET " file `%s` is empty.\n", lexer->file->path);
+                return init_token("EOF", lexer->line, lexer->pos, TOKEN_EOF, lexer->file);
             }
             else
                 throw_error(ERR_SYNTAX_ERROR, init_token(&lexer->c, lexer->line, lexer->pos, TOKEN_ERROR, lexer->file), "unknown token `%c` (id: %d)", lexer->c, lexer->c);

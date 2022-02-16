@@ -181,7 +181,6 @@ void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast)
     memset(cg, 0, sizeof(struct ASM_CODEGEN_DATA_STRUCT));
 
     cg->ast = ast;
-    cg->embed_file_locations = true;
     cg->code_buffer = open_memstream(&cg->buf, &cg->buf_len);
 }
 
@@ -824,6 +823,9 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
 
         case ND_ID: 
+            if(!node->data_type)
+                node->data_type = node->referenced_obj->data_type;
+
             if(unpack(node->data_type)->is_vla)
             {
                 asm_println(cg, "  mov %d(%%rbp), %%rax", node->referenced_obj->offset);

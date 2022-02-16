@@ -6,6 +6,26 @@ macro stdin  {0}
 macro stdout {1}
 macro stderr {2}
 
+macro write(fd, v) {
+    (
+        if (type) (typeof (v)) == i8 ||
+            (type) (typeof (v)) == i16 ||
+            (type) (typeof (v)) == i32 ||
+            (type) (typeof (v)) == i64
+        => ::std::io::write_int(fd, (v): i64)
+        else if (type) (typeof (v)) == u8 ||
+            (type) (typeof (v)) == u16 ||
+            (type) (typeof (v)) == u32 ||
+            (type) (typeof (v)) == u64
+        => ::std::io::write_uint(fd, (v): u64)
+        else if (type) (typeof (v)) == &char ||
+            (type) (typeof (v)) == char[]
+        => ::std::io::write(fd, (v))
+        else
+        ::std::io::write_ptr(fd, (v)) 
+    )
+}
+
 namespace std {
     # flags for std::syscall::open
     type OpenFlag: enum {
@@ -56,8 +76,12 @@ namespace std {
         iov_len: usize
     };
 
+    const in: i32 = stdin!;
+    const out: i32 = stdout!;
+    const err: i32 = stdout!;
+
     namespace io {
-        const EOF = -1;
+        const EOF: i32 = -1;
 
         fn puts(str: const &char)  fputs(str, stdout!);
         fn putc(c: char)           fputc(c, stdout!);

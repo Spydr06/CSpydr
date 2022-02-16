@@ -1,7 +1,0 @@
-import "syscall.csp";
-
-fn main(argc: i32)
-{
-
-  #  <- 0;
-}

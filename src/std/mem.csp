@@ -54,15 +54,15 @@ namespace std {
         const MMAP_FAILED: &void = -1;
         
         # TODO: implement correct values
-        const IPC_CREAT = 0;
-        const IPC_EXCL = 0;
+        const IPC_CREAT: i32 = 0;
+        const IPC_EXCL: i32 = 0;
 
-        const SHM_HUGETLB = 0;
-        const SHM_HUGE_1GB = 0;
-        const SHM_HUGE_2M = 0;
-        const SHM_NORESERVE = 0;
-        const SHM_REMAP = 0;
-        const SHM_RDONLY = 0;
+        const SHM_HUGETLB: i32 = 0;
+        const SHM_HUGE_1GB: i32 = 0;
+        const SHM_HUGE_2M: i32 = 0;
+        const SHM_NORESERVE: i32 = 0;
+        const SHM_REMAP: i32 = 0;
+        const SHM_RDONLY: i32 = 0;
 
         fn alloc(size: usize): &void
         {

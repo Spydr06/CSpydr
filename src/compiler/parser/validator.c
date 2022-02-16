@@ -878,7 +878,7 @@ static void return_end(ASTNode_T* ret, va_list args)
         return;
     }
 
-    // type checking already done in the parser
+    // type checking
 }
 
 static void case_end(ASTNode_T* _case, va_list args)
@@ -1006,15 +1006,15 @@ static void identifier(ASTNode_T* id, va_list args)
 {
     GET_VALIDATOR(args);
 
-    ASTObj_T* refferred_obj = search_identifier(v->current_scope, id->id);
-    if(!refferred_obj)
+    ASTObj_T* referenced_obj = search_identifier(v->current_scope, id->id);
+    if(!referenced_obj)
     {
         throw_error(ERR_UNDEFINED_UNCR, id->id->tok, "refferring to undefined identifier `%s`", id->id->callee);
         uncr(v);
         return;
     }
 
-    switch(refferred_obj->kind)
+    switch(referenced_obj->kind)
     {
         case OBJ_GLOBAL:
         case OBJ_LOCAL:
@@ -1026,15 +1026,15 @@ static void identifier(ASTNode_T* id, va_list args)
         default:
             throw_error(ERR_TYPE_ERROR, id->id->tok, 
                 "identifier `%s` is of kind %s, expect variable or function name", 
-                id->id->callee, obj_kind_to_str(refferred_obj->kind)
+                id->id->callee, obj_kind_to_str(referenced_obj->kind)
             );
             return;
     }
 
-    //debug: printf("[%3d: %3d] refferring to %s `%s` with type %d\n", id->tok->line + 1, id->tok->pos + 1, obj_kind_to_str(refferred_obj->kind), refferred_obj->id->callee, refferred_obj->data_type->kind);
+    //debug: printf("[%3d: %3d] refferring to %s `%s` with type %d\n", id->tok->line + 1, id->tok->pos + 1, obj_kind_to_str(referenced_obj->kind), referenced_obj->id->callee, referenced_obj->data_type->kind);
     if(!id->data_type)
-        id->data_type = refferred_obj->data_type;
-    id->referenced_obj = refferred_obj;
+        id->data_type = referenced_obj->data_type;
+    id->referenced_obj = referenced_obj;
 }
 
 static void closure(ASTNode_T* closure, va_list args)
