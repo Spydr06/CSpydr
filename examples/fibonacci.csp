@@ -20,4 +20,6 @@ fn main(): i32 {
         t2 = cur;
         cur = t1 + t2;
     }
+
+    <- 0;
 }

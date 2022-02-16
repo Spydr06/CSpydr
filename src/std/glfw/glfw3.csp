@@ -156,7 +156,7 @@ macro GLFW_KEY_RIGHT_ALT     { 346 }
 macro GLFW_KEY_RIGHT_SUPER   { 347 }
 macro GLFW_KEY_MENU          { 348 }
 
-const GLFW_KEY_LAST = GLFW_KEY_MENU!;
+const GLFW_KEY_LAST: i32 = GLFW_KEY_MENU!;
 
 # mod keys
 macro GLFW_MOD_SHIFT     { 0x0001 }

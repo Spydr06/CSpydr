@@ -2,8 +2,8 @@ import "gl/glu.csp";
 import "glfw/glfw3.csp";
 import "io.csp";
 
-let theta_y = 0.0;
-let theta_x = 0.0;
+let theta_y: f32 = 0.0;
+let theta_x: f32 = 0.0;
 
 const vertices: GLfloat[] = [
     -1.0, -1.0, -1.0,   -1.0, -1.0,  1.0,   -1.0,  1.0,  1.0,   -1.0,  1.0, -1.0,

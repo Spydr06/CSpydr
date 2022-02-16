@@ -717,7 +717,7 @@ static bool stmt_returns_value(ASTNode_T* node)
                 if(stmt_returns_value(node->stmts->items[i]))
                 {
                     if(node->stmts->size - i > 1)
-                        throw_error(ERR_UNREACHABLE, ((ASTNode_T*) node->stmts->items[i])->tok, "unreachable code after return statement");
+                        throw_error(ERR_UNREACHABLE, ((ASTNode_T*) node->stmts->items[i + 1])->tok, "unreachable code after return statement");
                     return true;
                 }
             }
@@ -728,6 +728,18 @@ static bool stmt_returns_value(ASTNode_T* node)
         case ND_FOR:
         case ND_WHILE:
             return stmt_returns_value(node->body);
+        case ND_MATCH:
+            if(!node->default_case)
+                return false;
+            
+            {
+                u64 cases_return = 0;
+                for(size_t i = 0; i < node->cases->size; i++)
+                    if(stmt_returns_value(((ASTNode_T*) node->cases->items[i])->body))
+                        cases_return++;
+                
+                return cases_return == node->cases->size && stmt_returns_value(node->default_case->body);
+            }
         default: 
             return false;
     }
