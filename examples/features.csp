@@ -1,0 +1,26 @@
+import "io.csp";
+
+fn pow(a: i32, b: i32): i64
+{
+    match b {
+        0 => ret 0;
+        1 => ret a;
+        2 => ret a²;
+        3 => ret a³;
+        _ => {
+            let c: i64 = 1;
+
+            for let i = 0; i < b; i++;
+                c *= a;
+            
+            <- c;
+        }
+    }
+}
+
+fn main(): i32 {
+    write!(std::out, 2 `pow` 4);
+    write!(std::out, "\n");
+
+    <- 0;
+}

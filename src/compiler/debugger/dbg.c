@@ -15,6 +15,7 @@ static void handle_comp(const char* input);
 static void handle_run(const char* input);
 static void handle_help(const char* input);
 static void handle_clear(const char* input);
+static void handle_current(const char* input);
 
 static const struct {
     char* cmd;
@@ -26,10 +27,11 @@ static const struct {
     {"comp", handle_comp},
     {"run", handle_run},
     {"clear", handle_clear},
+    {"current", handle_current},
     {NULL, NULL}
 };
 
-static const char* help_text = 
+static const char help_text[] = 
     COLOR_BOLD_MAGENTA " ** The CSpydr interactive debug shell **\n" COLOR_RESET
     "Current debug target: `%s` (compiled from `%s`).\n"
     "\n"
@@ -39,6 +41,7 @@ static const char* help_text =
     COLOR_GREEN " * " COLOR_RESET "clear    | clear the screen\n"
     COLOR_GREEN " * " COLOR_RESET "run      | run the current executable\n"
     COLOR_GREEN " * " COLOR_RESET "comp     | recompile the current executable\n"
+    COLOR_GREEN " * " COLOR_RESET "current  | display the current debug target\n"
     "\n"
     COLOR_BOLD_WHITE "Prompt symbols:\n" COLOR_RESET
     "  \"" COLOR_MAGENTA "cspc" COLOR_RESET " [" COLOR_BOLD_GREEN "x" COLOR_RESET "] >>\"\n"
@@ -131,4 +134,9 @@ static void handle_help(const char* input)
 static void handle_clear(const char* input)
 {   
     printf(CLEAR_CODE);
+}
+
+static void handle_current(const char* input)
+{
+    printf("`%s` (compiled from `%s`).\n", bin_file, src_file);
 }

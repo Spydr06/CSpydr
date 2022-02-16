@@ -44,10 +44,10 @@ typedef enum
 {
     LOWEST     = 0,
 
-    INFIX_CALL = 1,  // x `y` z
-    ASSIGN     = 2,  // x = y
-    LOGIC_OR   = 3,  // x || y
-    LOGIC_AND  = 4,  // x && y
+    ASSIGN     = 1,  // x = y
+    LOGIC_OR   = 2,  // x || y
+    LOGIC_AND  = 3,  // x && y
+    INFIX_CALL = 4,  // x `y` z
     BIT_OR     = 5,  // x | y
     BIT_XOR    = 6,  // x ^ y
     BIT_AND    = 7,  // x & y
