@@ -12,6 +12,7 @@ static struct { const char* as_str; bool force_exit; bool is_error; } error_type
     [ERR_UNDEFINED]         = {"undef", true         , true},
     [ERR_UNDEFINED_UNCR]    = {"undef", false        , true},
     [ERR_REDEFINITION]      = {"redef", true         , true},
+    [ERR_REDEFINITION_UNCR] = {"redef", false        , true},
     [ERR_UNUSED]            = {"unused", false       , false},
     [ERR_ILLEGAL_TYPE_CAST] = {"illegal cast", true  , true},
     [ERR_TYPE_CAST_WARN]    = {"cast warning", false , false},

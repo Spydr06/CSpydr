@@ -87,6 +87,7 @@ static void for_start(ASTNode_T* _for, va_list args);
 static void for_end(ASTNode_T* _for, va_list args);
 static void case_end(ASTNode_T* _case, va_list args);
 static void match_type_end(ASTNode_T* match, va_list args);
+static void using_end(ASTNode_T* using, va_list args);
 
 // expressions
 static void call(ASTNode_T* call, va_list args);
@@ -144,6 +145,7 @@ static ASTIteratorList_T main_iterator_list =
         [ND_FOR] = for_end,
         [ND_CASE] = case_end,
         [ND_MATCH_TYPE] = match_type_end,
+        [ND_USING] = using_end,
 
         // expressions
         [ND_ID]      = identifier,
@@ -241,7 +243,7 @@ void validate_ast(ASTProg_T* ast)
     if(!v.main_function_found)
     {
         LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " mssing entrypoint; no `main` function declared.\n");
-        v.uncritical_errors++;
+        uncr(&v);
     }
 
     if(v.uncritical_errors)
@@ -769,7 +771,7 @@ static void fn_end(ASTObj_T* fn, va_list args)
     if(return_type->kind != TY_VOID && !fn->is_extern && !fn->no_return && !stmt_returns_value(fn->body))
     {
         throw_error(ERR_NORETURN, fn->tok, "function `%s` does not return a value", fn->id->callee);
-        v->uncritical_errors++;
+        uncr(v);
     }
 
     v->current_function = NULL;
@@ -961,10 +963,45 @@ static void match_type_end(ASTNode_T* match, va_list args)
         match->body = match->default_case->body;
 
 }
+
 static bool compatible(Validator_T* v, ASTType_T* a, ASTType_T* b)
 {
     return true;
 }
+
+static void using_end(ASTNode_T* using, va_list args)
+{
+    GET_VALIDATOR(args);
+
+    ASTObj_T* found = search_identifier(v->current_scope, using->id);
+    if(!found)
+    {
+        throw_error(ERR_UNDEFINED_UNCR, using->id->tok, "using undefined namespace `%s`", using->id->callee);
+        uncr(v);
+        return;
+    }
+    
+    if(found->kind != OBJ_NAMESPACE)
+    {
+        throw_error(ERR_UNDEFINED_UNCR, using->id->tok, "`%s` is a %s, can only have namespaces for `using`", using->id->callee, obj_kind_to_str(found->kind));
+        uncr(v);
+        return;
+    }
+
+    for(size_t i = 0; i < found->objs->size; i++)
+    {
+        ASTObj_T* obj = found->objs->items[i];
+        if(search_in_current_scope(v->current_scope, obj->id->callee))
+        {
+            throw_error(ERR_REDEFINITION_UNCR, using->tok, "namespace `%s` is trying to implement a %s `%s`, \nwhich is already defined in this scope", found->id->callee, obj_kind_to_str(obj->kind), obj->id->callee);
+            uncr(v);
+            continue;
+        }
+
+        list_push(v->current_scope->objs, obj);
+    }
+}
+
 
 // expressions
 

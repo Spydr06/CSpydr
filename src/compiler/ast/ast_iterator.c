@@ -96,6 +96,10 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
         case ND_BREAK:
         case ND_CONTINUE:
             break;
+        
+        case ND_USING:
+            ast_id(list, false, node->id, custom_args);
+            break;
     
         case ND_ID:
             if(node->data_type)

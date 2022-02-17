@@ -14,6 +14,7 @@ typedef enum ERROR_TYPE
     ERR_SYNTAX_ERROR,   // syntax error
     ERR_SYNTAX_WARNING, // syntax warning
     ERR_REDEFINITION,   // redefinition of identifier/type
+    ERR_REDEFINITION_UNCR, // uncritical redefinition
     ERR_UNDEFINED,      // undefined error
     ERR_UNDEFINED_UNCR, // same as ERR_TYPE_ERROR, but no exit(1) call
     ERR_MISC,           // miscellaneous errors

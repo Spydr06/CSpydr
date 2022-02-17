@@ -113,6 +113,7 @@ typedef enum TOKEN_TYPE {
     TOKEN_LEN,          // len
     TOKEN_VA_ARG,       // va_arg
     TOKEN_ASM,          // asm
+    TOKEN_USING,        // using
 
     TOKEN_CURRENT_FN,   // special token for the __func__! macro
 

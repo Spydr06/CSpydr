@@ -17,5 +17,22 @@ namespace std {
             let i = 0x7F800000;
             <- *((&i): &f32);
         }
+
+        fn pow(a: i32, b: i32): i64 {
+            match b {
+                0 => ret 0;
+                1 => ret a;
+                2 => ret a²;
+                3 => ret a³;
+                _ => {
+                    let c: i64 = 1;
+
+                    for let i = 0; i < b; i++;
+                        c *= a;
+
+                    <- c;
+                }
+            }
+        }
     }
 }

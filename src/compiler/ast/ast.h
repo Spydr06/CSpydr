@@ -98,6 +98,7 @@ typedef enum {
     ND_CONTINUE,  // continue;
     ND_LEN,       // len x
     ND_VA_ARG,    // va_arg x: i32
+    ND_USING,     // using x::y
 
     ND_STRUCT_MEMBER,  // struct members
 

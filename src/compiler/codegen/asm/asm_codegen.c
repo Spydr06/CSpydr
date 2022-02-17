@@ -2257,6 +2257,9 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             if(node->body)
                 asm_gen_stmt(cg, node->body);
             return;
+        
+        case ND_USING: // ignore
+            return;
 
         default:
             break;

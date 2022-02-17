@@ -1128,7 +1128,27 @@ static ASTNode_T* parse_block(Parser_T* p)
     ASTNode_T* prev_block = p->cur_block;
     p->cur_block = block;
     while(p->tok->type != TOKEN_RBRACE)
-        list_push(block->stmts, parse_stmt(p, true));
+    {
+        if(tok_is(p, TOKEN_USING))
+        {
+            parser_advance(p);
+
+            if(tok_is(p, TOKEN_COMMA))
+                throw_error(ERR_SYNTAX_ERROR, p->tok, "expect identifier");
+
+            do {
+                if(tok_is(p, TOKEN_COMMA))
+                    parser_advance(p);
+                ASTNode_T* using = init_ast_node(ND_USING, p->tok);
+                using->id = parse_identifier(p);
+                list_push(block->stmts, using);
+            } while(tok_is(p, TOKEN_COMMA));
+
+            parser_consume(p, TOKEN_SEMICOLON, "expect `;` after identifiers");
+        }
+        else
+            list_push(block->stmts, parse_stmt(p, true));
+    }
     p->cur_block = prev_block;
 
     parser_consume(p, TOKEN_RBRACE, "expect `}` at the end of a block statement");
