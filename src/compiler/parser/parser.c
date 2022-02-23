@@ -1988,16 +1988,52 @@ static ASTNode_T* parse_builtin_type_exprs(Parser_T* p, ASTNode_T* expr)
     {
         expr->cmp_kind = TOKEN_BUILTIN_REG_CLASS;
         expr->data_type = (ASTType_T*) primitives[TY_I32];
-
-        parser_consume(p, TOKEN_ID, "expect identifier");
-        parser_consume(p, TOKEN_LPAREN, "expect `(` after `reg_class`");
-        
-        expr->r_type = parse_type(p);
-        parser_consume(p, TOKEN_RPAREN, "expect `)` after `reg_class`");
-
+    }
+    else if(streq(p->tok->value, "__is_int"))
+    {
+        expr->cmp_kind = TOKEN_BUILTIN_IS_INT;
+        expr->data_type = (ASTType_T*) primitives[TY_BOOL];
+    }
+    else if(streq(p->tok->value, "__is_uint"))
+    {
+        expr->cmp_kind = TOKEN_BUILTIN_IS_UINT;
+        expr->data_type = (ASTType_T*) primitives[TY_BOOL];
+    }
+    else if(streq(p->tok->value, "__is_float"))
+    {
+        expr->cmp_kind = TOKEN_BUILTIN_IS_FLOAT;
+        expr->data_type = (ASTType_T*) primitives[TY_BOOL];
+    }
+    else if(streq(p->tok->value, "__is_pointer"))
+    {
+        expr->cmp_kind = TOKEN_BUILTIN_IS_POINTER;
+        expr->data_type = (ASTType_T*) primitives[TY_BOOL];
+    }
+    else if(streq(p->tok->value, "__is_array"))
+    {
+        expr->cmp_kind = TOKEN_BUILTIN_IS_ARRAY;
+        expr->data_type = (ASTType_T*) primitives[TY_BOOL];
+    }
+    else if(streq(p->tok->value, "__is_struct"))
+    {
+        expr->cmp_kind = TOKEN_BUILTIN_IS_STRUCT;
+        expr->data_type = (ASTType_T*) primitives[TY_BOOL];
+    }
+    else if(streq(p->tok->value, "__is_union"))
+    {
+        expr->cmp_kind = TOKEN_BUILTIN_IS_UNION;
+        expr->data_type = (ASTType_T*) primitives[TY_BOOL];
     }
     else
         throw_error(ERR_UNDEFINED, p->tok, "Undefined builtin type expression `%s`", p->tok->value);
+
+
+    parser_consume(p, TOKEN_ID, "expect identifier");
+    parser_consume(p, TOKEN_LPAREN, "expect `(` after `reg_class`");
+    
+    expr->r_type = parse_type(p);
+    parser_consume(p, TOKEN_RPAREN, "expect `)` after `reg_class`");
+    
     return expr;
 }
 

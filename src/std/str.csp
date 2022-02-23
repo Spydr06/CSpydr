@@ -21,15 +21,9 @@ macro concat(a, b) {
 # convert any given value to a string
 macro to_str(v) {
     (
-        if (type) (typeof (v)) == i8  || 
-            (type) (typeof (v)) == i16 || 
-            (type) (typeof (v)) == i32 || 
-            (type) (typeof (v)) == i64 
+        if (type) __is_int(typeof (v))
             => ::std::string::from_int(v)
-        else if (type) (typeof (v)) == u8 || 
-            (type) (typeof (v)) == u16 || 
-            (type) (typeof (v)) == u32 || 
-            (type) (typeof (v)) == u64
+        else if (type) __is_uint(typeof (v))
             => ::std::string::from_uint(v)
         else if (type) (typeof (v)) == bool
             => if (v) == true =>

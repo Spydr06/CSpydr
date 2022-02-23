@@ -1,0 +1,17 @@
+namespace std {
+    type Error: struct {
+        severity: err::Severity,
+        message: &char,
+        value: &void
+    };
+
+    namespace err {
+        type Severity {
+            INFO,
+            WARNING,
+            ERROR,
+            PANIC,
+            FATAL
+        };
+    }
+}

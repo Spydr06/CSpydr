@@ -116,7 +116,15 @@ typedef enum TOKEN_TYPE {
 
     TOKEN_CURRENT_FN,   // special token for the __func__! macro
 
+    // builtin functions used exclusively in type expressions
     TOKEN_BUILTIN_REG_CLASS,
+    TOKEN_BUILTIN_IS_INT,
+    TOKEN_BUILTIN_IS_UINT,
+    TOKEN_BUILTIN_IS_FLOAT,
+    TOKEN_BUILTIN_IS_POINTER,
+    TOKEN_BUILTIN_IS_ARRAY,
+    TOKEN_BUILTIN_IS_STRUCT,
+    TOKEN_BUILTIN_IS_UNION,
 
     TOKEN_ERROR,        // error handling token
     TOKEN_EOF,          // end of file

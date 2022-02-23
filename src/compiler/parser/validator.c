@@ -1544,17 +1544,46 @@ static void type_expr(ASTNode_T* cmp, va_list args)
             break;
         case TOKEN_BUILTIN_REG_CLASS:
             {
-                ASTType_T* expanded = expand_typedef(v, cmp->r_type);
-                int result = 2;
-                if(is_integer(expanded) || is_ptr(v, expanded))
-                    result = 0;
-                else if(is_flonum(expanded))
-                    result = 1;
-                
                 cmp->kind = ND_INT;
-                cmp->int_val = result;
+                cmp->int_val = 2;
+
+                ASTType_T* expanded = expand_typedef(v, cmp->r_type);
+                if(is_integer(expanded) || is_ptr(v, expanded))
+                    cmp->int_val = 0;
+                else if(is_flonum(expanded))
+                    cmp->int_val = 1;
             } return;
-        default:
+        case TOKEN_BUILTIN_IS_INT...TOKEN_BUILTIN_IS_UNION:
+            {
+                cmp->kind = ND_BOOL;
+                ASTType_T* expanded = expand_typedef(v, cmp->r_type);
+                switch(cmp->cmp_kind)
+                {
+                    case TOKEN_BUILTIN_IS_INT:
+                        cmp->bool_val = is_integer(expanded) && !is_unsigned(expanded);
+                        break;
+                    case TOKEN_BUILTIN_IS_UINT:
+                        cmp->bool_val = is_integer(expanded) && is_unsigned(expanded);
+                        break;
+                    case TOKEN_BUILTIN_IS_FLOAT:
+                        cmp->bool_val = is_flonum(expanded);
+                        break;
+                    case TOKEN_BUILTIN_IS_POINTER:
+                        cmp->bool_val = expanded->kind == TY_PTR;
+                        break;
+                    case TOKEN_BUILTIN_IS_ARRAY:
+                        cmp->bool_val = expanded->kind == TY_ARR;
+                        break;
+                    case TOKEN_BUILTIN_IS_STRUCT:
+                        cmp->bool_val = expanded->kind == TY_STRUCT && !expanded->is_union;
+                    case TOKEN_BUILTIN_IS_UNION:
+                        cmp->bool_val = expanded->kind == TY_STRUCT && expanded->is_union;
+                        break;
+                    default:
+                        unreachable();
+                }
+            } return;
+        default: 
             unreachable();
     }   
 

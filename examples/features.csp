@@ -2,6 +2,7 @@
 import "libc/stdio.csp";
 import "utils.csp";
 import "math.csp";
+import "option.csp";
 
 fn va_test(a: i32, list: ...)
 {
@@ -14,6 +15,6 @@ fn va_test(a: i32, list: ...)
 
 fn main(): i32 {
     va_test(1, 2, 3.1415);
-    
+
     <- 0;
 }
