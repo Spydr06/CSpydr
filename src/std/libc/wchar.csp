@@ -15,19 +15,19 @@ type wint_t: u32;
 
 extern {
 
-    fn fwprintf(stream: &FILE, format: const &wchar_t,...): i32;
-    fn fwscanf(stream: &FILE, format: const &wchar_t,...): i32;
-    fn swprintf(s: &wchar_t, n: size_t, format: const &wchar_t,...): i32;
-    fn swscanf(s: const &wchar_t, format: const &wchar_t,...): i32;
-    fn wprintf(format: const &wchar_t,...): i32;
-    fn wscanf(format: const &wchar_t,...): i32;
+    fn fwprintf(stream: &FILE, format: const &wchar_t,args: ...): i32;
+    fn fwscanf(stream: &FILE, format: const &wchar_t,args: ...): i32;
+    fn swprintf(s: &wchar_t, n: size_t, format: const &wchar_t,args: ...): i32;
+    fn swscanf(s: const &wchar_t, format: const &wchar_t,args: ...): i32;
+    fn wprintf(format: const &wchar_t,args: ...): i32;
+    fn wscanf(format: const &wchar_t,args: ...): i32;
 
-    fn vfwprintf(stream: &FILE, format: const &wchar_t, ...): i32;
-    fn vfwscanf(stream: &FILE, format: const &wchar_t, ...): i32;
-    fn vswprintf(s: &wchar_t, n: size_t, format: const &wchar_t, ...): i32;
-    fn vswscanf(s: const &wchar_t, format: const &wchar_t, ...): i32;
-    fn vwprintf(format: const &wchar_t, ...): i32;
-    fn vwscanf(format: const &wchar_t, ...): i32;
+    fn vfwprintf(stream: &FILE, format: const &wchar_t, args: ...): i32;
+    fn vfwscanf(stream: &FILE, format: const &wchar_t, args: ...): i32;
+    fn vswprintf(s: &wchar_t, n: size_t, format: const &wchar_t, args: ...): i32;
+    fn vswscanf(s: const &wchar_t, format: const &wchar_t, args: ...): i32;
+    fn vwprintf(format: const &wchar_t, args: ...): i32;
+    fn vwscanf(format: const &wchar_t, args: ...): i32;
 
     fn fgetwc(stream: &FILE): wint_t;
     fn fgetws(s: &wchar_t, n: i32, stream: &FILE): &wchar_t;

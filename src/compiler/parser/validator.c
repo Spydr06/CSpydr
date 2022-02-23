@@ -708,20 +708,8 @@ static void fn_start(ASTObj_T* fn, va_list args)
     v->current_function = fn;
 
     
-    if(fn->is_variadic)
-    {
-        ASTObj_T* va_area = init_ast_obj(OBJ_LOCAL, fn->tok);
-        va_area->id = init_ast_identifier(fn->tok, "__va_area__");
-        va_area->data_type = init_ast_type(TY_ARR, fn->tok);
-        va_area->data_type->num_indices = init_ast_node(ND_LONG, fn->tok);
-        va_area->data_type->num_indices->long_val = 136;
-        va_area->data_type->base = (ASTType_T*) primitives[TY_U8];
-
-        scope_add_obj(v, va_area);
-
-        fn->va_area = va_area;
-    }
-
+    if(fn->is_variadic && !fn->is_extern)
+        scope_add_obj(v, fn->va_area);
 }
 
 static bool stmt_returns_value(ASTNode_T* node)

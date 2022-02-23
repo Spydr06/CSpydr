@@ -25,3 +25,64 @@ macro swap(a, b)
         (b) = __swap_tmp;
     }
 }
+
+macro va_start(ap)
+{
+    (*(ap) = *(__va_area__: &::std::va::Element))
+}
+
+macro va_arg(ap, ty)
+{
+    (
+        *((
+            if (type) __reg_class(ty) == 0
+                => ::std::va::gp((ap), sizeof (ty), alignof (ty))
+            else if (type) __reg_class(ty) == 1
+                => ::std::va::fp((ap), sizeof (ty), alignof (ty))
+            else ::std::va::mem((ap), sizeof (ty), alignof (ty))
+        ): &(ty))
+    )
+}
+
+namespace std {
+    type VAList: ::std::va::Element[1];
+
+    namespace va {
+        type Element: struct {
+            gp_offset: u32,
+            fp_offset: u32,
+            overflow_arg_area: &void,
+            reg_save_area: &void
+        };
+
+        fn mem(ap: &Element, size: i32, align: i32): &void
+        {
+            let p: &void = ap.overflow_arg_area;
+            if align > 8
+                p = ((p + 15) / 16 * 16);
+            
+            ap.overflow_arg_area = (((p + size + 7): u64) / 8 * 8);
+            <- p;
+        }
+
+        fn gp(ap: &Element, size: i32, align: i32): &void
+        {
+            if ap.gp_offset >= 48
+                <- mem(ap, size, align);
+    
+            let r: &void = ap.reg_save_area + (ap.gp_offset: u64);
+            ap.gp_offset += 8;
+            <- r;
+        }
+
+        fn fp(ap: &Element, size: i32, align: i32): &void
+        {
+            if ap.fp_offset >= 112
+                <- mem(ap, size, align);
+    
+            let r: &void = ap.reg_save_area + (ap.fp_offset: u64);
+            ap.fp_offset += 8;
+            <- r;
+        }
+    }
+}

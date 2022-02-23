@@ -838,15 +838,17 @@ static void parse_extern(Parser_T* p, List_T* objs)
     list_push(objs, parse_extern_def(p));    
 }
 
-List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok, bool* is_variadic)
+List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok, ASTIdentifier_T** variadic_id)
 {
     List_T* arg_list = init_list(sizeof(ASTObj_T*));
 
     while(p->tok->type != end_tok)
     {
-        if(tok_is(p, TOKEN_VA_LIST))
+        if(parser_peek(p, 2)->type == TOKEN_VA_LIST)
         {
-            *is_variadic = true;
+            (*variadic_id) = parse_simple_identifier(p);
+            parser_consume(p, TOKEN_COLON, "expect `:` after argument name");
+
             if(arg_list->size < 1)
                 throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot have `...` as the only function argument");
             parser_advance(p);
@@ -912,8 +914,21 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
 
     parser_consume(p, TOKEN_LPAREN, "expect `(` after function name");
 
-    fn->args = parse_argument_list(p, TOKEN_RPAREN, &(fn->is_variadic));
+    ASTIdentifier_T* va_id = NULL;
+    fn->args = parse_argument_list(p, TOKEN_RPAREN, &va_id);
     mem_add_list(fn->args);
+
+    if(va_id)
+    {
+        fn->is_variadic = true;
+
+        fn->va_area = init_ast_obj(OBJ_LOCAL, fn->tok);
+        fn->va_area->id = va_id;
+        fn->va_area->data_type = init_ast_type(TY_ARR, fn->tok);
+        fn->va_area->data_type->num_indices = init_ast_node(ND_LONG, fn->tok);
+        fn->va_area->data_type->num_indices->long_val = 136;
+        fn->va_area->data_type->base = (ASTType_T*) primitives[TY_U8];
+    }
 
     parser_consume(p, TOKEN_RPAREN, "expect `)` after function arguments");
 
