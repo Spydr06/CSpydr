@@ -34,5 +34,14 @@ namespace std {
                 }
             }
         }
+
+        fn sqrt(n: f64): f64 {
+            let r: f64 = 0;
+            asm "fldl " n ";" 
+                "fsqrt;"
+                "fstpl " r;
+            
+            <- r;
+        }
     }
 }
