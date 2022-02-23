@@ -49,7 +49,8 @@ static void ast_obj(ASTIteratorList_T* list, ASTObj_T* obj, va_list custom_args)
             for(size_t i = 0; i < obj->args->size; i++)
                 ast_obj(list, obj->args->items[i], custom_args);
 
-            ast_node(list, obj->body, custom_args);     
+            ast_node(list, obj->body, custom_args);   
+            ast_obj(list, obj->va_area, custom_args);  
             break;
 
         case OBJ_FN_ARG:
@@ -291,8 +292,6 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
             ast_node(list, node->return_val, custom_args);
             break;
 
-        case ND_VA_ARG:
-            ast_type(list, node->data_type, custom_args);
         case ND_EXPR_STMT:
             ast_node(list, node->expr, custom_args);
             break;
@@ -310,7 +309,7 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
             ast_type(list, node->data_type, custom_args);
             break;
         
-        case ND_TYPE_CMP:
+        case ND_TYPE_EXPR:
             ast_type(list, node->l_type, custom_args);
             ast_type(list, node->r_type, custom_args);
             break;

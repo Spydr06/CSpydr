@@ -401,26 +401,16 @@ static bool c_gen_fn_arg_list(CCodegenData_T* cg, List_T* args)
      
         char* callee = c_gen_identifier(cg, arg->id);
 
-        if(arg->data_type->kind == TY_VA_LIST)
-        {
-            print(cg, "...");
-            return true;    // va lists are always the last argument
-        }
+        if(arg->data_type->kind == TY_LAMBDA)
+            c_gen_type(cg, arg->data_type, callee);
         else
-        {
-            if(arg->data_type->kind == TY_LAMBDA)
-                c_gen_type(cg, arg->data_type, callee);
-            else
-            {   
-                c_gen_type(cg, arg->data_type, "");
-                print(cg, " %s", callee);
-            }
-
-            if(arg->data_type->kind == TY_ARR)
-                c_gen_array_brackets(cg, arg->data_type);
-
-            print(cg, "%s", i < args->size - 1 ? "," : "");
+        {   
+            c_gen_type(cg, arg->data_type, "");
+            print(cg, " %s", callee);
         }
+        if(arg->data_type->kind == TY_ARR)
+            c_gen_array_brackets(cg, arg->data_type);
+        print(cg, "%s", i < args->size - 1 ? "," : "");
     }
     return false;
 }
@@ -461,6 +451,8 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
 
             if(obj->args)
                 c_gen_fn_arg_list(cg, obj->args);
+            if(is_variadic(obj))
+                print(cg, ",...");
             println(cg, ");");
             break;
         case OBJ_TYPEDEF:
@@ -515,6 +507,8 @@ static void c_gen_obj(CCodegenData_T* cg, ASTObj_T* obj)
 
                 if(obj->args)
                     has_va_list = c_gen_fn_arg_list(cg, obj->args);
+                if(is_variadic(obj))
+                    print(cg, ",...");
                 println(cg, "){");
 
                 if(has_va_list)
@@ -878,13 +872,6 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
         case ND_LEN:
             print(cg, "(");
             c_gen_expr(cg, unpack(node->expr->data_type)->num_indices);
-            print(cg, ")");
-            break;
-        case ND_VA_ARG:
-            print(cg, "va_arg(");
-            c_gen_expr(cg, node->expr);
-            print(cg, ",");
-            c_gen_type(cg, node->data_type, "");
             print(cg, ")");
             break;
         case ND_IF_EXPR:

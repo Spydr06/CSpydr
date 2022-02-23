@@ -8,6 +8,7 @@
 #include "../toolchain.h"
 #include "../ast/types.h"
 #include "ast/ast.h"
+#include "codegen/codegen_utils.h"
 #include "lexer/token.h"
 
 #include <stdarg.h>
@@ -116,7 +117,7 @@ static void array_lit(ASTNode_T* a_lit, va_list args);
 static void if_expr(ASTNode_T* if_expr, va_list args);
 static void closure(ASTNode_T* closure, va_list args);
 static void len(ASTNode_T* len, va_list args);
-static void type_cmp(ASTNode_T* cmp, va_list args);
+static void type_expr(ASTNode_T* cmp, va_list args);
 
 //types
 static void struct_type(ASTType_T* s_type, va_list args);
@@ -184,7 +185,7 @@ static ASTIteratorList_T main_iterator_list =
         [ND_IF_EXPR] = if_expr,
         [ND_CLOSURE] = closure,
         [ND_LEN]     = len,
-        [ND_TYPE_CMP] = type_cmp,
+        [ND_TYPE_EXPR] = type_expr,
     },
 
     .type_fns = 
@@ -496,7 +497,7 @@ static bool is_number(Validator_T* v, ASTType_T* type)
     }
 }
 
-static bool is_integer(Validator_T* v, ASTType_T* type)
+static bool v_is_integer(Validator_T* v, ASTType_T* type)
 {
     if(!type)
         return false;
@@ -705,6 +706,22 @@ static void fn_start(ASTObj_T* fn, va_list args)
     GET_VALIDATOR(args);
     begin_scope(v, fn->id);
     v->current_function = fn;
+
+    
+    if(fn->is_variadic)
+    {
+        ASTObj_T* va_area = init_ast_obj(OBJ_LOCAL, fn->tok);
+        va_area->id = init_ast_identifier(fn->tok, "__va_area__");
+        va_area->data_type = init_ast_type(TY_ARR, fn->tok);
+        va_area->data_type->num_indices = init_ast_node(ND_LONG, fn->tok);
+        va_area->data_type->num_indices->long_val = 136;
+        va_area->data_type->base = (ASTType_T*) primitives[TY_U8];
+
+        scope_add_obj(v, va_area);
+
+        fn->va_area = va_area;
+    }
+
 }
 
 static bool stmt_returns_value(ASTNode_T* node)
@@ -1024,12 +1041,9 @@ static void call(ASTNode_T* call, va_list args)
             {
                 call->data_type = called_obj->return_type;
 
-                bool has_va_list = called_obj->args->size ? 
-                    ((ASTObj_T*) called_obj->args->items[called_obj->args->size - 1])->tok->type == TOKEN_VA_LIST 
-                    : false;
-                if(call->args->size != called_obj->args->size && !has_va_list)
+                if(call->args->size != called_obj->args->size && !is_variadic(called_obj))
                     throw_error(ERR_SYNTAX_ERROR, call->tok, "`%s` expects %ld call arguments, got %ld", called_obj->id->callee, called_obj->args->size, call->args->size);
-                else if(call->args->size < called_obj->args->size - 1 && has_va_list)
+                else if(call->args->size < called_obj->args->size - 1 && is_variadic(called_obj))
                     throw_error(ERR_SYNTAX_ERROR, call->tok, "`%s` expects at least %ld call arguments, got %ld", called_obj->id->callee, called_obj->args->size - 1, call->args->size);
             
                 for(size_t i = 0; i < MIN(called_obj->args->size, call->args->size); i++)
@@ -1047,9 +1061,7 @@ static void call(ASTNode_T* call, va_list args)
                         //throw_error(ERR_TYPE_CAST_WARN, received->tok, "could not resolve data type for `%s`", received->tok->value);
                         continue;
                     }
-                    if(expected->data_type->kind == TY_VA_LIST)
-                        continue; // va_lists get ignored, as the passed datatype is irrelevant
-                    
+
                     if(!compatible(v, expected->data_type, received->data_type))
                         throw_error(ERR_TYPE_ERROR, ((ASTNode_T*) call->args->items[i])->tok, "unexpected data type `%d`, expect `%d`", received->data_type->kind, expected->data_type->kind);
                 }
@@ -1208,13 +1220,13 @@ static void modulo(ASTNode_T* mod, va_list args)
 {
     GET_VALIDATOR(args);
 
-    if(!is_integer(v, mod->left->data_type))
+    if(!v_is_integer(v, mod->left->data_type))
     {
         throw_error(ERR_TYPE_ERROR, mod->tok, "left: expect integer type for modulo operation");
         return;
     }
 
-    if(!is_integer(v, mod->right->data_type))
+    if(!v_is_integer(v, mod->right->data_type))
     {
         throw_error(ERR_TYPE_ERROR, mod->tok, "right: expect integer type for modulo operation");
         return;
@@ -1241,7 +1253,7 @@ static void bitwise_negate(ASTNode_T* neg, va_list args)
 {
     GET_VALIDATOR(args);
 
-    if(!is_integer(v, neg->right->data_type))
+    if(!v_is_integer(v, neg->right->data_type))
     {
         throw_error(ERR_TYPE_ERROR, neg->tok, "expect integer type for bitwise negation");
         return;
@@ -1302,13 +1314,13 @@ static void bitwise_op(ASTNode_T* op, va_list args)
 {
     GET_VALIDATOR(args);
 
-    if(!is_integer(v, op->left->data_type))
+    if(!v_is_integer(v, op->left->data_type))
     {
         throw_error(ERR_TYPE_ERROR, op->tok, "left: can only do bitwise operations on integer types");
         return;
     }
 
-    if(!is_integer(v, op->right->data_type))
+    if(!v_is_integer(v, op->right->data_type))
     {
         throw_error(ERR_TYPE_ERROR, op->tok, "right: can only do bitwise operations with integer types");
         return;
@@ -1345,7 +1357,7 @@ static void index_(ASTNode_T* index, va_list args)
         return;
     }
 
-    if(!is_integer(v, index->expr->data_type))
+    if(!v_is_integer(v, index->expr->data_type))
     {
         throw_error(ERR_TYPE_ERROR, index->tok, "index: expect an integer type");
         return;
@@ -1518,7 +1530,7 @@ static void len(ASTNode_T* len, va_list args)
         throw_error(ERR_TYPE_ERROR, len->tok, "cannot get length of given expression");
 }
 
-static void type_cmp(ASTNode_T* cmp, va_list args)
+static void type_expr(ASTNode_T* cmp, va_list args)
 {
     GET_VALIDATOR(args);
 
@@ -1545,6 +1557,18 @@ static void type_cmp(ASTNode_T* cmp, va_list args)
         case TOKEN_LT_EQ:
             result = cmp->l_type->size <= cmp->r_type->size;
             break;
+        case TOKEN_BUILTIN_REG_CLASS:
+            {
+                ASTType_T* expanded = expand_typedef(v, cmp->r_type);
+                int result = 2;
+                if(is_integer(expanded) || is_ptr(v, expanded))
+                    result = 0;
+                else if(is_flonum(expanded))
+                    result = 1;
+                
+                cmp->kind = ND_INT;
+                cmp->int_val = result;
+            } return;
         default:
             unreachable();
     }   
@@ -1710,7 +1734,6 @@ static i32 get_type_size(Validator_T* v, ASTType_T* type)
                 return get_struct_size(v, type);
         case TY_OPAQUE_STRUCT:
         case TY_FN:
-        case TY_VA_LIST:
         default:
             return 0;
     }

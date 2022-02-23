@@ -62,13 +62,13 @@ extern {
     fn setbuf(stream: &FILE, buf: &char);
     fn setvbuf(stream: &FILE, buf: &char, mode: i32, size: size_t): i32;
 
-    fn fprintf(stream: &FILE, format: const &char, va: ...): i32;
-    fn fscanf(stream: &FILE, format: const &char, va: ...): i32;
-    fn printf(format: const &char, va: ...): i32;
-    fn scanf(format: const &char, va: ...): i32;
-    fn snprintf(s: &char, n: size_t, format: const &char, va: ...): i32;
-    fn sprintf(s: &char, format: const &char, va: ...): i32;
-    fn sscanf(s: const &char, format: const &char, va: ...): i32;
+    fn fprintf(stream: &FILE, format: const &char, ...): i32;
+    fn fscanf(stream: &FILE, format: const &char, ...): i32;
+    fn printf(format: const &char, ...): i32;
+    fn scanf(format: const &char, ...): i32;
+    fn snprintf(s: &char, n: size_t, format: const &char, ...): i32;
+    fn sprintf(s: &char, format: const &char, ...): i32;
+    fn sscanf(s: const &char, format: const &char, ...): i32;
 
     fn vfprintf(stream: &void, format: const &char, arg: &void): i32;
     fn vfscanf(stream: &FILE, format: const &char, arg: &void): i32;

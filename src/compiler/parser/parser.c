@@ -157,7 +157,6 @@ static struct { PrefixParseFn_T pfn; InfixParseFn_T ifn; Precedence_T prec; } ex
     [TOKEN_LEN]      = {parse_len, NULL, LOWEST},
     [TOKEN_POW_2]    = {NULL, parse_pow_2, POWER},
     [TOKEN_POW_3]    = {NULL, parse_pow_3, POWER},
-    [TOKEN_VA_ARG]   = {parse_va_arg, NULL, LOWEST},
     [TOKEN_BIT_OR]   = {parse_lambda_lit, parse_bit_op, BIT_OR},
     [TOKEN_LSHIFT]   = {NULL, parse_bit_op, BIT_SHIFT},
     [TOKEN_RSHIFT]   = {NULL, parse_bit_op, BIT_SHIFT},
@@ -839,31 +838,22 @@ static void parse_extern(Parser_T* p, List_T* objs)
     list_push(objs, parse_extern_def(p));    
 }
 
-List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok)
+List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok, bool* is_variadic)
 {
     List_T* arg_list = init_list(sizeof(ASTObj_T*));
 
     while(p->tok->type != end_tok)
     {
-        if(parser_peek(p, 2)->type == TOKEN_VA_LIST)
+        if(tok_is(p, TOKEN_VA_LIST))
         {
-            ASTIdentifier_T* va_id = parse_simple_identifier(p);
-            parser_consume(p, TOKEN_COLON, "expect `:` after argument name");
-        
-            ASTObj_T* va_obj = init_ast_obj(OBJ_FN_ARG, p->tok);
-            parser_consume(p, TOKEN_VA_LIST, "expect `...` for variable length arguments");
-            va_obj->id = va_id;
+            *is_variadic = true;
+            if(arg_list->size < 1)
+                throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot have `...` as the only function argument");
+            parser_advance(p);
 
-            if(arg_list->size == 0)
-                throw_error(ERR_MISC, p->tok, "cannot have a va_list as the only argument in a function");
+            if(!tok_is(p, end_tok))
+                throw_error(ERR_SYNTAX_ERROR, p->tok, "expect `...` to be the last function argument");
 
-            if(tok_is(p, TOKEN_COMMA))
-                throw_error(ERR_SYNTAX_ERROR, p->tok, "a va_list has to be the last argument in a function");
-
-            va_obj->data_type = (ASTType_T*) primitives[TY_VA_LIST];
-
-            list_push(arg_list, va_obj);
-        
             break;
         }
         else 
@@ -922,7 +912,7 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
 
     parser_consume(p, TOKEN_LPAREN, "expect `(` after function name");
 
-    fn->args = parse_argument_list(p, TOKEN_RPAREN);
+    fn->args = parse_argument_list(p, TOKEN_RPAREN, &(fn->is_variadic));
     mem_add_list(fn->args);
 
     parser_consume(p, TOKEN_RPAREN, "expect `)` after function arguments");
@@ -988,8 +978,8 @@ static ASTObj_T* parse_fn(Parser_T* p)
         fn->objs = init_list(sizeof(struct AST_OBJ_STRUCT*));
         mem_add_list(fn->objs);
         collect_locals(fn->body, fn->objs);
-    }   
-
+    }
+    
     return fn;
 }
 
@@ -1977,14 +1967,38 @@ static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left)
     return index;
 }
 
-static ASTNode_T* parse_type_cmp(Parser_T* p)
+static ASTNode_T* parse_builtin_type_exprs(Parser_T* p, ASTNode_T* expr)
 {
-    ASTNode_T* cmp = init_ast_node(ND_TYPE_CMP, p->tok);
+    if(streq(p->tok->value, "__reg_class"))
+    {
+        expr->cmp_kind = TOKEN_BUILTIN_REG_CLASS;
+        expr->data_type = (ASTType_T*) primitives[TY_I32];
+
+        parser_consume(p, TOKEN_ID, "expect identifier");
+        parser_consume(p, TOKEN_LPAREN, "expect `(` after `reg_class`");
+        
+        expr->r_type = parse_type(p);
+        parser_consume(p, TOKEN_RPAREN, "expect `)` after `reg_class`");
+
+    }
+    else
+        throw_error(ERR_UNDEFINED, p->tok, "Undefined builtin type expression `%s`", p->tok->value);
+    return expr;
+}
+
+static ASTNode_T* parse_type_expr(Parser_T* p)
+{
+    ASTNode_T* expr = init_ast_node(ND_TYPE_EXPR, p->tok);
     parser_consume(p, TOKEN_LPAREN, "expect `(` for type comparison");
     parser_consume(p, TOKEN_TYPE, "expect `type` for type comparison");
     parser_consume(p, TOKEN_RPAREN, "expect `)` after `type` keyword");
 
-    cmp->l_type = parse_type(p);
+    if(tok_is(p, TOKEN_ID) && parser_peek(p, 1)->type == TOKEN_LPAREN)
+    {
+        return parse_builtin_type_exprs(p, expr);
+    }
+
+    expr->l_type = parse_type(p);
     
     switch(p->tok->type)
     {
@@ -1994,7 +2008,7 @@ static ASTNode_T* parse_type_cmp(Parser_T* p)
         case TOKEN_GT_EQ:
         case TOKEN_LT:
         case TOKEN_LT_EQ:
-            cmp->cmp_kind = p->tok->type;
+            expr->cmp_kind = p->tok->type;
             parser_advance(p);
             break;
         
@@ -2002,16 +2016,16 @@ static ASTNode_T* parse_type_cmp(Parser_T* p)
             throw_error(ERR_SYNTAX_ERROR, p->tok, "expect one of `==` `!=` `>` `>=` `<` `<=`, got `%s`", p->tok->value);
     }
 
-    cmp->r_type = parse_type(p);
-    cmp->data_type = (ASTType_T*) primitives[TY_BOOL];
+    expr->r_type = parse_type(p);
+    expr->data_type = (ASTType_T*) primitives[TY_BOOL];
 
-    return cmp;
+    return expr;
 }
 
 static ASTNode_T* parse_closure(Parser_T* p)
 {
     if(parser_peek(p, 1)->type == TOKEN_TYPE)
-        return parse_type_cmp(p);
+        return parse_type_expr(p);
 
     // if compiled to C, closures must be represented in the AST
     if(global.ct == CT_TRANSPILE)
@@ -2075,19 +2089,6 @@ static ASTNode_T* parse_len(Parser_T* p)
     len->data_type = (ASTType_T*) primitives[TY_U64];
 
     return len;
-}
-
-static ASTNode_T* parse_va_arg(Parser_T* p)
-{
-    ASTNode_T* va_arg = init_ast_node(ND_VA_ARG, p->tok);
-    parser_consume(p, TOKEN_VA_ARG, "expect `va_arg` keyword");
-
-    va_arg->expr = parse_expr(p, LOWEST, TOKEN_COLON);
-    parser_consume(p, TOKEN_COLON, "expect `:` after `va_arg` expression");
-
-    va_arg->data_type = parse_type(p);
-
-    return va_arg;
 }
 
 static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left)

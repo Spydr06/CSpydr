@@ -140,8 +140,6 @@ const char* type_kind_to_str(ASTTypeKind_T kind)
         case TY_LAMBDA:
         case TY_FN:
             return "fn";
-        case TY_VA_LIST:
-            return "va list";
         case TY_TEMPLATE:
             return "<template>";
         case TY_UNDEF:

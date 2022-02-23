@@ -1,14 +1,76 @@
-import "io.csp";
+#import "io.csp";
+import "libc/stdio.csp";
 
 #[
     with "using"
 ]#
 
-fn main(): i32 {
-    using std, std::math;
+type VAElem: struct {
+    gp_offset: u32,
+    fp_offset: u32,
+    overflow_arg_area: &void,
+    reg_save_area: &void
+};  
 
-    write!(out, 2 `pow` 4);
-    write!(out, "\n");
+type VAList: VAElem[1];
+
+macro va_start(ap) {
+    (*(ap) = *(__va_area__: &VAElem))
+}
+
+macro va_arg(ap, ty) {
+    (
+        *((
+            if (type) __reg_class(ty) == 0
+                => va_arg_gp((ap), sizeof (ty), alignof (ty))
+            else if (type) __reg_class(ty) == 1
+                => va_arg_fp((ap), sizeof (ty), alignof (ty))
+            else va_arg_mem((ap), sizeof (ty), alignof (ty))
+        ): &(ty))
+    )
+}
+
+fn va_arg_mem(ap: &VAElem, sz: i32, align: i32): &void
+{
+    let p: &void = ap.overflow_arg_area;
+    if align > 8
+        p = ((p + 15) / 16 * 16);
+    ap.overflow_arg_area = (((p + sz + 7): u64) / 8 * 8);
+    <- p;
+}
+
+fn va_arg_gp(ap: &VAElem, sz: i32, align: i32): &void {
+    if ap.gp_offset >= 48
+        <- va_arg_mem(ap, sz, align);
+    
+    let r: &void = ap.reg_save_area + (ap.gp_offset: u64);
+    ap.gp_offset += 8;
+    <- r;
+}
+
+fn va_arg_fp(ap: &VAElem, sz: i32, align: i32): &void {
+    if ap.fp_offset >= 112
+        <- va_arg_mem(ap, sz, align);
+    
+    let r: &void = ap.reg_save_area + (ap.fp_offset: u64);
+    ap.fp_offset += 8;
+    <- r;
+}
+
+fn va_test(a: i32, ...)
+{
+    let list: VAList;
+    va_start!(list);
+
+    let x = va_arg!(list, i32);
+    printf("%d\n", x);
+
+    let y = va_arg!(list, f32);
+    printf("%f\n", y: f64);
+}
+
+fn main(): i32 {
+    va_test(1, 2, 3.1415);
 
     <- 0;
 }

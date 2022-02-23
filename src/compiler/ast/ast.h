@@ -79,7 +79,7 @@ typedef enum {
     ND_SIZEOF,  // sizeof x
     ND_ALIGNOF, // alignof x
 
-    ND_TYPE_CMP, // type comparisons: "(type) T == U"
+    ND_TYPE_EXPR, // type expressions like: "(type) T == U" or "(type) reg_class(T)"
 
     // statements
     ND_BLOCK,   // {...}
@@ -97,7 +97,6 @@ typedef enum {
     ND_BREAK,     // break;
     ND_CONTINUE,  // continue;
     ND_LEN,       // len x
-    ND_VA_ARG,    // va_arg x: i32
     ND_USING,     // using x::y
 
     ND_STRUCT_MEMBER,  // struct members
@@ -134,7 +133,6 @@ typedef enum {
 
     TY_LAMBDA,
     TY_FN,
-    TY_VA_LIST,
     TY_TEMPLATE,
 
     TY_UNDEF,
@@ -300,6 +298,7 @@ struct AST_OBJ_STRUCT
     bool referenced     : 1;
     bool is_entry_point : 1;
     bool no_return      : 1;
+    bool is_variadic;
 
     ASTType_T* data_type;
     ASTNode_T* value;

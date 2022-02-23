@@ -47,7 +47,7 @@ void compile(char* input_file, char* output_file, Action_T action)
             generate_json(&ast, output_file, global.print_code, global.silent);
             break;
         default:
-            LOG_ERROR_F("[Error] Unknown compile type %d!\n", global.ct);
+            LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " Unknown compile type %d!\n", global.ct);
             exit(1);
     }
 

@@ -361,16 +361,16 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
             if(obj->is_extern)
                 continue;
 
-            if(is_variadic(obj))
-            {
-                char* id = "__csp_alloca_size__";
-                obj->va_area = init_ast_obj(OBJ_LOCAL, obj->tok);
-                obj->va_area->id = init_ast_identifier(obj->tok, id);
-                obj->va_area->data_type = init_ast_type(TY_ARR, obj->tok);
-                obj->va_area->data_type->align = 1;
-                obj->va_area->data_type->base = (ASTType_T*) primitives[TY_U8];
-                obj->va_area->data_type->size = 136;
-            }
+//            if(is_variadic(obj))
+//            {
+//                char* id = "__csp_alloca_size__";
+//                obj->va_area = init_ast_obj(OBJ_LOCAL, obj->tok);
+//                obj->va_area->id = init_ast_identifier(obj->tok, id);
+//                obj->va_area->data_type = init_ast_type(TY_ARR, obj->tok);
+//                obj->va_area->data_type->align = 1;
+//                obj->va_area->data_type->base = (ASTType_T*) primitives[TY_U8];
+//                obj->va_area->data_type->size = 136;
+//            }
 
             i32 top = 16, bottom = 0;
             i32 gp = 0, fp = 0;
@@ -432,7 +432,7 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
             {
                 ASTObj_T* var = obj->args->items[j];
                 ASTType_T* ty = unpack(var->data_type);
-                if(var->offset || ty->kind == TY_VA_LIST)
+                if(var->offset)
                     continue;
                 
                 // AMD64 System V ABI has a special alignment rule for an array of
@@ -646,7 +646,9 @@ static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs)
                                 gp++;
                         }
 
+                        obj->va_area->offset = -144;
                         i32 off = obj->va_area->offset;
+
                         // va_elem
 			            asm_println(cg, "  movl $%d, %d(%%rbp)", gp * 8, off);          // gp_offset
 			            asm_println(cg, "  movl $%d, %d(%%rbp)", fp * 8 + 48, off + 4); // fp_offset
@@ -677,7 +679,7 @@ static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs)
                     for(size_t j = 0; j < obj->args->size; j++)
                     {
                         ASTObj_T* arg = obj->args->items[j];
-                        if(arg->offset > 0 || unpack(arg->data_type)->kind == TY_VA_LIST)
+                        if(arg->offset > 0)
                             continue;
                         
                         ASTType_T* ty = unpack(arg->data_type);
@@ -1147,7 +1149,6 @@ static void asm_load(ASMCodegenData_T* cg, ASTType_T *ty) {
         case TY_ARR:
         case TY_STRUCT:
         case TY_FN:
-        case TY_VA_LIST:
             return;
         case TY_F32:
             asm_println(cg, "  movss (%%rax), %%xmm0");

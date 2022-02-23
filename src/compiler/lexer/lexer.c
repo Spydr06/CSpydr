@@ -43,7 +43,6 @@ const struct {
     {"continue", TOKEN_CONTINUE},
     {"noop", TOKEN_NOOP},
     {"len", TOKEN_LEN},
-    {"va_arg", TOKEN_VA_ARG},
     {"asm", TOKEN_ASM},
     {"using", TOKEN_USING},
     {NULL, TOKEN_EOF}   // end of array indicator

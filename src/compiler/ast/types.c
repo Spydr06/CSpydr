@@ -31,7 +31,6 @@ const ASTType_T* primitives[NUM_TYPES] = {    // sets the primitive data types, 
     [TY_BOOL] = &(ASTType_T){.kind = TY_BOOL, .is_primitive = true, .size = BOOL_S},
     
     [TY_FN] = &(ASTType_T){.kind = TY_FN, .is_primitive = true},
-    [TY_VA_LIST] = &(ASTType_T){.kind = TY_VA_LIST, .is_primitive = true},
 };
 
 const struct StrTypeIdx str_type_map[NUM_TYPES] = { // a lookup-chart to find the corresponding data-types from a string
