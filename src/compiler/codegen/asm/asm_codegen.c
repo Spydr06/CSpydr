@@ -497,10 +497,10 @@ static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var, ASTNode_T* v
                 for(i32 i = 0; i < I64_S; i++)
                     asm_println(cg, "  .byte %d", bytes[i]);
             } return;
-        case ND_LLONG:
+        case ND_ULONG:
             {
-                u8* bytes = (u8*)&val->llong_val;
-                for(i32 i = 0; i < I64_S; i++)
+                u8* bytes = (u8*)&val->ulong_val;
+                for(i32 i = 0; i < U64_S; i++)
                     asm_println(cg, "  .byte %d", bytes[i]);
             } return;
         case ND_FLOAT:
@@ -1406,12 +1406,14 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                     case ND_LONG:
                         asm_print(cg, "$%ld", arg->long_val);
                         break;
-                    case ND_LLONG:
-                        asm_print(cg, "$%lld", arg->llong_val);
+                    case ND_ULONG:
+                        asm_print(cg, "$%lu", arg->ulong_val);
                         break;
                     case ND_ID:
                         asm_gen_id_ptr(cg, arg);
                         break;
+                    default:
+                        unreachable();
                 }
             }
             asm_print(cg, "\n");
@@ -1437,8 +1439,8 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_LONG:
             asm_println(cg, "  mov $%ld, %%rax", node->long_val);
             return;
-        case ND_LLONG:
-            asm_println(cg, "  mov $%lld, %%rax", (long long) node->llong_val);
+        case ND_ULONG:
+            asm_println(cg, "  mov $%lu, %%rax", node->ulong_val);
             return;
         case ND_CHAR:
             asm_println(cg, "  mov $%d, %%rax", (i32) asm_gen_char(cg, node));

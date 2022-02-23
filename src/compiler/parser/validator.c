@@ -16,9 +16,6 @@
 #include <math.h>
 
 #define GET_VALIDATOR(va) Validator_T* v = va_arg(va, Validator_T*)
-#define MIN(a, b) (a < b ? a : b)
-#define MAX(a, b) (a > b ? a : b)
-
 #define uncr(v) (v)->uncritical_errors++
 
 // validator structs
@@ -382,7 +379,7 @@ static void scope_add_obj(Validator_T* v, ASTObj_T* obj)
     if(found)
     {
         throw_error(ERR_REDEFINITION, obj->id->tok, 
-            "redefinition of %s `%s`.\nfirst defined in " COLOR_BOLD_WHITE "%s " COLOR_RESET "at line " COLOR_BOLD_WHITE "%lld" COLOR_RESET " as %s.", 
+            "redefinition of %s `%s`.\nfirst defined in " COLOR_BOLD_WHITE "%s " COLOR_RESET "at line " COLOR_BOLD_WHITE "%u" COLOR_RESET " as %s.", 
             obj_kind_to_str(obj->kind), obj->id->callee, 
             found->tok->source->short_path ? found->tok->source->short_path : found->tok->source->path, 
             found->tok->line + 1,
@@ -400,7 +397,7 @@ static void scope_add_node(Validator_T* v, ASTNode_T* node)
     if(found)
     {
         throw_error(ERR_REDEFINITION, node->id->tok, 
-            "redefinition of member `%s`.\nfirst defined in " COLOR_BOLD_WHITE "%s " COLOR_RESET "at line " COLOR_BOLD_WHITE "%lld" COLOR_RESET, 
+            "redefinition of member `%s`.\nfirst defined in " COLOR_BOLD_WHITE "%s " COLOR_RESET "at line " COLOR_BOLD_WHITE "%u" COLOR_RESET, 
             node->id->callee, 
             found->tok->source->short_path ? found->tok->source->short_path : found->tok->source->path, 
             found->tok->line + 1
@@ -1017,7 +1014,7 @@ static void call(ASTNode_T* call, va_list args)
     ASTObj_T* called_obj = search_identifier(v->current_scope, call->expr->id);
     if(!called_obj)
     {
-        throw_error(ERR_UNDEFINED, call->expr->tok, "undefined identifier `%s`");
+        throw_error(ERR_UNDEFINED, call->expr->tok, "undefined callee");
         return;
     }
     called_obj->referenced = true;
@@ -1564,7 +1561,7 @@ static void type_expr(ASTNode_T* cmp, va_list args)
     // convert the expression to a constant value
     cmp->kind = ND_BOOL;
     cmp->bool_val = result;
-    cmp->data_type = (ASTNode_T*) primitives[TY_BOOL];
+    cmp->data_type = (ASTType_T*) primitives[TY_BOOL];
 }
 
 // types

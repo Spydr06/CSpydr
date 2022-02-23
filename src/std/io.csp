@@ -1,6 +1,7 @@
 import "syscall.csp";
 import "str.csp";
 import "types.csp";
+import "utils.csp";
 
 macro stdin  {0}
 macro stdout {1}
@@ -103,6 +104,20 @@ namespace std {
         fn close(fd: i32)
         {
             syscall::close(fd); # error handling
+        }
+
+        fn printf(fmt: const &char, args: ...): i32
+            <- vfprintf(out, fmt, args);
+
+        fn eprintf(fmt: const &char, args: ...): i32
+            <- vfprintf(err, fmt, args);
+
+        fn fprintf(fd: i32, fmt: const &char, args: ...): i32
+            <- vfprintf(fd, fmt, args);
+
+        fn vfprintf(fd: i32, fmt: const &char, args: &va::Element): i32
+        {
+            
         }
 
         fn write(fd: i32, buf: const &char) 

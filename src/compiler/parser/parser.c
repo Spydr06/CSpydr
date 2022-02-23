@@ -1619,8 +1619,8 @@ static ASTNode_T* parse_int_lit(Parser_T* p)
     }
     else
     {
-        lit->kind = ND_LLONG;
-        lit->llong_val = num;
+        lit->kind = ND_ULONG;
+        lit->ulong_val = num;
         lit->data_type = get_primitive_type("u64");
     }
 

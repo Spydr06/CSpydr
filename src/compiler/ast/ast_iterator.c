@@ -110,7 +110,6 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
     
         case ND_INT:
         case ND_LONG:
-        case ND_LLONG:
         case ND_FLOAT:
         case ND_DOUBLE:
         case ND_BOOL:

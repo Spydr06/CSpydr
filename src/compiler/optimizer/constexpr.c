@@ -79,8 +79,8 @@ u64 const_i64(ASTNode_T* node)
             return node->int_val;
         case ND_LONG:
             return node->long_val;
-        case ND_LLONG:
-            return node->llong_val;
+        case ND_ULONG:
+            return node->ulong_val;
         case ND_FLOAT:
             return (u64) node->float_val;
         case ND_DOUBLE:

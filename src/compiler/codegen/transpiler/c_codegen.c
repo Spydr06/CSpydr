@@ -549,8 +549,8 @@ static void c_gen_asm(CCodegenData_T* cg, ASTNode_T* node)
             case ND_LONG:
                 print(cg, "$%ld", arg->long_val);
                 break;
-            case ND_LLONG:
-                print(cg, "$%lld", arg->llong_val);
+            case ND_ULONG:
+                print(cg, "$%lu", arg->ulong_val);
                 break;
             case ND_ID:
                 print(cg, "%%%ld", id_count++);
@@ -570,6 +570,8 @@ static void c_gen_asm(CCodegenData_T* cg, ASTNode_T* node)
                     }
                 }
                 break;
+            default:
+                unreachable();
         }
     }
 
@@ -599,10 +601,10 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, "%d", node->int_val);
             break;
         case ND_LONG:
-            print(cg, "%ldL", node->long_val);
+            print(cg, "%ldl", node->long_val);
             break;
-        case ND_LLONG:
-            print(cg, "%lldLL", node->llong_val);
+        case ND_ULONG:
+            print(cg, "%lulu", node->ulong_val);
             break;
         case ND_FLOAT:
             print(cg, "%f", node->float_val);

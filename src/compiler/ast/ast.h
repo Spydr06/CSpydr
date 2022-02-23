@@ -25,7 +25,7 @@ typedef enum {
     // literals
     ND_INT,     // 0
     ND_LONG,
-    ND_LLONG, 
+    ND_ULONG, 
     ND_FLOAT,   // 0.1
     ND_DOUBLE,
     ND_BOOL,    // true, false
@@ -168,7 +168,7 @@ struct AST_NODE_STRUCT
         i32 int_val;
         i64 offset;
         i64 long_val;
-        i128 llong_val;
+        u64 ulong_val;
         f32 float_val;
         f64 double_val;
         bool bool_val;
