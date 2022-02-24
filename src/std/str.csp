@@ -3,6 +3,7 @@ import "types.csp";
 import "utils.csp";
 import "option.csp";
 import "math.csp";
+import "vec.csp";
 
 # a macro to crate a string
 macro str() {
@@ -125,17 +126,17 @@ namespace std {
             <- none!();
         }
 
-       # fn split(str: String, delim: String): &::std::String {
-       #     let str_vec = vec![String];
-#
-       #     let token: &char;
-       #     while (token = ::strsep(&str, delim)) != nil {
-       #         let part = init(token);
-       #         vec_add!(str_vec, part);
-       #     }
-#
-       #     <- str_vec;
-       # }
+        fn split(str: String, delim: String): &::std::String {
+            let str_vec = vec![String];
+ 
+            let token: &char;
+            while (token = c_str::strsep(&str, delim)) != nil {
+                let part = init(token);
+                vec_add!(str_vec, part);
+            }
+ 
+            <- str_vec;
+        }
 
         fn size(str: String): u64 
         {
@@ -189,6 +190,8 @@ namespace std {
     }
 
     namespace c_str {
+        type LongWord: u64;
+
         namespace __static {
             let __strtok_old: &char = nil;
         }
@@ -212,6 +215,20 @@ namespace std {
 
         fn strcpy(dest: &char, src: const &char)
             copy(dest, src);
+        
+        fn strncpy(s1: &char, s2: const &char, n: usize): &char 
+        {
+            let size = strnlen(s2, n);
+            if size != n
+                mem::set(s1 + size, '\0', n - size);
+            <- mem::copy(s1, s2, size);
+        }
+
+        fn strcat(dest: &char, src: const &char): &char
+        {
+            strcpy(dest + strlen(dest), src);
+            <- dest;
+        }
 
         fn strstr(str: &char, substr: &char): &char
         {
@@ -233,7 +250,7 @@ namespace std {
             let begin = *stringp;
             if begin == nil ret nil;
 
-            let end: &char = begin + 0;#strspn(begin, delim);
+            let end: &char = begin + strspn(begin, delim);
 
             if (*end) != 0 {
                 (*end)++;
@@ -249,37 +266,70 @@ namespace std {
         # of S which contains only characters in ACCEPT.
         fn strspn(s: const &char, accept: const &char): usize
         {
-            let count: usize = 0;
-            let ptr: &char;
-            let a: &char;
+            let n: usize = 0;
+            let p: &char = nil;
 
-            for ptr = s; (*ptr) != '\0'; ptr++; {
-                for a = accept; (*a) != '\0'; a++; {
-                    if (*ptr) == *a 
-                        break;
-                    if (*a) == '\0'
-                        <- count;
-                    count++;
-                }
+            for n = 0; *s; n++; {
+                s++;
+                for p = accept; (*p) != '\0' && (*p) != *s; p++;
+                    noop;
+                if !*p
+                    break;
             }
 
-            <- count;
+            <- n;
         }
         
-        # Find the first occurrence in S of any character in ACCEPT.
-        fn strpbrk(s: const &char, accept: const &char): &char
+        # Return the length of the maximum initial segment of S
+        # which contains no characters from REJECT.
+        fn strcspn(str: &char, reject: const &char): usize
         {
-            while (*s) != '\0' {
-                let a: &char = accept;
-                while (*a) != '\0'
-                    if (*a)++ == *s 
-                        ret s;
-                s++;
+            let size: usize = 0;
+
+            if (str == nil) || (reject == nil)
+                <- nil;
+            
+            while *str {
+                if strchr(reject, *str)
+                    <- size;
+                str++;
+                size++;
             }
+
+            <- size;
+        }
+        
+        # Find the first occurrence of C in S.
+        fn strchr(s: const &char, c_in: i32): const &char
+        {
+            if s == nil || c_in > 255 || c_in < 0
+                <- nil;
+        
+            let s_len = strlen(s);
+            for let i: usize = 0; i < s_len; i++;
+                if (c_in: char) == s[i]
+                    <- (&s[i]): const &char;
 
             <- nil;
         }
+        
+        # Find the first occurrence in S of any character in ACCEPT.
+        fn strpbrk(s: &char, accept: const &char): &char
+        {
+            s += strcspn(s, accept);
+            <- if (*s) != '\0' => s: &char else nil;
+        }
 
+        #[ 
+            Parse S into tokens separated by characters in DELIM.
+            If S is NULL, the last string strtok() was called with is
+            used.  For example:
+	        char s[] = "-abc-=-def";
+	        x = strtok(s, "-");		// x = "abc"
+	        x = strtok(NULL, "-=");		// x = "def"
+	        x = strtok(NULL, "=");		// x = NULL
+		    // s = "abc\0=-def\0"
+        ]#
         fn strtok(s: &char, delim: const &char): &char
         {
             if s == nil 
@@ -304,8 +354,8 @@ namespace std {
 
             <- token;
         }
-
-        type LongWord: u64;
+        
+        # Search no more than N bytes of S for C.
         fn memchr(s: const &void, c_in: i32, n: usize): &void
         {
             let c = c_in: u8;

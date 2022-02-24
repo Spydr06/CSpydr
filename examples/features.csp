@@ -5,9 +5,7 @@ import "str.csp";
 fn main(): i32 {
     using std::c_str;
     
-    let str = "please,separate,this,by,comma!\n";
-    let token = strtok(str, ",");
-
+    let token = strtok("please,separate,this,by,comma!", ",");
 
     while token != nil {
         printf("%s\n", token);

@@ -1364,7 +1364,7 @@ static void local_initializer(Validator_T* v, ASTNode_T* assign, ASTObj_T* local
         }
         local->data_type = assign->right->data_type;
     }
-    if(local->data_type->is_vla && !vla_to_array_type(v, local->data_type, local->value))
+    if(local->data_type->is_vla && !vla_to_array_type(v, local->data_type, assign->right))
             throw_error(ERR_TYPE_ERROR, local->data_type->tok, "vla type is not allowed for local variables");
 
     if(local->data_type->is_constant)
