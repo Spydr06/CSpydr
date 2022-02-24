@@ -117,7 +117,7 @@ namespace std {
 
         fn vfprintf(fd: i32, fmt: const &char, args: &va::Element): i32
         {
-            
+            <- 0;
         }
 
         fn write(fd: i32, buf: const &char) 

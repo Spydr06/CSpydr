@@ -1,20 +1,20 @@
 #import "io.csp";
 import "libc/stdio.csp";
-import "utils.csp";
-import "math.csp";
-import "option.csp";
-
-fn va_test(a: i32, list: ...)
-{
-    let x = va_arg!(list, i32);
-    printf("%d\n", x);
-
-    let y = va_arg!(list, f32);
-    printf("%f\n", y: f64);
-}
+import "str.csp";
 
 fn main(): i32 {
-    va_test(1, 2, 3.1415);
+    using std::c_str;
+    
+    let str = "please,separate,this,by,comma!\n";
+    let token = strtok(str, ",");
+
+
+    while token != nil {
+        printf("%s\n", token);
+        token = strtok(nil, ",");
+    }
+
+    printf("<END>\n");
 
     <- 0;
 }

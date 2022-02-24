@@ -865,22 +865,20 @@ static void local_end(ASTObj_T* local, va_list args)
 {
     GET_VALIDATOR(args);
 
-    if(!local->data_type)
+   /* if(!local->data_type)
     {
         if(!local->value->data_type)
         {
             throw_error(ERR_TYPE_ERROR, local->value->tok, "could not resolve datatype for `%s`", local->id->callee);
             return;
         }
-
         local->data_type = local->value->data_type;
     }
-
     if(local->data_type->is_vla && !vla_to_array_type(v, local->data_type, local->value))
-        throw_error(ERR_TYPE_ERROR, local->data_type->tok, "vla type is not allowed for local variables");
-
+            throw_error(ERR_TYPE_ERROR, local->data_type->tok, "vla type is not allowed for local variables");
+     
     if(local->data_type->is_constant)
-        local->is_constant = true;    
+        local->is_constant = true; */
 }
 
 static void fn_arg_start(ASTObj_T* arg, va_list args)
@@ -1355,6 +1353,25 @@ static void cast(ASTNode_T* cast, va_list args)
     //todo: check, if type conversion is valid and safe
 }
 
+static void local_initializer(Validator_T* v, ASTNode_T* assign, ASTObj_T* local)
+{
+    if(!local->data_type)
+    {
+        if(!assign->right->data_type)
+        {
+            throw_error(ERR_TYPE_ERROR, local->id->tok, "could not resolve datatype for `%s`", local->id->callee);
+            return;
+        }
+        local->data_type = assign->right->data_type;
+    }
+    if(local->data_type->is_vla && !vla_to_array_type(v, local->data_type, local->value))
+            throw_error(ERR_TYPE_ERROR, local->data_type->tok, "vla type is not allowed for local variables");
+
+    if(local->data_type->is_constant)
+        local->is_constant = true;
+    assign->left->data_type = local->data_type;
+}
+
 static void assignment_start(ASTNode_T* assign, va_list args)
 {
     GET_VALIDATOR(args);
@@ -1363,6 +1380,10 @@ static void assignment_start(ASTNode_T* assign, va_list args)
 static void assignment_end(ASTNode_T* assign, va_list args)
 {
     GET_VALIDATOR(args);
+
+    // if the assignments initializes a local variable, resolve the variables type
+    if(assign->is_initializing && assign->referenced_obj)
+        local_initializer(v, assign, assign->referenced_obj);
 
     switch(assign->left->kind)
     {
@@ -1374,7 +1395,7 @@ static void assignment_end(ASTNode_T* assign, va_list args)
             break;
         case ND_ID: 
         {
-            ASTObj_T* assigned_obj = search_in_scope(v->current_scope, assign->left->id->callee);
+            ASTObj_T* assigned_obj = assign->is_initializing ? assign->referenced_obj : search_in_scope(v->current_scope, assign->left->id->callee);
             if(!assigned_obj)
                 return;
 

@@ -6,6 +6,7 @@ let board: i32[board_cap!];
 
 fn main(argc: i32, argv: &&char): i32
 {
+    using std::io;
     board[board_cap! - 2] = 1;
 
     for let i = 0; i < board_cap! - 2; i++;
@@ -13,9 +14,9 @@ fn main(argc: i32, argv: &&char): i32
         for let j = 0; j < board_cap!; j++;
         {
             let c = " *"[board[j]];
-            std::io::putc(c);
+            putc(c);
         }
-        std::io::putc('\n');
+        putc('\n');
 
         let pattern = ((board[0] << 1) | board[1]);
         for let j = 1; j < board_cap! - 1; j++;

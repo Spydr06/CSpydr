@@ -225,6 +225,7 @@ struct AST_NODE_STRUCT
     };
 
     bool is_assigning: 1;
+    bool is_initializing: 1;
 
     // expression statement
     bool is_constant: 1;
@@ -251,7 +252,7 @@ struct AST_IDENTIFIER_STRUCT
     ASTIdentifier_T* outer;
 
     bool global_scope : 1;
-} __attribute((packed));
+} __attribute__((packed));
 
 struct AST_TYPE_STRUCT 
 {

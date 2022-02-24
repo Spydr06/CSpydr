@@ -176,9 +176,23 @@ namespace std {
         {
             <- str!{[c, '\0']};
         }
+
+        fn format(fmt: const &char, args: ...): &void
+            <- va_format(fmt, args);
+
+        fn va_format(fmt: const &char, args: &va::Element): &void
+        {
+            let str = str!{};
+
+            <- nil;
+        }
     }
 
     namespace c_str {
+        namespace __static {
+            let __strtok_old: &char = nil;
+        }
+
         # gets the length of a traditional C string without the null terminator
         fn get_len(str: const &char): usize
         {
@@ -187,11 +201,17 @@ namespace std {
             <- length;
         }
 
+        fn strlen(str: const &char): usize
+            <- get_len(str);
+
         # similar to c_str::copy
         fn copy(dest: &char, src: const &char)
         {
             mem::move(dest, src, get_len(src));
         }
+
+        fn strcpy(dest: &char, src: const &char)
+            copy(dest, src);
 
         fn strstr(str: &char, substr: &char): &char
         {
@@ -225,17 +245,112 @@ namespace std {
             <- begin;
         }
         
-        # only works with unsigned character (u8)
-        fn strspn(str: const &u8, chrs: const &u8): usize
+        # Return the length of the maximum initial segment
+        # of S which contains only characters in ACCEPT.
+        fn strspn(s: const &char, accept: const &char): usize
         {
-            let ta: u8[32];
-            mem::zero(ta, sizeof typeof ta);
-            let i: usize;
-            for i = 0; chrs[i] != 0; i++;
-                ta[chrs[i] >> 3] |= 0x1 << (chrs[i] % 8);
-            for i = 0; (ta[str[i] >> 3] >> (str[i] % 8)) & 0x1; i++;
-                noop;
-            <- i;
+            let count: usize = 0;
+            let ptr: &char;
+            let a: &char;
+
+            for ptr = s; (*ptr) != '\0'; ptr++; {
+                for a = accept; (*a) != '\0'; a++; {
+                    if (*ptr) == *a 
+                        break;
+                    if (*a) == '\0'
+                        <- count;
+                    count++;
+                }
+            }
+
+            <- count;
+        }
+        
+        # Find the first occurrence in S of any character in ACCEPT.
+        fn strpbrk(s: const &char, accept: const &char): &char
+        {
+            while (*s) != '\0' {
+                let a: &char = accept;
+                while (*a) != '\0'
+                    if (*a)++ == *s 
+                        ret s;
+                s++;
+            }
+
+            <- nil;
+        }
+
+        fn strtok(s: &char, delim: const &char): &char
+        {
+            if s == nil 
+                s = __static::__strtok_old;
+            
+            # scan leading delimeters
+            s += strspn(s, delim);
+            if (*s) == '\0' {
+                __static::__strtok_old = s;
+                <- nil;
+            }
+
+            # find the end of the token
+            let token = s;
+            s = strpbrk(token, delim);
+            if s == nil
+                __static::__strtok_old = rawmemchr(token, '\0');
+            else {
+                (*s) = '\0';
+                __static::__strtok_old = s + 1;
+            }
+
+            <- token;
+        }
+
+        type LongWord: u64;
+        fn memchr(s: const &void, c_in: i32, n: usize): &void
+        {
+            let c = c_in: u8;
+            let ch_ptr: &u8;
+
+            for ch_ptr = (s: const &u8); n > 0 && (ch_ptr: u64 % sizeof LongWord) != 0; n--; {
+                ch_ptr++;
+                if (*ch_ptr) == c
+                    <- ch_ptr: &void;
+            }
+
+            let longword_ptr = ch_ptr: &LongWord;
+            let repeated_one: LongWord = 0x01010101;
+            let repeated_c: LongWord = c | (c << 8);
+            if 0xffffffff: u64 < (-1: LongWord) {
+                repeated_one |= repeated_one << 31 << 1;
+                repeated_c |= repeated_c << 31 << 1;
+            }
+
+            while n >= sizeof LongWord {
+                let longword1: LongWord = (*longword_ptr) ^ repeated_c;
+
+                if (((longword1 - repeated_one) & ~longword1) & (repeated_one << 7)) != 0
+                    break;
+
+                longword_ptr++;
+                n -= sizeof LongWord;
+            }
+
+            ch_ptr = longword_ptr: const &u8;
+
+            for ; n > 0; n--; {
+                ch_ptr++;
+                if (*ch_ptr) == c
+                    <- ch_ptr: &void;
+            }
+
+            <- nil;
+        }
+
+        fn rawmemchr(s: const &void, c: i32): &void
+        {
+            if c != '\0' 
+                <- memchr(s, c, (-1): usize);
+            <- (s + strlen(s)): &char;
         }
 
         fn reverse(str: &char)

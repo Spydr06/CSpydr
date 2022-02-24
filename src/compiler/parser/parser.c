@@ -1397,7 +1397,7 @@ static ASTNode_T* parse_local(Parser_T* p)
     local->id = parse_simple_identifier(p);
     id->id = local->id;
     
-    ASTNode_T* value = init_ast_node(ND_NOOP, p->tok);
+    ASTNode_T* value = NULL;
 
     if(tok_is(p, TOKEN_COLON))
     {
@@ -1422,8 +1422,14 @@ static ASTNode_T* parse_local(Parser_T* p)
         assignment->right = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
         assignment->right->is_assigning = assignment->right->kind == ND_ARRAY || assignment->right->kind == ND_STRUCT;
         value = assignment;
+    }
 
-        local->value = assignment->right;
+    if(!value)
+        value = init_ast_node(ND_NOOP, p->tok);
+    else
+    {
+        value->referenced_obj = local;
+        value->is_initializing = true;
     }
 
     parser_consume(p, TOKEN_SEMICOLON, "expect `;` after variable definition");
@@ -1431,6 +1437,7 @@ static ASTNode_T* parse_local(Parser_T* p)
     if(!p->cur_block || (p->cur_block->kind != ND_BLOCK && p->cur_block->kind != ND_FOR))
         throw_error(ERR_SYNTAX_ERROR, local->tok, "cannot define a local variable outside a block statement");
     list_push(p->cur_block->locals, local);
+
     return value;
 }
 
