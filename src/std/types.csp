@@ -40,4 +40,12 @@ namespace std {
     type ssize_t: i64;
     type key_t: i32;
     type pid_t: i32;
+    type div_t: struct {
+        quot: i32,
+        rem: i32
+    };
+    type ldiv_t: struct {
+        quot: i64,
+        rem: i64
+    };
 }

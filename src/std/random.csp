@@ -1,0 +1,29 @@
+namespace std {
+    namespace random {
+        namespace __static {
+            let __seed: u64 = 0;
+        }
+
+        fn srand(s: u32)
+            __static::__seed = s - 1;
+        
+        fn rand(): i32
+        {
+            using __static;
+            __seed = 6364136223846793005 * __seed + 1;
+            <- __seed >> 33;
+        }
+
+        fn rand_r(seed: &u32): i32
+            <- temper((*seed) = (*seed) * 1103515245 + 12345) / 2;
+
+        fn temper(x: u32): u32 
+        {
+            x ^= x >> 11;
+            x ^= x << 7 & 0x9D2C5680;
+            x ^= x << 15 & 0xEFC60000;
+            x ^= x >> 18;
+            <- x;
+        }
+    }
+}

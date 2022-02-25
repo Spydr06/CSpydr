@@ -1,9 +1,10 @@
 #import "io.csp";
 import "libc/stdio.csp";
 import "str.csp";
+import "random.csp";
 
 fn main(): i32 {
-    using std::c_str;
+    using std, std::c_str;
     
     let token = strtok("please,separate,this,by,comma!", ",");
 
@@ -13,6 +14,9 @@ fn main(): i32 {
     }
 
     printf("<END>\n");
+
+    for let i = 0; i < 10; i++;
+        printf("%d\n", random::rand());
 
     <- 0;
 }
