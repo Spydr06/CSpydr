@@ -10,16 +10,12 @@ namespace std {
             let __strtok_old: &char = nil;
         }
 
-        # gets the length of a traditional C string without the null terminator
-        fn get_len(str: const &char): usize
+        fn strlen(str: const &char): usize
         {
             let length: usize = 0;
             while str[length] != nil length++;
             <- length;
         }
-
-        fn strlen(str: const &char): usize
-            <- get_len(str);
         
         fn strnlen(s: const &char, n: usize): usize
             <- strlen(s);
@@ -27,7 +23,7 @@ namespace std {
         # similar to c_str::copy
         fn copy(dest: &char, src: const &char)
         {
-            mem::move(dest, src, get_len(src));
+            mem::move(dest, src, strlen(src));
         }
 
         fn strcpy(dest: &char, src: const &char)
@@ -67,7 +63,7 @@ namespace std {
 
         fn strstr(str: &char, substr: &char): &char
         {
-            let size: usize = get_len(substr);
+            let size: usize = strlen(substr);
             let ref = substr;
 
             while (*str) != 0 && (*ref) != 0 {
@@ -258,7 +254,7 @@ namespace std {
 
         fn reverse(str: &char)
         {
-            let size = get_len(str);
+            let size = strlen(str);
             for let i: usize = 0; i < size / 2; i++;
                 swap!(str[i], str[size - i - 1]);
         }

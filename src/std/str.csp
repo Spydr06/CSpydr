@@ -64,7 +64,7 @@ namespace std {
                 str_data.size = 0;
             }
             else {
-                let v_len = c_str::get_len(value);
+                let v_len = c_str::strlen(value);
                 str_data = mem::alloc(sizeof StringData + v_len + 1);
                 str_data.alloc = v_len;
                 str_data.size = v_len;
@@ -87,13 +87,13 @@ namespace std {
         fn concat(dest: &String, src: String) 
         {
             let str_data = get_data(*dest);
-            let str_len = c_str::get_len(*dest);
-            str_data.alloc = str_data.alloc + c_str::get_len(src);
-            str_data.size = str_data.size + c_str::get_len(src);
+            let str_len = c_str::strlen(*dest);
+            str_data.alloc = str_data.alloc + c_str::strlen(src);
+            str_data.size = str_data.size + c_str::strlen(src);
             str_data = mem::realloc(str_data, sizeof StringData + str_data.alloc + 1);
             c_str::copy(&(str_data.buff[str_len]), src);
 
-            str_data.buff[str_len + c_str::get_len(src)] = '\0';
+            str_data.buff[str_len + c_str::strlen(src)] = '\0';
             *dest = &(str_data.buff[0]);
         }
 
@@ -111,7 +111,7 @@ namespace std {
         fn contains_char(str: String, c: char): bool
         {
             if !str ret false;
-            for let i: usize = 0; i < c_str::get_len(str); i++; {
+            for let i: usize = 0; i < c_str::strlen(str); i++; {
                 if str[i] == c ret true;
             }
             <- false;
@@ -121,7 +121,7 @@ namespace std {
         fn find_char(str: String, c: char): std::Option
         {
             if !str ret none!();
-            for let i: usize = 0; i < c_str::get_len(str); i++; {
+            for let i: usize = 0; i < c_str::strlen(str); i++; {
                 if str[i] == c ret some!(i);
             }
             <- none!();
@@ -141,7 +141,7 @@ namespace std {
 
         fn size(str: String): u64 
         {
-            <- c_str::get_len(str);
+            <- c_str::strlen(str);
         }
 
         fn substr(str: ::std::String, from: i64, to: i64): ::std::String 

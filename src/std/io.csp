@@ -122,7 +122,7 @@ namespace std {
 
         fn write(fd: i32, buf: const &char) 
         {
-            if syscall::write(fd, buf, c_str::get_len(buf) + 1) <= 0
+            if syscall::write(fd, buf, c_str::strlen(buf) + 1) <= 0
             {
                 # todo: fail assertion
                 ret;
@@ -131,7 +131,7 @@ namespace std {
 
         fn writeln(fd: i32, buf: const &char)
         {
-            if syscall::write(fd, buf, c_str::get_len(buf) + 1) <= 0
+            if syscall::write(fd, buf, c_str::strlen(buf) + 1) <= 0
             {
                 # todo: fail assertion
                 ret;
