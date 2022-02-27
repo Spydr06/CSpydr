@@ -1765,7 +1765,6 @@ static ASTNode_T* parse_struct_lit(Parser_T* p, ASTNode_T* id)
     parser_consume(p, TOKEN_STATIC_MEMBER, "expect `::` before `{`");
     ASTNode_T* struct_lit = init_ast_node(ND_STRUCT, p->tok);
     parser_consume(p, TOKEN_LBRACE, "expect `{` for struct literal");
-    struct_lit->is_constant = true;
     struct_lit->args = parse_expr_list(p, TOKEN_RBRACE);
     parser_consume(p, TOKEN_RBRACE, "expect `}` after struct literal");
 
@@ -1777,8 +1776,12 @@ static ASTNode_T* parse_struct_lit(Parser_T* p, ASTNode_T* id)
 
 static ASTNode_T* parse_anonymous_struct_lit(Parser_T* p)
 {
-    throw_error(ERR_INTERNAL, p->tok, "anonymous struct types are not implemented yet.");
-    return NULL;
+    ASTNode_T* struct_lit = init_ast_node(ND_STRUCT, p->tok);
+    parser_consume(p, TOKEN_LBRACE, "expect `{` for struct literal");
+    struct_lit->args = parse_expr_list(p, TOKEN_RBRACE);
+    parser_consume(p, TOKEN_RBRACE, "expect `}` after struct literal");
+
+    return struct_lit;
 }
 
 static ASTNode_T* parse_lambda_lit(Parser_T* p)

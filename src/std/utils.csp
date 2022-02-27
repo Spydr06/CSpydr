@@ -41,6 +41,11 @@ macro va_arg(ap, ty)
     )
 }
 
+macro va_copy(dest, src)
+{
+    (::std::va::copy((dest), (src)))
+}
+
 namespace std {
     type VAList: std::va::Element[1];
 

@@ -10,6 +10,7 @@
 #include "ast/ast.h"
 #include "codegen/codegen_utils.h"
 #include "lexer/token.h"
+#include "mem/mem.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -1430,9 +1431,42 @@ static void assignment_end(ASTNode_T* assign, va_list args)
     }
 }
 
+static void anonymous_struct_lit(ASTNode_T* s_lit, Validator_T* v)
+{
+    if(!s_lit->args->size)
+    {
+        throw_error(ERR_TYPE_ERROR_UNCR, s_lit->tok, "cannot resolve data type of empty anonymous struct literal `{}`");
+        uncr(v);
+        return;
+    }
+    ASTType_T* type = init_ast_type(TY_STRUCT, s_lit->tok);
+    mem_add_list(type->members = init_list(sizeof(struct AST_NODE_STRUCT*)));
+    
+    for(size_t i = 0; i < s_lit->args->size; i++)
+    {
+        ASTNode_T* arg = s_lit->args->items[i];
+        if(arg->data_type)
+        {
+            ASTNode_T* member = init_ast_node(ND_STRUCT_MEMBER, arg->tok);
+            char buffer[100];
+            sprintf(buffer, "_%ld", i);
+            member->id = init_ast_identifier(arg->tok, buffer);
+            member->data_type = arg->data_type;
+
+            list_push(type->members, member);
+        }
+        else
+            throw_error(ERR_TYPE_ERROR, arg->tok, "cannot resolve data type");
+    }
+    s_lit->data_type = type;
+}
+
 static void struct_lit(ASTNode_T* s_lit, va_list args)
 {
     GET_VALIDATOR(args);
+
+    if(!s_lit->data_type)
+        anonymous_struct_lit(s_lit, v);
 
     // When compiling to assembly, we have to allocate the memory on the stack.
     // this is done by creating an "anonymous" local variable of the struct type

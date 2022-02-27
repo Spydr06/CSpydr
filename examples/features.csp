@@ -17,6 +17,6 @@ fn main(): i32 {
 
     for let i = 0; i < 10; i++;
         printf("%d\n", random::rand());
-
+    
     <- 0;
 }
