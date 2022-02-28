@@ -63,7 +63,7 @@ typedef enum
     POWER      = 13, // x²
     INC        = 14, // x--
     DEC        = 14, // x++
-    ALIGNOF    = 15, // alignof x
+    X_OF    = 15,    // alignof x, sizeof x, typeof x
     CAST       = 16, // x: y
     CALL       = 17, // x(y)
     ARRAY      = 18, // x[y]
@@ -113,7 +113,11 @@ static ASTNode_T* parse_pow_3(Parser_T* p, ASTNode_T* left);
 
 static ASTNode_T* parse_current_fn_token(Parser_T* p);
 
-static struct { PrefixParseFn_T pfn; InfixParseFn_T ifn; Precedence_T prec; } expr_parse_fns[TOKEN_EOF + 1] = {
+static struct { 
+    PrefixParseFn_T pfn; 
+    InfixParseFn_T ifn; 
+    Precedence_T prec; 
+} expr_parse_fns[TOKEN_EOF + 1] = {
     [TOKEN_ID]       = {parse_id, NULL, LOWEST},
     [TOKEN_INT]      = {parse_int_lit, NULL, LOWEST},
     [TOKEN_ASM]      = {parse_inline_asm, NULL, LOWEST},
@@ -152,8 +156,8 @@ static struct { PrefixParseFn_T pfn; InfixParseFn_T ifn; Precedence_T prec; } ex
     [TOKEN_MULT]     = {NULL, parse_assignment, ASSIGN},   
     [TOKEN_DOT]      = {NULL, parse_member, MEMBER},
     [TOKEN_COLON]    = {NULL, parse_cast, CAST},
-    [TOKEN_SIZEOF]   = {parse_sizeof, NULL, LOWEST},
-    [TOKEN_ALIGNOF]  = {parse_alignof, NULL, ALIGNOF},
+    [TOKEN_SIZEOF]   = {parse_sizeof, NULL, X_OF},
+    [TOKEN_ALIGNOF]  = {parse_alignof, NULL, X_OF},
     [TOKEN_LEN]      = {parse_len, NULL, LOWEST},
     [TOKEN_POW_2]    = {NULL, parse_pow_2, POWER},
     [TOKEN_POW_3]    = {NULL, parse_pow_3, POWER},
@@ -741,7 +745,7 @@ static ASTType_T* parse_type(Parser_T* p)
             case TOKEN_TYPEOF:
                 type = init_ast_type(TY_TYPEOF, p->tok);
                 parser_advance(p);
-                type->num_indices = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+                type->num_indices = parse_expr(p, X_OF, TOKEN_SEMICOLON);
                 break;
             default:
                 type = init_ast_type(TY_UNDEF, p->tok);
