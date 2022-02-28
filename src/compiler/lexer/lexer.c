@@ -268,7 +268,7 @@ static Token_T* lexer_get_id(Lexer_T* lexer)
     return id_token;
 }
 
-static Token_T* lexer_get_hexadecimal(Lexer_T* lexer)
+static Token_T* lexer_get_int(Lexer_T* lexer, const char* digits, i32 base)
 {
     lexer_advance(lexer);    // cut the '0x'
     lexer_advance(lexer);
@@ -276,7 +276,7 @@ static Token_T* lexer_get_hexadecimal(Lexer_T* lexer)
     char buffer[__CSP_MAX_TOKEN_SIZE];
     strcpy(buffer, "");
 
-    while(isxdigit(lexer->c) || lexer->c == '_')
+    while(strchr(digits, lexer->c))
     {
         if(lexer->c == '_')
         {
@@ -288,35 +288,7 @@ static Token_T* lexer_get_hexadecimal(Lexer_T* lexer)
         lexer_advance(lexer);
     }
 
-    i64 decimal = strtol(buffer, NULL, 16);
-    sprintf(buffer, "%ld", decimal);
-
-    Token_T* token = init_token(buffer, lexer->line, lexer->pos, TOKEN_INT, lexer->file);
-    return token;
-}
-
-static Token_T* lexer_get_binary(Lexer_T* lexer)
-{
-    lexer_advance(lexer);    // cut the '0b'
-    lexer_advance(lexer);
-    
-    char buffer [__CSP_MAX_TOKEN_SIZE];
-    strcpy(buffer, "");
-
-    while(lexer->c == '0' || lexer->c == '1' || lexer->c == '_')
-    {
-        if(lexer->c == '_')
-        {
-            lexer_advance(lexer);
-            continue;
-        }
-
-        strcat(buffer, (char[2]){lexer->c, '\0'});
-
-        lexer_advance(lexer);
-    }
-
-    i64 decimal = strtol(buffer, NULL, 2);
+    i64 decimal = strtol(buffer, NULL, base);
     sprintf(buffer, "%ld", decimal);
 
     Token_T* token = init_token(buffer, lexer->line, lexer->pos, TOKEN_INT, lexer->file);
@@ -365,9 +337,11 @@ static Token_T* lexer_get_number(Lexer_T* lexer)
     {
         switch(lexer_peek(lexer, 1)) {
             case 'x':
-                return lexer_get_hexadecimal(lexer);
+                return lexer_get_int(lexer, "0123456789aAbBcCdDeEfF_", 16);
             case 'b':
-                return lexer_get_binary(lexer);
+                return lexer_get_int(lexer, "01_", 2);
+            case 'o':
+                return lexer_get_int(lexer, "01234567_", 8);
 
             default:
                 break;

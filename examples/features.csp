@@ -1,6 +1,4 @@
-#import "io.csp";
 import "libc/stdio.csp";
-import "str.csp";
 import "file.csp";
 
 fn main(): i32 {
