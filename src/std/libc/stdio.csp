@@ -25,7 +25,7 @@ macro SEEK_CUR { 1 }
 macro SEEK_END { 2 }
 macro SEEK_SET { 0 }
 
-type FILE: struct _IO_FILE;
+type FILE: void;
 
 type off_t: i64;
 

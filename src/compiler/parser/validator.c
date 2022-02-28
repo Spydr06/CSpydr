@@ -788,6 +788,12 @@ static void fn_end(ASTObj_T* fn, va_list args)
             uncr(v);
         }
     }
+
+    if(v->scope_depth == 1 && strcmp(fn->id->callee, "_start") == 0)
+    {
+        throw_error(ERR_MISC, fn->id->tok, "cannot name a function \"_start\" in global scope");
+        uncr(v);
+    }
 }
 
 static void namespace_start(ASTObj_T* namespace, va_list args)
@@ -1789,7 +1795,6 @@ static i32 get_type_size(Validator_T* v, ASTType_T* type)
                 return get_union_size(v, type);
             else
                 return get_struct_size(v, type);
-        case TY_OPAQUE_STRUCT:
         case TY_FN:
         default:
             return 0;

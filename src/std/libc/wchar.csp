@@ -81,7 +81,7 @@ extern {
 
     fn wcslen(s: const &wchar_t): size_t;
 
-    fn wcsftime(s: &wchar_t, maxsize: size_t, format: const &wchar_t, timeptr: const &struct tm): size_t;
+    fn wcsftime(s: &wchar_t, maxsize: size_t, format: const &wchar_t, timeptr: const &tm): size_t;
 
     fn btowc(c: i32): wint_t;
     fn wctob(c: wint_t): i32;

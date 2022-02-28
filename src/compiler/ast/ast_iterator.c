@@ -362,11 +362,6 @@ static void ast_type(ASTIteratorList_T* list, ASTType_T* type, va_list custom_ar
             list_fn(list->type_fns[TY_ARR], type, custom_args);
             break;
 
-        case TY_OPAQUE_STRUCT:
-            ast_id(list, type->id, false, custom_args);
-            list_fn(list->type_fns[TY_OPAQUE_STRUCT], type, custom_args);
-            break;
-
         case TY_ENUM:
             for(size_t i = 0; i < type->members->size; i++)
                 ast_node(list, type->members->items[i], custom_args);

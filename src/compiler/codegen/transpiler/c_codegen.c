@@ -325,9 +325,6 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
                     print(cg, "struct ");
                 print(cg, "%s", c_gen_identifier(cg, ty->id));
                 break;
-            case TY_OPAQUE_STRUCT:
-                print(cg, "struct %s", c_gen_identifier(cg, ty->id));
-                break;
             default:
                 throw_error(ERR_MISC, ty->tok, "Types with kind %d are currently not supported.", ty->kind);
                 break;

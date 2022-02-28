@@ -132,8 +132,6 @@ const char* type_kind_to_str(ASTTypeKind_T kind)
         case TY_ARR:
             return "[]";
         case TY_STRUCT:
-        case TY_OPAQUE_STRUCT:
-            return "struct";
             return "struct";
         case TY_ENUM:
             return "enum";

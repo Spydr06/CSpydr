@@ -288,8 +288,8 @@ static Token_T* lexer_get_int(Lexer_T* lexer, const char* digits, i32 base)
         lexer_advance(lexer);
     }
 
-    i64 decimal = strtol(buffer, NULL, base);
-    sprintf(buffer, "%ld", decimal);
+    u64 decimal = strtoll(buffer, NULL, base);
+    sprintf(buffer, "%lu", decimal);
 
     Token_T* token = init_token(buffer, lexer->line, lexer->pos, TOKEN_INT, lexer->file);
     return token;
@@ -347,7 +347,7 @@ static Token_T* lexer_get_number(Lexer_T* lexer)
                 break;
         }
     }
-    return lexer_get_decimal(lexer);    
+    return lexer_get_decimal(lexer); 
 }
 
 static Token_T* lexer_get_str(Lexer_T* lexer)

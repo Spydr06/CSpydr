@@ -37,13 +37,13 @@ extern {
     fn clock(): clock_t;
 
     fn difftime(t1: time_t, t2: time_t): f64;
-    fn mktime(timeptr: &struct tm): time_t;
+    fn mktime(timeptr: & tm): time_t;
     fn time(timer: &time_t): time_t;
-    fn timespec_get(ts: &struct timespec, base: i32): i32;
-    fn asctime(timeptr: const &struct tm): &char;
+    fn timespec_get(ts: & timespec, base: i32): i32;
+    fn asctime(timeptr: const & tm): &char;
     fn ctime(timer: const &time_t): &char;
-    fn gmtime(timer: const &time_t): &struct tm;
-    fn localtime(timer: const &time_t): &struct tm;
-    fn strftime(s: &char, maxsize: size_t, format: const &char, timeptr: const &struct tm): size_t;
+    fn gmtime(timer: const &time_t): & tm;
+    fn localtime(timer: const &time_t): & tm;
+    fn strftime(s: &char, maxsize: size_t, format: const &char, timeptr: const & tm): size_t;
 
 }

@@ -542,14 +542,6 @@ static ASTType_T* parse_struct_type(Parser_T* p)
         parser_consume(p, TOKEN_UNION, "expect `union` keyword for struct type");
     }
 
-    if(tok_is(p, TOKEN_ID))
-    {
-        struct_type->kind = TY_OPAQUE_STRUCT;
-        struct_type->id = parse_simple_identifier(p);
-
-        return struct_type;
-    }
-
     parser_consume(p, TOKEN_LBRACE, "expect `{` or identifier after struct keyword");
     struct_type->members = init_list(sizeof(struct AST_NODE_STRUCT*));
     mem_add_list(struct_type->members);
