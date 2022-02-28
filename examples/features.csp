@@ -1,22 +1,23 @@
 #import "io.csp";
 import "libc/stdio.csp";
 import "str.csp";
-import "random.csp";
+import "file.csp";
 
 fn main(): i32 {
-    using std, std::c_str;
-    
-    let token = strtok("please,separate,this,by,comma!", ",");
+    using std;
 
-    while token != nil {
-        printf("%s\n", token);
-        token = strtok(nil, ",");
+    let f: &std::File = unwrap_or!(
+        file::open("test.txt", file::WRITE), 
+        |err: &char| &void => {
+            printf("error: %s\n", err);
+            <- 0;
+        }
+    );
+
+    if f {
+        file::write(f, "Hello, World!");
+        file::close(f);
     }
 
-    printf("<END>\n");
-
-    for let i = 0; i < 10; i++;
-        printf("%d\n", random::rand());
-    
     <- 0;
 }

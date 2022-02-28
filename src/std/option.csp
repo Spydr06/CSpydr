@@ -8,14 +8,31 @@ macro none()
     (::std::option::none())
 }
 
-macro unwrap(opt)
+macro ok(value)
 {
-    (::std::option::unwrap((opt): ::std::Option))
+    (::std::result::ok((value): &void))
+}
+
+macro err(value)
+{
+    (::std::result::err((value): &void))
+}
+
+macro unwrap(opt)
+{   (
+        if (type) typeof (opt) == ::std::Option
+        => ::std::option::unwrap((opt))
+        else ::std::result::unwrap((opt))
+    )
 }
 
 macro unwrap_or(opt, then)
 {
-    (::std::option::unwrap((opt): ::std::Option, (then): fn<&void>()))
+    (
+        if (type) typeof (opt) == ::std::Option
+        => ::std::option::unwrap_or((opt), (then): fn<&void>())
+        else ::std::result::unwrap_or((opt), (then): fn<&void>(&void))
+    )
 }
 
 namespace std {
@@ -59,7 +76,10 @@ namespace std {
         fn err(value: &void): std::Result
             <- init(true, value);
         
-        fn ok(res: Result): bool
+        fn ok(value: &void): std::Result
+            <- init(false, value);
+        
+        fn is_ok(res: Result): bool
             <- !res.is_err;
         
         fn is_err(res: Result): bool

@@ -1,0 +1,50 @@
+import "syscall.csp";
+import "io.csp";
+import "option.csp";
+import "utils.csp";
+import "c_str.csp";
+
+namespace std {
+    type File: struct {
+        desc: i32,
+        mode: u8,
+        path: &char,
+    };
+
+    namespace file {
+        const READ: u8  = 0b0001;
+        const WRITE: u8 = 0b0010;
+
+        fn open(path: const &char, mode: u8): std::Result
+        {
+            let file: &File = mem::alloc(sizeof File);
+            
+            if mode & READ && mode & WRITE {
+                file.desc = syscall::open(path, io::O_CREAT | io::O_RDWR, 416);
+            }
+            else if mode & READ {
+                file.desc = syscall::open(path, io::O_CREAT | io::O_RDONLY, 416);
+            }
+            else if mode & WRITE {
+                file.desc = syscall::open(path, io::O_CREAT | io::O_WRONLY, 416);
+            }
+            else ret err!("Invalid permissions");
+
+            if file.desc == -1
+                <- err!("Error opening file");
+
+            <- ok!(file);
+        }
+
+        fn write(file: &File, str: &char)
+        {
+            syscall::write(file.desc, str, c_str::strlen(str));
+        }
+
+        fn close(file: &File)
+        {
+            syscall::close(file.desc);
+            mem::free(file);
+        }
+    }
+}

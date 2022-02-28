@@ -1279,18 +1279,6 @@ static void and_or(ASTNode_T* op, va_list args)
 {
     GET_VALIDATOR(args);
 
-    if(!is_bool(v, op->left->data_type))
-    {
-        throw_error(ERR_TYPE_ERROR, op->tok, "expect boolean type");
-        return;
-    }
-
-    if(!is_bool(v, op->right->data_type))
-    {
-        throw_error(ERR_TYPE_ERROR, op->tok, "expect boolean type");
-        return;
-    }
-
     op->data_type = op->left->data_type;
 }
 

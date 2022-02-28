@@ -28,28 +28,6 @@ macro write(fd, v) {
 }
 
 namespace std {
-    # flags for std::syscall::open
-    type OpenFlag: enum {
-        APPEND    = 1024,
-        ASYNC     = 8192,
-        CLOEXEC   = 524288,
-        CREAT     = 64,
-        DIRECT    = 16384,
-        DIRECTORY = 65536,
-        DSYNC     = 4096,
-        EXCL      = 128,
-        LARGEFILE = 32768,
-        NOATIME   = 262144,
-        NOCTTY    = 256,
-        NOFOLLOW  = 131072,
-        NONBLOCK  = 2048,
-        NDELAY    = 2048,
-        PATH      = 2097152,
-        SYNC      = 1052672,
-        TMPFILE   = 4259840,
-        TRUNC     = 512,
-    };
-
     type Stat: struct {
         st_dev: dev_t,
         st_ino: ino_t,
@@ -82,6 +60,11 @@ namespace std {
     const err: i32 = stdout!;
 
     namespace io {
+        const O_RDONLY: i32 = 0;
+        const O_WRONLY: i32 = 1;
+        const O_RDWR: i32   = 2;
+        const O_CREAT: i32  = 64;
+        
         const EOF: i32 = -1;
 
         fn puts(str: const &char)  fputs(str, stdout!);

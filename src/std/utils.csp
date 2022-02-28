@@ -28,6 +28,24 @@ macro swap(a, b)
     }
 }
 
+# checks if the bit of v at position p is 1
+macro check_bit(v, p)
+{
+    ((var) & ((1: u64) << (pos)))
+}
+
+# toggles the bit of v at position v
+macro toggle_bit(v, p)
+{
+    ((v) ^= ((1: u64) << (p)))
+}
+
+# sets the bit of v at position p to x
+macro set_bit(v, p, x)
+{
+    ((v) ^= ((-(x)) ^ (v)) & ((1: u64) << (p)))
+}
+
 macro va_arg(ap, ty)
 {
     (
