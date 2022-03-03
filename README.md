@@ -28,6 +28,8 @@ A list of all the features, that are/will be implemented.
 - [x] validating the code
 - [x] type evaluator
 - [ ] type checking (1/2 done)
+- [ ] implicit type casts
+- [ ] "projects" - prebuild libraries such as the `stdlib`
 - [x] scope validation
 - [x] CLI and error handling
 - [x] memory management
