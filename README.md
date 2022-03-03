@@ -18,7 +18,7 @@ CSpydr is a low-level, static typed, compiled programming language inspired by R
 A list of all the features, that are/will be implemented.
 
 ##### cspc Compiler features:
-- [x] Assembly compiler (only missing: va_lists, returnign of large structs) (only `x86_64-linux` platform)
+- [x] Assembly compiler (only missing: returning of large structs) (only `x86_64-linux` platform)
 - [ ] LLVM codegen target (maybe even WASM?)
 - [ ] move to an intermediate bytecode compiler
 - [x] C transpiler (deprecated)
@@ -48,7 +48,7 @@ A list of all the features, that are/will be implemented.
 - [x] inline `asm` code blocks
 - [x] lambda expressions (not asynchronous)
 - [ ] templates in fuctions and structs
-- [ ] va lists
+- [x] va lists
 - [ ] functions as struct members
 
 ##### CSpydr Standard library features
