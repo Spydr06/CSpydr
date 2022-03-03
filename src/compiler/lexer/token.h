@@ -7,7 +7,7 @@
 
 typedef enum TOKEN_TYPE {
     TOKEN_ID,           // names, types, etc.
-    TOKEN_MACRO_CALL,   // foo!, bar!()
+    TOKEN_MACRO_CALL,   // foo!
     TOKEN_INFIX_CALL,   // `
 
     TOKEN_INT,          // 0, 3, 5, etc.
@@ -17,7 +17,7 @@ typedef enum TOKEN_TYPE {
 
     TOKEN_TRUE,         // true
     TOKEN_FALSE,        // false
-    TOKEN_NIL,          // nil (null)
+    TOKEN_NIL,          // nil
 
     TOKEN_LPAREN,       // (
     TOKEN_RPAREN,       // )
@@ -39,7 +39,6 @@ typedef enum TOKEN_TYPE {
     TOKEN_STAR,         // *
     TOKEN_SLASH,        // /
     TOKEN_PERCENT,      // %
-    TOKEN_RANGE,        // ..
     TOKEN_ARROW,        // =>
     TOKEN_AND,          // &&
     TOKEN_OR,           // ||
@@ -79,9 +78,6 @@ typedef enum TOKEN_TYPE {
 
     TOKEN_POW_2,        // ²
     TOKEN_POW_3,        // ³
-
-    TOKEN_AT,           // @
-    TOKEN_DOLLAR,       // $
 
     TOKEN_IF,           // if
     TOKEN_ELSE,         // else
@@ -126,8 +122,8 @@ typedef enum TOKEN_TYPE {
     TOKEN_BUILTIN_IS_STRUCT,
     TOKEN_BUILTIN_IS_UNION,
 
-    TOKEN_ERROR,        // error handling token
-    TOKEN_EOF,          // end of file
+    TOKEN_ERROR, // error handling token
+    TOKEN_EOF,   // end of file
 } TokenType_T;
 
 typedef struct TOKEN_STRUCT {

@@ -132,7 +132,6 @@ typedef enum {
 
     TY_LAMBDA,
     TY_FN,
-    TY_TEMPLATE,
 
     TY_UNDEF,
     TY_TYPEOF,
@@ -176,70 +175,82 @@ struct AST_NODE_STRUCT
         TokenType_T cmp_kind; // kind of type comparisons
     };
 
-    // references
     union {
-        ASTObj_T* called_obj;
-        ASTObj_T* referenced_obj;
-    };
-
-    // op
-    union {
+        // expressions
         struct {
             ASTNode_T* left;
             ASTNode_T* right;
         };
+
+        // type comparisons
         struct {
             ASTType_T* l_type;
             ASTType_T* r_type;
         };
+        
+        // condition for loop, match, case and if statements
+        ASTNode_T* condition;
     };
-
-    // block
-    List_T* stmts;  // list of ASTNode_Ts
-    List_T* locals; // list of ASTObj_Ts
-
-    // condition for loop, match, case and if statements
-    ASTNode_T* condition;
-
-    // if
-    ASTNode_T* if_branch;
-    ASTNode_T* else_branch;
-
-    // loop
-    ASTNode_T* body;
-    ASTNode_T* init_stmt;
 
     union {
+        // if statement
+        struct {
+            ASTNode_T* if_branch;
+            ASTNode_T* else_branch;
+        };
+
+        // loop statement
+        struct {
+            ASTNode_T* body;
+            ASTNode_T* init_stmt;
+        };
+        
+        // block statement
+        List_T* stmts;  // list of ASTNode_Ts
+
+        // references
+        ASTObj_T* called_obj;
+        ASTObj_T* referenced_obj;
+
         ASTNode_T* return_val; // return
-        ASTObj_T* return_buffer; // call
+
+        // match statement
+        ASTNode_T* default_case;
     };
 
-    // match
-    List_T* cases;           // list of ASTNode_Ts
-    ASTNode_T* default_case;
+    union {
+        // loop, block statement
+        List_T* locals; // list of ASTObj_Ts
+
+        // calls, array literals
+        List_T* args;   // list of ASTNode_Ts
+
+        // match statement
+        List_T* cases;           // list of ASTNode_Ts
+    };
 
     union { 
         bool is_default_case: 1; // case
         bool pass_by_stack: 1;   // call
     };
 
+    // assignment expression
     bool is_assigning: 1;
     bool is_initializing: 1;
 
     // expression statement
     bool is_constant: 1;
     
+    // call
+    ASTObj_T* return_buffer;
+    
     union {
         ASTNode_T* expr;
         ASTNode_T* call;
+        
+        // sizeof
+        ASTType_T* the_type;
     };
-
-    // sizeof
-    ASTType_T* the_type;
-
-    // calls, array literals
-    List_T* args;   // list of ASTNode_Ts
-    List_T* template_types;
 } __attribute__((packed));
 
 struct AST_IDENTIFIER_STRUCT
@@ -248,6 +259,7 @@ struct AST_IDENTIFIER_STRUCT
     Token_T* tok;
 
     char callee[__CSP_MAX_TOKEN_SIZE];
+    
     ASTIdentifier_T* outer;
 
     bool global_scope : 1;
@@ -258,29 +270,35 @@ struct AST_TYPE_STRUCT
     ASTTypeKind_T kind;
     Token_T* tok;
 
-    ASTType_T* base;
     i32 size;
     i32 align;
 
+    ASTType_T* base;
     ASTIdentifier_T* id;
 
-    bool is_primitive: 1;
-    bool is_constant: 1;
-    bool is_complex: 1;
-    bool is_volatile: 1;
-    bool is_atomic: 1;
-    bool is_fn: 1;
-    bool is_union: 1;
-    bool is_vla: 1;
+    union {
+        struct {
+            bool is_primitive : 1;
+            bool is_constant  : 1;
+            bool is_complex   : 1;
+            bool is_volatile  : 1;
+            bool is_atomic    : 1;
+            bool is_fn        : 1;
+            bool is_union     : 1;
+            bool is_vla       : 1;
+        };
+        u8 flags;
+    };
 
-    // functions
-    List_T* arg_types;  // list of ASTType_Ts
+    union {
+        // functions
+        List_T* arg_types;  // list of ASTType_Ts
+        // arrays
+        ASTNode_T* num_indices;
 
-    // arrays
-    ASTNode_T* num_indices;
-
-    // enums, structs
-    List_T* members;    // list of ASTNode_Ts
+        // enums, structs
+        List_T* members;    // list of ASTNode_Ts
+    };
 } __attribute__((packed));
 
 struct AST_OBJ_STRUCT 
@@ -293,28 +311,30 @@ struct AST_OBJ_STRUCT
     i32 stack_size;
 
     // variables
-    bool is_constant    : 1;
-    bool is_extern      : 1;
-    bool referenced     : 1;
-    bool is_entry_point : 1;
-    bool no_return      : 1;
-    bool is_variadic;
+    union {
+        struct {
+            bool is_constant    : 1;
+            bool is_extern      : 1;
+            bool referenced     : 1;
+            bool is_entry_point : 1;
+            bool no_return      : 1;
+            bool is_variadic    : 1;
+        };
+        u8 flags;
+    };
 
     ASTType_T* data_type;
     ASTNode_T* value;
+    List_T* args;
+    List_T* objs;
 
     // functions
     ASTType_T* return_type;
-    List_T* args;           // list of ASTObj_Ts
     ASTNode_T* body;
-    List_T* templates;
     ASTObj_T* alloca_size;
     ASTObj_T* alloca_bottom;
     ASTObj_T* va_area;
     ASTObj_T* return_ptr;
-
-    // namespaces
-    List_T* objs;
 } __attribute__((packed));
 
 typedef struct AST_PROG_STRUCT

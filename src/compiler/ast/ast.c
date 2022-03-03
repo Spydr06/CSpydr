@@ -138,8 +138,6 @@ const char* type_kind_to_str(ASTTypeKind_T kind)
         case TY_LAMBDA:
         case TY_FN:
             return "fn";
-        case TY_TEMPLATE:
-            return "<template>";
         case TY_UNDEF:
             return "<undefined>";
         default:
@@ -178,7 +176,6 @@ void ast_type_to_str(char* dest, ASTType_T* type)
             strcat(dest, "[]");
             break;
 
-        case TY_TEMPLATE:
         case TY_UNDEF:
             strcat(dest, type->id->callee);
             break;

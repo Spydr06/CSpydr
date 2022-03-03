@@ -870,40 +870,12 @@ List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok, ASTIdentifier_T** 
 
 static ASTNode_T* parse_stmt(Parser_T* p, bool needs_semicolon);
 
-static List_T* parse_template_list(Parser_T* p)
-{
-    parser_consume(p, TOKEN_LT, "expect `<` before function template types");
-
-    List_T* templates = init_list(sizeof(struct AST_NODE_STRUCT));
-
-    while(!tok_is(p, TOKEN_GT) && !tok_is(p, TOKEN_EOF))
-    {
-        ASTType_T* template = init_ast_type(TY_TEMPLATE, p->tok);
-        parser_consume(p, TOKEN_ID, "expect template typename");
-        list_push(templates, template);
-
-        if(!tok_is(p, TOKEN_GT))
-            parser_consume(p, TOKEN_COMMA, "expect `,` between template types");
-    }
-
-    parser_consume(p, TOKEN_GT, "expect `>` after function template types");
-
-    return templates;
-}
-
 static ASTObj_T* parse_fn_def(Parser_T* p)
 {
     ASTObj_T* fn = init_ast_obj(OBJ_FUNCTION, p->tok);
     parser_consume(p, TOKEN_FN, "expect `fn` keyword for a function definition");
 
     fn->id = parse_simple_identifier(p);
-    
-    if(tok_is(p, TOKEN_STATIC_MEMBER))
-    {
-        parser_advance(p);
-        fn->templates = parse_template_list(p);
-        mem_add_list(fn->templates);
-    }
 
     parser_consume(p, TOKEN_LPAREN, "expect `(` after function name");
 
@@ -1931,24 +1903,6 @@ static ASTNode_T* parse_postfix(Parser_T* p, ASTNode_T* left)
     return postfix;
 }
 
-static List_T* parse_call_templates(Parser_T* p)
-{
-    parser_consume(p, TOKEN_LT, "expect `<` before template types");
-
-    List_T* template_types = init_list(sizeof(struct AST_TYPE_STRUCT*));
-
-    while(!tok_is(p, TOKEN_GT) && !tok_is(p, TOKEN_EOF))
-    {
-        list_push(template_types, parse_type(p));
-
-        if(!tok_is(p, TOKEN_GT))
-            parser_consume(p, TOKEN_COMMA, "expect `,` between template types");
-    }
-
-    parser_consume(p, TOKEN_GT, "expect `>` after template types");
-    return template_types;
-}
-
 static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left)
 {
     ASTNode_T* call = init_ast_node(ND_CALL, p->tok);
@@ -1957,12 +1911,6 @@ static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left)
         throw_error(ERR_SYNTAX_ERROR, p->tok, "can only call identifiers");
 
     call->expr = left;  // the expression to call
-
-    if(tok_is(p, TOKEN_LT))
-    {
-        call->template_types = parse_call_templates(p);
-        mem_add_list(call->template_types);
-    }   
 
     parser_consume(p, TOKEN_LPAREN, "expect `(` after callee");
 

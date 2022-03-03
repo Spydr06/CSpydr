@@ -72,16 +72,15 @@ namespace std {
         fn eputs(str: const &char) fputs(str, stderr!);
         fn eputc(c: char)          fputc(c, stderr!);
 
-        fn fputs(str: const &char, fp: i32)
+        fn fputs(str: const &char, fd: i32)
         {
-            write(fp, str);
-            write(fp, "\n");
+            write(fd, str);
+            write(fd, "\n");
         }
 
-        fn fputc(c: char, fp: i32)
+        fn fputc(c: char, fd: i32)
         {
-            let str = [c, '\0'];
-            write(fp, str);
+            syscall::write(fd, &c, 1);
         }
 
         fn close(fd: i32)
@@ -105,7 +104,7 @@ namespace std {
 
         fn write(fd: i32, buf: const &char) 
         {
-            if syscall::write(fd, buf, c_str::strlen(buf) + 1) <= 0
+            if syscall::write(fd, buf, c_str::strlen(buf)) <= 0
             {
                 # todo: fail assertion
                 ret;

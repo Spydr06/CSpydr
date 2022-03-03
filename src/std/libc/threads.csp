@@ -54,13 +54,13 @@ extern {
     fn cnd_destroy(cond: &cnd_t);
     fn cnd_init(cond: &cnd_t): i32;
     fn cnd_signal(cond: &cnd_t): i32;
-    fn cnd_timedwait(cond: &cnd_t, mtx: &mtx_t, ts: const &struct timespec): i32;
+    fn cnd_timedwait(cond: &cnd_t, mtx: &mtx_t, ts: const &timespec): i32;
     fn cnd_wait(cond: &cnd_t, mtx: &mtx_t): i32;
 
     fn mtx_destroy(mtx: &mtx_t);
     fn mtx_init(mtx: &mtx_t, type_: i32): i32;
     fn mtx_lock(mtx: &mtx_t): i32;
-    fn mtx_timedlock(mtx: &mtx_t, ts: const &struct timespec): i32;
+    fn mtx_timedlock(mtx: &mtx_t, ts: const &timespec): i32;
     fn mtx_trylock(mtx: &mtx_t): i32;
     fn mtx_unlock(mtx: &mtx_t): i32;
     
@@ -70,7 +70,7 @@ extern {
     fn thrd_equal(thr0: thrd_t, thr1: thrd_t): i32;
     fn thrd_exit(res: i32);
     fn thrd_join(thr: thrd_t, res: &i32): i32;
-    fn thrd_sleep(duration: const &struct timespec, remaining: &struct timespec);
+    fn thrd_sleep(duration: const &timespec, remaining: &timespec);
     fn thrd_yield();
     
     fn tss_create(key: &tss_t, dtor: tss_dtor_t): i32;

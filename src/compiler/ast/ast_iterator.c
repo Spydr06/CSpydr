@@ -345,7 +345,6 @@ static void ast_type(ASTIteratorList_T* list, ASTType_T* type, va_list custom_ar
         case TY_CHAR:
         case TY_VOID:
         case TY_UNDEF:
-        case TY_TEMPLATE: // FIXME: temporary
             list_fn(list->type_fns[type->kind], type, custom_args);
             break;
         
