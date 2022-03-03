@@ -48,7 +48,7 @@ A list of all the features, that are/will be implemented.
 - [x] inline `asm` code blocks
 - [x] lambda expressions (not asynchronous)
 - [ ] templates in fuctions and structs
-- [ ] va lists
+- [x] va lists
 - [ ] functions as struct members
 
 ##### CSpydr Standard library features
