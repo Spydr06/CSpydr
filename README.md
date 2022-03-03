@@ -1,17 +1,16 @@
 # The CSpydr Programming Language
 
-CSpydr is a low-level, static typed, compiled programming language inspired by Rust and C. This repository contains `cspc` (the **CSpydr Programming Language Compiler**), as well as CSpydr's **Standard Libraray**, some code examples and unit tests. 
+CSpydr is a low-level, static typed, free and open-source, compiled programming language inspired by Rust and C. This repository contains `cspc` (the **CSpydr Programming Language Compiler**), as well as CSpydr's **Standard Libraray**, some code examples and unit tests. 
 
 ## Current Status
 
 <div align="center">
 
-![Made with](https://img.shields.io/badge/made%20with-C-123456?style=flat)
-[![Stars](https://img.shields.io/github/stars/spydr06/cspydr?style=flat)](https://github.com/Spydr06/CSpydr/stargazers)
-[![Forks](https://img.shields.io/github/forks/spydr06/cspydr?style=flat)](https://github.com/Spydr06/CSpydr/network/members)
-[![License](https://img.shields.io/github/license/spydr06/cspydr?style=flat)](https://github.com/Spydr06/CSpydr/blob/main/LICENSE)
-[![Issues](https://img.shields.io/github/issues/spydr06/cspydr?style=flat)](https://github.com/Spydr06/CSpydr/issues)
-[![Build](https://img.shields.io/badge/build-success-success?style=flat)](https://github.com/Spydr06/CSpydr/releases)
+![Made with](https://img.shields.io/badge/made%20with-C-123456?style=for-the-badge)
+[![Stars](https://img.shields.io/github/stars/spydr06/cspydr?style=for-the-badge)](https://github.com/Spydr06/CSpydr/stargazers)
+[![Forks](https://img.shields.io/github/forks/spydr06/cspydr?style=for-the-badge)](https://github.com/Spydr06/CSpydr/network/members)
+[![License](https://img.shields.io/github/license/spydr06/cspydr?style=for-the-badge)](https://github.com/Spydr06/CSpydr/blob/main/LICENSE)
+[![Issues](https://img.shields.io/github/issues/spydr06/cspydr?style=for-the-badge)](https://github.com/Spydr06/CSpydr/issues)
 
 </div>
 
@@ -61,7 +60,8 @@ A list of all the features, that are/will be implemented.
 
 ## Building | Installation
 
-Currently, CSpydr is only available for Linux. Once a first major release is in sight I will create an [AUR](https://aur.archlinux.org/) repository for [Arch Linux](https://archlinux.org/), but at the moment Installation is done via CMake.
+Currently, CSpydr is only available for Linux. Once a first major release is in sight I will create an [AUR](https://aur.archlinux.org/) repository for [Arch Linux](https://archlinux.org/), but at the moment building and installation is done via CMake from source. Of course you can still use CSpydr via [WSL](https://docs.microsoft.com/en-us/windows/wsl/) on Windows!
+<br/>
 To build CSpydr on your computer enter these following commands in a terminal
 
 ```bash
@@ -73,9 +73,9 @@ cmake .
 make
 ```
 
-To install CSpydr with all of it's components (cspc - The CSpydr Compiler and the CSpydr Standard Library), enter this command (with root privileges):
+To install CSpydr with all of its components (cspc - The CSpydr Compiler and the CSpydr Standard Library), enter this command (needs root privileges):
 ```bash
-sudo make install
+make install
 ```
 
 ## Usage

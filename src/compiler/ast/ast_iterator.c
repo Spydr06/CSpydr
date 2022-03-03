@@ -49,7 +49,8 @@ static void ast_obj(ASTIteratorList_T* list, ASTObj_T* obj, va_list custom_args)
             for(size_t i = 0; i < obj->args->size; i++)
                 ast_obj(list, obj->args->items[i], custom_args);
 
-            ast_node(list, obj->body, custom_args);   
+            if(!list->iterate_only_objs)
+                ast_node(list, obj->body, custom_args);   
             ast_obj(list, obj->va_area, custom_args);  
             break;
 
@@ -72,7 +73,8 @@ static void ast_obj(ASTIteratorList_T* list, ASTObj_T* obj, va_list custom_args)
             break;
 
         case OBJ_GLOBAL:
-            ast_node(list, obj->value, custom_args);
+            if(!list->iterate_only_objs)
+                ast_node(list, obj->value, custom_args);
         case OBJ_LOCAL:
             ast_id(list, true, obj->id, custom_args);
             ast_type(list, obj->data_type, custom_args);
