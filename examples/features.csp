@@ -1,21 +1,26 @@
 import "libc/stdio.csp";
-import "file.csp";
+import "utils.csp";
+
+type LargeStruct: struct {
+    a: i32,
+    b: i64,
+    c: i64
+};
+
+fn return_large_struct(b: ...): LargeStruct {
+    printf("%d\n", va_arg!(b, i32));
+
+    <- LargeStruct :: {
+        0,
+        "hi",
+        0: i64
+    };
+}
 
 fn main(): i32 {
-    using std;
+    let ls = return_large_struct(1234567);    
 
-    let f: &std::File = unwrap_or!(
-        file::open("test.txt", file::WRITE), 
-        |err: &char| &void => {
-            printf("error: %s\n", err);
-            <- 0;
-        }
-    );
-
-    if f {
-        file::write(f, "Hello, World!");
-        file::close(f);
-    }
+    printf("ls:\n  .a = %d\n  .b = %s\n  .c = %ld\n", ls.a, ls.b, ls.c);
 
     <- 0;
 }

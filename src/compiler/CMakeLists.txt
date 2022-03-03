@@ -3,7 +3,7 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # compiler gets treated as a library at first (without main.c)
-file(GLOB_RECURSE compiler_source *.c)
+file(GLOB_RECURSE compiler_source *.c *.cpp *.cc *.c++)
 list(REMOVE_ITEM compiler_source "main.c")
 
 add_library(libcsp ${compiler_source})

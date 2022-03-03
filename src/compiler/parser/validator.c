@@ -766,6 +766,14 @@ static void fn_end(ASTObj_T* fn, va_list args)
         throw_error(ERR_TYPE_ERROR_UNCR, fn->return_type->tok ? fn->return_type->tok : fn->tok, "cannot return an array type from a function");
         uncr(v);
     }
+    else if(global.ct == CT_ASM && return_type->kind == TY_STRUCT && return_type->size > 16)
+    {
+        fn->return_ptr = init_ast_obj(OBJ_LOCAL, fn->return_type->tok);
+        fn->return_ptr->data_type = init_ast_type(TY_PTR, fn->return_type->tok);
+        fn->return_ptr->data_type->base = fn->return_type;
+        fn->return_ptr->data_type->size = get_type_size(v, fn->return_ptr->data_type);
+        fn->return_ptr->data_type->align = 8;
+    }
 
     end_scope(v);
 
@@ -1033,9 +1041,9 @@ static void call(ASTNode_T* call, va_list args)
 
                 if(call->args->size != called_obj->args->size && !is_variadic(called_obj))
                     throw_error(ERR_SYNTAX_ERROR, call->tok, "`%s` expects %ld call arguments, got %ld", called_obj->id->callee, called_obj->args->size, call->args->size);
-                else if(call->args->size < called_obj->args->size - 1 && is_variadic(called_obj))
-                    throw_error(ERR_SYNTAX_ERROR, call->tok, "`%s` expects at least %ld call arguments, got %ld", called_obj->id->callee, called_obj->args->size - 1, call->args->size);
-            
+                if(is_variadic(called_obj) && call->args->size < called_obj->args->size)
+                    throw_error(ERR_SYNTAX_ERROR, call->tok, "`%s` expects at least %ld call arguments, got %ld", called_obj->id->callee, called_obj->args->size, call->args->size);
+
                 for(size_t i = 0; i < MIN(called_obj->args->size, call->args->size); i++)
                 {
                     ASTObj_T* expected = called_obj->args->items[i];

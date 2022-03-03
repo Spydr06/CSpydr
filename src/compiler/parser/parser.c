@@ -844,9 +844,6 @@ List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok, ASTIdentifier_T** 
         {
             (*variadic_id) = parse_simple_identifier(p);
             parser_consume(p, TOKEN_COLON, "expect `:` after argument name");
-
-            if(arg_list->size < 1)
-                throw_error(ERR_SYNTAX_ERROR, p->tok, "cannot have `...` as the only function argument");
             parser_advance(p);
 
             if(!tok_is(p, end_tok))

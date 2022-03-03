@@ -8,6 +8,8 @@
 #include "../../mem/mem.h"
 #include "../../ast/types.h"
 #include "ast/ast.h"
+#include "config.h"
+#include "globals.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -181,6 +183,7 @@ void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast)
     memset(cg, 0, sizeof(struct ASM_CODEGEN_DATA_STRUCT));
 
     cg->ast = ast;
+    cg->embed_file_locations = true;
     cg->code_buffer = open_memstream(&cg->buf, &cg->buf_len);
 }
 
@@ -266,7 +269,11 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
     write_code(cg, target);
 
     if(cg->print)
-        LOG_INFO_F("%s", cg->buf);
+    {
+        if(!cg->silent)
+            LOG_INFO(COLOR_RESET);
+        fprintf(OUTPUT_STREAM, "%s", cg->buf);
+    }
 
     char asm_source_file[BUFSIZ] = {'\0'};
     sprintf(asm_source_file, "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.a", get_home_directory(), target);
@@ -341,7 +348,7 @@ static void asm_gen_file_descriptors(ASMCodegenData_T* cg)
     for(size_t i = 0; i < cg->ast->imports->size; i++)
     {
         SrcFile_T* file = cg->ast->imports->items[i];
-        asm_println(cg, "  .file %d \"%s\"", file->file_no + 1, file->short_path);
+        asm_println(cg, "  .file %d \"%s\"", file->file_no + 1, file->short_path ? file->short_path : file->path);
     }
 }
 
@@ -360,17 +367,6 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
         {
             if(obj->is_extern)
                 continue;
-
-//            if(is_variadic(obj))
-//            {
-//                char* id = "__csp_alloca_size__";
-//                obj->va_area = init_ast_obj(OBJ_LOCAL, obj->tok);
-//                obj->va_area->id = init_ast_identifier(obj->tok, id);
-//                obj->va_area->data_type = init_ast_type(TY_ARR, obj->tok);
-//                obj->va_area->data_type->align = 1;
-//                obj->va_area->data_type->base = (ASTType_T*) primitives[TY_U8];
-//                obj->va_area->data_type->size = 136;
-//            }
 
             i32 top = 16, bottom = 0;
             i32 gp = 0, fp = 0;
@@ -425,6 +421,13 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
                 bottom += obj->alloca_bottom->data_type->size;
                 bottom = align_to(bottom, obj->alloca_bottom->data_type->align);
                 obj->alloca_bottom->offset = -bottom;
+            }
+
+            if(obj->return_ptr)
+            {
+                bottom += obj->return_ptr->data_type->size;
+                bottom = align_to(bottom, obj->return_ptr->data_type->align);
+                obj->return_ptr->offset = -bottom;
             }
 
             // assign function argument offsets
@@ -637,6 +640,8 @@ static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs)
                     if(is_variadic(obj))
                     {
                         i32 gp = 0, fp = 0;
+                        if(obj->return_ptr)
+                            gp++;
                         for(size_t j = 0; j < obj->args->size; j++)
                         {
                             ASTObj_T* arg = obj->args->items[j];
@@ -646,7 +651,7 @@ static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs)
                                 gp++;
                         }
 
-                        obj->va_area->offset = -144;
+                     //   obj->va_area->offset = -144;
                         i32 off = obj->va_area->offset;
 
                         // va_elem
@@ -676,6 +681,10 @@ static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs)
 
                     // save passed-by-register arguments to the stack
                     i32 gp = 0, fp = 0;
+
+                    if(obj->return_ptr)
+                        asm_store_gp(cg, gp++, obj->return_ptr->offset, obj->return_ptr->data_type->size);
+
                     for(size_t j = 0; j < obj->args->size; j++)
                     {
                         ASTObj_T* arg = obj->args->items[j];
@@ -1003,7 +1012,7 @@ static void asm_copy_struct_reg(ASMCodegenData_T* cg)
 static void asm_copy_struct_mem(ASMCodegenData_T* cg, ASTNode_T* val)
 {
     ASTType_T* ty = cg->current_fn->return_type;
-    asm_println(cg, "  mov %d(%%rbp), %%rdi", ((ASTObj_T*) cg->current_fn->objs->items[cg->current_fn->objs->size - 1])->offset);
+    asm_println(cg, "  mov %d(%%rbp), %%rdi", cg->current_fn->return_ptr->offset);
 
     for(u32 i = 0; i < ty->size; i++)
     {

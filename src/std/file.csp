@@ -17,7 +17,8 @@ namespace std {
 
         fn open(path: const &char, mode: u8): std::Result
         {
-            let file: &File = mem::alloc(sizeof File);
+            let file: &File = alloc!(sizeof File);
+            file.mode = mode;
             
             if mode & READ && mode & WRITE {
                 file.desc = syscall::open(path, io::O_CREAT | io::O_RDWR, 416);
@@ -36,15 +37,23 @@ namespace std {
             <- ok!(file);
         }
 
-        fn write(file: &File, str: &char)
+        fn write_str(file: &File, str: const &char)
+            write(file, str: const &void, c_str::strlen(str));
+
+        fn write(file: &File, data: const &void, count: usize)
         {
-            syscall::write(file.desc, str, c_str::strlen(str));
+            syscall::write(file.desc, data, count);
+        }
+
+        fn read(file: &File, buffer: &void, count: usize)
+        {
+            syscall::read(file.desc, buffer, count);
         }
 
         fn close(file: &File)
         {
             syscall::close(file.desc);
-            mem::free(file);
+            free!(file);
         }
     }
 }
