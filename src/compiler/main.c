@@ -72,6 +72,7 @@ const char help_text[] = "%s"
                        "      --print-code       | Prints the generated code (C | Assembly | LLVM IR)\n"
                        "      --silent           | Disables all command line output except error messages\n"
                        "      --cc [compiler]    | Sets the C compiler being used after transpiling (default: " DEFAULT_CC ")\n"
+                       "  -0, --no-opt           | Disables all code optimization\n"
                        "\n"
                        "If you are unsure, what CSpydr is (or how to use it), please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n";
 
@@ -191,6 +192,8 @@ i32 main(i32 argc, char* argv[])
             }
             cc = argv[i];
         }
+        else if(streq(arg, "-0") || streq(arg, "--no-opt"))
+            global.optimize = false;
         else
             evaluate_info_flags(argv[i]);
     }

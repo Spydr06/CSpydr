@@ -414,7 +414,7 @@ static bool c_gen_fn_arg_list(CCodegenData_T* cg, List_T* args)
 
 static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
 {
-    if(!obj->referenced && obj->kind != OBJ_NAMESPACE && obj->kind != OBJ_TYPEDEF)
+    if(!should_emit(obj) && obj->kind != OBJ_NAMESPACE && obj->kind != OBJ_TYPEDEF)
         return;
 
     if(obj->is_extern)

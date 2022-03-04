@@ -559,6 +559,8 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
                     for(size_t i = 0; i < ty->members->size; i++)
                     {
                         ASTObj_T* member = ty->members->items[i];
+                        if(!should_emit(member))
+                            continue;
                         char* id = asm_gen_identifier(member->id);
                         asm_println(cg, "  .globl %s", id);
                         asm_println(cg, "  .data");
@@ -572,7 +574,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
             } break;
 
             case OBJ_GLOBAL:
-                if(obj->is_extern)
+                if(obj->is_extern || !should_emit(obj))
                     continue;
                 {
                     char* id = asm_gen_identifier(obj->id);
@@ -618,7 +620,7 @@ static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs)
 
             case OBJ_FUNCTION:
                 {
-                    if(obj->is_extern) 
+                    if(obj->is_extern || !should_emit(obj)) 
                         continue;
                     
 

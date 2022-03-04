@@ -642,7 +642,6 @@ static void gen_id_path(VScope_T* v, ASTIdentifier_T* id)
 
 static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
 {
-    main_fn->referenced = true;
     main_fn->is_entry_point = true;
     v->ast->entry_point = main_fn;
 
@@ -1029,7 +1028,6 @@ static void call(ASTNode_T* call, va_list args)
         throw_error(ERR_UNDEFINED, call->expr->tok, "undefined callee");
         return;
     }
-    called_obj->referenced = true;
     call->called_obj = called_obj;
 
     switch(called_obj->kind)

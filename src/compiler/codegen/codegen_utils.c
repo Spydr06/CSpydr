@@ -154,3 +154,8 @@ bool is_variadic(ASTObj_T* fn)
 {
     return fn->is_variadic;
 }
+
+bool should_emit(ASTObj_T* obj)
+{
+    return global.optimize ? obj->referenced : true;
+}

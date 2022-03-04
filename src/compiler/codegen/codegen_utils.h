@@ -19,5 +19,6 @@ bool unsigned_type(ASTType_T* ty);
 bool vla_type(ASTType_T* ty);
 bool is_variadic(ASTObj_T* fn);
 ASTType_T* unpack(ASTType_T* ty);
+bool should_emit(ASTObj_T* obj);
 
 #endif

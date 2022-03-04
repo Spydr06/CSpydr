@@ -18,6 +18,15 @@ void list_push(List_T* list, void* item)
     vector_add(&list->items, item);
 }
 
+void list_pop(List_T* list)
+{
+    if(list->size > 0)
+    {
+        list->size--;
+        vector_pop(list->items);
+    }
+}
+
 void free_list(List_T* list)
 {
     vector_free(list->items);
