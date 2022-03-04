@@ -385,5 +385,7 @@ namespace std {
                 n = 10 * n - ((*s)++ - '0');
             <- if neg => n else -n;
         }
+
+        [ignore_unused("*")]
     }
 }

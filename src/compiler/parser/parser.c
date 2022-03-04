@@ -446,10 +446,17 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, Li
         list_push(global.linker_flags, value);
     else if(streq(field->value, "no_return"))
     {
+        bool all = streq("*", value);
         for(size_t i = 0; i < obj_list->size; i++)
         {
             ASTObj_T* obj = obj_list->items[i];
-            if(streq(obj->id->callee, value))
+            if(all)
+            {
+                if(obj->kind != OBJ_FUNCTION) 
+                    continue;
+                obj->no_return = true;
+            }
+            else if(streq(obj->id->callee, value))
             {
                 if(obj->kind != OBJ_FUNCTION)
                     throw_error(ERR_TYPE_ERROR, p->tok, "`%s` is not a function, thus cannot have the `no_return` attribute", value);
@@ -457,16 +464,31 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, Li
                 obj->no_return = true;
                 return;
             }
-            else if(streq("*", value))
-            {
-                if(obj->kind != OBJ_FUNCTION) 
-                    continue;
-                obj->no_return = true;
-            }
         }
         
-        if(!streq("*", value))
+        if(!all)
             throw_error(ERR_SYNTAX_ERROR, p->tok, "could not find function `%s` in current scope", value);        
+    }
+    else if(streq(field->value, "ignore_unused"))
+    {
+        bool all = streq("*", value);
+        for(size_t i = 0; i < obj_list->size; i++)
+        {
+            ASTObj_T* obj = obj_list->items[i];
+            if(all) 
+            {
+                obj->ignore_unused = true;
+                continue;
+            }
+            else if(streq(value, obj->id->callee)) 
+            {
+                obj->ignore_unused = true;
+                return;
+            }
+        }
+
+        if(!all)
+            throw_error(ERR_SYNTAX_ERROR, p->tok, "could not find identifier `%s` in current scope", value);
     }
     else
         throw_error(ERR_SYNTAX_WARNING, field, "undefined compiler directive `%s`", field->value);

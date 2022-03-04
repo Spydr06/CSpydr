@@ -18,13 +18,16 @@ void list_push(List_T* list, void* item)
     vector_add(&list->items, item);
 }
 
-void list_pop(List_T* list)
+void* list_pop(List_T* list)
 {
     if(list->size > 0)
     {
-        list->size--;
+        void* top = list->items[--list->size];
         vector_pop(list->items);
+        return top;
     }
+    else
+        return NULL;
 }
 
 void free_list(List_T* list)

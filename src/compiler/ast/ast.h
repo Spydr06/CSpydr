@@ -319,6 +319,7 @@ struct AST_OBJ_STRUCT
             bool is_entry_point : 1;
             bool no_return      : 1;
             bool is_variadic    : 1;
+            bool ignore_unused  : 1;
         };
         u8 flags;
     };

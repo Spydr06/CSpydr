@@ -793,6 +793,8 @@ static void fn_end(ASTObj_T* fn, va_list args)
             throw_error(ERR_TYPE_ERROR_UNCR, arg->tok, "argument of type `vla` has to be the last");
             uncr(v);
         }
+        if(!arg->referenced && !fn->is_extern && !fn->ignore_unused)
+            throw_error(ERR_UNUSED, arg->tok, "unused function argument `%s`", arg->id->callee);
     }
 
     if(v->scope_depth == 1 && strcmp(fn->id->callee, "_start") == 0)
@@ -929,6 +931,13 @@ static void block_end(ASTNode_T* block, va_list args)
 {
     GET_VALIDATOR(args);
     end_scope(v);
+
+    for(size_t i = 0; i < block->locals->size; i++)
+    {
+        ASTObj_T* var = block->locals->items[i];
+        if(!var->referenced && !v->current_function->ignore_unused)
+            throw_error(ERR_UNUSED, var->tok, "unused local variable `%s`", var->id->callee);
+    }
 }
 
 static void return_end(ASTNode_T* ret, va_list args)
@@ -1108,12 +1117,15 @@ static void identifier(ASTNode_T* id, va_list args)
     switch(referenced_obj->kind)
     {
         case OBJ_GLOBAL:
-        case OBJ_LOCAL:
         case OBJ_FUNCTION:
-        case OBJ_FN_ARG:
         case OBJ_ENUM_MEMBER:
             break;
         
+        case OBJ_LOCAL:
+        case OBJ_FN_ARG:
+            referenced_obj->referenced = true;
+            break;
+
         default:
             throw_error(ERR_TYPE_ERROR, id->id->tok, 
                 "identifier `%s` is of kind %s, expect variable or function name", 

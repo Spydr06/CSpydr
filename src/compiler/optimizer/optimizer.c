@@ -1,5 +1,6 @@
 #include "optimizer.h"
 #include "ast/ast.h"
+#include "ast/ast_iterator.h"
 #include "config.h"
 #include "error/error.h"
 #include "io/log.h"
@@ -19,13 +20,10 @@ void optimize(ASTProg_T *ast)
         void (*fn)(ASTProg_T*);
         const char* description;
     } passes[] = {
-        {remove_dead_code, "eliminate dead code"},
-        {NULL, NULL}
+        {remove_dead_code, "remove dead code"}
     };
 
-    u32 count = 0;
-    while(passes[count].fn)
-        count++;
+    u32 count = sizeof(passes) / sizeof(*passes);
 
     for(u32 i = 0; i < count; i++)
     {
@@ -48,10 +46,9 @@ void remove_dead_code(ASTProg_T* ast)
     List_T* node_stack = init_list(sizeof(struct AST_NODE_STRUCT*));
     list_push(node_stack, ast->entry_point->body);
 
-    while(node_stack->size > 0)
+    while(node_stack->size)
     {
-        ASTNode_T* stack_top = node_stack->items[node_stack->size - 1];
-        list_pop(node_stack);
+        ASTNode_T* stack_top = list_pop(node_stack);
 
         if(!stack_top)
             continue;
