@@ -9,6 +9,7 @@ const char* all_warnings_flag = "-Wall";
 void init_globals(void)
 {
     memset(&global, 0, sizeof(global));
+    global.optimize = true;
     global.compiler_flags = init_list(sizeof(char*));
 
     // default compiler flags

@@ -627,7 +627,6 @@ static void id_use(ASTIdentifier_T* id, va_list args)
     }
 
     id->outer = found->id->outer;
-    found->referenced = true;
 }
 
 static void gen_id_path(VScope_T* v, ASTIdentifier_T* id)
@@ -931,13 +930,6 @@ static void block_end(ASTNode_T* block, va_list args)
 {
     GET_VALIDATOR(args);
     end_scope(v);
-
-    for(size_t i = 0; i < block->locals->size; i++)
-    {
-        ASTObj_T* var = block->locals->items[i];
-        if(!var->referenced)
-            throw_error(ERR_UNUSED, var->tok, "unused local variable `%s`", var->id->callee);
-    }
 }
 
 static void return_end(ASTNode_T* ret, va_list args)

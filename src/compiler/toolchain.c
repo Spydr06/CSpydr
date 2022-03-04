@@ -2,6 +2,7 @@
 
 #include <string.h>
 
+#include "optimizer/optimizer.h"
 #include "platform/platform_bindings.h"
 #include "mem/mem.h"
 #include "ast/ast.h"
@@ -29,11 +30,14 @@ void compile(char* input_file, char* output_file, Action_T action)
 {
     global.main_src_file = input_file;
 
-    ASTProg_T ast = { 0 };
+    ASTProg_T ast = {};
     if(global.from_json)
         ast_from_json(&ast, input_file);
     else
         generate_ast(&ast, input_file, output_file, global.silent);
+
+    if(global.optimize)
+        optimize(&ast);
 
     switch(global.ct)
     {

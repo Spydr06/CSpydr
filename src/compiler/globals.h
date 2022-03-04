@@ -21,6 +21,7 @@ struct {
 
     bool silent;
     bool print_code;
+    bool optimize;
     
     bool from_json;
 
