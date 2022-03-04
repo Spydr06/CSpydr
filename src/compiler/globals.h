@@ -22,7 +22,7 @@ struct {
     bool silent;
     bool print_code;
     bool optimize;
-    
+    bool embed_debug_info;
     bool from_json;
 
     char* exec_name;

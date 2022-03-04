@@ -183,7 +183,7 @@ void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast)
     memset(cg, 0, sizeof(struct ASM_CODEGEN_DATA_STRUCT));
 
     cg->ast = ast;
-  //  cg->embed_file_locations = true;
+    cg->embed_file_locations = global.embed_debug_info;
     cg->code_buffer = open_memstream(&cg->buf, &cg->buf_len);
 }
 

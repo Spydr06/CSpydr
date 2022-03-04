@@ -55,6 +55,15 @@ void remove_dead_code(ASTProg_T* ast)
 
         switch(stack_top->kind)
         {
+            case ND_ASM:
+                for(size_t i = 0; i < stack_top->args->size; i++) 
+                {
+                    ASTNode_T* arg = stack_top->args->items[i];
+                    if(arg->kind == ND_ID)
+                        list_push(node_stack, arg);
+                }
+                break;
+
             case ND_ADD:
             case ND_SUB:
             case ND_MUL:

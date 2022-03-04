@@ -1,4 +1,6 @@
 #include "mem.h"
+#include "../config.h"
+#include "../io/log.h"
 
 #include <c-vector/vec.h>
 
@@ -30,7 +32,17 @@ void* mem_malloc(size_t size)
     if(!allocs)
         allocs = vector_create();
 
-    void* ptr = malloc(size);
+    static int mallocs_failed = 0;
+    void* ptr;
+retry_malloc:
+    ptr = malloc(size);
+    if(!ptr)
+    {
+        if(mallocs_failed++ < MALLOC_RETRY_COUNT)
+            goto retry_malloc;
+        LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " allocating %ld bytes of memory\n", size);
+        exit(1);
+    }
 
     vector_add(&allocs, ptr);
 

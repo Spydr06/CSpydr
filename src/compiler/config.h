@@ -42,6 +42,8 @@
 #define __CSP_MAX_FN_NUM_ARGS 128
 #define __CSP_MAX_REPL_CMD_LEN (BUFSIZ * 8)
 
+#define MALLOC_RETRY_COUNT 10
+
 #define OUTPUT_STREAM stdout
 #define ERR_OUTPUT_STREAM stderr
 #define ERR_LINE_NUMBER_SPACES 4

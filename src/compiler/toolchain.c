@@ -28,6 +28,7 @@ static void run(char* file);
 
 void compile(char* input_file, char* output_file, Action_T action)
 {
+    global.embed_debug_info = action == AC_DEBUG;
     global.main_src_file = input_file;
 
     ASTProg_T ast = {};
