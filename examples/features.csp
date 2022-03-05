@@ -1,26 +1,13 @@
 import "libc/stdio.csp";
-import "utils.csp";
+import "io.csp";
+import "process.csp";
 
-type LargeStruct: struct {
-    a: i32,
-    b: i64,
-    c: i64
-};
-
-fn return_large_struct(b: ...): LargeStruct {
-    printf("%d\n", va_arg!(b, i32));
-
-    <- LargeStruct :: {
-        0,
-        "hi",
-        0: i64
-    };
-}
 
 fn main(): i32 {
-    let ls = return_large_struct(1234567);    
+    let uts: std::UTSName;
+    std::syscall::uname(&uts);
 
-    printf("ls:\n  .a = %d\n  .b = %s\n  .c = %ld\n", ls.a, ls.b, ls.c);
+    printf("struct utsname {\n  sysname = %s\n  nodename = %s\n  release = %s\n  version = %s\n  machine = %s\n  domainname = %s\n}\n", uts.sysname, uts.nodename, uts.release, uts.version, uts.machine, uts.domainname);
 
     <- 0;
 }

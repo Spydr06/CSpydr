@@ -55,6 +55,14 @@ namespace std {
         iov_len: usize
     };
 
+    type FLock: struct {
+        l_type: i16,
+        l_whence: i16,
+        l_start: off_t,
+        l_len: off_t,
+        l_pid: pid_t
+    };
+
     const in: i32 = stdin!;
     const out: i32 = stdout!;
     const err: i32 = stdout!;
@@ -64,6 +72,59 @@ namespace std {
         const O_WRONLY: i32 = 1;
         const O_RDWR: i32   = 2;
         const O_CREAT: i32  = 64;
+
+        const F_OK: i32    = 0;
+        const R_OK: i32    = 4;
+        const W_OK: i32    = 2;
+        const X_OK: i32    = 1;
+        const F_ULOCK: i32 = 0;
+        const F_LOCK: i32  = 1;
+        const F_TLOCK: i32 = 2;
+        const F_TEST: i32  = 3;
+
+        const F_SETLEASE: i32   = 1024;
+        const F_GETLEASE: i32   = 1025;
+        const F_NOTIFY: i32     = 1026;
+        const F_CANCELLK: i32   = 1029;
+        const F_SETPIPE_SZ: i32	= 1031;
+        const F_GETPIPE_SZ: i32	= 1032;
+        const F_ADD_SEALS: i32  = 1033;
+        const F_GET_SEALS: i32  = 1034;
+        
+        const F_SEAL_SEAL: i32         = 0x0001;
+        const F_SEAL_SHRINK: i32       = 0x0002;
+        const F_SEAL_GROW: i32	       = 0x0004;
+        const F_SEAL_WRITE: i32	       = 0x0008;
+        const F_SEAL_FUTURE_WRITE: i32 = 0x0010;
+        
+        const F_GET_RW_HINT: i32      = 1035;
+        const F_SET_RW_HINT: i32      = 1036;
+        const F_GET_FILE_RW_HINT: i32 = 1037;
+        const F_SET_FILE_RW_HINT: i32 = 1038;
+        
+        const RWF_WRITE_LIFE_NOT_SET: i32 = 0;
+        const RWH_WRITE_LIFE_NONE: i32	  = 1;
+        const RWH_WRITE_LIFE_SHORT: i32	  = 2;
+        const RWH_WRITE_LIFE_MEDIUM: i32  = 3;
+        const RWH_WRITE_LIFE_LONG: i32	  = 4;
+        const RWH_WRITE_LIFE_EXTREME: i32 = 5;
+        
+        const DN_ACCESS: i32 = 0x00000001;
+        const DN_MODIFY: i32 = 0x00000002;
+        const DN_CREATE: i32 = 0x00000004;
+        const DN_DELETE: i32 = 0x00000008;
+        const DN_RENAME: i32 = 0x00000010;
+        const DN_ATTRIB: i32 = 0x00000020;
+        const DN_MULTISHOT: i32 = 0x80000000;
+
+        const LOCK_SH: i32 = 1;
+        const LOCK_EX: i32 = 2;
+        const LOCK_NB: i32 = 4;
+        const LOCK_UN: i32 = 8;
+
+        const L_SET: i32 = 0;
+        const L_INCR: i32 = 1;
+        const L_XTND: i32 = 2;
         
         const EOF: i32 = -1;
 

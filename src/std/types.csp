@@ -48,4 +48,15 @@ namespace std {
         quot: i64,
         rem: i64
     };
+    type sa_family_t: u16;
+    type socklen_t: u32;
+    type sembuf: struct {
+        sem_num: u16,
+        sem_op: i16,
+        sem_flg: u16
+    };
+    type msgbuf: struct {
+        mtype: i64,
+        mtext: char[1]
+    };
 }

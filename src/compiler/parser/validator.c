@@ -1130,6 +1130,8 @@ static void identifier(ASTNode_T* id, va_list args)
     if(!id->data_type)
         id->data_type = referenced_obj->data_type;
     id->referenced_obj = referenced_obj;
+
+    if(referenced_obj->id->outer) id->id->outer = referenced_obj->id->outer;
 }
 
 static void closure(ASTNode_T* closure, va_list args)
@@ -1740,6 +1742,7 @@ static i32 get_struct_size(Validator_T* v, ASTType_T* s_type)
     for(size_t i = 0; i < s_type->members->size; i++)
     {
         ASTNode_T* member = s_type->members->items[i];
+        member->data_type->size = get_type_size(v, member->data_type);
         bits = align_to(bits, align_type(member->data_type) * 8);
         member->offset = bits / 8;
         bits += member->data_type->size * 8;

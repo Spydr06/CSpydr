@@ -60,7 +60,7 @@ void remove_dead_code(ASTProg_T* ast)
                 {
                     ASTNode_T* arg = stack_top->args->items[i];
                     if(arg->kind == ND_ID)
-                        list_push(node_stack, arg);
+                        arg->referenced_obj->referenced = true;
                 }
                 break;
 

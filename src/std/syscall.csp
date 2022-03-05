@@ -1,6 +1,7 @@
 import "types.csp";
 import "io.csp";
 import "time.csp";
+import "system.csp";
 
 macro syscall(id)
 {
@@ -67,49 +68,191 @@ macro syscall(id, rdi, rsi, rdx, r10, r8, r9)
 
 namespace std {
     type Syscall: enum {
-        READ,
-        WRITE,
-        OPEN,
-        CLOSE,
-        STAT,
-        FSTAT,
-        LSTAT,
+        READ, WRITE, OPEN, CLOSE,
+        STAT, FSTAT, LSTAT,
         POLL,
         LSEEK,
-        MMAP,
-        MPROTECT,
-        MUNMAP,
+        MMAP, MPROTECT, MUNMAP,
         BRK,
-        RT_SIGACTION, # not implemented
-        RT_SIGPROCMASK, # not implemented
-        RT_SIGRETURN,
+        RT_SIGACTION, #[ not implemented ]# RT_SIGPROCMASK, #[ not implemented ]# RT_SIGRETURN,
         IOCTL,
-        PREAD64,
-        PWRITE64,
-        READV,
-        WRITEV,
+        PREAD64, PWRITE64,
+        READV, WRITEV,
         ACCESS,
         PIPE,
         SELECT, # not implemented
         SCHED_YIELD,
-        MREMAP,
-        MSYNC,
-        MINCORE,
-        MADVISE,
-        SHMGET,
-        SHMAT,
-        SHMCTL, # not implemented
-        DUP,
-        DUP2,
-        PAUSE,
-        NANOSLEEP,
-        GETITIMER, # not implemented
-        ALARM,
-        SETITIMER, # not implemented
+        MREMAP, MSYNC, MINCORE, MADVISE,
+        SHMGET, SHMAT, SHMCTL, # not implemented
+        DUP, DUP2,
+        PAUSE, NANOSLEEP, GETITIMER, #[ not implemented ]# ALARM, SETITIMER, # not implemented
         GETPID,
-
-        EXIT = 60,
-        TIME = 201
+        SENDFILE, SOCKET, CONNECT, ACCEPT, SENDTO, RECVFROM,
+        SENDMSG, RECVMSG,
+        SHUTDOWN,
+        BIND, LISTEN,
+        GETSOCKNAME, GETPEERNAME,
+        SOCKETPAIR,
+        SETSOCKOPT, GETSOCKOPT,
+        CLONE, FORK, VFORK,
+        EXECVE,
+        EXIT, WAIT4, KILL,
+        UNAME,
+        SEMGET, SEMOP, SEMCTL,
+        SHMDT,
+        MSGGET, MSGSND, MSGRCV, MSGCTL,
+        FCNTL,
+        FLOCK, FSYNC, FDATASYNC,
+        TRUNCATE, FTRUNCATE,
+        GETDENTS,
+        GETCWD,
+        CHDIR, FCHDIR,
+        RENAME,
+        MKDIR, RMDIR,
+        CREAT,
+        LINK, UNLINK, SYMLINK, READLINK,
+        CHMOD, FCHMOD, CHOWN, FCHOWN, LCHOWN,
+        UMASK,
+        GETTIMEOFDAY,
+        GETTRLIMIT, GETTRUSAGE,
+        SYSINFO, TIMES, PTRACE,
+        GETUID,
+        SYSLOG,
+        GETGID, SETUID, SETGID,
+        GETEUID, GETEGID,
+        SETPGID, GETPPID,
+        GETPGRP, 
+        SETSID, SETREUID, SETREGID,
+        GETGROUPS, SETGROUPS, 
+        SETRESUID, SETRESGID, GETRESUID, GETRESGID,
+        GETPGID,
+        SETFSUID, SETFSGID, 
+        GETSID,
+        CAPGET, CAPSET,
+        RT_SIGPENDING, RT_SIGTIMEDWAIT, RT_SIGQUEUEINFO, RT_SIGSUSPEND,
+        SIGALSTACK,
+        UTIME,
+        MKNOD,
+        USELIB,
+        PERSONALITY,
+        USTAT, STATFS, FSTATFS,
+        SYSFS,
+        GETPRIORITY, SETPRIORITY,
+        SCHED_SETPARAM, SCHED_GETPARAM, 
+        SCHED_SETSCHEDULER, SCHED_GETSCHEDULER, 
+        SCHED_GET_PRIORITY_MAX, SCHED_GET_PRIORITY_MIN,
+        SCHED_RR_GET_INTERVAL,
+        MLOCK, MUNLOCK, MLOCKALL, MUNLOCKALL,
+        VHANGUP,
+        MODIFY_LDT,
+        PIVOT_ROOT,
+        SYSCTL,
+        PRCTL, ARCH_PRCTL,
+        ADJTIMEX,
+        SETTRLIMIT,
+        CHROOT,
+        SYNC,
+        ACCT,
+        SETTIMEOFDAY,
+        MOUNT, UMOUNT2,
+        SWAPON, SWAPOFF,
+        REBOOT,
+        SETHOSTNAME, SETDOMAINNAME,
+        IOPL, IOPERM,
+        CREATE_MODULE, INIT_MODULE, DELETE_MODULE,
+        GET_KERNEL_SYMS,
+        QUERY_MODULE,
+        QUOTACTL,    # not implemented by the kernel
+        NFSSERVTCL,  # not implemented by the kernel
+        GETPMSG,     # not implemented by the kernel
+        PUTPMSG,     # not implemented by the kernel
+        AFS_SYSCALL, # not implemented by the kernel
+        TUXCALL,     # not implemented by the kernel
+        SECURITY,    # not implemented by the kernel
+        GETTID,
+        READAHEAD,
+        SETXATTR, LSETXATTR, FSETXATTR, GETXATTR, LGETXATTR, FGETXATTR, LISTXATTR, LLISTXATTR, FLISTXATTR, REMOVEXATTR, LREMOVEXATTR, FREMOVEXATTR,
+        TKILL,
+        TIME,
+        FUTEX,
+        SCHED_SETAFFINITY, SCHED_GETAFFINITY,
+        SET_THREAD_AREA,
+        IO_SETUP, IO_DESTROY, IO_GETEVENTS, IO_SUBMIT, IO_CANCEL,
+        GET_THREAD_AREA,
+        LOOKUP_DCOOKIE,
+        EPOLL_CREATE, EPOLL_CTL_OLD, #[ not implemented by the kernel ]# EPOLL_WAIT_OLD, # not implemented by the kernel
+        REMAP_FILE_PAGES,
+        GETDENTS64,
+        SET_TID_ADDRESS,
+        RESTART_SYSCALL,
+        SEMTIMEDOP,
+        FADVISE64,
+        TIMER_CREATE, TIMER_SETTIME, TIMER_GETTIME, TIMER_GETOVERRUN, TIMER_DELETE,
+        CLOCK_SETTIME, CLOCK_GETTIME, CLOCK_GETRES, CLOCK_NANOSLEEP,
+        EXIT_GROUP,
+        EPOLL_WAIT, EPOLL_CTL,
+        TGKILL,
+        UTIMES,
+        VSERVER, # not implemented by the kernel
+        MBIND,
+        SET_MEMPOLICY, GET_MEMPOLICY,
+        MQ_OPEN, MQ_UNLINK, MQ_TIMEDSEND, MQ_TIMEDRECEIVE, MQ_NOTIFY, MQ_GETSETATTR,
+        KEXEC_LOAD,
+        WAITID,
+        ADD_KEY, REQUEST_KEY, KEYCTL,
+        IOPRIO_SET, IOPRIO_GET,
+        INOTIFY_INIT, INOTIFY_ADD_WATCH,INOTIFY_RM_WATCH,
+        MIGRATE_PAGES,
+        OPENAT, MKDIRAT, MKNODAT, FCHOWNAT, FUTIMESAT, NEW_FSTATAT, UNLINKAT, RENAMEAT, LINKAT, SYMLINKAT, READLINKAT, FCHMODAT, FACCESSAT,
+        PSELECT6,
+        PPOLL,
+        UNSHARE,
+        SET_ROBUST_LIST, GET_ROBUST_LIST,
+        SPLICE,
+        TEE,
+        SYNC_FILE_RANGE,
+        VMSPLICE,
+        MOVE_PAGES,
+        UTIMENSTAT,
+        EPOLL_PWAIT,
+        SIGNALFD,
+        TIMERFD_CREATE,
+        EVENTFD,
+        FALLOCATE,
+        TIMERFD_SETTIME, TIMERFD_GETTIME,
+        ACCEPT4, SIGNALFD4, EVENTFD2, EPOLL_CREATE1, DUP3, PIPE2, INOTIFY_INIT1,
+        PREADV, PWRITEV,
+        RT_TGSIGQUEUEINFO,
+        PERF_EVENT_OPEN,
+        RECVMMSG,
+        FANOTIFY_INIT, FANOTIFY_MARK,
+        SYS_PRLIMIT64,
+        NAME_TO_HANDLE_AT, OPEN_BY_HANDLE_AT,
+        CLOCK_ADJTIME,
+        SYNCFS,
+        SENDMMSG,
+        SETNS,
+        GETCPU,
+        PROCESS_VM_READV, PROCESS_VM_WRITEV,
+        KCMP,
+        FINIT_MODULE,
+        SCHED_SETATTR, SCHED_GETATTR,
+        RENAMEAT2,
+        SECCOMP,
+        GETRANDOM,
+        MEMFD_CREATE,
+        KEXEC_FILE_LOAD,
+        BPF,
+        EXECVEAT,
+        USERFAULTFD,
+        MEMBARRIER,
+        MLOCK2,
+        COPY_FILE_RANGE,
+        PREADV2, PWRITEV2,
+        PKEY_MPROTECT, PKEY_ALLOC, PKEY_FREE,
+        STATX,
+        IO_PGETEVENTS,
+        RSEQ
     };
 
     namespace syscall {
@@ -175,9 +318,6 @@ namespace std {
         
         fn pipe(pipefd: i32[2]): i32
             syscall!(Syscall::PIPE, pipefd);
-        
-        fn exit(status: i32)
-            syscall!(Syscall::EXIT, status);
 
         fn time(time: &time_t): std::time_t
             syscall!(Syscall::TIME, time);
@@ -221,6 +361,135 @@ namespace std {
         fn getpid(): pid_t
             syscall!(Syscall::GETPID);
 
+        fn sendfile(out_fd: i32, in_fd: i32, offset: &off_t, count: usize): ssize_t
+            syscall!(Syscall::SENDFILE, out_fd, in_fd, offset, count);
+        
+        fn socket(domain: i32, _type: i32, protocol: i32): i32
+            syscall!(Syscall::SOCKET, domain, _type, protocol);
+
+        fn accept(sockfd: i32, addr: &SockAddr, addrlen: &socklen_t): i32
+            syscall!(Syscall::ACCEPT, sockfd, addr, addrlen);
+
+        fn sendto(sockfd: i32, buf: const &void, length: usize, flags: i32)
+            syscall!(Syscall::SENDTO, sockfd, buf, length, flags);
+
+        fn recvfrom(sockfd: i32, buf: &void, length: usize, flags: i32, src_addr: &SockAddr, addrlen: &socklen_t): ssize_t
+            syscall!(Syscall::RECVFROM, sockfd, buf, length, flags, src_addr, addrlen);
+
+        # TODO: fn sendmsg(sockfd: i32, msg: const &msghdr, flags: i32);
+        # TODO: fn recvmsg
+
+        fn shutdown(sockfd: i32, how: i32): i32
+            syscall!(Syscall::SHUTDOWN, sockfd, how);
+        
+        fn bind(sockfd: i32, addr: const &SockAddr, addrlen: socklen_t): i32
+            syscall!(Syscall::BIND, sockfd, addr, addrlen);
+        
+        fn listen(sockfd: i32, backlog: i32): i32
+            syscall!(Syscall::LISTEN, sockfd, backlog);
+        
+        fn getsockname(sockfd: i32, addr: &SockAddr, addrlen: &socklen_t): i32
+            syscall!(Syscall::GETSOCKNAME, sockfd, addr, addrlen);
+
+        fn getpeername(sockfd: i32, addr: &SockAddr, addrlen: &socklen_t): i32
+            syscall!(Syscall::GETPEERNAME, sockfd, addr, addrlen);
+        
+        fn socketpair(domain: i32, _type: i32, protocol: i32, sv: i32[2]): i32
+            syscall!(Syscall::SOCKETPAIR, domain, _type, protocol, sv);
+
+        fn setsockopt(sockfd: i32, level: i32, optname: i32, optval: const &void, optlen: socklen_t): i32
+            syscall!(Syscall::SETSOCKOPT, sockfd, level, optname, optval, optlen);
+        
+        fn getsockopt(sockfd: i32, level: i32, optname: i32, optval: &void, optlen: &socklen_t): i32
+            syscall!(Syscall::GETSOCKOPT, sockfd, level, optname, optval, optlen);
+        
+        fn clone(func: fn<i32>(&void), stack: &void, flags: i32, arg: &void): i32 # TODO: expand with multiple versions when overloading is supported
+            syscall!(Syscall::CLONE, func, stack, flags, arg);
+        
+        fn fork(): pid_t
+            syscall!(Syscall::FORK);
+        
+        fn vfork(): pid_t
+            syscall!(Syscall::VFORK);
+        
+        fn execve(pathname: const &char, argv: &const char[], envp: &const char[]): i32
+            syscall!(Syscall::EXECVE, pathname, argv, envp);
+
+        fn exit(status: i32)
+            syscall!(Syscall::EXIT, status);
+        
+        # TODO: fn wait4(pid: pid_t, wstatus: &i32, options: i32, )
+
+        fn kill(pid: pid_t, sig: i32): i32
+            syscall!(Syscall::KILL, pid, sig);
+        
+        fn getppid(): pid_t
+            syscall!(Syscall::GETPPID);
+        
+        fn uname(buf: &UTSName): i32
+            syscall!(Syscall::UNAME, buf);
+
+        fn semget(key: key_t, nsems: i32, semflg: i32): i32
+            syscall!(Syscall::SEMGET, key, nsems, semflg);
+        
+        fn semop(semid: i32, sops: &sembuf, nsops: usize): i32
+            syscall!(Syscall::SEMOP, semid, sops, nsops);
+        
+        fn semctl(semid: i32, semnum: i32, cmd: i32): i32
+            syscall!(Syscall::SEMCTL, semid, semnum, cmd);
+        
+        fn shmdt(shmaddr: const &void): i32
+            syscall!(Syscall::SHMDT, shmaddr);
+        
+        fn msgget(key: key_t, msgflg: i32): i32
+            syscall!(Syscall::MSGGET, key, msgflg);
+
+        fn msgsnd(msqid: i32, msgp: const &void, msgsz: usize, msgflg: i32): i32
+            syscall!(Syscall::MSGSND, msqid, msgp, msgsz, msgflg);
+        
+        fn msgrcv(msqid: i32, msgp: &void, msgsz: usize, msgtyp: i64, msgflg: i32): ssize_t
+            syscall!(Syscall::MSGRCV, msqid, msgp, msgsz, msgtyp, msgflg);
+        
+        # TODO: msgctl
+
+        fn fcntl(fd: i32, cmd: i32): i32
+            syscall!(Syscall::FCNTL, fd, cmd);
+        
+        fn flock(fd: i32, operation: i32): i32
+            syscall!(Syscall::FLOCK, fd, operation);
+        
+        fn fsync(fd: i32): i32
+            syscall!(Syscall::FSYNC, fd);
+        
+        fn fdatasync(fd: i32): i32
+            syscall!(Syscall::FDATASYNC, fd);
+        
+        fn truncate(path: const &char, length: off_t): i32
+            syscall!(Syscall::TRUNCATE, path, length);
+        
+        fn ftruncate(fd: i32, length: off_t): i32
+            syscall!(Syscall::FTRUNCATE, fd, length);
+        
+        # TODO: getdents
+
+        fn getcwd(buf: &char, size: usize): &char
+            syscall!(Syscall::GETCWD, buf, size);
+        
+        fn chdir(path: const &char): i32
+            syscall!(Syscall::CHDIR, path);
+        
+        fn fchdir(fd: i32): i32
+            syscall!(Syscall::FCHDIR, fd);
+        
+        fn rename(oldpath: const &char, newpath: const &char): i32
+            syscall!(Syscall::RENAME, oldpath, newpath);
+        
+        fn mkdir(pathname: const &char, mode: mode_t): i32
+            syscall!(Syscall::MKDIR, pathname, mode);
+        
+        fn rmdir(pathname: const &char): i32
+            syscall!(Syscall::RMDIR, pathname);
+        
         [no_return("*")] # every function in this scope will not return anything via the `ret` statement.
     }
 }

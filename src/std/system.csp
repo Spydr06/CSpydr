@@ -1,10 +1,103 @@
 import "syscall.csp";
+import "types.csp";
 
-namespace std {
+macro UTSLEN { 65 }
+
+namespace std { 
+    type SockAddr: struct {
+        sa_family: sa_family_t,
+        sa_data: u8[14]
+    };
+
+    type UTSName: struct {
+        sysname: char[UTSLEN!],  # OS name (i.e. "Linux")
+        nodename: char[UTSLEN!], # node name
+        release: char[UTSLEN!],  # OS release (i.e. "4.1.0")
+        version: char[UTSLEN!],  # OS version
+        machine: char[UTSLEN!],  # hardware identifier
+        domainname: char[UTSLEN!], # NIS or YP domain name
+    };
+
     namespace system {
-        fn exit(exit_code: i32) 
-        {
-            syscall::exit(exit_code);
-        }
+        const AF_UNIX: i32      = 1;
+        const AF_LOCAL: i32     = 1;
+        const AF_INET: i32      = 2;
+        const AF_AX25: i32      = 3;
+        const AF_IPX: i32       = 4;
+        const AF_APPLETALK: i32 = 5;
+        const AF_NETROM: i32    = 6;
+        const AF_BRIDGE: i32    = 7;
+        const AF_ATMPVC: i32    = 8;
+        const AF_X25: i32       = 9;
+        const AF_INET6: i32     = 10;
+        const AF_ROSE: i32      = 11;
+        const AF_DECnet: i32    = 12;
+        const AF_NETBEUI: i32   = 13;
+        const AF_SECURITY: i32  = 14;
+        const AF_KEY: i32       = 15;
+        const AF_NETLINK: i32   = 16;
+        const AF_PACKET: i32    = 17;
+        const AF_ASH: i32       = 18;
+        const AF_ECONET: i32    = 19;
+        const AF_ATMSVC: i32    = 20;
+        const AF_RDS: i32       = 21;
+        const AF_SNA: i32       = 22;
+        const AF_IRDA: i32      = 23;
+        const AF_PPPOX: i32     = 24;
+        const AF_WANPIPE: i32   = 25;
+        const AF_LLC: i32       = 26;
+        const AF_IB: i32        = 27;
+        const AF_MPLS: i32      = 28;
+        const AF_CAN: i32       = 29;
+        const AF_TIPC: i32      = 30;
+        const AF_BLUETOOTH: i32 = 31;
+        const AF_IUCV: i32      = 32;
+        const AF_RXRPC: i32     = 33;
+        const AF_ISDN: i32      = 34;
+        const AF_PHONET: i32    = 35;
+        const AF_IEEE802154: i32= 36;
+        const AF_CAIF: i32      = 37;
+        const AF_ALG: i32       = 38;
+        const AF_NFC: i32       = 39;
+        const AF_VSOCK: i32     = 40;
+        const AF_KCM: i32       = 41;
+        const AF_QIPCRTR: i32   = 42;
+        const AF_SMC: i32       = 43;
+        const AF_XDP: i32       = 44;
+        const AF_MAX: i32       = 35;
+
+        const SOCK_STREAM: i32    = 1;
+        const SOCK_DGRAM: i32     = 2;
+        const SOCK_RAW: i32       = 3;
+        const SOCK_RDM: i32       = 4;
+        const SOCK_SEQPACKET: i32 = 5;
+        const SOCK_NONBLOCK: i32  = 2048;
+        const SOCK_CLOEXEC: i32   = 524288;
+
+        const MSG_OOB: i32          = 0x0001;
+        const MSG_PEEK: i32         = 0x0002;
+        const MSG_DONTROUTE: i32    = 0x0004;
+        const MSG_CTRUNC: i32       = 0x0008;
+        const MSG_PROXY: i32        = 0x0010;
+        const MSG_TRUNC: i32        = 0x0020;
+        const MSG_DONTWAIT: i32     = 0x0040;
+        const MSG_EOR: i32          = 0x0080;
+        const MSG_WAITALL: i32      = 0x0100;
+        const MSG_FIN: i32          = 0x0200;
+        const MSG_SYN: i32          = 0x0400;
+        const MSG_CONFIRM: i32      = 0x0800;
+        const MSG_RST: i32          = 0x1000;
+        const MSG_ERRQUEUE: i32     = 0x2000;
+        const MSG_NOSIGNAL: i32     = 0x4000;
+        const MSG_MORE: i32         = 0x8000;
+        const MSG_WAITFORONE: i32   = 0x10000;
+        const MSG_BATCH: i32        = 0x40000;
+        const MSG_ZEROCOPY: i32     = 0x4000000;
+        const MSG_FASTOPEN: i32     = 0x20000000;
+        const MSG_CMSG_CLOEXEC: i32 = 0x40000000;
+
+        const SHUT_RD: i32 = 0;
+        const SHUT_WR: i32 = 1;
+        const SHUT_RDWR: i32 = 2;
     }
 }
