@@ -33,6 +33,7 @@ typedef struct VALIDATOR_STRUCT
     ASTProg_T* ast;
 
     VScope_T* current_scope;
+    VScope_T* global_scope;
     ASTObj_T* current_function;
     bool main_function_found;
 
@@ -42,8 +43,6 @@ typedef struct VALIDATOR_STRUCT
                                 // the validator will stop after its pass that more
                                 // than one error message can be generated
 } Validator_T;
-
-static VScope_T* global_scope;
 
 // validator struct functions
 static void init_validator(Validator_T* v)
@@ -55,6 +54,8 @@ static void begin_obj_scope(Validator_T* v, ASTIdentifier_T* id, List_T* objs);
 static void scope_add_obj(Validator_T* v, ASTObj_T* obj);
 static inline void begin_scope(Validator_T* v, ASTIdentifier_T* id);
 static inline void end_scope(Validator_T* v);
+
+static ASTType_T* expand_typedef(Validator_T* v, ASTType_T* type);
 
 // iterator functions
 
@@ -232,12 +233,12 @@ void validate_ast(ASTProg_T* ast)
     v.ast = ast;
 
     begin_obj_scope(&v, NULL, ast->objs);
-    global_scope = v.current_scope;
+    v.global_scope = v.current_scope;
 
     ast_iterate(&main_iterator_list, ast, &v);
 
     end_scope(&v);
-    global_scope = NULL;
+    v.global_scope = NULL;
 
     if(!v.main_function_found)
     {
@@ -285,65 +286,57 @@ static ASTObj_T* search_in_scope(VScope_T* scope, char* id)
     return search_in_scope(scope->prev, id);
 }
 
-static ASTObj_T* search_id_in_enum(ASTType_T* e_type, ASTIdentifier_T* id)
+static ASTObj_T* search_identifier(Validator_T* v, VScope_T* scope, ASTIdentifier_T* id)
 {
-    for(size_t i = 0; i < e_type->members->size; i++)
-    {
-        ASTObj_T* member = e_type->members->items[i];
-        if(strcmp(member->id->callee, id->callee) == 0)
-            return member;
-    }
-
-    return NULL;
-}
-
-static ASTObj_T* search_identifier(VScope_T* scope, ASTIdentifier_T* id)
-{
-    if(!scope || !id)
+    if(!v || !scope || !id)
         return NULL;
     
-    if(id->global_scope && scope != global_scope)
-        return search_identifier(global_scope, id);
+    if(id->global_scope)
+        scope = v->global_scope;
+    
+    if(id->outer)
+    {
+        ASTObj_T* outer_obj = search_identifier(v, scope, id->outer);
+        if(!outer_obj)
+            return NULL;
+        
+        switch(outer_obj->kind)
+        {
+            case OBJ_TYPEDEF:
+                {
+                    ASTType_T* expanded = expand_typedef(v, outer_obj->data_type);
+                    if(expanded->kind == TY_ENUM)
+                    {
+                        for(size_t i = 0; i < expanded->members->size; i++) 
+                        {
+                            ASTObj_T* member = expanded->members->items[i];
+                            if(strcmp(member->id->callee, id->callee) == 0)
+                                return member;
+                        }
+                    }
+                    throw_error(ERR_UNDEFINED, id->outer->tok, "type `%s` has no member called `%s`", outer_obj->id->callee, id->callee);
+                } break;
+            case OBJ_NAMESPACE:
+                {
+                    for(size_t i = 0; i < outer_obj->objs->size; i++)
+                    {
+                        ASTObj_T* obj = outer_obj->objs->items[i];
+                        if(strcmp(obj->id->callee, id->callee) == 0)
+                            return obj;
+                    }
+                } break;
+            default: 
+                break;
+        }
 
-    if(!id->outer)
+        return NULL;
+    }
+    else
     {
         ASTObj_T* found = search_in_current_scope(scope, id->callee);
         if(found)
             return found;
-        return search_identifier(scope->prev, id);
-    }
-    else {
-        ASTObj_T* outer = search_identifier(scope, id->outer);
-        if(!outer)
-            return NULL;
-
-        switch(outer->kind)
-        {
-            case OBJ_NAMESPACE:
-                for(size_t i = 0; i < outer->objs->size; i++)
-                {
-                    ASTObj_T* current = outer->objs->items[i];
-                    if(strcmp(current->id->callee, id->callee) == 0)
-                        return current;
-                }
-                break;
-            case OBJ_TYPEDEF:
-                switch (outer->data_type->kind) {
-                    case TY_ENUM:
-                    {
-                        ASTObj_T* enum_member = search_id_in_enum(outer->data_type, id);
-                        if(enum_member)
-                            return enum_member;
-                    } break; 
-                    default:
-                        break;
-                }
-                throw_error(ERR_UNDEFINED, id->outer->tok, "type `%s` has no member called `%s`", outer->id->callee, id->callee);
-                break;
-            default:
-                break;
-        }
-        return NULL;
+        return search_identifier(v, scope->prev, id);
     }
 }
 
@@ -378,7 +371,6 @@ static void scope_add_obj(Validator_T* v, ASTObj_T* obj)
 {
     ASTObj_T* found = search_in_current_scope(v->current_scope, obj->id->callee);
     if(found)
-    {
         throw_error(ERR_REDEFINITION, obj->id->tok, 
             "redefinition of %s `%s`.\nfirst defined in " COLOR_BOLD_WHITE "%s " COLOR_RESET "at line " COLOR_BOLD_WHITE "%u" COLOR_RESET " as %s.", 
             obj_kind_to_str(obj->kind), obj->id->callee, 
@@ -386,8 +378,7 @@ static void scope_add_obj(Validator_T* v, ASTObj_T* obj)
             found->tok->line + 1,
             obj_kind_to_str(found->kind)
         );
-        //exit(1);
-    }
+
     list_push(v->current_scope->objs, obj);
 }
 
@@ -413,7 +404,7 @@ static ASTType_T* expand_typedef(Validator_T* v, ASTType_T* type)
     if(type->kind != TY_UNDEF)
         return type;
 
-    ASTObj_T* ty_def = search_identifier(v->current_scope, type->id);
+    ASTObj_T* ty_def = search_identifier(v, v->current_scope, type->id);
     if(!ty_def || ty_def->kind != OBJ_TYPEDEF)
     {
         throw_error(ERR_TYPE_ERROR, type->tok, "undefined data type `%s`", type->id->callee);
@@ -621,12 +612,10 @@ static void id_def(ASTIdentifier_T* id, va_list args)
 static void id_use(ASTIdentifier_T* id, va_list args)
 {
     GET_VALIDATOR(args);
-    ASTObj_T* found = search_identifier(v->current_scope, id);
+    ASTObj_T* found = search_identifier(v, v->current_scope, id);
     if(!found) {
         throw_error(ERR_UNDEFINED, id->tok, "undefined identifier `%s`.", id->callee);
     }
-
-    id->outer = found->id->outer;
 }
 
 static void gen_id_path(VScope_T* v, ASTIdentifier_T* id)
@@ -807,6 +796,9 @@ static void fn_end(ASTObj_T* fn, va_list args)
 static void namespace_start(ASTObj_T* namespace, va_list args)
 {
     GET_VALIDATOR(args);
+
+    
+
     begin_obj_scope(v, namespace->id, namespace->objs);
 }
 
@@ -995,7 +987,7 @@ static void using_end(ASTNode_T* using, va_list args)
 {
     GET_VALIDATOR(args);
 
-    ASTObj_T* found = search_identifier(v->current_scope, using->id);
+    ASTObj_T* found = search_identifier(v, v->current_scope, using->id);
     if(!found)
     {
         throw_error(ERR_UNDEFINED_UNCR, using->id->tok, "using undefined namespace `%s`", using->id->callee);
@@ -1031,7 +1023,7 @@ static void call(ASTNode_T* call, va_list args)
 {
     GET_VALIDATOR(args);
 
-    ASTObj_T* called_obj = search_identifier(v->current_scope, call->expr->id);
+    ASTObj_T* called_obj = search_identifier(v, v->current_scope, call->expr->id);
     if(!called_obj)
     {
         throw_error(ERR_UNDEFINED, call->expr->tok, "undefined callee");
@@ -1106,10 +1098,10 @@ static void identifier(ASTNode_T* id, va_list args)
 {
     GET_VALIDATOR(args);
 
-    ASTObj_T* referenced_obj = search_identifier(v->current_scope, id->id);
+    ASTObj_T* referenced_obj = search_identifier(v, v->current_scope, id->id);
     if(!referenced_obj)
     {
-        throw_error(ERR_UNDEFINED_UNCR, id->id->tok, "refferring to undefined identifier `%s`", id->id->callee);
+        throw_error(ERR_UNDEFINED, id->id->tok, "refferring to undefined identifier `%s`", id->id->callee);
         uncr(v);
         return;
     }
@@ -1689,7 +1681,7 @@ static void undef_type(ASTType_T* u_type, va_list args)
 {
     GET_VALIDATOR(args);
 
-    ASTObj_T* found = search_identifier(v->current_scope, u_type->id);
+    ASTObj_T* found = search_identifier(v, v->current_scope, u_type->id);
     if(!found)
         throw_error(ERR_TYPE_ERROR, u_type->tok, "could not find data type named `%s`", u_type->id->callee);
     

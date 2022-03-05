@@ -1025,41 +1025,25 @@ static ASTObj_T* find_namespace(List_T* objs, char* callee)
 
 static void parse_namespace(Parser_T* p, List_T* objs)
 {
-    ASTObj_T* namespace = init_ast_obj(OBJ_NAMESPACE, p->tok);
+    Token_T* tok = p->tok;
     parser_advance(p); // skip the "namespace" token
-    namespace->id = parse_simple_identifier(p);
+    ASTIdentifier_T* id = parse_simple_identifier(p);
 
     // if there is already a namespace with this name in the current scope, add the new objs to it rather than creating a new namespace
-    ASTObj_T* found = find_namespace(objs, namespace->id->callee);
-    if(found)
+    ASTObj_T* namespace = find_namespace(objs, id->callee);
+    if(!namespace)
     {
-        namespace = found; // the previous namespace will be deleted by mem.c later
-    }
-    else
-    {
+        namespace = init_ast_obj(OBJ_NAMESPACE, tok);
+        namespace->id = id;
         list_push(objs, namespace);
 
         // initialize the namespace's object list
         namespace->objs = init_list(sizeof(struct AST_OBJ_STRUCT));
         mem_add_list(namespace->objs);
     }
-
-    // FIXME: will not work, if the namespace is added to another one in another file
-    /*if(tok_is(p, TOKEN_SEMICOLON)) // if the namespace has a semicolon directly after its name, it exists in the whole file
-    {
-        parser_advance(p);
-        const char* namespace_file = namespace->tok->source->path;
-
-        while(strcmp(p->tok->source->path, namespace_file) == 0)
-        {
-            parse_obj(p, namespace->objs);
-        }
-
-        return;
-    }*/
-    
+        
     // if the namespace has a { directly after its name, it exists in the current scope
-    parser_consume(p, TOKEN_LBRACE, "expect either `{` or `;` after namespace declaration");
+    parser_consume(p, TOKEN_LBRACE, "expect `{` after namespace declaration");
 
     while(!tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF))
     {
@@ -1067,14 +1051,10 @@ static void parse_namespace(Parser_T* p, List_T* objs)
         parse_obj(p, namespace->objs);
     }
 
-    for(size_t i = 0; i < namespace->objs->size; i++)
-    {
-        ASTObj_T* obj = namespace->objs->items[i];
-        if(!obj->id->outer)
-            obj->id->outer = namespace->id;
-    }
-
     parser_consume(p, TOKEN_RBRACE, "expect `}` at end of namespace");
+
+    for(size_t i = 0; i < namespace->objs->size; i++)
+        ((ASTObj_T*) namespace->objs->items[i])->id->outer = namespace->id;
 }
 
 static void parse_obj(Parser_T* p, List_T* obj_list)
