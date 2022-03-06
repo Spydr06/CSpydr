@@ -913,8 +913,14 @@ static void fn_arg_start(ASTObj_T* arg, va_list args)
 
 static void fn_arg_end(ASTObj_T* arg, va_list args)
 {
-    if(arg->data_type->is_constant)
+    GET_VALIDATOR(args);
+
+    ASTType_T* expanded = expand_typedef(v, arg->data_type);
+
+    if(expanded->is_constant)
         arg->is_constant = true;
+    if(expanded->kind == TY_VOID)
+        throw_error(ERR_TYPE_ERROR, arg->tok, "`void` type is not allowed for function arguments");
 }
 
 static void enum_member_end(ASTObj_T* e_member, va_list args)
