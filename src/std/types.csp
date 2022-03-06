@@ -59,4 +59,8 @@ namespace std {
         mtype: i64,
         mtext: char[1]
     };
+    type __fd_mask: i64;
+    type fd_set: struct {
+        fds_bits: std::__fd_mask[1024 / (8 * sizeof(std::__fd_mask))]
+    };
 }

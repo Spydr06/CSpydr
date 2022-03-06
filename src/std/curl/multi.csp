@@ -1,0 +1,170 @@
+#[**************************************************************************
+ *                                  _   _ ____  _
+ *  Project                     ___| | | |  _ \| |
+ *                             / __| | | | |_) | |
+ *                            | (__| |_| |  _ <| |___
+ *                             \___|\___/|_| \_\_____|
+ *
+ * Copyright (C) 1998 - 2021, Daniel Stenberg, <daniel@haxx.se>, et al.
+ *
+ * This software is licensed as described in the file COPYING, which
+ * you should have received as part of this distribution. The terms
+ * are also available at https://curl.se/docs/copyright.html.
+ *
+ * You may opt to use, copy, modify, merge, publish, distribute and/or sell
+ * copies of the Software, and permit persons to whom the Software is
+ * furnished to do so, under the terms of the COPYING file.
+ *
+ * This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
+ * KIND, either express or implied.
+ *
+ **************************************************************************]#
+#[
+  This is an "external" header file. Don't give away any internals here!
+
+  GOALS
+
+  o Enable a "pull" interface. The application that uses libcurl decides where
+    and when to ask libcurl to get/send data.
+
+  o Enable multiple simultaneous transfers in the same thread without making it
+    complicated for the application.
+
+  o Enable the application to select() on its own file descriptors and curl's
+    file descriptors simultaneous easily.
+
+]#
+
+[link("curl")]
+
+import "curl.csp";
+
+type CURLM: void;
+type CURLMcode: enum {
+    OK,
+    BAD_HANDLE,      # the passed-in handle is not a valid CURLM handle
+    BAD_EASY_HANDLE, # an easy handle was not good/valid
+    OUT_OF_MEMORY,   # if you ever get this, you're in deep sh*t
+    INTERNAL_ERROR,  # this is a libcurl bug
+    BAD_SOCKET,      # the passed in socket argument did not match
+    UNKNOWN_OPTION,  # curl_multi_setopt() with unsupported option
+    ADDED_ALREADY,   # an easy handle already added to a multi handle was attempted to get added - again
+    RECURSIVE_API_CALL, # an api function was called from inside a callback
+    WAKEUP_FAILURE,  # wakeup is unavailable or failed
+    BAD_FUNCTION_ARGUMENT, # function called with a bad parameter
+    ABORTED_BY_CALLBACK,
+    LAST
+};
+
+const CURLM_CALL_MULTI_PERFORM: CURLMcode = -1; # please call curl_multi_perform() or curl_multi_socket*() soon
+const CURLM_CALL_MULTI_SOCKET: CURLMcode = -1;
+
+macro CURLPIPE_NOTHING   { (0: i64) }
+macro CURLPIPE_HTTP1     { (1: i64) }
+macro CURLPIPE_MULTIPLEX { (2: i64) }
+
+type CURLMSG: enum {
+    NONE,
+    DONE,
+    LAST
+};
+
+type CURLMsg: struct {
+    msg: CURLMSG,
+    easy_handle: &CURL,
+    data: union {
+        whatever: &void,
+        result: CURLcode
+    }
+};
+
+macro CURL_WAIT_POLLIN  { 0x0001 }
+macro CURL_WAIT_POLLPRI { 0x0002 }
+macro CURL_WAIT_POLLOUT { 0x0004 }
+
+type curl_waitfd: struct {
+    fd: curl_socket_t,
+    events: i16,
+    revents: i16 # not supported yet
+};
+
+extern {
+    fn curl_multi_init(): &CURLM;
+    fn curl_multi_add_handle(multi_handle: &CURLM, curl_handle: &CURL): CURLMcode;
+    fn curl_multi_remove_handle(multi_handle: &CURLM, curl_handle: &CURL): CURLMcode;
+    fn curl_multi_fdset(multi_handle: &CURLM, read_fd_set: &std::fd_set, write_fd_set: &std::fd_set, exc_fd_set: &std::fd_set, max_fd: &i32): CURLMcode;
+    fn curl_multi_wait(multi_handle: &CURLM, extra_fds: curl_waitfd[], extra_nfds: u32, timeout_ms: i32, return: &i32): CURLMcode;
+    fn curl_multi_poll(multi_handle: &CURLM, extra_fds: curl_waitfd[], extra_nfds: u32, timeout_ms: i32, return: &i32): CURLMcode;
+    fn curl_multi_wakeup(multi_handle: &CURLM): CURLMcode;
+    fn curl_multi_perform(multi_handle: &CURLM, running_handles: &i32): CURLMcode;
+    fn curl_multi_cleanup(multi_handle: &CURLM): CURLMcode;
+    fn curl_multi_info_read(multi_handle: &CURLM, msgs_in_queue: &i32): &CURLMsg;
+
+    fn curl_multi_strerror(code: CURLMcode): const &char;
+}
+
+macro CURL_POLL_NONE   { 0 }
+macro CURL_POLL_IN     { 1 }
+macro CURL_POLL_OUT    { 2 }
+macro CURL_POLL_INOUT  { 3 }
+macro CURL_POLL_REMOVE { 4 }
+
+#macro CURL_SOCKET_TIMEOUT { }
+
+macro CURL_CSELECT_IN  { 0x01 }
+macro CURL_CSELECT_OUT { 0x02 }
+macro CURL_CSELECT_ERR { 0x04 }
+
+type curl_socket_callback: fn<i32>(&CURL, curl_socket_t, i32, &void, &void);
+type curl_multi_time_callback: fn<i32>(&CURLM, i64, &void);
+
+extern {
+    fn curl_multi_socket_action(multi_handle: &CURLM, s: curl_socket_t, ev_bitmask: i32, running_handles: &i32): CURLMcode;
+    fn curl_multi_socket_all(multi_handle: &CURLM, running_handles: &i32);
+}
+
+#[ This macro (here: function) below was added in 7.16.3 to push users who recompile to use
+   the new curl_multi_socket_action() instead of the old curl_multi_socket()
+]#
+fn curl_multi_socket(multi_handle: &CURLM, s: curl_socket_t, running_handles: &i32): CURLMcode
+{
+    <- curl_multi_socket_action(multi_handle, s, 0, running_handles);
+}
+
+extern fn curl_multi_timeout(multi_handle: &CURLM, milliseconds: &i64): CURLMcode;
+
+type CURLMoption: enum {
+    SOCKETFUNCTION = 20001,
+    SOCKETDATA = 10002,
+    PIPELINING = 3,
+    TIMERFUNCTION = 20004,
+    MAXCONNECTS = 6,
+    MAX_HOST_CONNECTIONS = 7,
+    MAX_PIPELINE_LENGTH = 8,
+    CONTENT_LENGTH_PENALTY_SIZE = 30009,
+    CHUNK_LENGTH_PENALTY_SIZE = 30010,
+    PIPELINING_SIZE_BL = 10011,
+    MAX_TOTAL_CONNECTIONS = 13,
+    PUSHFUNCTION = 20014,
+    PUSHDATA = 10015,
+    MAX_CONCURRENT_STREAMS = 16,
+    LASTENTRY = 17 # the last unused
+};
+
+extern {
+    fn curl_multi_setopt(multi_handle: &CURLM, option: CURLMoption, args: ...): CURLMcode;
+    fn curl_multi_assign(multi_handle: &CURLM, sockfd: curl_socket_t, sockp: &void): CURLMcode;
+}
+
+macro CURL_PUSH_OK       { 0 }
+macro CURL_PUSH_DENY     { 1 }
+macro CURL_PUSH_ERROROUT { 2 }
+
+type curl_pushheaders: void;
+
+extern {
+    fn curl_pushheader_bynum(h: &curl_pushheaders, num: u64): &char;
+    fn curl_pushheader_byname(h: &curl_pushheaders, name: const &char): &char;
+}
+
+type curl_push_callback: fn<i32>(&CURL, &CURL, u64, &curl_pushheaders, &void);

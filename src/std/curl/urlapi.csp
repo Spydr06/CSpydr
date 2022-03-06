@@ -1,0 +1,94 @@
+#[**************************************************************************
+ *                                  _   _ ____  _
+ *  Project                     ___| | | |  _ \| |
+ *                             / __| | | | |_) } | |
+ *                            | { (__| |_| |  _ <| |___
+ *                             \___|\___/|_| \_\_____|
+ *
+ * Copyright (C) 2018 - 2021, Daniel Stenberg, <daniel@haxx.se>, et al.
+ *
+ * This software is licensed as described in the file COPYING, which
+ * you should have received as part of this distribution. The terms
+ * are also available at https://curl.se/docs/copyright.html.
+ *
+ * You may opt to use, copy, modify, merge, publish, distribute and/or sell
+ * copies of the Software, and permit persons to whom the Software is
+ * furnished to do so, under the terms of the COPYING file.
+ *
+ * This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
+ * KIND, either express or implied.
+ *
+ **************************************************************************]#
+
+type CURLUcode: enum {
+    OK,
+    BAD_HANDLE,          # 1 
+    BAD_PARTPOINTER,     # 2 
+    MALFORMED_INPUT,     # 3 
+    BAD_PORT_NUMBER,     # 4 
+    UNSUPPORTED_SCHEME,  # 5 
+    URLDECODE,           # 6 
+    OUT_OF_MEMORY,       # 7 
+    USER_NOT_ALLOWED,    # 8 
+    UNKNOWN_PART,        # 9 
+    NO_SCHEME,           # 10
+    NO_USER,             # 11
+    NO_PASSWORD,         # 12
+    NO_OPTIONS,          # 13
+    NO_HOST,             # 14
+    NO_PORT,             # 15
+    NO_QUERY,            # 16
+    NO_FRAGMENT,         # 17
+    NO_ZONEID,           # 18
+    BAD_FILE_URL,        # 19
+    BAD_FRAGMENT,        # 20
+    BAD_HOSTNAME,        # 21
+    BAD_IPV6,            # 22
+    BAD_LOGIN,           # 23
+    BAD_PASSWORD,        # 24
+    BAD_PATH,            # 25
+    BAD_QUERY,           # 26
+    BAD_SCHEME,          # 27
+    BAD_SLASHES,         # 28
+    BAD_USER,            # 29
+    LAST
+};
+
+type CURLUPart: enum {
+    URL,
+    SCHEME,
+    USER,
+    PASSWORD,
+    OPTIONS,
+    HOST,
+    PORT,
+    PATH,
+    QUERY,
+    FRAGMENT,
+    ZONEID # added in 7.65.0
+};
+
+macro CURLU_DEFAULT_PORT { (1<<0) }       # return default port number
+macro CURLU_NO_DEFAULT_PORT { (1<<1) }    # act as if no port number was set, if the port number matches the default for the scheme
+macro CURLU_DEFAULT_SCHEME { (1<<2) }     # return default scheme if missing
+macro CURLU_NON_SUPPORT_SCHEME { (1<<3) } # allow non-supported scheme
+macro CURLU_PATH_AS_IS { (1<<4) }         # leave dot sequences
+macro CURLU_DISALLOW_USER { (1<<5) }      # no user+password allowed
+macro CURLU_URLDECODE { (1<<6) }          # URL decode on get
+macro CURLU_URLENCODE { (1<<7) }          # URL encode on set
+macro CURLU_APPENDQUERY { (1<<8) }        # append a form style part
+macro CURLU_GUESS_SCHEME { (1<<9) }       # legacy curl-style guessing
+macro CURLU_NO_AUTHORITY { (1<<10) }      # Allow empty authority when the scheme is unknown.
+macro CURLU_ALLOW_SPACE { (1<<11) }       # Allow spaces in the URL
+
+type CURLU: void;
+
+extern {
+    fn curl_url(): &CURLU;
+    fn curl_url_cleanup(handle: &CURLU);
+    fn curl_url_dup(in: &CURLU): &CURLU;
+    fn curl_url_get(handle: &CURLU, what: CURLUPart, part: &&char, flags: u32): CURLUcode;
+    fn curl_url_set(handle: &CURLU, what: CURLUPart, part: const &char, flags: u32): CURLUcode;
+
+    fn curl_url_strerror(code: CURLUcode): const &char;
+}

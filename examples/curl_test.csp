@@ -1,0 +1,8 @@
+import "curl/curl.csp";
+import "io.csp";
+
+fn main(): i32 {
+    std::io::puts(curl_version());
+
+    <- 0;
+}

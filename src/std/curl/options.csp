@@ -1,0 +1,51 @@
+#[**************************************************************************
+ *                                  _   _ ____  _
+ *  Project                     ___| | | |  _ \| |
+ *                             / __| | | | |_) | |
+ *                            | (__| |_| |  _ <| |___
+ *                             \___|\___/|_| \_\_____|
+ *
+ * Copyright (C) 2018 - 2020, Daniel Stenberg, <daniel@haxx.se>, et al.
+ *
+ * This software is licensed as described in the file COPYING, which
+ * you should have received as part of this distribution. The terms
+ * are also available at https://curl.se/docs/copyright.html.
+ *
+ * You may opt to use, copy, modify, merge, publish, distribute and/or sell
+ * copies of the Software, and permit persons to whom the Software is
+ * furnished to do so, under the terms of the COPYING file.
+ *
+ * This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
+ * KIND, either express or implied.
+ *
+ **************************************************************************]#
+
+import "curl.csp";
+
+type curl_easytype: enum {
+    CURLOT_LONG,    # long (a range of values)
+    CURLOT_VALUES,  #      (a defined set or bitmask)
+    CURLOT_OFF_T,   # curl_off_t (a range of values)
+    CURLOT_OBJECT,  # pointer (void *)
+    CURLOT_STRING,  #         (char * to zero terminated buffer)
+    CURLOT_SLIST,   #         (struct curl_slist *)
+    CURLOT_CBPTR,   #         (void * passed as-is to a callback)
+    CURLOT_BLOB,    # blob (struct curl_blob *)
+    CURLOT_FUNCTION # function pointer
+};
+
+macro CURL_FLAG_ALIAS { (1 << 0) }
+
+type curl_easyoption: struct {
+    name: const &char,
+    id: CURLoption,
+    _type: curl_easytype,
+    flags: u32
+};
+
+extern {
+    fn curl_easy_option_by_name(name: const &char): const &curl_easyoption;
+    fn curl_easy_option_by_id(id: CURLoption): const &curl_easyoption;
+    fn curl_easy_option_next(prev: const &curl_easyoption): const &curl_easyoption;
+
+}
