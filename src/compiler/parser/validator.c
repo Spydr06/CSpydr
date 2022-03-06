@@ -857,11 +857,16 @@ static void global_end(ASTObj_T* global, va_list args)
     }
     gen_id_path(v->current_scope, global->id);
 
-    if(global->data_type->is_vla && !vla_to_array_type(v, global->data_type, global->value))
-        throw_error(ERR_TYPE_ERROR, global->data_type->tok, "vla type is not allowed for global variables");
+    ASTType_T* expanded = expand_typedef(v, global->data_type);
+
+    if(expanded->is_vla && !vla_to_array_type(v, global->data_type, global->value))
+        throw_error(ERR_TYPE_ERROR, global->data_type->tok, "vla type is not allowed for variables");
     
-    if(global->data_type->is_constant)
+    if(expanded->is_constant)
         global->is_constant = true;
+    
+    if(expanded->kind == TY_VOID)
+        throw_error(ERR_TYPE_ERROR, global->tok, "`void` type is not allowed for variables"); 
 }
 
 static void local_start(ASTObj_T* local, va_list args)
@@ -872,20 +877,28 @@ static void local_end(ASTObj_T* local, va_list args)
 {
     GET_VALIDATOR(args);
 
-   /* if(!local->data_type)
-    {
-        if(!local->value->data_type)
-        {
-            throw_error(ERR_TYPE_ERROR, local->value->tok, "could not resolve datatype for `%s`", local->id->callee);
-            return;
-        }
-        local->data_type = local->value->data_type;
+   // if(!local->data_type)
+   // {
+   //     printf("a\n");
+   //     if(!local->value || !local->value->data_type)
+   //     {
+   //         throw_error(ERR_TYPE_ERROR, local->value->tok, "could not resolve datatype for `%s`", local->id->callee);
+   //         return;
+   //     }
+   //     local->data_type = local->value->data_type;
+   //     printf("b\n");
+   // }
+
+    if(local->data_type) {
+        ASTType_T* expanded = expand_typedef(v, local->data_type);
+
+        if(expanded->is_vla && !vla_to_array_type(v, local->data_type, local->value))
+                throw_error(ERR_TYPE_ERROR, local->data_type->tok, "vla type is not allowed for variables");
+        if(expanded->is_constant)
+            local->is_constant = true;
+        if(expanded->kind == TY_VOID)
+            throw_error(ERR_TYPE_ERROR, local->tok, "`void` type is not allowed for variables");
     }
-    if(local->data_type->is_vla && !vla_to_array_type(v, local->data_type, local->value))
-            throw_error(ERR_TYPE_ERROR, local->data_type->tok, "vla type is not allowed for local variables");
-     
-    if(local->data_type->is_constant)
-        local->is_constant = true; */
 }
 
 static void fn_arg_start(ASTObj_T* arg, va_list args)
@@ -1434,6 +1447,9 @@ static void assignment_end(ASTNode_T* assign, va_list args)
     {
         throw_error(ERR_CONST_ASSIGN, assign->left->tok, "cannot assign value to constant `%s`", assign->left->tok->value);
     }
+
+    if(expand_typedef(v, assign->data_type)->kind == TY_VOID)
+        throw_error(ERR_TYPE_ERROR, assign->tok, "cannot assign type `void`");
 }
 
 static void anonymous_struct_lit(ASTNode_T* s_lit, Validator_T* v)
