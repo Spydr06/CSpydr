@@ -55,6 +55,7 @@ A list of all the features, that are/will be implemented.
 ##### CSpydr Standard library features
 - [x] basic `c17` `libc`-header implementation
 - [x] `glfw` and `OpenGL`/`GLU` header files 
+- [x] `cURL` header implementation 
 - [ ] from-the-ground custom written `stdlib` based on linux syscalls (in progress)
 - [ ] control- and safety-structs and -functions (like in Rust) (in progress)
 
@@ -145,3 +146,4 @@ CSpydr is licensed under the [MIT License](https://mit-license.org/)
 - tac programming language: https://github.com/sebbekarlsson/tac.git
 - summus programming language: https://github.com/igor84/summus.git
 - porth programming language: https://gitlab.com/tsoding/porth.git
+- cURL C library for transferring data: https://github.com/curl/curl

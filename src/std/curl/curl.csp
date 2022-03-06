@@ -689,6 +689,10 @@ macro CURLOPTTYPE_CBPOINT     { CURLOPTTYPE_OBJECTPOINT }
 macro CURLOPTTYPE_VALUES      { CURLOPTTYPE_LONG }
 
 type CURLoption: enum {
+    WRITEDATA = 10001,
+    URL = 10002,
+    # ...
+    WRITEFUNCTION = 20011,
 # TODO: this (315 enum values)
     LAST = 316
 };

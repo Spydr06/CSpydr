@@ -1,8 +1,28 @@
-import "curl/curl.csp";
-import "io.csp";
+import "curl/curl.csp"; # curl library
+import "io.csp";        # for std::io::puts()
 
+# the weblink from which to pull the data
+macro WEBLINK { 
+    "https://raw.githubusercontent.com/Spydr06/CSpydr/main/examples/assets/curl_test.txt"
+}
+
+# entry point
 fn main(): i32 {
-    std::io::puts(curl_version());
+    let version_data = curl_version_info(CURLVERSION_NOW!);
+    std::io::puts(version_data.version); # print the cURL version
+
+    let curl = curl_easy_init(); # initialize the cURL handle
+    if curl {
+        curl_easy_setopt(curl, CURLoption::URL, WEBLINK!);
+        curl_easy_setopt(curl, CURLoption::WRITEFUNCTION, 
+            |ptr: &char, size: u64, nmemb: u64, stream: &void| u64 => {
+                std::io::puts(ptr);
+                <- 0;
+            });
+
+        curl_easy_perform(curl);        
+        curl_easy_cleanup(curl);
+    }
 
     <- 0;
 }
