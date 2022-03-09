@@ -98,6 +98,7 @@ typedef enum {
     ND_CONTINUE,  // continue;
     ND_LEN,       // len x
     ND_USING,     // using x::y
+    ND_WITH,      // with x = y {}
 
     ND_STRUCT_MEMBER,  // struct members
 
@@ -227,6 +228,25 @@ struct AST_NODE_STRUCT
 
         // match statement
         List_T* cases;           // list of ASTNode_Ts
+
+        // with statement, single object
+        ASTObj_T* obj;
+    };
+
+    union {
+        // call
+        ASTObj_T* return_buffer;
+
+        // with statement
+        ASTObj_T* exit_fn;
+    };
+
+    union {
+        ASTNode_T* expr;
+        ASTNode_T* call;
+        
+        // sizeof
+        ASTType_T* the_type;
     };
 
     union { 
@@ -241,16 +261,6 @@ struct AST_NODE_STRUCT
     // expression statement
     bool is_constant: 1;
     
-    // call
-    ASTObj_T* return_buffer;
-    
-    union {
-        ASTNode_T* expr;
-        ASTNode_T* call;
-        
-        // sizeof
-        ASTType_T* the_type;
-    };
 } __attribute__((packed));
 
 struct AST_IDENTIFIER_STRUCT
@@ -280,9 +290,6 @@ struct AST_TYPE_STRUCT
         struct {
             bool is_primitive : 1;
             bool is_constant  : 1;
-            bool is_complex   : 1;
-            bool is_volatile  : 1;
-            bool is_atomic    : 1;
             bool is_fn        : 1;
             bool is_union     : 1;
             bool is_vla       : 1;
@@ -338,6 +345,13 @@ struct AST_OBJ_STRUCT
     ASTObj_T* return_ptr;
 } __attribute__((packed));
 
+typedef struct AST_EXIT_FN_HANDLE_STRUCT
+{
+    Token_T* tok;
+    ASTObj_T* fn;
+    ASTType_T* type;
+} ASTExitFnHandle_T;
+
 typedef struct AST_PROG_STRUCT
 {
     const char* main_file_path;
@@ -345,6 +359,7 @@ typedef struct AST_PROG_STRUCT
 
     List_T* imports;
     List_T* tuple_structs;
+    List_T* type_exit_fns;
 
     ASTObj_T* entry_point;
 

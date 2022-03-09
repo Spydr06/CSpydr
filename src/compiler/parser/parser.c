@@ -113,6 +113,8 @@ static ASTNode_T* parse_pow_3(Parser_T* p, ASTNode_T* left);
 
 static ASTNode_T* parse_current_fn_token(Parser_T* p);
 
+static ASTType_T* parse_type(Parser_T* p);
+
 static struct { 
     PrefixParseFn_T pfn; 
     InfixParseFn_T ifn; 
@@ -295,7 +297,7 @@ static inline Token_T* parser_advance(Parser_T* p)
 
 static inline Token_T* parser_peek(Parser_T* p, i32 level)
 {
-    if(p->token_i + level >= p->tokens->size)
+    if(p->token_i + level >= p->tokens->size || p->token_i + level <= 0)
         return NULL;
     return p->tokens->items[p->token_i + level];
 }
@@ -422,7 +424,7 @@ void parse(ASTProg_T* ast, List_T* files, bool is_silent)
 
 /////////////////////////////////
 // Compiler Directives Parser  //
-/////////////////////////////////+
+/////////////////////////////////
 
 static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, List_T* obj_list)
 {
@@ -490,6 +492,28 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, Li
         if(!all)
             throw_error(ERR_SYNTAX_ERROR, p->tok, "could not find identifier `%s` in current scope", value);
     }
+    else if(streq(field->value, "exit_fn"))
+    {
+        parser_consume(p, TOKEN_COLON, "expect `:` after `exit_fn` compiler directive arg");
+        ASTType_T* ty = parse_type(p);
+        for(size_t i = 0; i < obj_list->size; i++)
+        {
+            ASTObj_T* obj = obj_list->items[i];
+            if(streq(value, obj->id->callee) && obj->kind == OBJ_FUNCTION)
+            {
+                ASTExitFnHandle_T* handle = mem_malloc(sizeof(ASTExitFnHandle_T));
+                handle->fn = obj;
+                handle->type = ty;
+                handle->tok = parser_peek(p, -2);
+
+                if(!p->root_ref->type_exit_fns)
+                    mem_add_list(p->root_ref->type_exit_fns = init_list(sizeof(ASTExitFnHandle_T*)));
+                list_push(p->root_ref->type_exit_fns, handle);
+                return;
+            }
+        }
+        throw_error(ERR_SYNTAX_ERROR, p->tok, "could not find function `%s` in current scope", value);
+    }
     else
         throw_error(ERR_SYNTAX_WARNING, field, "undefined compiler directive `%s`", field->value);
 }
@@ -505,8 +529,9 @@ static void parse_compiler_directives(Parser_T* p, List_T* obj_list)
     do {
         if(tok_is(p, TOKEN_COMMA))
             parser_advance(p);
-        eval_compiler_directive(p, field_token, p->tok->value, obj_list);
+        Token_T* tok = p->tok;
         parser_consume(p, TOKEN_STRING, "expect value as string");
+        eval_compiler_directive(p, field_token, tok->value, obj_list);
     } while(tok_is(p, TOKEN_COMMA));
 
     parser_consume(p, TOKEN_RPAREN, "expect `)` after value");
@@ -551,7 +576,6 @@ static ASTIdentifier_T* __parse_identifier(Parser_T* p, ASTIdentifier_T* outer, 
 /////////////////////////////////
 
 static ASTNode_T* parse_expr(Parser_T* p, Precedence_T prec, TokenType_T end_tok);
-static ASTType_T* parse_type(Parser_T* p);
 
 static ASTType_T* parse_struct_type(Parser_T* p)
 {
@@ -693,21 +717,6 @@ static ASTType_T* parse_type(Parser_T* p)
                 parser_advance(p);
                 type = parse_type(p);
                 type->is_constant = true;
-                return type;
-            case TOKEN_COMPLEX:
-                parser_advance(p);
-                type = parse_type(p);
-                type->is_complex = true;
-                return type;
-            case TOKEN_ATOMIC:
-                parser_advance(p);
-                type = parse_type(p);
-                type->is_atomic = true;
-                return type;
-            case TOKEN_VOLATILE:
-                parser_advance(p);
-                type = parse_type(p);
-                type->is_volatile = true;
                 return type;
 
             case TOKEN_LPAREN:
@@ -962,6 +971,9 @@ static void collect_locals(ASTNode_T* stmt, List_T* locals)
                 collect_locals(stmt->cases->items[i], locals);
             if(stmt->default_case)
                 collect_locals(stmt->default_case, locals);
+            break;
+        case ND_WITH:
+            list_push(locals, stmt->obj);
             break;
         default:
             break;
@@ -1430,6 +1442,40 @@ static ASTNode_T* parse_continue(Parser_T* p, bool needs_semicolon)
     return continue_stmt;
 }
 
+static ASTNode_T* parse_with(Parser_T* p)
+{
+    ASTNode_T* with_stmt = init_ast_node(ND_WITH, p->tok);
+    parser_consume(p, TOKEN_WITH, "expect `with` keyword");
+
+    ASTObj_T* var = with_stmt->obj = init_ast_obj(OBJ_LOCAL, p->tok);
+    var->id = parse_simple_identifier(p);
+    if(tok_is(p, TOKEN_COLON))
+    {
+        parser_advance(p);
+        var->data_type = parse_type(p);
+    }
+    
+    ASTNode_T* assignment = var->value = init_ast_node(ND_ASSIGN, p->tok);
+    assignment->left = init_ast_node(ND_ID, var->id->tok);
+    assignment->left->id = var->id;
+    assignment->left->referenced_obj = var;
+    assignment->is_initializing = true;
+    assignment->referenced_obj = var;
+
+    parser_consume(p, TOKEN_ASSIGN, "expect `=` after variable initializer");
+    assignment->right = parse_expr(p, LOWEST, TOKEN_LBRACE);
+
+    with_stmt->condition = assignment;
+    with_stmt->if_branch = parse_stmt(p, true);
+    if(tok_is(p, TOKEN_ELSE))
+    {
+        parser_advance(p);
+        with_stmt->else_branch = parse_stmt(p, true);
+    }
+
+    return with_stmt;
+}
+
 static ASTNode_T* parse_stmt(Parser_T* p, bool needs_semicolon)
 {
 
@@ -1449,6 +1495,8 @@ static ASTNode_T* parse_stmt(Parser_T* p, bool needs_semicolon)
             return parse_while(p);
         case TOKEN_MATCH:
             return parse_match(p);
+        case TOKEN_WITH:
+            return parse_with(p);
         case TOKEN_CONST:
         case TOKEN_LET:
             {

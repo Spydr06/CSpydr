@@ -150,16 +150,21 @@ namespace std {
         }
 
         fn printf(fmt: const &char, args: ...): i32
-            <- vfprintf(out, fmt, args);
+            <- vfprintf(out, fmt, &args);
 
         fn eprintf(fmt: const &char, args: ...): i32
-            <- vfprintf(err, fmt, args);
+            <- vfprintf(err, fmt, &args);
 
         fn fprintf(fd: i32, fmt: const &char, args: ...): i32
-            <- vfprintf(fd, fmt, args);
+            <- vfprintf(fd, fmt, &args);
 
-        fn vfprintf(fd: i32, fmt: const &char, args: &va::Element): i32
+        fn vfprintf(fd: i32, fmt: const &char, args: &VAList): i32
         {
+            using string;
+
+            with formatted = va_format(fmt, args)
+                write(fd, formatted);
+            
             <- 0;
         }
 

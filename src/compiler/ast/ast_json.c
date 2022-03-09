@@ -143,11 +143,8 @@ json_object* gen_ast_type(ASTType_T* type)
     if(type->id) json_object_object_add(obj, "id", gen_ast_identifier(type->id));
     if(type->is_primitive) json_object_object_add(obj, "is_primitive", gen_bool(type->is_primitive));
     if(type->is_constant) json_object_object_add(obj, "is_constant", gen_bool(type->is_constant));
-    if(type->is_complex) json_object_object_add(obj, "is_complex", gen_bool(type->is_complex));
-    if(type->is_atomic) json_object_object_add(obj, "is_atomic", gen_bool(type->is_atomic));
     if(type->is_fn) json_object_object_add(obj, "is_fn", gen_bool(type->is_fn));
     if(type->is_union) json_object_object_add(obj, "is_union", gen_bool(type->is_union));
-    if(type->is_volatile) json_object_object_add(obj, "is_volatile", gen_bool(type->is_volatile));
     if(type->arg_types) json_object_object_add(obj, "arg_types", gen_list(type->arg_types, (IndexFn) gen_ast_type));
     if(type->num_indices) json_object_object_add(obj, "num_indices", gen_ast_node(type->num_indices));
     if(type->members) json_object_object_add(obj, "members", gen_list(type->members, (IndexFn) gen_ast_node));

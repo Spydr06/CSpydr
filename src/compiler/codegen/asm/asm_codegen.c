@@ -2100,6 +2100,7 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
         {
             u64 pc = cg->cur_count;
             u64 c = cg->cur_count = cg->max_count++;
+            
             asm_gen_expr(cg, node->condition);
             asm_cmp_zero(cg, node->condition->data_type);
             asm_println(cg, "  je  .L.else.%ld", c);
@@ -2109,6 +2110,43 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             if(node->else_branch)
                 asm_gen_stmt(cg, node->else_branch);
             asm_println(cg, ".L.end.%ld:", c);
+
+            cg->cur_count = pc;
+        } return;
+
+        case ND_WITH:
+        {
+            u64 pc = cg->cur_count;
+            u64 c = cg->cur_count = cg->max_count++;
+
+            asm_gen_expr(cg, node->condition);
+            asm_cmp_zero(cg, node->condition->data_type);
+            asm_println(cg, "  je .L.else.%ld", c);
+            asm_gen_stmt(cg, node->if_branch);
+
+            // generate the exit function
+            asm_gen_expr(cg, &(ASTNode_T) {
+                .kind = ND_CALL,
+                .data_type = (ASTType_T*) primitives[TY_VOID],
+                .referenced_obj = node->exit_fn,
+                .expr = &(ASTNode_T) {
+                    .kind = ND_ID,
+                    .referenced_obj = node->exit_fn,
+                    .id = node->exit_fn->id
+                },
+                .args = &(List_T) {
+                    .size = 1,
+                    .item_size = sizeof(ASTNode_T*),
+                    .items = (void**) &node->condition->left
+                }
+            });
+            
+            asm_println(cg, "  jmp .L.end.%ld", c);
+            asm_println(cg, ".L.else.%ld:", c);
+            if(node->else_branch)
+                asm_gen_stmt(cg, node->else_branch);
+            asm_println(cg, ".L.end.%ld:", c);
+
             cg->cur_count = pc;
         } return;
 
@@ -2185,42 +2223,43 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
         } return;
     
         case ND_MATCH:
+        {
+            asm_gen_expr(cg, node->condition);
+            u64 pc = cg->cur_count;
+            u64 pbrk = cg->cur_brk_id;
+            u64 c = cg->cur_count = cg->cur_brk_id = cg->max_count++;
+            char* ax = (node->condition->data_type->size == 8) ? "%rax" : "%eax";
+            char* di = (node->condition->data_type->size == 8) ? "%rdi" : "%edi";
+            
+            for(size_t i = 0; i < node->cases->size; i++)
             {
-                asm_gen_expr(cg, node->condition);
-                u64 pc = cg->cur_count;
-                u64 pbrk = cg->cur_brk_id;
-                u64 c = cg->cur_count = cg->cur_brk_id = cg->max_count++;
-                char* ax = (node->condition->data_type->size == 8) ? "%rax" : "%eax";
-                char* di = (node->condition->data_type->size == 8) ? "%rdi" : "%edi";
-                for(size_t i = 0; i < node->cases->size; i++)
-                {
-                    ASTNode_T* _case = node->cases->items[i];
-                    _case->long_val = i;
+                ASTNode_T* _case = node->cases->items[i];
+                _case->long_val = i;
+                asm_push(cg);
+                asm_push(cg);
+                asm_gen_expr(cg, _case->condition);
+                asm_pop(cg, "%rdi");
+                asm_println(cg, "  cmp %s, %s", ax, di);
+                asm_pop(cg, "%rax");
+                asm_println(cg, "  je .L.case.%ld.%ld", i, c);
+            }
+            
+            if(node->default_case) 
+            {
+                node->default_case->long_val = node->cases->size;
+                asm_println(cg, "  jmp .L.case.%ld.%ld", node->cases->size, c);
+            }
+            
+            for(size_t i = 0; i < node->cases->size; i++)
+                asm_gen_stmt(cg, node->cases->items[i]);
+            if(node->default_case)
+                asm_gen_stmt(cg, node->default_case);
+            
+            asm_println(cg, ".L.break.%ld:", c);
 
-                    asm_push(cg);
-                    asm_push(cg);
-                    asm_gen_expr(cg, _case->condition);
-                    asm_pop(cg, "%rdi");
-                    asm_println(cg, "  cmp %s, %s", ax, di);
-                    asm_pop(cg, "%rax");
-                    asm_println(cg, "  je .L.case.%ld.%ld", i, c);
-                }
-
-                if(node->default_case) 
-                {
-                    node->default_case->long_val = node->cases->size;
-                    asm_println(cg, "  jmp .L.case.%ld.%ld", node->cases->size, c);
-                }
-                for(size_t i = 0; i < node->cases->size; i++)
-                    asm_gen_stmt(cg, node->cases->items[i]);
-                if(node->default_case)
-                    asm_gen_stmt(cg, node->default_case);
-                
-                asm_println(cg, ".L.break.%ld:", c);
-
-                cg->cur_count = pc;
-                cg->cur_brk_id = pbrk;
-            } return;
+            cg->cur_count = pc;
+            cg->cur_brk_id = pbrk;
+        } return;
         
         case ND_CASE:
             asm_println(cg, ".L.case.%ld.%ld:", node->long_val, cg->cur_count);

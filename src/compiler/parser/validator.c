@@ -57,6 +57,8 @@ static inline void end_scope(Validator_T* v);
 
 static ASTType_T* expand_typedef(Validator_T* v, ASTType_T* type);
 
+static void check_exit_fns(Validator_T* v);
+
 // iterator functions
 
 // id
@@ -88,6 +90,8 @@ static void for_end(ASTNode_T* _for, va_list args);
 static void case_end(ASTNode_T* _case, va_list args);
 static void match_type_end(ASTNode_T* match, va_list args);
 static void using_end(ASTNode_T* using, va_list args);
+static void with_start(ASTNode_T* with, va_list args);
+static void with_end(ASTNode_T* with, va_list args);
 
 // expressions
 static void call(ASTNode_T* call, va_list args);
@@ -135,6 +139,7 @@ static ASTIteratorList_T main_iterator_list =
         [ND_BLOCK] = block_start,
         [ND_FOR] = for_start,
         [ND_ASSIGN] = assignment_start,
+        [ND_WITH] = with_start,
     },
 
     .node_end_fns = 
@@ -146,6 +151,7 @@ static ASTIteratorList_T main_iterator_list =
         [ND_CASE] = case_end,
         [ND_MATCH_TYPE] = match_type_end,
         [ND_USING] = using_end,
+        [ND_WITH] = with_end,
 
         // expressions
         [ND_ID]      = identifier,
@@ -239,6 +245,8 @@ void validate_ast(ASTProg_T* ast)
 
     end_scope(&v);
     v.global_scope = NULL;
+
+    check_exit_fns(&v);
 
     if(!v.main_function_found)
     {
@@ -603,6 +611,56 @@ static ASTNode_T* unwrap_node(ASTNode_T* node)
     return node->kind == ND_CLOSURE ? unwrap_node(node->expr) : node;
 }
 
+static ASTExitFnHandle_T* find_exit_fn(Validator_T* v, ASTType_T* ty)
+{
+    if(!v->ast->type_exit_fns)
+        return NULL;
+    for(size_t i = 0; i < v->ast->type_exit_fns->size; i++)
+    {
+        ASTExitFnHandle_T* handle = v->ast->type_exit_fns->items[i];
+        if(types_equal(handle->type, ty))
+            return handle;
+    }
+    return NULL;
+}
+
+
+static void check_exit_fns(Validator_T* v)
+{
+    if(!v->ast->type_exit_fns)
+        return;
+    for(size_t i = 0; i < v->ast->type_exit_fns->size; i++)
+    {
+        ASTExitFnHandle_T* handle = v->ast->type_exit_fns->items[i];
+        ASTObj_T* fn = handle->fn;
+
+        ASTExitFnHandle_T* found = find_exit_fn(v, handle->type);
+        if(handle != found)
+        {
+            if(handle->type->kind == TY_UNDEF)
+                throw_error(ERR_REDEFINITION_UNCR, handle->tok, "exit function for data type `%s` already defined", handle->type->id->callee);
+            else
+                throw_error(ERR_REDEFINITION_UNCR, handle->tok, "exit function for data type (%d) already defined", handle->type->kind);
+            uncr(v);
+        }
+
+        if(fn->args->size != 1)
+        {
+            throw_error(ERR_TYPE_ERROR_UNCR, handle->tok, "exit function must have one argument");
+            uncr(v);
+        }
+        
+        if(!types_equal(((ASTObj_T*) fn->args->items[0])->data_type, handle->type))
+        {
+            throw_error(ERR_TYPE_ERROR_UNCR, handle->tok, "specified data type and first argument type of function `%s` do not match", fn->id->callee);
+            uncr(v);
+        }
+
+        if(expand_typedef(v, fn->return_type)->kind != TY_VOID)
+            throw_error(ERR_UNUSED, handle->tok, "function `%s` returns a value that cannot be accessed", fn->id->callee);
+    }
+}
+
 // id
 
 static void id_def(ASTIdentifier_T* id, va_list args)
@@ -877,18 +935,6 @@ static void local_end(ASTObj_T* local, va_list args)
 {
     GET_VALIDATOR(args);
 
-   // if(!local->data_type)
-   // {
-   //     printf("a\n");
-   //     if(!local->value || !local->value->data_type)
-   //     {
-   //         throw_error(ERR_TYPE_ERROR, local->value->tok, "could not resolve datatype for `%s`", local->id->callee);
-   //         return;
-   //     }
-   //     local->data_type = local->value->data_type;
-   //     printf("b\n");
-   // }
-
     if(local->data_type) {
         ASTType_T* expanded = expand_typedef(v, local->data_type);
 
@@ -1035,6 +1081,33 @@ static void using_end(ASTNode_T* using, va_list args)
     }
 }
 
+static void with_start(ASTNode_T* with, va_list args)
+{
+    GET_VALIDATOR(args);
+    begin_scope(v, NULL);
+    scope_add_obj(v, with->obj);
+}
+
+static void with_end(ASTNode_T* with, va_list args)
+{
+    GET_VALIDATOR(args);
+
+    if(!with->condition->data_type)
+        throw_error(ERR_TYPE_ERROR, with->obj->tok, "could not resolve data type for `%s`", with->obj->id->callee);
+    
+    ASTExitFnHandle_T* handle = find_exit_fn(v, with->condition->data_type);
+    if(!handle)
+    {
+        if(with->condition->data_type->kind == TY_UNDEF)
+            throw_error(ERR_TYPE_ERROR_UNCR, with->obj->tok, "type `%s` does not have a registered exit function.\nRegister one by using the `exit_fn` compiler directive", with->condition->data_type->id->callee);
+        else
+            throw_error(ERR_TYPE_ERROR_UNCR, with->obj->tok, "type of `%s` (%d) does not have a registered exit function.\nRegister one by using the `exit_fn` compiler directive", with->obj->id->callee, with->condition->data_type->kind);
+        uncr(v);
+    }
+    with->exit_fn = handle->fn;
+
+    end_scope(v);
+}
 
 // expressions
 
@@ -1429,8 +1502,8 @@ static void assignment_end(ASTNode_T* assign, va_list args)
                 case OBJ_GLOBAL:
                 case OBJ_LOCAL:
                 case OBJ_FN_ARG:
-                    if(assigned_obj->is_constant)
-                        throw_error(ERR_CONST_ASSIGN, assigned_obj->tok, "cannot assign a value to constant %s `%s`", obj_kind_to_str(assigned_obj->kind), assigned_obj->id->callee);
+                    //if(assigned_obj->is_constant)
+                    //    throw_error(ERR_CONST_ASSIGN, assigned_obj->tok, "cannot assign a value to constant %s `%s`", obj_kind_to_str(assigned_obj->kind), assigned_obj->id->callee);
 
                     break;
 
@@ -1448,11 +1521,6 @@ static void assignment_end(ASTNode_T* assign, va_list args)
     }
 
     assign->data_type = assign->left->data_type;
-
-    if(assign->left->is_constant || assign->left->data_type->is_constant)
-    {
-        throw_error(ERR_CONST_ASSIGN, assign->left->tok, "cannot assign value to constant `%s`", assign->left->tok->value);
-    }
 
     if(expand_typedef(v, assign->data_type)->kind == TY_VOID)
         throw_error(ERR_TYPE_ERROR, assign->tok, "cannot assign type `void`");
@@ -1557,6 +1625,7 @@ static void array_lit(ASTNode_T* a_lit, va_list args)
         local->id = init_ast_identifier(a_lit->tok, "");
         sprintf(local->id->callee, "__csp_arrlit_%ld__", count++);
         list_push(v->current_function->objs, local);
+        list_push(v->current_scope->objs, local);
 
         ASTNode_T assignment = {
             .kind = ND_ASSIGN,

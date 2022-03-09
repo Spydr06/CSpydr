@@ -30,9 +30,6 @@ const struct {
     {"enum", TOKEN_ENUM},
     {"import", TOKEN_IMPORT},
     {"const", TOKEN_CONST},
-    {"complex", TOKEN_COMPLEX},
-    {"atomic", TOKEN_ATOMIC},
-    {"volatile", TOKEN_VOLATILE},
     {"extern", TOKEN_EXTERN},
     {"macro", TOKEN_MACRO},
     {"namespace", TOKEN_NAMESPACE},
@@ -45,6 +42,7 @@ const struct {
     {"len", TOKEN_LEN},
     {"asm", TOKEN_ASM},
     {"using", TOKEN_USING},
+    {"with", TOKEN_WITH},
     {NULL, TOKEN_EOF}   // end of array indicator
 };
 

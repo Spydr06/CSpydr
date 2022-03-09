@@ -1,13 +1,15 @@
-import "libc/stdio.csp";
 import "io.csp";
-import "process.csp";
+import "mem.csp";
 
+fn main(argc: i32, argv: &&char): i32 {
+    using std;
 
-fn main(): i32 {
-    let uts: std::UTSName;
-    std::syscall::uname(&uts);
-
-    printf("struct utsname {\n  sysname = %s\n  nodename = %s\n  release = %s\n  version = %s\n  machine = %s\n  domainname = %s\n}\n", uts.sysname, uts.nodename, uts.release, uts.version, uts.machine, uts.domainname);
+    with x = mem::alloc(1024) {
+        io::printf("%p\n", x);
+    }
+    else {
+        io::printf("pointer allocation failed");
+    }
 
     <- 0;
 }

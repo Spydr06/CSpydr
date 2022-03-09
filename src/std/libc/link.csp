@@ -1,2 +1,6 @@
 # all link flags necessary to compile these libc "headers"
 [link("c")]
+
+macro __libc_atomic {}
+macro __libc_volatile {}
+macro __libc_complex {}

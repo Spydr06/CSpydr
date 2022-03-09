@@ -1168,7 +1168,7 @@ extern {
     fn curl_version_info(version: CURLversion): &curl_version_info_data;
     fn curl_easy_stderr(code: CURLcode): const &char;
     fn curl_share_strerror(code: CURLSHcode): const &char;
-    fn curl_easy_pause(handle: CURL, bitmask: i32): CURLcode;
+    fn curl_easy_pause(handle: &CURL, bitmask: i32): CURLcode;
 }
 
 macro CURLPAUSE_RECV      { (1<<0) }

@@ -249,6 +249,13 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
             ast_node(list, node->condition, custom_args);
             ast_node(list, node->body, custom_args);
             break;
+        
+        case ND_WITH:
+            ast_obj(list, node->obj, custom_args);
+            ast_node(list, node->condition, custom_args);
+            ast_node(list, node->if_branch, custom_args);
+            ast_node(list, node->else_branch, custom_args);
+            break;
 
         case ND_CASE_TYPE:
             ast_type(list, node->data_type, custom_args);

@@ -248,15 +248,6 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
     if(ty->is_constant)
         print(cg, "const ");
 
-    if(ty->is_volatile)
-        print(cg, "volatile ");
-
-    if(ty->is_complex)
-        print(cg, "_Complex ");
-
-    if(ty->is_atomic)
-        print(cg, "_Atomic ");
-
     if(primitive_to_c_type[ty->kind])
         print(cg, "%s", primitive_to_c_type[ty->kind]);
     else

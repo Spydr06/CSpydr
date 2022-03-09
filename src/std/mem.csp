@@ -91,6 +91,7 @@ namespace std {
 
             syscall::munmap(plen: &void, length);
         }
+        [exit_fn("free": &void)]
 
         fn copy(dest: &void, src: &void, n: usize): i32
         {

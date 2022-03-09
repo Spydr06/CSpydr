@@ -38,58 +38,58 @@ type atomic_flag: struct {
     _Value: bool
 };
 
-# --- atomic integer types ---
+# --- __libc_atomic! integer types ---
 # default integers
-type atomic_bool: atomic bool;
-type atomic_char: atomic char;
-type atomic_schar: atomic i8;
-type atomic_uchar: atomic u8;
-type atomic_short: atomic i16;
-type atomic_ushort: atomic u16;
-type atomic_int: atomic i32;
-type atomic_uint: atomic u32;
-type atomic_long: atomic i64;
-type atomic_ulong: atomic u64;
-#type atomic_llong: atomic i64; # FIXME: 
-#type atomic_ullong: atomic u64;
+type atomic_bool: __libc_atomic! bool;
+type atomic_char: __libc_atomic! char;
+type atomic_schar: __libc_atomic! i8;
+type atomic_uchar: __libc_atomic! u8;
+type atomic_short: __libc_atomic! i16;
+type atomic_ushort: __libc_atomic! u16;
+type atomic_int: __libc_atomic! i32;
+type atomic_uint: __libc_atomic! u32;
+type atomic_long: __libc_atomic! i64;
+type atomic_ulong: __libc_atomic! u64;
+#type atomic_llong: __libc_atomic! i64; # FIXME: 
+#type atomic_ullong: __libc_atomic! u64;
 # chars
-type atomic_char16_t: atomic i16;
-type atomic_char32_t: atomic i32;
-type atomic_wchar_t: atomic wchar_t;
+type atomic_char16_t: __libc_atomic! i16;
+type atomic_char32_t: __libc_atomic! i32;
+type atomic_wchar_t: __libc_atomic! wchar_t;
 # ptrs
-type atomic_intptr_t: atomic intptr_t;
-type atomic_uintptr_t: atomic uintptr_t;
-type atomic_size_t: atomic size_t;
-type atomic_ptrdiff_t: atomic ptrdiff_t;
+type atomic_intptr_t: __libc_atomic! intptr_t;
+type atomic_uintptr_t: __libc_atomic! uintptr_t;
+type atomic_size_t: __libc_atomic! size_t;
+type atomic_ptrdiff_t: __libc_atomic! ptrdiff_t;
 # intmax
-type atomic_intmax_t: atomic intmax_t;
-type atomic_uintmax_t: atomic uintmax_t;
+type atomic_intmax_t: __libc_atomic! intmax_t;
+type atomic_uintmax_t: __libc_atomic! uintmax_t;
 # byte-sized integers
-type atomic_int_least8_t: atomic int_least8_t;
-type atomic_int_least16_t: atomic int_least16_t;
-type atomic_int_least32_t: atomic int_least32_t;
-type atomic_int_least64_t: atomic int_least64_t;
-type atomic_uint_least8_t: atomic uint_least8_t;
-type atomic_uint_least16_t: atomic uint_least16_t;
-type atomic_uint_least32_t: atomic uint_least32_t;
-type atomic_uint_least64_t: atomic uint_least64_t;
-type atomic_int_fast8_t: atomic int_fast8_t;
-type atomic_int_fast16_t: atomic int_fast16_t;
-type atomic_int_fast32_t: atomic int_fast32_t;
-type atomic_int_fast64_t: atomic int_fast64_t;
-type atomic_uint_fast8_t: atomic uint_fast8_t;
-type atomic_uint_fast16_t: atomic uint_fast16_t;
-type atomic_uint_fast32_t: atomic uint_fast32_t;
-type atomic_uint_fast64_t: atomic uint_fast64_t;
+type atomic_int_least8_t: __libc_atomic! int_least8_t;
+type atomic_int_least16_t: __libc_atomic! int_least16_t;
+type atomic_int_least32_t: __libc_atomic! int_least32_t;
+type atomic_int_least64_t: __libc_atomic! int_least64_t;
+type atomic_uint_least8_t: __libc_atomic! uint_least8_t;
+type atomic_uint_least16_t: __libc_atomic! uint_least16_t;
+type atomic_uint_least32_t: __libc_atomic! uint_least32_t;
+type atomic_uint_least64_t: __libc_atomic! uint_least64_t;
+type atomic_int_fast8_t: __libc_atomic! int_fast8_t;
+type atomic_int_fast16_t: __libc_atomic! int_fast16_t;
+type atomic_int_fast32_t: __libc_atomic! int_fast32_t;
+type atomic_int_fast64_t: __libc_atomic! int_fast64_t;
+type atomic_uint_fast8_t: __libc_atomic! uint_fast8_t;
+type atomic_uint_fast16_t: __libc_atomic! uint_fast16_t;
+type atomic_uint_fast32_t: __libc_atomic! uint_fast32_t;
+type atomic_uint_fast64_t: __libc_atomic! uint_fast64_t;
 
 extern {
 
     fn atomic_thread_fence(order: memory_order);
     fn atomic_signal_fence(order: memory_order);
 
-    fn atomic_flag_test_and_set(object: volatile &atomic_flag): bool;
-    fn atomic_flag_test_and_set_explicit(object: volatile &atomic_flag, order: memory_order): bool;
-    fn atomic_flag_clear(object: volatile &atomic_flag);
-    fn atomic_flag_clear_explicit(object: volatile &atomic_flag, order: memory_order);
+    fn atomic_flag_test_and_set(object: __libc_volatile! &atomic_flag): bool;
+    fn atomic_flag_test_and_set_explicit(object: __libc_volatile! &atomic_flag, order: memory_order): bool;
+    fn atomic_flag_clear(object: __libc_volatile! &atomic_flag);
+    fn atomic_flag_clear_explicit(object: __libc_volatile! &atomic_flag, order: memory_order);
 
 }

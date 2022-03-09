@@ -78,6 +78,7 @@ namespace std {
         {
             mem::free(get_data(str));
         } 
+        [exit_fn("free": std::String)]
 
         fn get_data(str: String): &StringData 
         {
@@ -87,13 +88,24 @@ namespace std {
         fn concat(dest: &String, src: String) 
         {
             let str_data = get_data(*dest);
-            let str_len = c_str::strlen(*dest);
+            let str_len = size(*dest);
             str_data.alloc = str_data.alloc + c_str::strlen(src);
             str_data.size = str_data.size + c_str::strlen(src);
             str_data = mem::realloc(str_data, sizeof StringData + str_data.alloc + 1);
             c_str::copy(&(str_data.buff[str_len]), src);
 
             str_data.buff[str_len + c_str::strlen(src)] = '\0';
+            *dest = &(str_data.buff[0]);
+        }
+
+        fn append(dest: &String, c: char)
+        {
+            let str_data = get_data(*dest);
+            str_data.alloc++;
+            str_data.size++;
+            str_data = mem::realloc(str_data, sizeof StringData + str_data.alloc + 1);
+            str_data.buff[str_data.size - 1] = c;
+            str_data.buff[str_data.size] = '\0';
             *dest = &(str_data.buff[0]);
         }
 
@@ -180,16 +192,55 @@ namespace std {
         }
 
         fn format(fmt: const &char, args: ...): &void
-            <- va_format(fmt, args);
+            <- va_format(fmt, &args);
 
-        fn va_format(fmt: const &char, args: &va::Element): &void
+        fn va_format(fmt: const &char, args: &VAList): &void
         {
             let str = str!{};
 
-            <- nil;
-        }
+            for ; (*fmt) != '\0'; fmt++; {
+                if (*fmt) == '%' {
+                    fmt++;
+                    
+                    let buf: char[100];
+                    match *fmt {
+                        '%' => append(&str, *fmt);
+                        'i' => {
+                            c_str::from_int(va_arg!{*args, i32}, buf, 10);
+                            concat(&str, buf);
+                        }
+                        'u' => {
+                            c_str::from_uint(va_arg!{*args, u32}, buf, 10);
+                            concat(&str, buf);
+                        }
+                        'o' => {
+                            c_str::from_int(va_arg!{*args, i64}, buf, 8);
+                            concat(&str, buf);
+                        }
+                        'x' => {
+                            c_str::from_uint(va_arg!{*args, u64}, buf, 16);
+                            concat(&str, buf);
+                        }
+                        'p' => { # pointer
+                            c_str::from_uint(va_arg!{*args, &void}: u64, buf, 16);
 
-        [ignore_unused("*")]
+                            concat(&str, "0x");
+                            concat(&str, buf);
+                        }
+                        'c' => append(&str, va_arg!{*args, char}); # char
+                        's' => concat(&str, va_arg!{*args, &char});
+                        'n' => {
+                            free(str);
+                            <- str!{"\0"};
+                        }
+                    }
+                }
+                else
+                    append(&str, *fmt);
+            }
+
+            <- str;
+        }
     }
 
 }

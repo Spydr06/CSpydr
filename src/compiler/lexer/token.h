@@ -95,9 +95,6 @@ typedef enum TOKEN_TYPE {
     TOKEN_MACRO,        // macro
     TOKEN_CONST,        // const
     TOKEN_NAMESPACE,    // namespace
-    TOKEN_COMPLEX,      // complex
-    TOKEN_ATOMIC,       // atomic
-    TOKEN_VOLATILE,     // volatile
     TOKEN_SIZEOF,       // sizeof
     TOKEN_TYPEOF,       // typeof
     TOKEN_ALIGNOF,      // alignof
@@ -109,6 +106,7 @@ typedef enum TOKEN_TYPE {
     TOKEN_LEN,          // len
     TOKEN_ASM,          // asm
     TOKEN_USING,        // using
+    TOKEN_WITH,         // with
 
     TOKEN_CURRENT_FN,   // special token for the __func__! macro
 
