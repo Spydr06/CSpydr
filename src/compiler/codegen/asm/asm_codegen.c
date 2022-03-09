@@ -2118,8 +2118,10 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
         {
             u64 pc = cg->cur_count;
             u64 c = cg->cur_count = cg->max_count++;
+            ASTNode_T* id = node->condition->left;
 
             asm_gen_expr(cg, node->condition);
+            asm_gen_expr(cg, id);
             asm_cmp_zero(cg, node->condition->data_type);
             asm_println(cg, "  je .L.else.%ld", c);
             asm_gen_stmt(cg, node->if_branch);
@@ -2137,7 +2139,7 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
                 .args = &(List_T) {
                     .size = 1,
                     .item_size = sizeof(ASTNode_T*),
-                    .items = (void**) &node->condition->left
+                    .items = (void**) &id
                 }
             });
             

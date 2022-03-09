@@ -79,4 +79,3 @@ Makefile*
 install_manifest.txt
 CMakeFiles/
 bin/
-test.txt

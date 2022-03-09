@@ -12,29 +12,34 @@ namespace std {
     };
 
     namespace file {
-        const READ: u8  = 0b0001;
-        const WRITE: u8 = 0b0010;
+        const READ: u8       = 0b0001;
+        const WRITE: u8      = 0b0010;
+        const READ_WRITE: u8 = 0b0011;
+        const CREATE: u8     = 0b0100;
 
-        fn open(path: const &char, mode: u8): std::Result
+        fn open(path: const &char, mode: u8): &std::File
         {
-            let file: &File = alloc!(sizeof File);
+            let file: &File = mem::alloc(sizeof File);
             file.mode = mode;
             
-            if mode & READ && mode & WRITE {
-                file.desc = syscall::open(path, io::O_CREAT | io::O_RDWR, 416);
-            }
-            else if mode & READ {
-                file.desc = syscall::open(path, io::O_CREAT | io::O_RDONLY, 416);
-            }
-            else if mode & WRITE {
-                file.desc = syscall::open(path, io::O_CREAT | io::O_WRONLY, 416);
-            }
-            else ret err!("Invalid permissions");
+            let sys_flags = 0;
 
-            if file.desc == -1
-                <- err!("Error opening file");
+            if mode & CREATE
+                sys_flags |= io::O_CREAT;
+            if mode & READ_WRITE
+                sys_flags |= io::O_RDWR;
+            else if mode & READ
+                sys_flags |= io::O_RDONLY;
+            else if mode & WRITE 
+                sys_flags |= io::O_WRONLY;
+            else
+                <- nil;
 
-            <- ok!(file);
+            file.desc = syscall::open(path, sys_flags, 416);
+            if file.desc <= -1
+                <- nil;
+
+            <- file;
         }
 
         fn write_str(file: &File, str: const &char)
@@ -55,5 +60,6 @@ namespace std {
             syscall::close(file.desc);
             free!(file);
         }
+        [exit_fn("close": &std::File)]
     }
 }

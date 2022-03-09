@@ -73,6 +73,7 @@ const char help_text[] = "%s"
                        "      --silent           | Disables all command line output except error messages\n"
                        "      --cc [compiler]    | Sets the C compiler being used after transpiling (default: " DEFAULT_CC ")\n"
                        "  -0, --no-opt           | Disables all code optimization\n"
+                       "  -g, --with-dbg-symbols | Emit 1"
                        "\n"
                        "If you are unsure, what CSpydr is (or how to use it), please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n";
 

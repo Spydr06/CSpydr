@@ -1,0 +1,20 @@
+import "file.csp";
+import "io.csp";
+
+macro PATH {
+    "examples/assets/test.txt"
+}
+
+fn main(): i32 {
+    using std;
+
+    with f = file::open(PATH!, file::READ) {
+        let buffer: char[30];        
+        file::read(f, buffer, len buffer);
+        io::printf("%s\n", buffer);
+    }
+    else
+        io::eputs("Error opening " PATH!);
+        
+    <- 0;
+}

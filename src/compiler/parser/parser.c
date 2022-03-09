@@ -953,6 +953,8 @@ static void collect_locals(ASTNode_T* stmt, List_T* locals)
             for(size_t i = 0; i < stmt->stmts->size; i++)
                 collect_locals(stmt->stmts->items[i], locals);
             break;
+        case ND_WITH:
+            list_push(locals, stmt->obj);
         case ND_IF:
             collect_locals(stmt->if_branch, locals);
             if(stmt->else_branch)
@@ -971,9 +973,6 @@ static void collect_locals(ASTNode_T* stmt, List_T* locals)
                 collect_locals(stmt->cases->items[i], locals);
             if(stmt->default_case)
                 collect_locals(stmt->default_case, locals);
-            break;
-        case ND_WITH:
-            list_push(locals, stmt->obj);
             break;
         default:
             break;
