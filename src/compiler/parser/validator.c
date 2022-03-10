@@ -18,7 +18,6 @@
 #include <math.h>
 
 #define GET_VALIDATOR(va) Validator_T* v = va_arg(va, Validator_T*)
-#define uncr(v) (v)->uncritical_errors++
 
 // validator structs
 typedef struct VALIDATOR_SCOPE_STRUCT VScope_T;
@@ -39,10 +38,6 @@ typedef struct VALIDATOR_STRUCT
     bool main_function_found;
 
     u32 scope_depth;  // depth of the current scope
-
-    size_t uncritical_errors;   // errors, which are not critical at compile time, 
-                                // the validator will stop after its pass that more
-                                // than one error message can be generated
 } Validator_T;
 
 // validator struct functions
@@ -252,14 +247,21 @@ void validate_ast(ASTProg_T* ast)
     if(!v.main_function_found)
     {
         LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " mssing entrypoint; no `main` function declared.\n");
-        uncr(&v);
+        global.emitted_errors++;
     }
 
-    if(v.uncritical_errors)
+    if(global.emitted_errors && global.emitted_warnings)
     {
-        LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " %ld error%s thrown during code validation; aborting.\n", v.uncritical_errors, v.uncritical_errors == 1 ? "" : "s");
+        LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " %u error%s and %u warning%s thrown during code validation; aborting.\n", global.emitted_errors, global.emitted_errors == 1 ? "" : "s", global.emitted_warnings, global.emitted_warnings == 1 ? "" : "s");
         exit(1);
     }
+    else if(global.emitted_errors)
+    {
+        LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " %u error%s thrown during code validation; aborting.\n", global.emitted_errors, global.emitted_errors == 1 ? "" : "s");
+        exit(1);
+    }
+    else if(global.emitted_warnings)
+        LOG_WARN_F(COLOR_BOLD_YELLOW "[Warning]" COLOR_RESET COLOR_YELLOW " %u warning%s thrown during code validation; aborting.\n", global.emitted_warnings, global.emitted_warnings == 1 ? "" : "s");
 }
 
 static ASTObj_T* search_in_current_scope(VScope_T* scope, char* id)
@@ -641,20 +643,14 @@ static void check_exit_fns(Validator_T* v)
         {
             char buf[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
             throw_error(ERR_REDEFINITION_UNCR, handle->tok, "exit function for data type `%s` already defined", ast_type_to_str(buf, handle->type, LEN(buf)));
-            uncr(v);
         }
 
         if(fn->args->size != 1)
-        {
             throw_error(ERR_TYPE_ERROR_UNCR, handle->tok, "exit function must have one argument");
-            uncr(v);
-        }
+
         
         if(!types_equal(((ASTObj_T*) fn->args->items[0])->data_type, handle->type))
-        {
             throw_error(ERR_TYPE_ERROR_UNCR, handle->tok, "specified data type and first argument type of function `%s` do not match", fn->id->callee);
-            uncr(v);
-        }
 
         if(expand_typedef(v, fn->return_type)->kind != TY_VOID)
             throw_error(ERR_UNUSED, handle->tok, "function `%s` returns a value that cannot be accessed", fn->id->callee);
@@ -694,10 +690,7 @@ static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
 
     ASTType_T* return_type = expand_typedef(v, main_fn->return_type);
     if(return_type->kind != TY_I32)
-    {
         throw_error(ERR_TYPE_ERROR_UNCR, main_fn->return_type->tok ? main_fn->return_type->tok : main_fn->tok, "expect type `i32` as return type for function `main`");
-        uncr(v);
-    }
 
     switch(main_fn->args->size)
     {
@@ -712,7 +705,6 @@ static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
                 if(arg_type->kind != TY_PTR || !arg_type->base ||arg_type->base->kind != TY_PTR || !arg_type->base->base || arg_type->base->base->kind != TY_CHAR)
                 {
                     throw_error(ERR_TYPE_ERROR_UNCR, ((ASTObj_T*) main_fn->args->items[0])->tok, "expect argument of function `main` to be `&&char`");
-                    uncr(v);
                     return;
                 }
             } break;
@@ -724,7 +716,6 @@ static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
                 if(arg0_type->kind != TY_I32)
                 {
                     throw_error(ERR_TYPE_ERROR_UNCR, ((ASTObj_T*) main_fn->args->items[0])->tok, "expect first argument of function `main` to be `i32`");
-                    uncr(v);
                     return;
                 }
 
@@ -732,14 +723,12 @@ static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
                 if(arg1_type->kind != TY_PTR || arg1_type->base->kind != TY_PTR || arg1_type->base->base->kind != TY_CHAR)
                 {
                     throw_error(ERR_TYPE_ERROR_UNCR, ((ASTObj_T*) main_fn->args->items[1])->tok, "expect first argument of function `main` to be `&&char`");
-                    uncr(v);
                     return;
                 }
             } break;
 
         default:
             throw_error(ERR_UNDEFINED_UNCR, main_fn->tok, "expect 0 or 2 arguments for function `main`, got %ld", main_fn->args->size);
-            uncr(v);
             return;
     }
 }
@@ -807,10 +796,7 @@ static void fn_end(ASTObj_T* fn, va_list args)
 
     ASTType_T* return_type = expand_typedef(v, fn->return_type);
     if(return_type->kind == TY_ARR) 
-    {
         throw_error(ERR_TYPE_ERROR_UNCR, fn->return_type->tok ? fn->return_type->tok : fn->tok, "cannot return an array type from a function");
-        uncr(v);
-    }
     else if(global.ct == CT_ASM && return_type->kind == TY_STRUCT && return_type->size > 16)
     {
         fn->return_ptr = init_ast_obj(OBJ_LOCAL, fn->return_type->tok);
@@ -825,10 +811,7 @@ static void fn_end(ASTObj_T* fn, va_list args)
     gen_id_path(v->current_scope, fn->id);
 
     if(return_type->kind != TY_VOID && !fn->is_extern && !fn->no_return && !stmt_returns_value(fn->body))
-    {
         throw_error(ERR_NORETURN, fn->tok, "function `%s` does not return a value", fn->id->callee);
-        uncr(v);
-    }
 
     v->current_function = NULL;
 
@@ -836,19 +819,13 @@ static void fn_end(ASTObj_T* fn, va_list args)
     {
         ASTObj_T* arg = fn->args->items[i];
         if(arg->data_type->is_vla && fn->args->size - i > 1)
-        {
             throw_error(ERR_TYPE_ERROR_UNCR, arg->tok, "argument of type `vla` has to be the last");
-            uncr(v);
-        }
         if(!arg->referenced && !fn->is_extern && !fn->ignore_unused)
             throw_error(ERR_UNUSED, arg->tok, "unused function argument `%s`", arg->id->callee);
     }
 
     if(v->scope_depth == 1 && strcmp(fn->id->callee, "_start") == 0)
-    {
         throw_error(ERR_MISC, fn->id->tok, "cannot name a function \"_start\" in global scope");
-        uncr(v);
-    }
 }
 
 static void namespace_start(ASTObj_T* namespace, va_list args)
@@ -1056,14 +1033,12 @@ static void using_end(ASTNode_T* using, va_list args)
     if(!found)
     {
         throw_error(ERR_UNDEFINED_UNCR, using->id->tok, "using undefined namespace `%s`", using->id->callee);
-        uncr(v);
         return;
     }
     
     if(found->kind != OBJ_NAMESPACE)
     {
         throw_error(ERR_UNDEFINED_UNCR, using->id->tok, "`%s` is a %s, can only have namespaces for `using`", using->id->callee, obj_kind_to_str(found->kind));
-        uncr(v);
         return;
     }
 
@@ -1073,7 +1048,6 @@ static void using_end(ASTNode_T* using, va_list args)
         if(search_in_current_scope(v->current_scope, obj->id->callee))
         {
             throw_error(ERR_REDEFINITION_UNCR, using->tok, "namespace `%s` is trying to implement a %s `%s`, \nwhich is already defined in this scope", found->id->callee, obj_kind_to_str(obj->kind), obj->id->callee);
-            uncr(v);
             continue;
         }
 
@@ -1100,7 +1074,6 @@ static void with_end(ASTNode_T* with, va_list args)
     {
         char buf[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
         throw_error(ERR_TYPE_ERROR_UNCR, with->obj->tok, "type `%s` does not have a registered exit function.\nRegister one by using the `exit_fn` compiler directive", ast_type_to_str(buf, with->condition->data_type, LEN(buf)));
-        uncr(v);
     }
     with->exit_fn = handle->fn;
 
@@ -1198,7 +1171,6 @@ static void identifier(ASTNode_T* id, va_list args)
     if(!referenced_obj)
     {
         throw_error(ERR_UNDEFINED, id->id->tok, "refferring to undefined identifier `%s`", id->id->callee);
-        uncr(v);
         return;
     }
 
@@ -1536,7 +1508,6 @@ static void anonymous_struct_lit(ASTNode_T* s_lit, Validator_T* v)
     if(!s_lit->args->size)
     {
         throw_error(ERR_TYPE_ERROR_UNCR, s_lit->tok, "cannot resolve data type of empty anonymous struct literal `{}`");
-        uncr(v);
         return;
     }
     ASTType_T* type = init_ast_type(TY_STRUCT, s_lit->tok);
@@ -1764,8 +1735,13 @@ static void struct_type(ASTType_T* s_type, va_list args)
     for(size_t i = 0; i < s_type->members->size; i++)
     {
         ASTNode_T* member = s_type->members->items[i];
-        if(member->data_type->is_vla && s_type->members->size - i > 1 && !s_type->is_union)
-            throw_error(ERR_TYPE_ERROR, member->tok, "member of type `vla` has to be the last struct member");
+        ASTType_T* expanded = expand_typedef(v, member->data_type);
+        
+        if(expanded->is_vla && s_type->members->size - i > 1 && !s_type->is_union)
+            throw_error(ERR_TYPE_ERROR, member->data_type->tok, "member of type `vla` has to be the last struct member");
+        
+        if(expanded->kind == TY_VOID)
+            throw_error(ERR_TYPE_ERROR, member->data_type->tok, "struct member cannot be of type `void`");
 
         scope_add_node(v, member);
     }

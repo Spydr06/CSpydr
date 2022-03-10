@@ -25,6 +25,9 @@ struct {
     bool embed_debug_info;
     bool from_json;
 
+    u32 emitted_warnings;
+    u32 emitted_errors;
+
     char* exec_name;
     char* main_src_file;
 

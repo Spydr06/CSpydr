@@ -60,6 +60,11 @@ void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
 
     va_end(arg_list);
 
+    if(error_types[ty].is_error)
+        global.emitted_errors++;
+    else
+        global.emitted_warnings++;
+
     // exit if mandatory
     if(error_types[ty].force_exit)
         exit(1);
