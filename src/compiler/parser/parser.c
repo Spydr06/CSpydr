@@ -2,6 +2,7 @@
 
 #include "ast/ast.h"
 #include "../util.h"
+#include "config.h"
 #include "error/error.h"
 #include "lexer/token.h"
 #include "list.h"
@@ -420,6 +421,42 @@ void parse(ASTProg_T* ast, List_T* files, bool is_silent)
 
     // check the ast for validity
     validate_ast(ast);
+}
+
+// function to quickly build string literals
+
+ASTNode_T* build_str_lit(Token_T* tok, char* str, bool allocate_global, List_T* objs)
+{
+    ASTNode_T* str_lit = init_ast_node(ND_STR, tok);
+    str_lit->is_constant = true;
+    str_lit->data_type = (ASTType_T*) char_ptr_type;
+    str_lit->str_val = str;
+    mem_add_ptr(str);
+
+    if(global.ct == CT_ASM && allocate_global)
+    {
+        static u64 i = 0;
+        ASTIdentifier_T* ast_id = init_ast_identifier(str_lit->tok, (char[]){'\0'});
+        sprintf(ast_id->callee, ".L.str.%ld", i++);
+
+        ASTObj_T* globl = init_ast_obj(OBJ_GLOBAL, str_lit->tok);
+        globl->id = ast_id;
+        globl->value = str_lit;
+        globl->data_type = init_ast_type(TY_ARR, str_lit->tok);
+        globl->data_type->num_indices = init_ast_node(ND_LONG, str_lit->tok);
+        globl->data_type->num_indices->long_val = strlen(str_lit->str_val) + 1;
+        globl->data_type->base = (ASTType_T*) primitives[TY_CHAR];
+        list_push(objs, globl);
+
+        ASTNode_T* caller = init_ast_node(ND_ID, str_lit->tok);
+        caller->id = ast_id;
+        caller->referenced_obj = globl;
+        caller->data_type = globl->data_type;//(ASTType_T*) char_ptr_type;
+
+        return caller;
+    }
+    else
+        return str_lit;
 }
 
 /////////////////////////////////
@@ -1717,50 +1754,20 @@ static ASTNode_T* parse_char_lit(Parser_T* p)
 
 static ASTNode_T* parse_str_lit(Parser_T* p, bool keep_inline)
 {
-    ASTNode_T* str_lit = init_ast_node(ND_STR, p->tok);
-    str_lit->str_val = strdup(p->tok->value);
-    str_lit->is_constant = true;
-    str_lit->data_type = (ASTType_T*) char_ptr_type;
+    Token_T* tok = p->tok;
     parser_consume(p, TOKEN_STRING, "expect string literal (\"abc\", \"wxyz\", ...)");
+
+    char* str = strdup(tok->value);
 
     while(tok_is(p, TOKEN_STRING)) // expressions like `"h" "e" "l" "l" "o"` get grouped together to `"hello"`
     {
-        str_lit->str_val = realloc(str_lit->str_val, (strlen(str_lit->str_val ) + strlen(p->tok->value) + 1) * sizeof(char));
-        strcat(str_lit->str_val, p->tok->value);
+        str = realloc(str, (strlen(str) + strlen(p->tok->value) + 1) * sizeof(char));
+        strcat(str, p->tok->value);
         parser_advance(p);
     }
 
-    mem_add_ptr(str_lit->str_val);
-
-    if(global.ct == CT_ASM && !keep_inline && p->cur_fn)
-    {
-        static u64 i = 0;
-        char id[256] = { '\0' };
-        sprintf(id, ".L.str.%ld", i++);
-        ASTIdentifier_T* ast_id = init_ast_identifier(str_lit->tok, id);
-
-        ASTObj_T* globl = init_ast_obj(OBJ_GLOBAL, str_lit->tok);
-        globl->id = ast_id;
-        globl->value = str_lit;
-        globl->data_type = init_ast_type(TY_ARR, str_lit->tok);
-        globl->data_type->num_indices = init_ast_node(ND_LONG, str_lit->tok);
-        globl->data_type->num_indices->long_val = strlen(str_lit->str_val) + 1;
-        globl->data_type->base = (ASTType_T*) primitives[TY_CHAR];
-        list_push(p->root_ref->objs, globl);
-
-        ASTNode_T* caller = init_ast_node(ND_ID, str_lit->tok);
-        caller->id = ast_id;
-        caller->referenced_obj = globl;
-        caller->data_type = (ASTType_T*) globl->data_type;
-
-        //ASTNode_T* cast = init_ast_node(ND_CAST, str_lit->tok);
-        //cast->data_type = (ASTType_T*) char_ptr_type;
-        //cast->left = caller;
-
-        return caller;
-    }
-    else
-        return str_lit;
+    ASTNode_T* node = build_str_lit(p->tok, str, !keep_inline && p->cur_fn, p->root_ref->objs);
+    return node;
 }
 
 static ASTNode_T* parse_array_lit(Parser_T* p)
@@ -2023,6 +2030,11 @@ static ASTNode_T* parse_builtin_type_exprs(Parser_T* p, ASTNode_T* expr)
     {
         expr->cmp_kind = TOKEN_BUILTIN_IS_UNION;
         expr->data_type = (ASTType_T*) primitives[TY_BOOL];
+    }
+    else if(streq(p->tok->value, "__to_str"))
+    {
+        expr->cmp_kind = TOKEN_BUILTIN_TO_STR;
+        expr->data_type = (ASTType_T*) char_ptr_type; 
     }
     else
         throw_error(ERR_UNDEFINED, p->tok, "Undefined builtin type expression `%s`", p->tok->value);

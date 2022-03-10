@@ -1,6 +1,7 @@
 #include "ast.h"
 #include "../io/log.h"
 
+#include "config.h"
 #include "types.h"
 #include "../mem/mem.h"
 
@@ -96,6 +97,21 @@ const char* obj_kind_to_str(ASTObjKind_T kind)
     }
 }
 
+char* ast_id_to_str(char* dest, ASTIdentifier_T* id, size_t size)
+{
+    if(id->outer)
+    {
+        ast_id_to_str(dest, id->outer, size);
+        if(size - strlen(dest) - 1 < 2)
+            return dest;
+        strcat(dest, "::");
+    }
+    
+    if(size - strlen(dest) - 1 - strlen(id->callee) > 0) // concatenate the callee, if enough memory is left
+        strcat(dest, id->callee);
+    return dest;
+}
+
 const char* type_kind_to_str(ASTTypeKind_T kind)
 {
     switch (kind) {
@@ -141,45 +157,67 @@ const char* type_kind_to_str(ASTTypeKind_T kind)
         case TY_UNDEF:
             return "<undefined>";
         default:
-            return "<undefined ASTType_T kind>";
+            return "<unknown>";
     }
 }
 
-void ast_type_to_str(char* dest, ASTType_T* type)
+char* ast_type_to_str(char* dest, ASTType_T* ty, size_t size)
 {
-    switch(type->kind)
+    if(size - strlen(dest) < 10) // if not enough memory is left, return
+        return dest;
+    switch(ty->kind)
     {
-        case TY_I8:
-        case TY_I16:
-        case TY_I32:
-        case TY_I64:
-        case TY_U8:
-        case TY_U16:
-        case TY_U32:
-        case TY_U64:
-        case TY_F32:
-        case TY_F64:
-        case TY_F80:
-        case TY_BOOL:
-        case TY_VOID:
-        case TY_CHAR:
-            strcat(dest, type_kind_to_str(type->kind));
+        case TY_I8...TY_CHAR:
+            strcat(dest, type_kind_to_str(ty->kind));
             break;
-        
         case TY_PTR:
             strcat(dest, "&");
-            ast_type_to_str(dest, type->base);
+            ast_type_to_str(dest, ty->base, size);
             break;
-        
         case TY_ARR:
-            ast_type_to_str(dest, type->base);
+            ast_type_to_str(dest, ty->base, size);
             strcat(dest, "[]");
             break;
-
+        case TY_STRUCT:
+            strcat(dest, ty->is_union ? "union {" : "struct {");
+            for(size_t i = 0; i < ty->members->size; i++)
+            {
+                ASTNode_T* member = ty->members->items[i];
+                strcat(dest, member->id->callee);
+                strcat(dest, ": ");
+                ast_type_to_str(dest, member->data_type, size);
+                if(ty->members->size - i > 1)
+                    strcat(dest, ", ");
+            }
+            strcat(dest, "}");
+            break;
+        case TY_ENUM:
+            strcat(dest, "enum");
+            break;
+        case TY_LAMBDA:
+            strcat(dest, "fn<");
+            ast_type_to_str(dest, ty->base, size);
+            strcat(dest, ">(");
+            for(size_t i = 0; i < ty->arg_types->size; i++)
+            {
+                ast_type_to_str(dest, ty->arg_types->items[i], size);
+                if(ty->arg_types->size - i > 1)
+                    strcat(dest, ", ");
+            }
+            strcat(dest, ")");
+            break;
+        case TY_FN:
+            strcat(dest, "<function>");
+            break;
         case TY_UNDEF:
-            strcat(dest, type->id->callee);
+            ast_id_to_str(dest, ty->id, size);
+            break;
+        case TY_TYPEOF:
+            strcat(dest, "<typeof>");
             break;
         default:
             break;
     }
+
+    return dest;
 }

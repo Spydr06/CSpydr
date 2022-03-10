@@ -6,6 +6,8 @@
 
 #include "config.h"
 
+#define LEN(arr) (sizeof(arr) / sizeof(*arr))
+
 /*
  * Type definitions
  */

@@ -28,6 +28,11 @@ macro swap(a, b)
     }
 }
 
+macro ttos(ty)
+{
+    ((type) __to_str(ty))
+}
+
 # checks if the bit of v at position p is 1
 macro check_bit(v, p)
 {

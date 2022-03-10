@@ -11,6 +11,7 @@
 #include "codegen/codegen_utils.h"
 #include "lexer/token.h"
 #include "mem/mem.h"
+#include "parser/parser.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -447,7 +448,8 @@ static ASTNode_T* find_member_in_type(Validator_T* v, ASTType_T* type, ASTNode_T
 
     if(type->kind != TY_STRUCT)
     {
-        throw_error(ERR_TYPE_ERROR, id->tok, "cannot get member of type `%d`", type->kind);
+        char buf[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
+        throw_error(ERR_TYPE_ERROR, id->tok, "cannot get member of type `%s`", ast_type_to_str(buf, type, LEN(buf)));
         return NULL;
     }
 
@@ -637,10 +639,8 @@ static void check_exit_fns(Validator_T* v)
         ASTExitFnHandle_T* found = find_exit_fn(v, handle->type);
         if(handle != found)
         {
-            if(handle->type->kind == TY_UNDEF)
-                throw_error(ERR_REDEFINITION_UNCR, handle->tok, "exit function for data type `%s` already defined", handle->type->id->callee);
-            else
-                throw_error(ERR_REDEFINITION_UNCR, handle->tok, "exit function for data type (%d) already defined", handle->type->kind);
+            char buf[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
+            throw_error(ERR_REDEFINITION_UNCR, handle->tok, "exit function for data type `%s` already defined", ast_type_to_str(buf, handle->type, LEN(buf)));
             uncr(v);
         }
 
@@ -1098,10 +1098,8 @@ static void with_end(ASTNode_T* with, va_list args)
     ASTExitFnHandle_T* handle = find_exit_fn(v, with->condition->data_type);
     if(!handle)
     {
-        if(with->condition->data_type->kind == TY_UNDEF)
-            throw_error(ERR_TYPE_ERROR_UNCR, with->obj->tok, "type `%s` does not have a registered exit function.\nRegister one by using the `exit_fn` compiler directive", with->condition->data_type->id->callee);
-        else
-            throw_error(ERR_TYPE_ERROR_UNCR, with->obj->tok, "type of `%s` (%d) does not have a registered exit function.\nRegister one by using the `exit_fn` compiler directive", with->obj->id->callee, with->condition->data_type->kind);
+        char buf[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
+        throw_error(ERR_TYPE_ERROR_UNCR, with->obj->tok, "type `%s` does not have a registered exit function.\nRegister one by using the `exit_fn` compiler directive", ast_type_to_str(buf, with->condition->data_type, LEN(buf)));
         uncr(v);
     }
     with->exit_fn = handle->fn;
@@ -1151,7 +1149,12 @@ static void call(ASTNode_T* call, va_list args)
                     }
 
                     if(!compatible(v, expected->data_type, received->data_type))
-                        throw_error(ERR_TYPE_ERROR, ((ASTNode_T*) call->args->items[i])->tok, "unexpected data type `%d`, expect `%d`", received->data_type->kind, expected->data_type->kind);
+                    {
+                        char buf1[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
+                        char buf2[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
+
+                        throw_error(ERR_TYPE_ERROR, ((ASTNode_T*) call->args->items[i])->tok, "unexpected data type `%s`, expect `%s`", ast_type_to_str(buf1, received->data_type, LEN(buf1)), ast_type_to_str(buf2, expected->data_type, LEN(buf2)));
+                    }
                 }
             } break;
         
@@ -1161,7 +1164,8 @@ static void call(ASTNode_T* call, va_list args)
             {
                 if(called_obj->data_type->kind != TY_LAMBDA)
                 {
-                    throw_error(ERR_TYPE_ERROR, call->expr->tok, "can only call variables of lambda type, got `%d`", called_obj->data_type->kind);
+                    char buf[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
+                    throw_error(ERR_TYPE_ERROR, call->expr->tok, "can only call variables of lambda type, got `%s`", ast_type_to_str(buf, called_obj->data_type, LEN(buf)));
                     return;
                 }
 
@@ -1268,7 +1272,8 @@ static void member(ASTNode_T* member, va_list args)
     ASTNode_T* found = find_member_in_type(v, member->left->data_type, member->right);
     if(!found)
     {
-        throw_error(ERR_TYPE_ERROR, member->tok, "type `%d` has no member named `%s`", member->left->data_type->kind, member->right->id->callee);
+        char buf[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
+        throw_error(ERR_TYPE_ERROR, member->tok, "type `%s` has no member named `%s`", ast_type_to_str(buf, member->left->data_type, LEN(buf)), member->right->id->callee);
         return;
     }
     member->data_type = found->data_type;
@@ -1733,6 +1738,11 @@ static void type_expr(ASTNode_T* cmp, va_list args)
                     default:
                         unreachable();
                 }
+            } return;
+        case TOKEN_BUILTIN_TO_STR:
+            {
+                char buf[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
+                *cmp = *build_str_lit(cmp->tok, strdup(ast_type_to_str(buf, cmp->r_type, LEN(buf))), v->current_function, v->ast->objs);
             } return;
         default: 
             unreachable();

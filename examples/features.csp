@@ -1,5 +1,6 @@
 import "io.csp";
 import "mem.csp";
+import "process.csp";
 
 fn main(argc: i32, argv: &&char): i32 {
     using std;
@@ -10,6 +11,8 @@ fn main(argc: i32, argv: &&char): i32 {
     else {
         io::printf("pointer allocation failed");
     }
+
+    io::printf("%s\n", ttos!(i32));
 
     <- 0;
 }

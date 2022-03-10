@@ -119,6 +119,7 @@ typedef enum TOKEN_TYPE {
     TOKEN_BUILTIN_IS_ARRAY,
     TOKEN_BUILTIN_IS_STRUCT,
     TOKEN_BUILTIN_IS_UNION,
+    TOKEN_BUILTIN_TO_STR,
 
     TOKEN_ERROR, // error handling token
     TOKEN_EOF,   // end of file
