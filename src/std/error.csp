@@ -1,0 +1,39 @@
+import "str.csp";
+
+namespace std {
+    type ErrorType: enum {
+        GENERIC,
+        NONE,
+
+    };
+
+    type Error: struct {
+        kind: ErrorType,
+        msg: &char
+    };
+
+    namespace error {
+        let error: Error;
+
+        fn new(kind: ErrorType, msg: &char): Error {
+            <- error = Error :: {kind, msg};
+        }
+
+        fn set(err: Error): Error {
+            error = err;
+            <- err;
+        }
+
+        fn get(): Error {
+            <- error;
+        }
+
+        fn str(err: ErrorType): &char {
+            match err {
+                ErrorType::NONE => ret "none";
+                ErrorType::GENERIC => ret "generic";
+                _ => ret "<unknown>";
+            }
+        }
+    }
+}

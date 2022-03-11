@@ -1,5 +1,8 @@
 import "syscall.csp";
 import "types.csp";
+import "io.csp";
+
+macro MAX_EXIT_HANDLERS { 1024 }
 
 namespace std {
     namespace process {
@@ -29,9 +32,37 @@ namespace std {
         const CLONE_NEWNET: i32         = 0x40000000;
         const CLONE_IO: i32             = 0x80000000;
 
+        namespace __static {
+            let __at_exit_fns: fn(i32)[MAX_EXIT_HANDLERS!];
+            let __at_exit_cnt: u32;
+        }
+        
+        fn die(msg: const &char)
+        {
+            io::eputs(msg);
+            exit(1);
+        }
+
         fn exit(exit_code: i32) 
         {
+            using __static;
+
+            for let i: u64 = 0; i < __at_exit_cnt; i++; {
+                let func = __at_exit_fns[i];
+                func(exit_code);
+            }
+            
             syscall::exit(exit_code);
+        }
+
+        fn at_exit(func: fn(i32)): bool 
+        {
+            using __static;
+
+            if __at_exit_cnt + 1 > MAX_EXIT_HANDLERS!
+                <- false;
+            __at_exit_fns[__at_exit_cnt++] = func;
+            <- true;
         }
     }
 }

@@ -2,17 +2,13 @@ import "io.csp";
 import "mem.csp";
 import "process.csp";
 
+macro t0 { 0 }
+macro t1 { t0! }
+
 fn main(argc: i32, argv: &&char): i32 {
     using std;
 
-    with x = mem::alloc(1024) {
-        io::printf("%p\n", x);
-    }
-    else {
-        io::printf("pointer allocation failed");
-    }
-
-    io::printf("%s\n", ttos!(i32));
+    io::printf("%i\n", t0!);
 
     <- 0;
 }

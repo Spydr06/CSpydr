@@ -5,6 +5,7 @@ import "option.csp";
 import "math.csp";
 import "vec.csp";
 import "c_str.csp";
+import "error.csp";
 
 # a macro to crate a string
 macro str() {
@@ -233,6 +234,14 @@ namespace std {
                             free(str);
                             <- str!{"\0"};
                         }
+                        'e' => {
+                            concat(&str, error::str(err));
+                            
+                            if error::error.msg {
+                                append(&str, ' ');
+                                concat(&str, error::error.msg);
+                            }
+                        }
                     }
                 }
                 else
@@ -242,5 +251,4 @@ namespace std {
             <- str;
         }
     }
-
-}
+} 
