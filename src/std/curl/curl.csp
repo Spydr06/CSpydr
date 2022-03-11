@@ -147,14 +147,14 @@ type curl_fileinfo: struct {
     b_used: u64
 };
 
-# return codes for CURLOPT_CHUNK_BGN_FUNCTION
+# return codes for CHUNK_BGN_FUNCTION
 macro CURL_CHUNK_BGN_FUNC_OK     { 0 }
 macro CURL_CHUNK_BGN_FUNC_FAIL   { 1 } # tell the lib to end the task
 macro CURL_CHUNK_BGN_FUNC_SKIP   { 2 } # skip this chunk over
 
 type curl_chunk_bgn_callback: fn<i64>(const &void, &void, i32);
 
-# return codes for CURLOPT_CHUNK_END_FUNCTION
+# return codes for CHUNK_END_FUNCTION
 macro CURL_CHUNK_END_FUNC_OK     { 0 }
 macro CURL_CHUNK_END_FUNC_FAIL   { 1 } # tell the lib to end the task
 
@@ -299,7 +299,7 @@ type CURLcode: enum {
     ABORTED_BY_CALLBACK,     # 42
     BAD_FUNCTION_ARGUMENT,   # 43
     OBSOLETE44,              # 44 - NOT USED
-    INTERFACE_FAILED,        # 45 - CURLOPT_INTERFACE failed
+    INTERFACE_FAILED,        # 45 - INTERFACE failed
     OBSOLETE46,              # 46 - NOT USED
     TOO_MANY_REDIRECTS,      # 47 - catch endless re-direct loops
     UNKNOWN_OPTION,          # 48 - User specified an unknown option
@@ -368,7 +368,7 @@ macro CURLE_OBSOLETE10 { CURLcode::FTP_ACCEPT_FAILED }
 macro CURLE_OBSOLETE12 { CURLcode::FTP_ACCEPT_TIMEOUT }
 
 #  compatibility with older names 
-macro CURLOPT_ENCODING CURLOPT_ACCEPT_ENCODING
+macro ENCODING ACCEPT_ENCODING
 macro CURLE_FTP_WEIRD_SERVER_REPLY CURLE_WEIRD_SERVER_REPLY
 
 # The following were added in 7.62.0 
@@ -423,13 +423,13 @@ macro CURLE_CONV_REQD CURLE_OBSOLETE76
 macro CURLE_ALREADY_COMPLETE { 99999 }
 
 # Provide defines for really old option names 
-macro CURLOPT_FILE CURLOPT_WRITEDATA # name changed in 7.9.7 
-macro CURLOPT_INFILE CURLOPT_READDATA # name changed in 7.9.7 
-macro CURLOPT_WRITEHEADER CURLOPT_HEADERDATA
+macro FILE WRITEDATA # name changed in 7.9.7 
+macro INFILE READDATA # name changed in 7.9.7 
+macro WRITEHEADER HEADERDATA
 
 # Since long deprecated options with no code in the lib that does anything with them. 
-macro CURLOPT_WRITEINFO CURLOPT_OBSOLETE40
-macro CURLOPT_CLOSEPOLICY CURLOPT_OBSOLETE72]#
+macro WRITEINFO OBSOLETE40
+macro CLOSEPOLICY OBSOLETE72]#
 
 #
 # TODO: this, multi.csp
@@ -492,7 +492,7 @@ macro CURLAUTH_DIGEST    { ((1: u64) << 1) }
 macro CURLAUTH_NEGOTIATE { ((1: u64) << 2) }
 # Deprecated since the advent of CURLAUTH_NEGOTIATE
 macro CURLAUTH_GSSNEGOTIATE { CURLAUTH_NEGOTIATE! }
-# Used for CURLOPT_SOCKS5_AUTH to stay terminologically correct
+# Used for SOCKS5_AUTH to stay terminologically correct
 macro CURLAUTH_GSSAPI { CURLAUTH_NEGOTIATE! }
 macro CURLAUTH_NTLM   { ((1: u64) << 3) }
 macro CURLAUTH_DIGEST_IE { ((1: u64) << 4) }
@@ -631,7 +631,7 @@ type curl_hstswrite_callback: fn<CURLSTScode>(&CURL, &curl_hstsentry, &curl_inde
 macro CURLHSTS_ENABLE { ((1 << 0): i64) }
 macro CURLHSTS_READONLYFILE { ((1 << 1): i64) }
 
-# CURLPROTO_ defines are for the CURLOPT_*PROTOCOLS options
+# CURLPROTO_ defines are for the *PROTOCOLS options
 macro CURLPROTO_HTTP   { (1<<0) }
 macro CURLPROTO_HTTPS  { (1<<1) }
 macro CURLPROTO_FTP    { (1<<2) }
@@ -677,24 +677,1047 @@ macro CURLOPT(na, t, nu) {
 # CURLOPT aliases that make no run-time difference
 
 # 'char *' argument to a string with a trailing zero
-macro CURLOPTTYPE_STRINGPOINT { CURLOPTTYPE_OBJECTPOINT }
+macro CURLOPTTYPE_STRINGPOINT { 10000 }
 
 # 'struct curl_slist *' argument
-macro CURLOPTTYPE_SLISTPOINT  { CURLOPTTYPE_OBJECTPOINT }
+macro CURLOPTTYPE_SLISTPOINT  { 10000 }
 
 # 'void *' argument passed untouched to callback
-macro CURLOPTTYPE_CBPOINT     { CURLOPTTYPE_OBJECTPOINT }
+macro CURLOPTTYPE_CBPOINT     { 10000 }
 
 # 'long' argument with a set of values/bitmask
-macro CURLOPTTYPE_VALUES      { CURLOPTTYPE_LONG }
+macro CURLOPTTYPE_VALUES      { 0 }
 
 type CURLoption: enum {
-    WRITEDATA = 10001,
-    URL = 10002,
+    #WRITEDATA = 10001,
+    #URL = 10002,
     # ...
-    WRITEFUNCTION = 20011,
-# TODO: this (315 enum values)
-    LAST = 316
+    #WRITEFUNCTION = 20011,
+
+    # This is the FILE * or void * the regular output should be written to.
+    CURLOPT!(WRITEDATA, CURLOPTTYPE_CBPOINT!, 1),
+
+    # The full URL to get/put
+    CURLOPT!(URL, CURLOPTTYPE_STRINGPOINT!, 2),
+
+    # Port number to connect to, if other than default.
+    CURLOPT!(PORT, CURLOPTTYPE_LONG!, 3),
+
+    # Name of proxy to use.
+    CURLOPT!(PROXY, CURLOPTTYPE_STRINGPOINT!, 4),
+
+    # "user:password;options" to use when fetching.
+    CURLOPT!(USERPWD, CURLOPTTYPE_STRINGPOINT!, 5),
+
+    # "user:password" to use with proxy.
+    CURLOPT!(PROXYUSERPWD, CURLOPTTYPE_STRINGPOINT!, 6),
+
+    # Range to get, specified as an ASCII string.
+    CURLOPT!(RANGE, CURLOPTTYPE_STRINGPOINT!, 7),
+
+    # not used
+
+    # Specified file stream to upload from (use as input):
+    CURLOPT!(READDATA, CURLOPTTYPE_CBPOINT!, 9),
+
+    # Buffer to receive error messages in, must be at least CURL_ERROR_SIZE bytes big.
+    CURLOPT!(ERRORBUFFER, CURLOPTTYPE_OBJECTPOINT!, 10),
+
+    # Function that will be called to store the output (instead of fwrite). The parameters will use fwrite() syntax, make sure to follow them.
+    CURLOPT!(WRITEFUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 11),
+
+    # Function that will be called to read the input (instead of fread). The parameters will use fread() syntax, make sure to follow them.
+    CURLOPT!(READFUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 12),
+
+    # Time-out the read operation after this amount of seconds
+    CURLOPT!(TIMEOUT, CURLOPTTYPE_LONG!, 13),
+
+    #[ If the INFILE is used, this can be used to inform libcurl about
+     * how large the file being sent really is. That allows better error
+     * checking and better verifies that the upload was successful. -1 means
+     * unknown size.
+     *
+     * For large file support, there is also a _LARGE version of the key
+     * which takes an off_t type, allowing platforms with larger off_t
+     * sizes to handle larger files.  See below for INFILESIZE_LARGE.
+      ]#
+    
+    CURLOPT!(INFILESIZE, CURLOPTTYPE_LONG!, 14),
+
+    # POST static input fields.
+    CURLOPT!(POSTFIELDS, CURLOPTTYPE_OBJECTPOINT!, 15),
+
+    # Set the referrer page (needed by some CGIs)
+    CURLOPT!(REFERER, CURLOPTTYPE_STRINGPOINT!, 16),
+
+    # Set the FTP PORT string (interface name, named or numerical IP address) Use i.e '-' to use default address.
+    CURLOPT!(FTPPORT, CURLOPTTYPE_STRINGPOINT!, 17),
+
+    # Set the User-Agent string (examined by some CGIs)
+    CURLOPT!(USERAGENT, CURLOPTTYPE_STRINGPOINT!, 18),
+
+    #[ If the download receives less than "low speed limit" bytes/second
+     * during "low speed time" seconds, the operations is aborted.
+     * You could i.e if you have a pretty high speed connection, abort if
+     * it is less than 2000 bytes/sec during 20 seconds.
+    ]#
+
+    # Set the "low speed limit"
+    CURLOPT!(LOW_SPEED_LIMIT, CURLOPTTYPE_LONG!, 19),
+
+    # Set the "low speed time"
+    CURLOPT!(LOW_SPEED_TIME, CURLOPTTYPE_LONG!, 20),
+
+    #[ Set the continuation offset.
+     *
+     * Note there is also a _LARGE version of this key which uses
+     * off_t types, allowing for large file offsets on platforms which
+     * use larger-than-32-bit off_t's.  Look below for RESUME_FROM_LARGE.
+    ]#
+    CURLOPT!(RESUME_FROM, CURLOPTTYPE_LONG!, 21),
+
+    # Set cookie in request:
+    CURLOPT!(COOKIE, CURLOPTTYPE_STRINGPOINT!, 22),
+
+    # This points to a linked list of headers, struct curl_slist kind. This list is also used for RTSP (in spite of its name)
+    CURLOPT!(HTTPHEADER, CURLOPTTYPE_SLISTPOINT!, 23),
+
+    # This points to a linked list of post entries, struct curl_httppost
+    CURLOPT!(HTTPPOST, CURLOPTTYPE_OBJECTPOINT!, 24),
+
+    # name of the file keeping your private SSL-certificate
+    CURLOPT!(SSLCERT, CURLOPTTYPE_STRINGPOINT!, 25),
+
+    # password for the SSL or SSH private key
+    CURLOPT!(KEYPASSWD, CURLOPTTYPE_STRINGPOINT!, 26),
+
+    # send TYPE parameter?
+    CURLOPT!(CRLF, CURLOPTTYPE_LONG!, 27),
+
+    # send linked-list of QUOTE commands
+    CURLOPT!(QUOTE, CURLOPTTYPE_SLISTPOINT!, 28),
+
+    # send FILE * or void * to store headers to, if you use a callback it is simply passed to the callback unmodified
+    CURLOPT!(HEADERDATA, CURLOPTTYPE_CBPOINT!, 29),
+
+    # point to a file to read the initial cookies from, also enables "cookie awareness"
+    CURLOPT!(COOKIEFILE, CURLOPTTYPE_STRINGPOINT!, 31),
+
+    # What version to specifically try to use. See CURL_SSLVERSION defines below.
+    CURLOPT!(SSLVERSION, CURLOPTTYPE_VALUES!, 32),
+
+    # What kind of HTTP time condition to use, see defines
+    CURLOPT!(TIMECONDITION, CURLOPTTYPE_VALUES!, 33),
+
+    # Time to use with the above condition. Specified in number of seconds since 1 Jan 1970
+    CURLOPT!(TIMEVALUE, CURLOPTTYPE_LONG!, 34),
+
+    # 35 = OBSOLETE
+
+    #[ Custom request, for customizing the get command like
+       HTTP: DELETE, TRACE and others
+       FTP: to use a different list command
+    ]#
+    CURLOPT!(CUSTOMREQUEST, CURLOPTTYPE_STRINGPOINT!, 36),
+
+    # FILE handle to use instead of stderr
+    CURLOPT!(STDERR, CURLOPTTYPE_OBJECTPOINT!, 37),
+
+    # 38 is not used
+
+    # send linked-list of post-transfer QUOTE commands
+    CURLOPT!(POSTQUOTE, CURLOPTTYPE_SLISTPOINT!, 39),
+
+     # OBSOLETE, do not use!
+    CURLOPT!(OBSOLETE40, CURLOPTTYPE_OBJECTPOINT!, 40),
+
+    # talk a lot
+    CURLOPT!(VERBOSE, CURLOPTTYPE_LONG!, 41),
+
+    # throw the header out too
+    CURLOPT!(HEADER, CURLOPTTYPE_LONG!, 42),
+
+    # shut off the progress meter
+    CURLOPT!(NOPROGRESS, CURLOPTTYPE_LONG!, 43),
+
+    # use HEAD to get http document
+    CURLOPT!(NOBODY, CURLOPTTYPE_LONG!, 44),
+
+    # no output on http error codes >= 400
+    CURLOPT!(FAILONERROR, CURLOPTTYPE_LONG!, 45),
+
+    # this is an upload
+    CURLOPT!(UPLOAD, CURLOPTTYPE_LONG!, 46),
+
+    # HTTP POST method
+    CURLOPT!(POST, CURLOPTTYPE_LONG!, 47),
+
+    # bare names when listing directories
+    CURLOPT!(DIRLISTONLY, CURLOPTTYPE_LONG!, 48),
+
+    # Append instead of overwrite on upload!
+    CURLOPT!(APPEND, CURLOPTTYPE_LONG!, 50),
+
+    # Specify whether to read the user+password from the .netrc or the URL. This must be one of the CURL_NETRC_* enums below.
+    CURLOPT!(NETRC, CURLOPTTYPE_VALUES!, 51),
+
+    # use Location: Luke!
+    CURLOPT!(FOLLOWLOCATION, CURLOPTTYPE_LONG!, 52),
+
+     # transfer data in text/ASCII format
+    CURLOPT!(TRANSFERTEXT, CURLOPTTYPE_LONG!, 53),
+
+    # HTTP PUT
+    CURLOPT!(PUT, CURLOPTTYPE_LONG!, 54),
+
+    # 55 = OBSOLETE
+
+    #[ DEPRECATED
+     * Function that will be called instead of the internal progress display
+     * function. This function should be defined as the curl_progress_callback
+     * prototype defines.
+    ]#
+    CURLOPT!(PROGRESSFUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 56),
+
+    # Data passed to the PROGRESSFUNCTION and XFERINFOFUNCTION callbacks
+    CURLOPT!(XFERINFODATA, CURLOPTTYPE_CBPOINT!, 57),
+
+    # We want the referrer field set automatically when following locations
+    CURLOPT!(AUTOREFERER, CURLOPTTYPE_LONG!, 58),
+
+    # Port of the proxy, can be set in the proxy string as well with: "[host]:[port]"
+    CURLOPT!(PROXYPORT, CURLOPTTYPE_LONG!, 59),
+
+    # size of the POST input data, if strlen() is not good to use
+    CURLOPT!(POSTFIELDSIZE, CURLOPTTYPE_LONG!, 60),
+
+    # tunnel non-http operations through a HTTP proxy
+    CURLOPT!(HTTPPROXYTUNNEL, CURLOPTTYPE_LONG!, 61),
+
+    # Set the interface string to use as outgoing network interface
+    CURLOPT!(INTERFACE, CURLOPTTYPE_STRINGPOINT!, 62),
+
+    #[ Set the krb4/5 security level, this also enables krb4/5 awareness.  This
+     * is a string, 'clear', 'safe', 'confidential' or 'private'.  If the string
+     * is set but doesn't match one of these, 'private' will be used. 
+    ]#
+    CURLOPT!(KRBLEVEL, CURLOPTTYPE_STRINGPOINT!, 63),
+
+    # Set if we should verify the peer in ssl handshake, set 1 to verify.
+    CURLOPT!(SSL_VERIFYPEER, CURLOPTTYPE_LONG!, 64),
+
+    # The CApath or CAfile used to validate the peer certificate this option is used only if SSL_VERIFYPEER is true
+    CURLOPT!(CAINFO, CURLOPTTYPE_STRINGPOINT!, 65),
+
+    # 66 = OBSOLETE
+    # 67 = OBSOLETE
+
+    # Maximum number of http redirects to follow
+    CURLOPT!(MAXREDIRS, CURLOPTTYPE_LONG!, 68),
+
+    # Pass a long set to 1 to get the date of the requested document (if possible)! Pass a zero to shut it off.
+    CURLOPT!(FILETIME, CURLOPTTYPE_LONG!, 69),
+
+    # This points to a linked list of telnet options
+    CURLOPT!(TELNETOPTIONS, CURLOPTTYPE_SLISTPOINT!, 70),
+
+    # Max amount of cached alive connections
+    CURLOPT!(MAXCONNECTS, CURLOPTTYPE_LONG!, 71),
+
+    # OBSOLETE, do not use!
+    CURLOPT!(OBSOLETE72, CURLOPTTYPE_LONG!, 72),
+
+    # 73 = OBSOLETE
+
+    #[ Set to explicitly use a new connection for the upcoming transfer.
+       Do not use this unless you're absolutely sure of this, as it makes the
+       operation slower and is less friendly for the network.
+    ]#
+    CURLOPT!(FRESH_CONNECT, CURLOPTTYPE_LONG!, 74),
+
+    #[ Set to explicitly forbid the upcoming transfer's connection to be re-used
+       when done. Do not use this unless you're absolutely sure of this, as it
+       makes the operation slower and is less friendly for the network.
+    ]#
+    CURLOPT!(FORBID_REUSE, CURLOPTTYPE_LONG!, 75),
+
+    # Set to a file name that contains random data for libcurl to use to seed the random engine when doing SSL connects.
+    CURLOPT!(RANDOM_FILE, CURLOPTTYPE_STRINGPOINT!, 76),
+
+    # Set to the Entropy Gathering Daemon socket pathname
+    CURLOPT!(EGDSOCKET, CURLOPTTYPE_STRINGPOINT!, 77),
+
+    # Time-out connect operations after this amount of seconds, if connects are OK within this time, then fine... This only aborts the connect phase.
+    CURLOPT!(CONNECTTIMEOUT, CURLOPTTYPE_LONG!, 78),
+
+    # Function that will be called to store headers (instead of fwrite). The * parameters will use fwrite() syntax, make sure to follow them.
+    CURLOPT!(HEADERFUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 79),
+
+    # Set this to force the HTTP request to get back to GET. Only really usable if POST, PUT or a custom request have been used first.
+    CURLOPT!(HTTPGET, CURLOPTTYPE_LONG!, 80),
+
+    #[ Set if we should verify the Common name from the peer certificate in ssl
+     * handshake, set 1 to check existence, 2 to ensure that it matches the
+     * provided hostname.
+    ]#
+    CURLOPT!(SSL_VERIFYHOST, CURLOPTTYPE_LONG!, 81),
+
+    # Specify which file name to write all known cookies in after completed operation. Set file name to "-" (dash) to make it go to stdout.
+    CURLOPT!(COOKIEJAR, CURLOPTTYPE_STRINGPOINT!, 82),
+
+    # Specify which SSL ciphers to use
+    CURLOPT!(SSL_CIPHER_LIST, CURLOPTTYPE_STRINGPOINT!, 83),
+
+    # Specify which HTTP version to use! This must be set to one of the CURL_HTTP_VERSION* enums set below.
+    CURLOPT!(HTTP_VERSION, CURLOPTTYPE_VALUES!, 84),
+
+    #[ Specifically switch on or off the FTP engine's use of the EPSV command. By
+       default, that one will always be attempted before the more traditional
+       PASV command.
+    ]#
+    CURLOPT!(FTP_USE_EPSV, CURLOPTTYPE_LONG!, 85),
+
+    # type of the file keeping your SSL-certificate ("DER", "PEM", "ENG")
+    CURLOPT!(SSLCERTTYPE, CURLOPTTYPE_STRINGPOINT!, 86),
+
+    # name of the file keeping your private SSL-key
+    CURLOPT!(SSLKEY, CURLOPTTYPE_STRINGPOINT!, 87),
+
+    # type of the file keeping your private SSL-key ("DER", "PEM", "ENG")
+    CURLOPT!(SSLKEYTYPE, CURLOPTTYPE_STRINGPOINT!, 88),
+
+    # crypto engine for the SSL-sub system
+    CURLOPT!(SSLENGINE, CURLOPTTYPE_STRINGPOINT!, 89),
+
+    # set the crypto engine for the SSL-sub system as default the param has no meaning...
+    
+    CURLOPT!(SSLENGINE_DEFAULT, CURLOPTTYPE_LONG!, 90),
+
+    # Non-zero value means to use the global dns cache
+    # DEPRECATED, do not use!
+    CURLOPT!(DNS_USE_GLOBAL_CACHE, CURLOPTTYPE_LONG!, 91),
+
+    # DNS cache timeout
+    CURLOPT!(DNS_CACHE_TIMEOUT, CURLOPTTYPE_LONG!, 92),
+
+    # send linked-list of pre-transfer QUOTE commands
+    CURLOPT!(PREQUOTE, CURLOPTTYPE_SLISTPOINT!, 93),
+
+    # set the debug function
+    CURLOPT!(DEBUGFUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 94),
+
+    # set the data for the debug function
+    CURLOPT!(DEBUGDATA, CURLOPTTYPE_CBPOINT!, 95),
+
+    # mark this as start of a cookie session
+    CURLOPT!(COOKIESESSION, CURLOPTTYPE_LONG!, 96),
+
+    # The CApath directory used to validate the peer certificate this option is used only if SSL_VERIFYPEER is true
+    CURLOPT!(CAPATH, CURLOPTTYPE_STRINGPOINT!, 97),
+
+    # Instruct libcurl to use a smaller receive buffer
+    CURLOPT!(BUFFERSIZE, CURLOPTTYPE_LONG!, 98),
+
+    #[ Instruct libcurl to not use any signal/alarm handlers, even when using
+       timeouts. This option is useful for multi-threaded applications.
+       See libcurl-the-guide for more background information.
+    ]#
+    CURLOPT!(NOSIGNAL, CURLOPTTYPE_LONG!, 99),
+
+    # Provide a CURLShare for mutexing non-ts data
+    CURLOPT!(SHARE, CURLOPTTYPE_OBJECTPOINT!, 100),
+
+    #[ indicates type of proxy. accepted values are CURLPROXY_HTTP (default),
+       CURLPROXY_HTTPS, CURLPROXY_SOCKS4, CURLPROXY_SOCKS4A and
+       CURLPROXY_SOCKS5.
+    ]#
+    CURLOPT!(PROXYTYPE, CURLOPTTYPE_VALUES!, 101),
+
+    #[ Set the Accept-Encoding string. Use this to tell a server you would like
+       the response to be compressed. Before 7.21.6, this was known as
+       ENCODING
+    ]#
+    CURLOPT!(ACCEPT_ENCODING, CURLOPTTYPE_STRINGPOINT!, 102),
+
+    # Set pointer to private data
+    CURLOPT!(PRIVATE, CURLOPTTYPE_OBJECTPOINT!, 103),
+
+    # Set aliases for HTTP 200 in the HTTP Response header
+    CURLOPT!(HTTP200ALIASES, CURLOPTTYPE_SLISTPOINT!, 104),
+
+    #[ Continue to send authentication (user+password) when following locations,
+       even when hostname changed. This can potentially send off the name
+       and password to whatever host the server decides.
+    ]#
+    CURLOPT!(UNRESTRICTED_AUTH, CURLOPTTYPE_LONG!, 105),
+
+    #[ Specifically switch on or off the FTP engine's use of the EPRT command (
+       it also disables the LPRT attempt). By default, those ones will always be
+       attempted before the good old traditional PORT command.
+    ]#
+    CURLOPT!(FTP_USE_EPRT, CURLOPTTYPE_LONG!, 106),
+
+    #[ Set this to a bitmask value to enable the particular authentications
+       methods you like. Use this in combination with USERPWD.
+       Note that setting multiple bits may cause extra network round-trips.
+    ]#
+    CURLOPT!(HTTPAUTH, CURLOPTTYPE_VALUES!, 107),
+
+    #[ Set the ssl context callback function, currently only for OpenSSL or
+       WolfSSL ssl_ctx, or mbedTLS mbedtls_ssl_config in the second argument.
+       The function must match the curl_ssl_ctx_callback prototype.
+    ]#
+    CURLOPT!(SSL_CTX_FUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 108),
+
+    # Set the userdata for the ssl context callback function's third argument
+    CURLOPT!(SSL_CTX_DATA, CURLOPTTYPE_CBPOINT!, 109),
+
+    #[ FTP Option that causes missing dirs to be created on the remote server.
+       In 7.19.4 we introduced the convenience enums for this option using the
+       CURLFTP_CREATE_DIR prefix.
+    ]#
+    CURLOPT!(FTP_CREATE_MISSING_DIRS, CURLOPTTYPE_LONG!, 110),
+
+    #[ Set this to a bitmask value to enable the particular authentications
+       methods you like. Use this in combination with PROXYUSERPWD.
+       Note that setting multiple bits may cause extra network round-trips.
+    ]#
+    CURLOPT!(PROXYAUTH, CURLOPTTYPE_VALUES!, 111),
+
+    #[ FTP option that changes the timeout, in seconds, associated with
+       getting a response.  This is different from transfer timeout time and
+       essentially places a demand on the FTP server to acknowledge commands
+       in a timely manner.
+    ]#
+    CURLOPT!(FTP_RESPONSE_TIMEOUT, CURLOPTTYPE_LONG!, 112),
+
+    #[ Set this option to one of the CURL_IPRESOLVE_* defines (see below) to
+       tell libcurl to use those IP versions only. This only has effect on
+       systems with support for more than one, i.e IPv4 _and_ IPv6.
+    ]#
+    CURLOPT!(IPRESOLVE, CURLOPTTYPE_VALUES!, 113),
+
+    #[ Set this option to limit the size of a file that will be downloaded from
+       an HTTP or FTP server.
+
+       Note there is also _LARGE version which adds large file support for
+       platforms which have larger off_t sizes.  See MAXFILESIZE_LARGE below.
+    ]#
+    CURLOPT!(MAXFILESIZE, CURLOPTTYPE_LONG!, 114),
+
+    # See the comment for INFILESIZE above, but in short, specifies the size of the file being uploaded.  -1 means unknown.
+    
+    CURLOPT!(INFILESIZE_LARGE, CURLOPTTYPE_OFF_T!, 115),
+
+    # Sets the continuation offset.  There is also a CURLOPTTYPE_LONG version of this; look above for RESUME_FROM.
+    
+    CURLOPT!(RESUME_FROM_LARGE, CURLOPTTYPE_OFF_T!, 116),
+
+    # Sets the maximum size of data that will be downloaded from an HTTP or FTP server.  See MAXFILESIZE above for the LONG version.
+    
+    CURLOPT!(MAXFILESIZE_LARGE, CURLOPTTYPE_OFF_T!, 117),
+
+    #[ Set this option to the file name of your .netrc file you want libcurl
+       to parse (using the NETRC option). If not set, libcurl will do
+       a poor attempt to find the user's home directory and check for a .netrc
+       file in there.
+    ]#
+    CURLOPT!(NETRC_FILE, CURLOPTTYPE_STRINGPOINT!, 118),
+
+    #[ Enable SSL/TLS for FTP, pick one of:
+       CURLUSESSL_TRY     - try using SSL, proceed anyway otherwise
+       CURLUSESSL_CONTROL - SSL for the control connection or fail
+       CURLUSESSL_ALL     - SSL for all communication or fail
+    ]#
+    CURLOPT!(USE_SSL, CURLOPTTYPE_VALUES!, 119),
+
+    # The _LARGE version of the standard POSTFIELDSIZE option
+    CURLOPT!(POSTFIELDSIZE_LARGE, CURLOPTTYPE_OFF_T!, 120),
+
+    # Enable/disable the TCP Nagle algorithm
+    CURLOPT!(TCP_NODELAY, CURLOPTTYPE_LONG!, 121),
+
+    # 122 OBSOLETE, used in 7.12.3. Gone in 7.13.0
+    # 123 OBSOLETE. Gone in 7.16.0
+    # 124 OBSOLETE, used in 7.12.3. Gone in 7.13.0
+    # 125 OBSOLETE, used in 7.12.3. Gone in 7.13.0
+    # 126 OBSOLETE, used in 7.12.3. Gone in 7.13.0
+    # 127 OBSOLETE. Gone in 7.16.0
+    # 128 OBSOLETE. Gone in 7.16.0
+
+    #[ When FTP over SSL/TLS is selected (with USE_SSL), this option
+       can be used to change libcurl's default action which is to first try
+       "AUTH SSL" and then "AUTH TLS" in this order, and proceed when a OK
+       response has been received.
+
+       Available parameters are:
+       CURLFTPAUTH_DEFAULT - let libcurl decide
+       CURLFTPAUTH_SSL     - try "AUTH SSL" first, then TLS
+       CURLFTPAUTH_TLS     - try "AUTH TLS" first, then SSL
+    ]#
+    CURLOPT!(FTPSSLAUTH, CURLOPTTYPE_VALUES!, 129),
+
+    CURLOPT!(IOCTLFUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 130),
+    CURLOPT!(IOCTLDATA, CURLOPTTYPE_CBPOINT!, 131),
+
+    # 132 OBSOLETE. Gone in 7.16.0
+    # 133 OBSOLETE. Gone in 7.16.0
+
+    # null-terminated string for pass on to the FTP server when asked for "account" info
+    CURLOPT!(FTP_ACCOUNT, CURLOPTTYPE_STRINGPOINT!, 134),
+
+    # feed cookie into cookie engine
+    CURLOPT!(COOKIELIST, CURLOPTTYPE_STRINGPOINT!, 135),
+
+    # ignore Content-Length
+    CURLOPT!(IGNORE_CONTENT_LENGTH, CURLOPTTYPE_LONG!, 136),
+
+    #[ Set to non-zero to skip the IP address received in a 227 PASV FTP server
+       response. Typically used for FTP-SSL purposes but is not restricted to
+       that. libcurl will then instead use the same IP address it used for the
+       control connection.
+    ]#
+    CURLOPT!(FTP_SKIP_PASV_IP, CURLOPTTYPE_LONG!, 137),
+
+    # Select "file method" to use when doing FTP, see the curl_ftpmethod above.
+    CURLOPT!(FTP_FILEMETHOD, CURLOPTTYPE_VALUES!, 138),
+
+    # Local port number to bind the socket to
+    CURLOPT!(LOCALPORT, CURLOPTTYPE_LONG!, 139),
+
+    # Number of ports to try, including the first one set with LOCALPORT. Thus, setting it to 1 will make no additional attempts but the first.
+    
+    CURLOPT!(LOCALPORTRANGE, CURLOPTTYPE_LONG!, 140),
+
+    # no transfer, set up connection and let application use the socket by extracting it with CURLINFO_LASTSOCKET
+    CURLOPT!(CONNECT_ONLY, CURLOPTTYPE_LONG!, 141),
+
+    # Function that will be called to convert from the network encoding (instead of using the iconv calls in libcurl)
+    CURLOPT!(CONV_FROM_NETWORK_FUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 142),
+
+    # Function that will be called to convert to the network encoding (instead of using the iconv calls in libcurl)
+    CURLOPT!(CONV_TO_NETWORK_FUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 143),
+
+    #[ Function that will be called to convert from UTF8
+       (instead of using the iconv calls in libcurl)
+       Note that this is used only for SSL certificate processing
+    ]#
+    CURLOPT!(CONV_FROM_UTF8_FUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 144),
+
+    # if the connection proceeds too quickly then need to slow it down
+    # limit-rate: maximum number of bytes per second to send or receive
+    CURLOPT!(MAX_SEND_SPEED_LARGE, CURLOPTTYPE_OFF_T!, 145),
+    CURLOPT!(MAX_RECV_SPEED_LARGE, CURLOPTTYPE_OFF_T!, 146),
+
+    # Pointer to command string to send if USER/PASS fails.
+    CURLOPT!(FTP_ALTERNATIVE_TO_USER, CURLOPTTYPE_STRINGPOINT!, 147),
+
+    # callback function for setting socket options
+    CURLOPT!(SOCKOPTFUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 148),
+    CURLOPT!(SOCKOPTDATA, CURLOPTTYPE_CBPOINT!, 149),
+
+    # set to 0 to disable session ID re-use for this transfer, default is enabled (== 1)
+    CURLOPT!(SSL_SESSIONID_CACHE, CURLOPTTYPE_LONG!, 150),
+
+    # allowed SSH authentication methods
+    CURLOPT!(SSH_AUTH_TYPES, CURLOPTTYPE_VALUES!, 151),
+
+    # Used by scp/sftp to do public/private key authentication
+    CURLOPT!(SSH_PUBLIC_KEYFILE, CURLOPTTYPE_STRINGPOINT!, 152),
+    CURLOPT!(SSH_PRIVATE_KEYFILE, CURLOPTTYPE_STRINGPOINT!, 153),
+
+    # Send CCC (Clear Command Channel) after authentication
+    CURLOPT!(FTP_SSL_CCC, CURLOPTTYPE_LONG!, 154),
+
+    # Same as TIMEOUT and CONNECTTIMEOUT, but with ms resolution
+    CURLOPT!(TIMEOUT_MS, CURLOPTTYPE_LONG!, 155),
+    CURLOPT!(CONNECTTIMEOUT_MS, CURLOPTTYPE_LONG!, 156),
+
+    # set to zero to disable the libcurl's decoding and thus pass the raw body data to the application even when it is encoded/compressed
+    CURLOPT!(HTTP_TRANSFER_DECODING, CURLOPTTYPE_LONG!, 157),
+    CURLOPT!(HTTP_CONTENT_DECODING, CURLOPTTYPE_LONG!, 158),
+
+    # Permission used when creating new files and directories on the remote server for protocols that support it, SFTP/SCP/FILE
+    CURLOPT!(NEW_FILE_PERMS, CURLOPTTYPE_LONG!, 159),
+    CURLOPT!(NEW_DIRECTORY_PERMS, CURLOPTTYPE_LONG!, 160),
+
+    # Set the behavior of POST when redirecting. Values must be set to one of CURL_REDIR* defines below. This used to be called POST301
+    CURLOPT!(POSTREDIR, CURLOPTTYPE_VALUES!, 161),
+
+    # used by scp/sftp to verify the host's public key
+    CURLOPT!(SSH_HOST_PUBLIC_KEY_MD5, CURLOPTTYPE_STRINGPOINT!, 162),
+
+    #[ Callback function for opening socket (instead of socket(2)). Optionally,
+       callback is able change the address or refuse to connect returning
+       CURL_SOCKET_BAD.  The callback should have type
+       curl_opensocket_callback
+    ]#
+    CURLOPT!(OPENSOCKETFUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 163),
+    CURLOPT!(OPENSOCKETDATA, CURLOPTTYPE_CBPOINT!, 164),
+
+    # POST volatile input fields.
+    CURLOPT!(COPYPOSTFIELDS, CURLOPTTYPE_OBJECTPOINT!, 165),
+
+    # set transfer mode (;type=<a|i>) when doing FTP via an HTTP proxy
+    CURLOPT!(PROXY_TRANSFER_MODE, CURLOPTTYPE_LONG!, 166),
+
+    # Callback function for seeking in the input stream
+    CURLOPT!(SEEKFUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 167),
+    CURLOPT!(SEEKDATA, CURLOPTTYPE_CBPOINT!, 168),
+
+    # CRL file
+    CURLOPT!(CRLFILE, CURLOPTTYPE_STRINGPOINT!, 169),
+
+    # Issuer certificate
+    CURLOPT!(ISSUERCERT, CURLOPTTYPE_STRINGPOINT!, 170),
+
+    # (IPv6) Address scope
+    CURLOPT!(ADDRESS_SCOPE, CURLOPTTYPE_LONG!, 171),
+
+    # Collect certificate chain info and allow it to get retrievable with CURLINFO_CERTINFO after the transfer is complete.
+    CURLOPT!(CERTINFO, CURLOPTTYPE_LONG!, 172),
+
+    # "name" and "pwd" to use when fetching.
+    CURLOPT!(USERNAME, CURLOPTTYPE_STRINGPOINT!, 173),
+    CURLOPT!(PASSWORD, CURLOPTTYPE_STRINGPOINT!, 174),
+
+      # "name" and "pwd" to use with Proxy when fetching.
+    CURLOPT!(PROXYUSERNAME, CURLOPTTYPE_STRINGPOINT!, 175),
+    CURLOPT!(PROXYPASSWORD, CURLOPTTYPE_STRINGPOINT!, 176),
+
+    #[ Comma separated list of hostnames defining no-proxy zones. These should
+       match both hostnames directly, and hostnames within a domain. For
+       example, local.com will match local.com and www.local.com, but NOT
+       notlocal.com or www.notlocal.com. For compatibility with other
+       implementations of this, .local.com will be considered to be the same as
+       local.com. A single * is the only valid wildcard, and effectively
+       disables the use of proxy.
+    ]#
+    CURLOPT!(NOPROXY, CURLOPTTYPE_STRINGPOINT!, 177),
+
+    # block size for TFTP transfers
+    CURLOPT!(TFTP_BLKSIZE, CURLOPTTYPE_LONG!, 178),
+
+    # Socks Service
+    # DEPRECATED, do not use!
+    CURLOPT!(SOCKS5_GSSAPI_SERVICE, CURLOPTTYPE_STRINGPOINT!, 179),
+
+    # Socks Service
+    CURLOPT!(SOCKS5_GSSAPI_NEC, CURLOPTTYPE_LONG!, 180),
+
+    #[ set the bitmask for the protocols that are allowed to be used for the
+       transfer, which thus helps the app which takes URLs from users or other
+       external inputs and want to restrict what protocol(s) to deal
+       with. Defaults to CURLPROTO_ALL.
+    ]#
+    CURLOPT!(PROTOCOLS, CURLOPTTYPE_LONG!, 181),
+
+    #[ set the bitmask for the protocols that libcurl is allowed to follow to,
+       as a subset of the PROTOCOLS ones. That means the protocol needs
+       to be set in both bitmasks to be allowed to get redirected to.
+    ]#
+    CURLOPT!(REDIR_PROTOCOLS, CURLOPTTYPE_LONG!, 182),
+
+    # set the SSH knownhost file name to use
+    CURLOPT!(SSH_KNOWNHOSTS, CURLOPTTYPE_STRINGPOINT!, 183),
+
+    # set the SSH host key callback, must point to a curl_sshkeycallback function
+    CURLOPT!(SSH_KEYFUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 184),
+
+    # set the SSH host key callback custom pointer
+    CURLOPT!(SSH_KEYDATA, CURLOPTTYPE_CBPOINT!, 185),
+
+    # set the SMTP mail originator
+    CURLOPT!(MAIL_FROM, CURLOPTTYPE_STRINGPOINT!, 186),
+
+    # set the list of SMTP mail receiver(s)
+    CURLOPT!(MAIL_RCPT, CURLOPTTYPE_SLISTPOINT!, 187),
+
+    # FTP: send PRET before PASV
+    CURLOPT!(FTP_USE_PRET, CURLOPTTYPE_LONG!, 188),
+
+    # RTSP request method (OPTIONS, SETUP, PLAY, etc...)
+    CURLOPT!(RTSP_REQUEST, CURLOPTTYPE_VALUES!, 189),
+
+    # The RTSP session identifier
+    CURLOPT!(RTSP_SESSION_ID, CURLOPTTYPE_STRINGPOINT!, 190),
+
+    # The RTSP stream URI
+    CURLOPT!(RTSP_STREAM_URI, CURLOPTTYPE_STRINGPOINT!, 191),
+
+    # The Transport: header to use in RTSP requests
+    CURLOPT!(RTSP_TRANSPORT, CURLOPTTYPE_STRINGPOINT!, 192),
+
+    # Manually initialize the client RTSP CSeq for this handle
+    CURLOPT!(RTSP_CLIENT_CSEQ, CURLOPTTYPE_LONG!, 193),
+
+    # Manually initialize the server RTSP CSeq for this handle
+    CURLOPT!(RTSP_SERVER_CSEQ, CURLOPTTYPE_LONG!, 194),
+
+    # The stream to pass to INTERLEAVEFUNCTION.
+    CURLOPT!(INTERLEAVEDATA, CURLOPTTYPE_CBPOINT!, 195),
+
+    # Let the application define a custom write method for RTP data
+    CURLOPT!(INTERLEAVEFUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 196),
+
+    # Turn on wildcard matching
+    CURLOPT!(WILDCARDMATCH, CURLOPTTYPE_LONG!, 197),
+
+    # Directory matching callback called before downloading of an individual file (chunk) started
+    CURLOPT!(CHUNK_BGN_FUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 198),
+
+    # Directory matching callback called after the file (chunk) was downloaded, or skipped
+    CURLOPT!(CHUNK_END_FUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 199),
+
+    # Change match (fnmatch-like) callback for wildcard matching
+    CURLOPT!(FNMATCH_FUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 200),
+
+    # Let the application define custom chunk data pointer
+    CURLOPT!(CHUNK_DATA, CURLOPTTYPE_CBPOINT!, 201),
+
+    # FNMATCH_FUNCTION user pointer
+    CURLOPT!(FNMATCH_DATA, CURLOPTTYPE_CBPOINT!, 202),
+
+    # send linked-list of name:port:address sets
+    CURLOPT!(RESOLVE, CURLOPTTYPE_SLISTPOINT!, 203),
+
+    # Set a username for authenticated TLS
+    CURLOPT!(TLSAUTH_USERNAME, CURLOPTTYPE_STRINGPOINT!, 204),
+
+    # Set a password for authenticated TLS
+    CURLOPT!(TLSAUTH_PASSWORD, CURLOPTTYPE_STRINGPOINT!, 205),
+
+    # Set authentication type for authenticated TLS
+    CURLOPT!(TLSAUTH_TYPE, CURLOPTTYPE_STRINGPOINT!, 206),
+
+    #[ Set to 1 to enable the "TE:" header in HTTP requests to ask for
+       compressed transfer-encoded responses. Set to 0 to disable the use of TE:
+       in outgoing requests. The current default is 0, but it might change in a
+       future libcurl release.
+
+       libcurl will ask for the compressed methods it knows of, and if that
+       isn't any, it will not ask for transfer-encoding at all even if this
+       option is set to 1.
+    ]#
+    
+    CURLOPT!(TRANSFER_ENCODING, CURLOPTTYPE_LONG!, 207),
+
+    # Callback function for closing socket (instead of close(2)). The callback should have type curl_closesocket_callback
+    CURLOPT!(CLOSESOCKETFUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 208),
+    CURLOPT!(CLOSESOCKETDATA, CURLOPTTYPE_CBPOINT!, 209),
+
+    # allow GSSAPI credential delegation
+    CURLOPT!(GSSAPI_DELEGATION, CURLOPTTYPE_VALUES!, 210),
+
+    # Set the name servers to use for DNS resolution
+    CURLOPT!(DNS_SERVERS, CURLOPTTYPE_STRINGPOINT!, 211),
+
+    # Time-out accept operations (currently for FTP only) after this amount of milliseconds.
+    CURLOPT!(ACCEPTTIMEOUT_MS, CURLOPTTYPE_LONG!, 212),
+
+    # Set TCP keepalive
+    CURLOPT!(TCP_KEEPALIVE, CURLOPTTYPE_LONG!, 213),
+
+    # non-universal keepalive knobs (Linux, AIX, HP-UX, more)
+    CURLOPT!(TCP_KEEPIDLE, CURLOPTTYPE_LONG!, 214),
+    CURLOPT!(TCP_KEEPINTVL, CURLOPTTYPE_LONG!, 215),
+
+    # Enable/disable specific SSL features with a bitmask, see CURLSSLOPT_*
+    CURLOPT!(SSL_OPTIONS, CURLOPTTYPE_VALUES!, 216),
+
+    # Set the SMTP auth originator
+    CURLOPT!(MAIL_AUTH, CURLOPTTYPE_STRINGPOINT!, 217),
+
+    # Enable/disable SASL initial response
+    CURLOPT!(SASL_IR, CURLOPTTYPE_LONG!, 218),
+
+    #[ Function that will be called instead of the internal progress display
+     * function. This function should be defined as the curl_xferinfo_callback
+     * prototype defines. (Deprecates PROGRESSFUNCTION)
+     ]#
+    CURLOPT!(XFERINFOFUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 219),
+
+    # The XOAUTH2 bearer token
+    CURLOPT!(XOAUTH2_BEARER, CURLOPTTYPE_STRINGPOINT!, 220),
+
+    #[ Set the interface string to use as outgoing network
+     * interface for DNS requests.
+     * Only supported by the c-ares DNS backend
+     ]#
+    CURLOPT!(DNS_INTERFACE, CURLOPTTYPE_STRINGPOINT!, 221),
+
+    # Set the local IPv4 address to use for outgoing DNS requests. Only supported by the c-ares DNS backend
+    CURLOPT!(DNS_LOCAL_IP4, CURLOPTTYPE_STRINGPOINT!, 222),
+
+    # Set the local IPv6 address to use for outgoing DNS requests. Only supported by the c-ares DNS backend
+    CURLOPT!(DNS_LOCAL_IP6, CURLOPTTYPE_STRINGPOINT!, 223),
+
+    # Set authentication options directly
+    CURLOPT!(LOGIN_OPTIONS, CURLOPTTYPE_STRINGPOINT!, 224),
+
+    # Enable/disable TLS NPN extension (http2 over ssl might fail without)
+    CURLOPT!(SSL_ENABLE_NPN, CURLOPTTYPE_LONG!, 225),
+
+    # Enable/disable TLS ALPN extension (http2 over ssl might fail without)
+    CURLOPT!(SSL_ENABLE_ALPN, CURLOPTTYPE_LONG!, 226),
+
+    # Time to wait for a response to a HTTP request containing an Expect: 100-continue header before sending the data anyway.
+    CURLOPT!(EXPECT_100_TIMEOUT_MS, CURLOPTTYPE_LONG!, 227),
+
+    # This points to a linked list of headers used for proxy requests only, struct curl_slist kind
+    CURLOPT!(PROXYHEADER, CURLOPTTYPE_SLISTPOINT!, 228),
+
+    # Pass in a bitmask of "header options"
+    CURLOPT!(HEADEROPT, CURLOPTTYPE_VALUES!, 229),
+
+    # The public key in DER form used to validate the peer public key this option is used only if SSL_VERIFYPEER is true
+    CURLOPT!(PINNEDPUBLICKEY, CURLOPTTYPE_STRINGPOINT!, 230),
+
+    # Path to Unix domain socket
+    CURLOPT!(UNIX_SOCKET_PATH, CURLOPTTYPE_STRINGPOINT!, 231),
+
+    # Set if we should verify the certificate status.
+    CURLOPT!(SSL_VERIFYSTATUS, CURLOPTTYPE_LONG!, 232),
+
+    # Set if we should enable TLS false start.
+    CURLOPT!(SSL_FALSESTART, CURLOPTTYPE_LONG!, 233),
+
+    # Do not squash dot-dot sequences
+    CURLOPT!(PATH_AS_IS, CURLOPTTYPE_LONG!, 234),
+
+    # Proxy Service Name
+    CURLOPT!(PROXY_SERVICE_NAME, CURLOPTTYPE_STRINGPOINT!, 235),
+
+    # Service Name
+    CURLOPT!(SERVICE_NAME, CURLOPTTYPE_STRINGPOINT!, 236),
+
+    # Wait/don't wait for pipe/mutex to clarify
+    CURLOPT!(PIPEWAIT, CURLOPTTYPE_LONG!, 237),
+
+    # Set the protocol used when curl is given a URL without a protocol
+    CURLOPT!(DEFAULT_PROTOCOL, CURLOPTTYPE_STRINGPOINT!, 238),
+
+    # Set stream weight, 1 - 256 (default is 16)
+    CURLOPT!(STREAM_WEIGHT, CURLOPTTYPE_LONG!, 239),
+
+    # Set stream dependency on another CURL handle
+    CURLOPT!(STREAM_DEPENDS, CURLOPTTYPE_OBJECTPOINT!, 240),
+
+    # Set E-xclusive stream dependency on another CURL handle
+    CURLOPT!(STREAM_DEPENDS_E, CURLOPTTYPE_OBJECTPOINT!, 241),
+
+    # Do not send any tftp option requests to the server
+    CURLOPT!(TFTP_NO_OPTIONS, CURLOPTTYPE_LONG!, 242),
+
+    # Linked-list of host:port:connect-to-host:connect-to-port, overrides the URL's host:port (only for the network layer)
+    CURLOPT!(CONNECT_TO, CURLOPTTYPE_SLISTPOINT!, 243),
+
+    # Set TCP Fast Open
+    CURLOPT!(TCP_FASTOPEN, CURLOPTTYPE_LONG!, 244),
+
+    # Continue to send data if the server responds early with an HTTP status code >= 300
+    CURLOPT!(KEEP_SENDING_ON_ERROR, CURLOPTTYPE_LONG!, 245),
+
+    # The CApath or CAfile used to validate the proxy certificate this option is used only if PROXY_SSL_VERIFYPEER is true
+    CURLOPT!(PROXY_CAINFO, CURLOPTTYPE_STRINGPOINT!, 246),
+
+    # The CApath directory used to validate the proxy certificate this option is used only if PROXY_SSL_VERIFYPEER is true
+    CURLOPT!(PROXY_CAPATH, CURLOPTTYPE_STRINGPOINT!, 247),
+
+    # Set if we should verify the proxy in ssl handshake, set 1 to verify.
+    CURLOPT!(PROXY_SSL_VERIFYPEER, CURLOPTTYPE_LONG!, 248),
+
+    #[ Set if we should verify the Common name from the proxy certificate in ssl
+     * handshake, set 1 to check existence, 2 to ensure that it matches
+     * the provided hostname.
+     ]#
+    CURLOPT!(PROXY_SSL_VERIFYHOST, CURLOPTTYPE_LONG!, 249),
+
+    # What version to specifically try to use for proxy. See CURL_SSLVERSION defines below.
+    CURLOPT!(PROXY_SSLVERSION, CURLOPTTYPE_VALUES!, 250),
+
+    # Set a username for authenticated TLS for proxy
+    CURLOPT!(PROXY_TLSAUTH_USERNAME, CURLOPTTYPE_STRINGPOINT!, 251),
+
+    # Set a password for authenticated TLS for proxy
+    CURLOPT!(PROXY_TLSAUTH_PASSWORD, CURLOPTTYPE_STRINGPOINT!, 252),
+
+    # Set authentication type for authenticated TLS for proxy
+    CURLOPT!(PROXY_TLSAUTH_TYPE, CURLOPTTYPE_STRINGPOINT!, 253),
+
+    # name of the file keeping your private SSL-certificate for proxy
+    CURLOPT!(PROXY_SSLCERT, CURLOPTTYPE_STRINGPOINT!, 254),
+
+    # type of the file keeping your SSL-certificate ("DER", "PEM", "ENG") for proxy
+    CURLOPT!(PROXY_SSLCERTTYPE, CURLOPTTYPE_STRINGPOINT!, 255),
+
+    # name of the file keeping your private SSL-key for proxy
+    CURLOPT!(PROXY_SSLKEY, CURLOPTTYPE_STRINGPOINT!, 256),
+
+    # type of the file keeping your private SSL-key ("DER", "PEM", "ENG") for proxy
+    CURLOPT!(PROXY_SSLKEYTYPE, CURLOPTTYPE_STRINGPOINT!, 257),
+
+    # password for the SSL private key for proxy
+    CURLOPT!(PROXY_KEYPASSWD, CURLOPTTYPE_STRINGPOINT!, 258),
+
+    # Specify which SSL ciphers to use for proxy
+    CURLOPT!(PROXY_SSL_CIPHER_LIST, CURLOPTTYPE_STRINGPOINT!, 259),
+
+    # CRL file for proxy
+    CURLOPT!(PROXY_CRLFILE, CURLOPTTYPE_STRINGPOINT!, 260),
+
+    # Enable/disable specific SSL features with a bitmask for proxy, see CURLSSLOPT_
+    CURLOPT!(PROXY_SSL_OPTIONS, CURLOPTTYPE_LONG!, 261),
+
+    # Name of pre proxy to use.
+    CURLOPT!(PRE_PROXY, CURLOPTTYPE_STRINGPOINT!, 262),
+
+    # The public key in DER form used to validate the proxy public key this option is used only if PROXY_SSL_VERIFYPEER is true
+    CURLOPT!(PROXY_PINNEDPUBLICKEY, CURLOPTTYPE_STRINGPOINT!, 263),
+
+    # Path to an abstract Unix domain socket
+    CURLOPT!(ABSTRACT_UNIX_SOCKET, CURLOPTTYPE_STRINGPOINT!, 264),
+
+    # Suppress proxy CONNECT response headers from user callbacks
+    CURLOPT!(SUPPRESS_CONNECT_HEADERS, CURLOPTTYPE_LONG!, 265),
+
+    # The request target, instead of extracted from the URL
+    CURLOPT!(REQUEST_TARGET, CURLOPTTYPE_STRINGPOINT!, 266),
+
+    # bitmask of allowed auth methods for connections to SOCKS5 proxies
+    CURLOPT!(SOCKS5_AUTH, CURLOPTTYPE_LONG!, 267),
+
+    # Enable/disable SSH compression
+    CURLOPT!(SSH_COMPRESSION, CURLOPTTYPE_LONG!, 268),
+
+    # Post MIME data.
+    CURLOPT!(MIMEPOST, CURLOPTTYPE_OBJECTPOINT!, 269),
+
+    # Time to use with the TIMECONDITION. Specified in number of seconds since 1 Jan 1970.
+    CURLOPT!(TIMEVALUE_LARGE, CURLOPTTYPE_OFF_T!, 270),
+
+    # Head start in milliseconds to give happy eyeballs.
+    CURLOPT!(HAPPY_EYEBALLS_TIMEOUT_MS, CURLOPTTYPE_LONG!, 271),
+
+    # Function that will be called before a resolver request is made
+    CURLOPT!(RESOLVER_START_FUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 272),
+
+    # User data to pass to the resolver start callback.
+    CURLOPT!(RESOLVER_START_DATA, CURLOPTTYPE_CBPOINT!, 273),
+
+    # send HAProxy PROXY protocol header?
+    CURLOPT!(HAPROXYPROTOCOL, CURLOPTTYPE_LONG!, 274),
+
+    # shuffle addresses before use when DNS returns multiple
+    CURLOPT!(DNS_SHUFFLE_ADDRESSES, CURLOPTTYPE_LONG!, 275),
+
+    # Specify which TLS 1.3 ciphers suites to use
+    CURLOPT!(TLS13_CIPHERS, CURLOPTTYPE_STRINGPOINT!, 276),
+    CURLOPT!(PROXY_TLS13_CIPHERS, CURLOPTTYPE_STRINGPOINT!, 277),
+
+    # Disallow specifying username/login in URL.
+    CURLOPT!(DISALLOW_USERNAME_IN_URL, CURLOPTTYPE_LONG!, 278),
+
+    # DNS-over-HTTPS URL
+    CURLOPT!(DOH_URL, CURLOPTTYPE_STRINGPOINT!, 279),
+
+    # Preferred buffer size to use for uploads
+    CURLOPT!(UPLOAD_BUFFERSIZE, CURLOPTTYPE_LONG!, 280),
+
+    # Time in ms between connection upkeep calls for long-lived connections.
+    CURLOPT!(UPKEEP_INTERVAL_MS, CURLOPTTYPE_LONG!, 281),
+
+    # Specify URL using CURL URL API.
+    CURLOPT!(CURLU, CURLOPTTYPE_OBJECTPOINT!, 282),
+
+    # add trailing data just after no more data is available
+    CURLOPT!(TRAILERFUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 283),
+
+    # pointer to be passed to HTTP_TRAILER_FUNCTION
+    CURLOPT!(TRAILERDATA, CURLOPTTYPE_CBPOINT!, 284),
+
+    # set this to 1L to allow HTTP/0.9 responses or 0L to disallow
+    CURLOPT!(HTTP09_ALLOWED, CURLOPTTYPE_LONG!, 285),
+
+    # alt-svc control bitmask
+    CURLOPT!(ALTSVC_CTRL, CURLOPTTYPE_LONG!, 286),
+
+    # alt-svc cache file name to possibly read from/write to
+    CURLOPT!(ALTSVC, CURLOPTTYPE_STRINGPOINT!, 287),
+
+    # maximum age (idle time) of a connection to consider it for reuse (in seconds)
+    CURLOPT!(MAXAGE_CONN, CURLOPTTYPE_LONG!, 288),
+
+    # SASL authorisation identity
+    CURLOPT!(SASL_AUTHZID, CURLOPTTYPE_STRINGPOINT!, 289),
+
+    # allow RCPT TO command to fail for some recipients
+    CURLOPT!(MAIL_RCPT_ALLLOWFAILS, CURLOPTTYPE_LONG!, 290),
+
+    # the private SSL-certificate as a "blob"
+    CURLOPT!(SSLCERT_BLOB, CURLOPTTYPE_BLOB!, 291),
+    CURLOPT!(SSLKEY_BLOB, CURLOPTTYPE_BLOB!, 292),
+    CURLOPT!(PROXY_SSLCERT_BLOB, CURLOPTTYPE_BLOB!, 293),
+    CURLOPT!(PROXY_SSLKEY_BLOB, CURLOPTTYPE_BLOB!, 294),
+    CURLOPT!(ISSUERCERT_BLOB, CURLOPTTYPE_BLOB!, 295),
+
+    # Issuer certificate for proxy
+    CURLOPT!(PROXY_ISSUERCERT, CURLOPTTYPE_STRINGPOINT!, 296),
+    CURLOPT!(PROXY_ISSUERCERT_BLOB, CURLOPTTYPE_BLOB!, 297),
+
+    #[ the EC curves requested by the TLS client (RFC 8422, 5.1);
+     * OpenSSL support via 'set_groups'/'set_curves':
+     * https://www.openssl.org/docs/manmaster/man3/SSL_CTX_set1_groups.html
+    ]#
+    CURLOPT!(SSL_EC_CURVES, CURLOPTTYPE_STRINGPOINT!, 298),
+
+    # HSTS bitmask
+    CURLOPT!(HSTS_CTRL, CURLOPTTYPE_LONG!, 299),
+    # HSTS file name
+    CURLOPT!(HSTS, CURLOPTTYPE_STRINGPOINT!, 300),
+
+    # HSTS read callback
+    CURLOPT!(HSTSREADFUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 301),
+    CURLOPT!(HSTSREADDATA, CURLOPTTYPE_CBPOINT!, 302),
+
+    # HSTS write callback
+    CURLOPT!(HSTSWRITEFUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 303),
+    CURLOPT!(HSTSWRITEDATA, CURLOPTTYPE_CBPOINT!, 304),
+
+    # Parameters for V4 signature
+    CURLOPT!(AWS_SIGV4, CURLOPTTYPE_STRINGPOINT!, 305),
+
+    # Same as SSL_VERIFYPEER but for DoH (DNS-over-HTTPS) servers.
+    CURLOPT!(DOH_SSL_VERIFYPEER, CURLOPTTYPE_LONG!, 306),
+
+    # Same as SSL_VERIFYHOST but for DoH (DNS-over-HTTPS) servers.
+    CURLOPT!(DOH_SSL_VERIFYHOST, CURLOPTTYPE_LONG!, 307),
+
+    # Same as SSL_VERIFYSTATUS but for DoH (DNS-over-HTTPS) servers.
+    CURLOPT!(DOH_SSL_VERIFYSTATUS, CURLOPTTYPE_LONG!, 308),
+
+    # The CA certificates as "blob" used to validate the peer certificate this option is used only if SSL_VERIFYPEER is true
+    CURLOPT!(CAINFO_BLOB, CURLOPTTYPE_BLOB!, 309),
+
+    # The CA certificates as "blob" used to validate the proxy certificate this option is used only if PROXY_SSL_VERIFYPEER is true
+    CURLOPT!(PROXY_CAINFO_BLOB, CURLOPTTYPE_BLOB!, 310),
+
+    # used by scp/sftp to verify the host's public key
+    CURLOPT!(SSH_HOST_PUBLIC_KEY_SHA256, CURLOPTTYPE_STRINGPOINT!, 311),
+
+    # Function that will be called immediately before the initial request is made on a connection (after any protocol negotiation step). 
+    CURLOPT!(PREREQFUNCTION, CURLOPTTYPE_FUNCTIONPOINT!, 312),
+
+    # Data passed to the PREREQFUNCTION callback
+    CURLOPT!(PREREQDATA, CURLOPTTYPE_CBPOINT!, 313),
+
+    # maximum age (since creation) of a connection to consider it for reuse* (in seconds)
+    CURLOPT!(MAXLIFETIME_CONN, CURLOPTTYPE_LONG!, 314),
+
+    # Set MIME option flags.
+    CURLOPT!(MIME_OPTIONS, CURLOPTTYPE_LONG!, 315),
+
+    LASTENTRY = 316
 };
 
 const CURL_HTTP_VERSION_NONE: i32 = 0;
@@ -940,70 +1963,70 @@ type CURLINFO: enum {
     EFFECTIVE_URL    = 1048577,
     RESPONSE_CODE    = 2097154,
     TOTAL_TIME       = 3145731,
-#[  NAMELOOKUP_TIME  = CURLINFO_DOUBLE + 4,
-    CONNECT_TIME     = CURLINFO_DOUBLE + 5,
-    PRETRANSFER_TIME = CURLINFO_DOUBLE + 6,
-    SIZE_UPLOAD      = CURLINFO_DOUBLE + 7,
-    SIZE_UPLOAD_T    = CURLINFO_OFF_T  + 7,
-    SIZE_DOWNLOAD    = CURLINFO_DOUBLE + 8,
-    SIZE_DOWNLOAD_T  = CURLINFO_OFF_T  + 8,
-    SPEED_DOWNLOAD   = CURLINFO_DOUBLE + 9,
-    SPEED_DOWNLOAD_T = CURLINFO_OFF_T  + 9,
-    SPEED_UPLOAD     = CURLINFO_DOUBLE + 10,
-    SPEED_UPLOAD_T   = CURLINFO_OFF_T  + 10,
-    HEADER_SIZE      = CURLINFO_LONG   + 11,
-    REQUEST_SIZE     = CURLINFO_LONG   + 12,
-    SSL_VERIFYRESULT = CURLINFO_LONG   + 13,
-    FILETIME         = CURLINFO_LONG   + 14,
-    FILETIME_T       = CURLINFO_OFF_T  + 14,
-    CONTENT_LENGTH_DOWNLOAD   = CURLINFO_DOUBLE + 15,
-    CONTENT_LENGTH_DOWNLOAD_T = CURLINFO_OFF_T  + 15,
-    CONTENT_LENGTH_UPLOAD     = CURLINFO_DOUBLE + 16,
-    CONTENT_LENGTH_UPLOAD_T   = CURLINFO_OFF_T  + 16,
-    STARTTRANSFER_TIME = CURLINFO_DOUBLE + 17,
-    CONTENT_TYPE     = CURLINFO_STRING + 18,
-    REDIRECT_TIME    = CURLINFO_DOUBLE + 19,
-    REDIRECT_COUNT   = CURLINFO_LONG   + 20,
-    PRIVATE          = CURLINFO_STRING + 21,
-    HTTP_CONNECTCODE = CURLINFO_LONG   + 22,
-    HTTPAUTH_AVAIL   = CURLINFO_LONG   + 23,
-    PROXYAUTH_AVAIL  = CURLINFO_LONG   + 24,
-    OS_ERRNO         = CURLINFO_LONG   + 25,
-    NUM_CONNECTS     = CURLINFO_LONG   + 26,
-    SSL_ENGINES      = CURLINFO_SLIST  + 27,
-    COOKIELIST       = CURLINFO_SLIST  + 28,
-    LASTSOCKET       = CURLINFO_LONG   + 29,
-    FTP_ENTRY_PATH   = CURLINFO_STRING + 30,
-    REDIRECT_URL     = CURLINFO_STRING + 31,
-    PRIMARY_IP       = CURLINFO_STRING + 32,
-    APPCONNECT_TIME  = CURLINFO_DOUBLE + 33,
-    CERTINFO         = CURLINFO_PTR    + 34,
-    CONDITION_UNMET  = CURLINFO_LONG   + 35,
-    RTSP_SESSION_ID  = CURLINFO_STRING + 36,
-    RTSP_CLIENT_CSEQ = CURLINFO_LONG   + 37,
-    RTSP_SERVER_CSEQ = CURLINFO_LONG   + 38,
-    RTSP_CSEQ_RECV   = CURLINFO_LONG   + 39,
-    PRIMARY_PORT     = CURLINFO_LONG   + 40,
-    LOCAL_IP         = CURLINFO_STRING + 41,
-    LOCAL_PORT       = CURLINFO_LONG   + 42,
-    TLS_SESSION      = CURLINFO_PTR    + 43,
-    ACTIVESOCKET     = CURLINFO_SOCKET + 44,
-    TLS_SSL_PTR      = CURLINFO_PTR    + 45,
-    HTTP_VERSION     = CURLINFO_LONG   + 46,
-    PROXY_SSL_VERIFYRESULT = CURLINFO_LONG + 47,
-    PROTOCOL         = CURLINFO_LONG   + 48,
-    SCHEME           = CURLINFO_STRING + 49,
-    TOTAL_TIME_T     = CURLINFO_OFF_T + 50,
-    NAMELOOKUP_TIME_T = CURLINFO_OFF_T + 51,
-    CONNECT_TIME_T   = CURLINFO_OFF_T + 52,
-    PRETRANSFER_TIME_T = CURLINFO_OFF_T + 53,
-    STARTTRANSFER_TIME_T = CURLINFO_OFF_T + 54,
-    REDIRECT_TIME_T  = CURLINFO_OFF_T + 55,
-    APPCONNECT_TIME_T = CURLINFO_OFF_T + 56,
-    RETRY_AFTER      = CURLINFO_OFF_T + 57,
-    EFFECTIVE_METHOD = CURLINFO_STRING + 58,
-    PROXY_ERROR      = CURLINFO_LONG + 59,
-    REFERER          = CURLINFO_STRING + 60, ]#
+    NAMELOOKUP_TIME  = CURLINFO_DOUBLE! + 4,
+    CONNECT_TIME     = CURLINFO_DOUBLE! + 5,
+    PRETRANSFER_TIME = CURLINFO_DOUBLE! + 6,
+    SIZE_UPLOAD      = CURLINFO_DOUBLE! + 7,
+    SIZE_UPLOAD_T    = CURLINFO_OFF_T!  + 7,
+    SIZE_DOWNLOAD    = CURLINFO_DOUBLE! + 8,
+    SIZE_DOWNLOAD_T  = CURLINFO_OFF_T!  + 8,
+    SPEED_DOWNLOAD   = CURLINFO_DOUBLE! + 9,
+    SPEED_DOWNLOAD_T = CURLINFO_OFF_T!  + 9,
+    SPEED_UPLOAD     = CURLINFO_DOUBLE! + 10,
+    SPEED_UPLOAD_T   = CURLINFO_OFF_T!  + 10,
+    HEADER_SIZE      = CURLINFO_LONG!   + 11,
+    REQUEST_SIZE     = CURLINFO_LONG!   + 12,
+    SSL_VERIFYRESULT = CURLINFO_LONG!   + 13,
+    FILETIME         = CURLINFO_LONG!   + 14,
+    FILETIME_T       = CURLINFO_OFF_T!  + 14,
+    CONTENT_LENGTH_DOWNLOAD   = CURLINFO_DOUBLE! + 15,
+    CONTENT_LENGTH_DOWNLOAD_T = CURLINFO_OFF_T!  + 15,
+    CONTENT_LENGTH_UPLOAD     = CURLINFO_DOUBLE! + 16,
+    CONTENT_LENGTH_UPLOAD_T   = CURLINFO_OFF_T!  + 16,
+    STARTTRANSFER_TIME = CURLINFO_DOUBLE! + 17,
+    CONTENT_TYPE     = CURLINFO_STRING!   + 18,
+    REDIRECT_TIME    = CURLINFO_DOUBLE!   + 19,
+    REDIRECT_COUNT   = CURLINFO_LONG!     + 20,
+    PRIVATE          = CURLINFO_STRING!   + 21,
+    HTTP_CONNECTCODE = CURLINFO_LONG!     + 22,
+    HTTPAUTH_AVAIL   = CURLINFO_LONG!     + 23,
+    PROXYAUTH_AVAIL  = CURLINFO_LONG!     + 24,
+    OS_ERRNO         = CURLINFO_LONG!     + 25,
+    NUM_CONNECTS     = CURLINFO_LONG!     + 26,
+    SSL_ENGINES      = CURLINFO_SLIST!    + 27,
+    COOKIELIST       = CURLINFO_SLIST!    + 28,
+    LASTSOCKET       = CURLINFO_LONG!     + 29,
+    FTP_ENTRY_PATH   = CURLINFO_STRING!   + 30,
+    REDIRECT_URL     = CURLINFO_STRING!   + 31,
+    PRIMARY_IP       = CURLINFO_STRING!   + 32,
+    APPCONNECT_TIME  = CURLINFO_DOUBLE!   + 33,
+    CERTINFO         = CURLINFO_PTR!      + 34,
+    CONDITION_UNMET  = CURLINFO_LONG!     + 35,
+    RTSP_SESSION_ID  = CURLINFO_STRING!   + 36,
+    RTSP_CLIENT_CSEQ = CURLINFO_LONG!     + 37,
+    RTSP_SERVER_CSEQ = CURLINFO_LONG!     + 38,
+    RTSP_CSEQ_RECV   = CURLINFO_LONG!     + 39,
+    PRIMARY_PORT     = CURLINFO_LONG!     + 40,
+    LOCAL_IP         = CURLINFO_STRING!   + 41,
+    LOCAL_PORT       = CURLINFO_LONG!     + 42,
+    TLS_SESSION      = CURLINFO_PTR!      + 43,
+    ACTIVESOCKET     = CURLINFO_SOCKET!   + 44,
+    TLS_SSL_PTR      = CURLINFO_PTR!      + 45,
+    HTTP_VERSION     = CURLINFO_LONG!     + 46,
+    PROXY_SSL_VERIFYRESULT = CURLINFO_LONG! + 47,
+    PROTOCOL         = CURLINFO_LONG!      + 48,
+    SCHEME           = CURLINFO_STRING!    + 49,
+    TOTAL_TIME_T     = CURLINFO_OFF_T!     + 50,
+    NAMELOOKUP_TIME_T = CURLINFO_OFF_T!    + 51,
+    CONNECT_TIME_T   = CURLINFO_OFF_T!     + 52,
+    PRETRANSFER_TIME_T = CURLINFO_OFF_T!   + 53,
+    STARTTRANSFER_TIME_T = CURLINFO_OFF_T! + 54,
+    REDIRECT_TIME_T  = CURLINFO_OFF_T!  + 55,
+    APPCONNECT_TIME_T = CURLINFO_OFF_T! + 56,
+    RETRY_AFTER      = CURLINFO_OFF_T!  + 57,
+    EFFECTIVE_METHOD = CURLINFO_STRING! + 58,
+    PROXY_ERROR      = CURLINFO_LONG!   + 59,
+    REFERER          = CURLINFO_STRING! + 60,
 
     LASTONE          = 60
 };

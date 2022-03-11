@@ -17,5 +17,6 @@ void list_push(List_T* list, void* item);
 void* list_pop(List_T* list);
 void list_insert(List_T* list, size_t pos, void* item);
 void list_remove(List_T* list, size_t pos);
+void list_clear(List_T* list);
 
 #endif

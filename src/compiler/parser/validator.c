@@ -261,7 +261,7 @@ void validate_ast(ASTProg_T* ast)
         exit(1);
     }
     else if(global.emitted_warnings)
-        LOG_WARN_F(COLOR_BOLD_YELLOW "[Warning]" COLOR_RESET COLOR_YELLOW " %u warning%s thrown during code validation; aborting.\n", global.emitted_warnings, global.emitted_warnings == 1 ? "" : "s");
+        LOG_WARN_F(COLOR_BOLD_YELLOW "[Warning]" COLOR_RESET COLOR_YELLOW " %u warning%s thrown during code validation\n", global.emitted_warnings, global.emitted_warnings == 1 ? "" : "s");
 }
 
 static ASTObj_T* search_in_current_scope(VScope_T* scope, char* id)
@@ -1752,8 +1752,17 @@ static void enum_type(ASTType_T* e_type, va_list args)
 {
     GET_VALIDATOR(args);
     begin_obj_scope(v, NULL, e_type->members);
-
     end_scope(v);
+
+    for(size_t i = 0; i < e_type->members->size; i++)
+    {
+        ASTObj_T* member = e_type->members->items[i];
+        if(member->value->kind != ND_INT)
+        {
+            member->value->int_val = (i32) const_i64(member->value);
+            member->value->kind = ND_INT;
+        }
+    }
 }
 
 static void undef_type(ASTType_T* u_type, va_list args)

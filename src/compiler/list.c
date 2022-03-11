@@ -47,3 +47,9 @@ void list_remove(List_T* list, size_t pos)
     list->size--;
     vector_remove(list->items, pos);
 }
+
+void list_clear(List_T* list)
+{
+    list->size = 0;
+    vector_erase(list->items, 0, vector_size(list->items));
+}

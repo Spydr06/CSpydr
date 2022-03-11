@@ -409,10 +409,20 @@ static void expand_macro_call(Preprocessor_T* pp, MacroCall_T call, List_T* src_
                 i32 arg_idx = find_macro_arg(call.macro, tok->value);
                 if(arg_idx != -1)
                     for(size_t j = call.args[arg_idx].start_idx; j <= call.args[arg_idx].end_idx; j++)
-                        list_push(dest_list, src_list->items[j]);
-                else if(strcmp(tok->value, "__line__") == 0) 
+                    {
+                        Token_T* tok = src_list->items[j];
+                        if(tok->type == TOKEN_MACRO_CALL)
+                        {
+                            MacroCall_T macro_call;
+                            parse_macro_call(pp, &macro_call, src_list, &j);
+                            expand_macro_call(pp, macro_call, src_list, dest_list);
+                        }
+                        else
+                            list_push(dest_list, src_list->items[j]);
+                    }
+                else if(strcmp(tok->value, "__line__") == 0)
                 {
-                    char linestr[128] = { '\0' };
+                    char linestr[__CSP_MAX_TOKEN_SIZE] = { '\0' };
                     sprintf(linestr, "%u", call.tok->line + 1);
                     list_push(dest_list, init_token(linestr, tok->line, tok->pos, TOKEN_INT, tok->source));
                 }
@@ -426,6 +436,7 @@ static void expand_macro_call(Preprocessor_T* pp, MacroCall_T call, List_T* src_
 
             case TOKEN_MACRO_CALL:
             {
+                // FIXME: segfaults (macro doesn't get correctly parsed?)
                 MacroCall_T macro_call;
                 parse_macro_call(pp, &macro_call, call.macro->replacing_tokens, &i);
                 expand_macro_call(pp, macro_call, call.macro->replacing_tokens, dest_list);
@@ -509,7 +520,7 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
 
 
     free_list(pp.tokens);     // free from stage 0 & 1
-    free_list(token_stage_2); // free from stage 1
+    free_list(token_stage_2); // free from stage 2
     free_preprocessor(&pp);
     return token_stage_3;
 }
