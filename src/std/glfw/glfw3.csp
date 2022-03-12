@@ -449,9 +449,9 @@ type GLFWglproc: fn<void>();
 type GLFWvkproc: fn<void>();
 
 # base structures
-type GLFWmonitor: struct GLFWmonitor;
-type GLFWwindow: struct GLFWwindow;
-type GLFWcursor: struct GLFWcursor;
+type GLFWmonitor: void;
+type GLFWwindow: void;
+type GLFWcursor: void;
 
 # memory allocation
 type GLFWallocatefun:   fn<&void>(u64, &void);

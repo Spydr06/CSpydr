@@ -697,7 +697,7 @@ extern {
     fn glMatrixMode(mode: GLenum);
     fn glOrtho(left: GLdouble, right: GLdouble, bottom: GLdouble, top: GLdouble, near_val: GLdouble, far_val: GLdouble);
     fn glFrustum(left: GLdouble, right: GLdouble, bottom: GLdouble, top: GLdouble, near_val: GLdouble, far_val: GLdouble);
-    fn glViewport(x: GLint, y: GLint, with: GLsizei, height: GLsizei);
+    fn glViewport(x: GLint, y: GLint, width: GLsizei, height: GLsizei);
     fn glPushMatrix();
     fn glPopMatrix();
     fn glLoadIdentity();
