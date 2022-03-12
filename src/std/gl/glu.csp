@@ -201,9 +201,9 @@ macro GLU_TESS_WINDING_NEGATIVE          { 100133 }
 macro GLU_TESS_WINDING_ABS_GEQ_TWO       { 100134 }
 
 type _GLUfuncptr: fn<void>();
-type GLUnurbs: struct GLUnurbs;
-type GLUquadric: struct GLUquadric;
-type GLUtesselator: struct GLUtesselator;
+type GLUnurbs: void;
+type GLUquadric: void;
+type GLUtesselator: void;
 
 extern {
     
@@ -248,7 +248,7 @@ extern {
     fn gluPerspective(fovy: GLdouble, aspect: GLdouble, zNear: GLdouble, zFar: GLdouble);
     fn gluPickMatrix(x: GLdouble, y: GLdouble, delX: GLdouble, delY: GLdouble, viewport: GLint);
     fn gluProject(objX: GLdouble, objY: GLdouble, objZ: GLdouble, model: const &GLdouble, proj: const &GLint, winX: &GLdouble, winY: &GLdouble, winZ: &GLdouble): GLint;
-    fn gluPwlCurve(nurb: GLUnurbs, count: GLint, data: &GLfloat, stride: GLint, kind: GLenum);
+    fn gluPwlCurve(nurb: &GLUnurbs, count: GLint, data: &GLfloat, stride: GLint, kind: GLenum);
     fn gluQuadricCallback(quad: &GLUquadric, which: GLenum, CallBackFunc: _GLUfuncptr);
     fn gluQuadricDrawStyle(quad: &GLUquadric, draw: GLenum);
     fn gluQuadricNormals(quad: &GLUquadric, normal: GLenum);
@@ -264,5 +264,4 @@ extern {
     fn gluTessVertex(tess: &GLUtesselator, location: &GLdouble, data: &GLvoid);
     fn gluUnProject(winX: GLdouble, winY: GLdouble, winZ: GLdouble, model: const &GLdouble, proj: const &GLdouble, view: const &GLint, objX: &GLdouble, objY: &GLdouble, objZ: &GLdouble): GLint;
     fn gluUnProject4(winX: GLdouble, winY: GLdouble, winZ: GLdouble, clipW: GLdouble, model: const &GLdouble, proj: const &GLdouble, view: const &GLint, nearVal: GLdouble, farVal: GLdouble, objX: &GLdouble, objY: &GLdouble, objZ: &GLdouble, objW: &GLdouble): GLint;
-
 }
