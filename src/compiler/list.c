@@ -53,3 +53,11 @@ void list_clear(List_T* list)
     list->size = 0;
     vector_erase(list->items, 0, vector_size(list->items));
 }
+
+size_t list_contains(List_T* list, void* item)
+{
+    for(size_t i = 0; i < list->size; i++)
+        if(list->items[i] == item)
+            return i + 1;
+    return 0;
+}

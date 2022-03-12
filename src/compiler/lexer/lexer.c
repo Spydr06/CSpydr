@@ -446,8 +446,7 @@ static Token_T* lexer_get_symbol(Lexer_T* lexer)
         default: {
             if(!lexer->c || lexer->c == -1) 
             {
-                // file is empty, throw a warning and return EOF
-                LOG_WARN_F(COLOR_BOLD_YELLOW "[IO]" COLOR_RESET " file `%s` is empty.\n", lexer->file->path);
+                // file is empty, return EOF
                 return init_token("EOF", lexer->line, lexer->pos, TOKEN_EOF, lexer->file);
             }
             else

@@ -2,6 +2,7 @@
 #define CSPYDR_LIST_H
 
 #include <stdlib.h>
+#include <stdbool.h>
 
 typedef struct LIST_STRUCT
 {
@@ -18,5 +19,6 @@ void* list_pop(List_T* list);
 void list_insert(List_T* list, size_t pos, void* item);
 void list_remove(List_T* list, size_t pos);
 void list_clear(List_T* list);
+size_t list_contains(List_T* list, void* item);
 
 #endif

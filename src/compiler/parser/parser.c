@@ -1177,7 +1177,7 @@ static ASTNode_T* parse_block(Parser_T* p)
     return block;
 }
 
-static ASTNode_T* parse_return(Parser_T* p)
+static ASTNode_T* parse_return(Parser_T* p, bool needs_semicolon)
 {
     ASTNode_T* ret = init_ast_node(ND_RETURN, p->tok);
 
@@ -1189,53 +1189,54 @@ static ASTNode_T* parse_return(Parser_T* p)
             throw_error(ERR_TYPE_CAST_WARN, ret->tok, "cannot return value from function with type `void`, expect `;`");
         ret->return_val = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
     }
-    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after return statement");
+    if(needs_semicolon)
+        parser_consume(p, TOKEN_SEMICOLON, "expect `;` after return statement");
 
     return ret;
 }
 
-static ASTNode_T* parse_if(Parser_T* p)
+static ASTNode_T* parse_if(Parser_T* p, bool needs_semicolon)
 {
     ASTNode_T* if_stmt = init_ast_node(ND_IF, p->tok);
 
     parser_consume(p, TOKEN_IF, "expect `if` keyword for an if statement");
 
     if_stmt->condition = parse_expr(p, LOWEST, TOKEN_EOF);
-    if_stmt->if_branch = parse_stmt(p, true);
+    if_stmt->if_branch = parse_stmt(p, needs_semicolon);
 
     if(tok_is(p, TOKEN_ELSE))
     {
         parser_advance(p);
-        if_stmt->else_branch = parse_stmt(p, true);
+        if_stmt->else_branch = parse_stmt(p, needs_semicolon);
     }
 
     return if_stmt;
 }
 
-static ASTNode_T* parse_loop(Parser_T* p)
+static ASTNode_T* parse_loop(Parser_T* p, bool needs_semicolon)
 {
     ASTNode_T* loop = init_ast_node(ND_LOOP, p->tok);
 
     parser_consume(p, TOKEN_LOOP, "expect `loop` keyword for a endless loop");
 
-    loop->body = parse_stmt(p, true);
+    loop->body = parse_stmt(p, needs_semicolon);
 
     return loop;
 }
 
-static ASTNode_T* parse_while(Parser_T* p)
+static ASTNode_T* parse_while(Parser_T* p, bool needs_semicolon)
 {
     ASTNode_T* loop = init_ast_node(ND_WHILE, p->tok);
 
     parser_consume(p, TOKEN_WHILE, "expect `while` for a while loop statement");
 
     loop->condition = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
-    loop->body = parse_stmt(p, true);
+    loop->body = parse_stmt(p, needs_semicolon);
 
     return loop;
 }
 
-static ASTNode_T* parse_for(Parser_T* p)
+static ASTNode_T* parse_for(Parser_T* p, bool needs_semicolon)
 {
     ASTNode_T* loop = init_ast_node(ND_FOR, p->tok);
 
@@ -1266,7 +1267,7 @@ static ASTNode_T* parse_for(Parser_T* p)
         loop->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
     parser_advance(p);
 
-    loop->body = parse_stmt(p, true);
+    loop->body = parse_stmt(p, needs_semicolon);
 
     p->cur_block = prev_block;
 
@@ -1476,7 +1477,7 @@ static ASTNode_T* parse_continue(Parser_T* p, bool needs_semicolon)
     return continue_stmt;
 }
 
-static ASTNode_T* parse_with(Parser_T* p)
+static ASTNode_T* parse_with(Parser_T* p, bool needs_semicolon)
 {
     ASTNode_T* with_stmt = init_ast_node(ND_WITH, p->tok);
     parser_consume(p, TOKEN_WITH, "expect `with` keyword");
@@ -1500,11 +1501,11 @@ static ASTNode_T* parse_with(Parser_T* p)
     assignment->right = parse_expr(p, LOWEST, TOKEN_LBRACE);
 
     with_stmt->condition = assignment;
-    with_stmt->if_branch = parse_stmt(p, true);
+    with_stmt->if_branch = parse_stmt(p, needs_semicolon);
     if(tok_is(p, TOKEN_ELSE))
     {
         parser_advance(p);
-        with_stmt->else_branch = parse_stmt(p, true);
+        with_stmt->else_branch = parse_stmt(p, needs_semicolon);
     }
 
     return with_stmt;
@@ -1518,19 +1519,19 @@ static ASTNode_T* parse_stmt(Parser_T* p, bool needs_semicolon)
         case TOKEN_LBRACE:
             return parse_block(p);
         case TOKEN_RETURN:
-            return parse_return(p);
+            return parse_return(p, needs_semicolon);
         case TOKEN_IF:
-            return parse_if(p);
+            return parse_if(p, needs_semicolon);
         case TOKEN_LOOP:
-            return parse_loop(p);
+            return parse_loop(p, needs_semicolon);
         case TOKEN_FOR:
-            return parse_for(p);
+            return parse_for(p, needs_semicolon);
         case TOKEN_WHILE:
-            return parse_while(p);
+            return parse_while(p, needs_semicolon);
         case TOKEN_MATCH:
             return parse_match(p);
         case TOKEN_WITH:
-            return parse_with(p);
+            return parse_with(p, needs_semicolon);
         case TOKEN_CONST:
         case TOKEN_LET:
             {
@@ -1841,7 +1842,6 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p)
     
     lambda->id = init_ast_identifier(lambda->tok, callee);
     lambda->data_type = (ASTType_T*) primitives[TY_FN];
-    lambda->referenced = true;
 
     ASTObj_T* prev_fn = p->cur_fn;
     p->cur_fn = lambda;
