@@ -660,7 +660,6 @@ static ASTType_T* parse_enum_type(Parser_T* p)
     {
         ASTObj_T* member = init_ast_obj(OBJ_ENUM_MEMBER, p->tok);
         member->data_type = (ASTType_T*) primitives[TY_I32];
-        //member->int_val = i;
         member->id = parse_simple_identifier(p);
         list_push(enum_type->members, member);
 
@@ -671,8 +670,7 @@ static ASTType_T* parse_enum_type(Parser_T* p)
             member->value = parse_expr(p, LOWEST, TOKEN_COMMA);
         }
         else {
-            member->value = init_ast_node(ND_INT, member->tok);
-            member->value->int_val = i;
+            member->value = init_ast_node(ND_NOOP, member->tok);
         }
 
         if(!tok_is(p, TOKEN_RBRACE))

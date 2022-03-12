@@ -2,13 +2,17 @@ import "io.csp";
 import "mem.csp";
 import "process.csp";
 
-macro t0 { t1! }
-macro t1 { t0! }
+type X: enum {
+    _1,
+    _2,
+    _3 = 41,
+    _4 # should be 42
+};
 
 fn main(argc: i32, argv: &&char): i32 {
     using std;
 
-    io::printf("%i\n", t1!);
+    io::printf("%i\n", X::_4);
 
     <- 0;
 }

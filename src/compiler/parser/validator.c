@@ -1757,9 +1757,14 @@ static void enum_type(ASTType_T* e_type, va_list args)
     for(size_t i = 0; i < e_type->members->size; i++)
     {
         ASTObj_T* member = e_type->members->items[i];
-        if(member->value->kind != ND_INT)
+        if(member->value->kind != ND_NOOP)
         {
             member->value->int_val = (i32) const_i64(member->value);
+            member->value->kind = ND_INT;
+        }
+        else 
+        {
+            member->value->int_val = i ? ((ASTObj_T*) e_type->members->items[i - 1])->value->int_val + 1 : 0;
             member->value->kind = ND_INT;
         }
     }
