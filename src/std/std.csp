@@ -1,0 +1,20 @@
+# file for quickly importing all stdlib files.
+
+import "c_str.csp";
+import "error.csp";
+import "file.csp";
+import "io.csp";
+import "map.csp";
+import "math.csp";
+import "mem.csp";
+import "option.csp";
+import "process.csp";
+import "random.csp";
+import "std.csp";
+import "str.csp";
+import "syscall.csp";
+import "system.csp";
+import "time.csp";
+import "types.csp";
+import "utils.csp";
+import "vec.csp";

@@ -1,7 +1,4 @@
-# imports all files for accessing the C standard library
-
-import "link.csp";
-
+# file for quickly importing all libc files
 
 import "assert.csp";
 import "complex.csp";
@@ -11,13 +8,16 @@ import "fenv.csp";
 import "float.csp";
 import "inttypes.csp";
 import "iso646.csp";
+import "libc.csp";
 import "limits.csp";
+import "link.csp";
 import "locale.csp";
 import "math.csp";
 import "setjmp.csp";
 import "signal.csp";
 import "stdalign.csp";
 import "stdarg.csp";
+import "stdatomic.csp";
 import "stdbool.csp";
 import "stddef.csp";
 import "stdint.csp";
@@ -31,4 +31,3 @@ import "time.csp";
 import "uchar.csp";
 import "wchar.csp";
 import "wctype.csp";
-import "stdatomic.csp";
