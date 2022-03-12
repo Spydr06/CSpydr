@@ -73,7 +73,7 @@ const char help_text[] = "%s"
                        "      --silent           | Disables all command line output except error messages\n"
                        "      --cc [compiler]    | Sets the C compiler being used after transpiling (default: " DEFAULT_CC ")\n"
                        "  -0, --no-opt           | Disables all code optimization\n"
-                       "  -g, --with-dbg-symbols | Emit 1"
+                       "      --set-mmcd [int]   | Sets the maximum macro call depth (default: %d) (unsafe: could cause stack overflow)\n"
                        "\n"
                        "If you are unsure, what CSpydr is (or how to use it), please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n";
 
@@ -101,7 +101,7 @@ static void evaluate_info_flags(char* argv)
     get_cspydr_build(csp_build);
     
     if(streq(argv, "-h") || streq(argv, "--help"))
-        printf(help_text, usage_text);
+        printf(help_text, usage_text, __CSP_DEFAULT_MAX_MACRO_CALL_DEPTH);
     else if(streq(argv, "-i") || streq(argv, "--info"))
         printf(info_text, get_cspydr_version(), csp_build);
     else if(streq(argv, "-v") || streq(argv, "--version"))
@@ -195,6 +195,14 @@ i32 main(i32 argc, char* argv[])
         }
         else if(streq(arg, "-0") || streq(arg, "--no-opt"))
             global.optimize = false;
+        else if(streq(arg, "--set-mmcd"))
+        {
+            if(!(global.max_macro_call_depth = atoi(argv[++i])))
+            {
+                LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " `--set-mmcd` expects an integer greater than 0\n");
+                exit(1);
+            }
+        }
         else
             evaluate_info_flags(argv[i]);
     }

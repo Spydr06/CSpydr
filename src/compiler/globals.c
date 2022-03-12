@@ -1,5 +1,6 @@
 #define __CSP_GLOBAL_OWNER
 #include "globals.h"
+#include "config.h"
 
 #include <string.h>
 
@@ -10,6 +11,7 @@ void init_globals(void)
 {
     memset(&global, 0, sizeof(global));
     global.optimize = true;
+    global.max_macro_call_depth = __CSP_DEFAULT_MAX_MACRO_CALL_DEPTH;
     global.compiler_flags = init_list(sizeof(char*));
 
     // default compiler flags

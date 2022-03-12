@@ -34,6 +34,8 @@ typedef struct PREPROCESSOR_STRUCT
     List_T* imports;
 
     bool is_silent;
+
+    u64 macro_call_depth;
 } Preprocessor_T;
 
 typedef struct MACRO_CALL_STRUCT
@@ -324,12 +326,13 @@ static int find_macro_arg(Macro_T* mac, char* callee)
 // Macro call parsing
 //
 
-static void parse_macro_call(Preprocessor_T* pp, MacroCall_T* call, List_T* token_list, size_t* i)
+
+static void parse_macro_call(Preprocessor_T* pp, MacroCall_T* call, List_T* token_list, size_t* i, size_t max)
 {
     init_macro_call(pp, call, token_list->items[*i]);
 
-    if((*i) + 1 >= token_list->size)
-        return;
+    if((*i) + 1 >= max)
+        goto finalize;
 
     Token_T* next = token_list->items[(*i) + 1];
     switch(next->type)
@@ -385,6 +388,7 @@ static void parse_macro_call(Preprocessor_T* pp, MacroCall_T* call, List_T* toke
             break;
     }
 
+finalize:
     if(!(call->macro = find_macro(pp, call->tok->value, call->argc)))
     {
         throw_error(ERR_SYNTAX_ERROR, call->tok, "undefined macro `%s` with `%d` arguments", call->tok->value, call->argc);
@@ -399,6 +403,9 @@ static void parse_macro_call(Preprocessor_T* pp, MacroCall_T* call, List_T* toke
 
 static void expand_macro_call(Preprocessor_T* pp, MacroCall_T call, List_T* src_list, List_T* dest_list)
 {
+    if(pp->macro_call_depth++ > global.max_macro_call_depth)
+        throw_error(ERR_SYNTAX_ERROR, call.tok, "too many macro calls, maximum is %d.\nIf you need a larger call depth, use --set-mmcd", global.max_macro_call_depth);
+    
     for(size_t i = 0; i < call.macro->replacing_tokens->size; i++)
     {
         Token_T* tok = call.macro->replacing_tokens->items[i];
@@ -414,7 +421,7 @@ static void expand_macro_call(Preprocessor_T* pp, MacroCall_T call, List_T* src_
                         if(tok->type == TOKEN_MACRO_CALL)
                         {
                             MacroCall_T macro_call;
-                            parse_macro_call(pp, &macro_call, src_list, &j);
+                            parse_macro_call(pp, &macro_call, src_list, &j, call.args[arg_idx].end_idx);
                             expand_macro_call(pp, macro_call, src_list, dest_list);
                         }
                         else
@@ -438,7 +445,7 @@ static void expand_macro_call(Preprocessor_T* pp, MacroCall_T call, List_T* src_
             {
                 // FIXME: segfaults (macro doesn't get correctly parsed?)
                 MacroCall_T macro_call;
-                parse_macro_call(pp, &macro_call, call.macro->replacing_tokens, &i);
+                parse_macro_call(pp, &macro_call, call.macro->replacing_tokens, &i, call.macro->replacing_tokens->size);
                 expand_macro_call(pp, macro_call, call.macro->replacing_tokens, dest_list);
             } break;
 
@@ -510,8 +517,10 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
         tok = token_stage_2->items[i];
         if(tok->type == TOKEN_MACRO_CALL)
         {
+            pp.macro_call_depth = 0;
+
             MacroCall_T macro_call;
-            parse_macro_call(&pp, &macro_call, token_stage_2, &i);
+            parse_macro_call(&pp, &macro_call, token_stage_2, &i, token_stage_2->size);
             expand_macro_call(&pp, macro_call, token_stage_2, token_stage_3);
             continue;
         }

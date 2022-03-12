@@ -19,6 +19,8 @@ struct {
 
     i32 last_exit_code;
 
+    u32 max_macro_call_depth;
+
     bool silent;
     bool print_code;
     bool optimize;
