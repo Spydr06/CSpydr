@@ -1,24 +1,21 @@
 import "std.csp";
 
-type X: enum {
-    _1,
-    _2,
-    _3 = 41,
-    _4 # should be 42
+type T: struct {
+    a: i64,
+    b: i64,
+    c: i64
 };
 
 fn main(): i32 {
     using std;
+    
+    io::printf("%i\n", 
+        T :: {1, 2, 6} |> _.c: i32 |> _ `add` _
+    );
 
-    io::printf("%i\n", X::_4);
-
-    process::at_exit(|code: i32| => std::io::printf("exit with code %i\n", code));
-    rec(3);
     <- 0;
 }
 
-fn rec(a: i32): i32 {
-    <- if a == 0 => 0 else rec(a - 1);
+fn add(a: i32, b: i32): i32 {
+    <- a + b;
 }
-
-[no_return("main")]

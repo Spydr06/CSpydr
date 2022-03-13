@@ -1,6 +1,6 @@
 import "gl/glu.csp";
 import "glfw/glfw3.csp";
-import "io.csp";
+#import "io.csp";
 
 let theta_y: f32 = 0.0;
 let theta_x: f32 = 0.0;
@@ -26,14 +26,14 @@ const colors: GLfloat[] = [
 fn init_glfw_window(res_x: const i32, res_y: const i32): &GLFWwindow
 {
     if(!glfwInit()) {
-        std::io::eputs("failed to initialize GLFW\n");
+     #   std::io::eputs("failed to initialize GLFW\n");
         <- nil;
     }
     glfwWindowHint(GLFW_SAMPLES!, 4); # 4x antialiasing
 
     let window = glfwCreateWindow(res_x, res_y, "OpenGL Cube", nil, nil);
     if(!window) {
-        std::io::eputs("failed to open GLFW window\n");
+    #    std::io::eputs("failed to open GLFW window\n");
         glfwTerminate();
         <- nil;
     }
@@ -79,7 +79,7 @@ fn display(window: &GLFWwindow)
         glMatrixMode(GL_PROJECTION_MATRIX!);
         glLoadIdentity();
 
-        gluPerspective(60: f64, window_w: f64 / (window_h: f64), 0.1: f64, 100: f64);
+        gluPerspective(60: f64, window_w: f64 / (window_h: f64): f64, 0.1: f64, 100: f64);
 
         glMatrixMode(GL_MODELVIEW_MATRIX!);
         glTranslatef(0.0, 0.0, -5.0);

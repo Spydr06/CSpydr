@@ -35,6 +35,7 @@ typedef struct VALIDATOR_STRUCT
     VScope_T* current_scope;
     VScope_T* global_scope;
     ASTObj_T* current_function;
+    ASTNode_T* current_pipe;
     bool main_function_found;
 
     u32 scope_depth;  // depth of the current scope
@@ -117,6 +118,9 @@ static void if_expr(ASTNode_T* if_expr, va_list args);
 static void closure(ASTNode_T* closure, va_list args);
 static void len(ASTNode_T* len, va_list args);
 static void type_expr(ASTNode_T* cmp, va_list args);
+static void pipe_start(ASTNode_T* pipe, va_list args);
+static void pipe_end(ASTNode_T* pipe, va_list args);
+static void hole(ASTNode_T* hole, va_list args);
 
 //types
 static void struct_type(ASTType_T* s_type, va_list args);
@@ -136,6 +140,7 @@ static ASTIteratorList_T main_iterator_list =
         [ND_FOR] = for_start,
         [ND_ASSIGN] = assignment_start,
         [ND_WITH] = with_start,
+        [ND_PIPE] = pipe_start,
     },
 
     .node_end_fns = 
@@ -187,6 +192,8 @@ static ASTIteratorList_T main_iterator_list =
         [ND_CLOSURE] = closure,
         [ND_LEN]     = len,
         [ND_TYPE_EXPR] = type_expr,
+        [ND_PIPE]    = pipe_end,
+        [ND_HOLE]    = hole,
     },
 
     .type_fns = 
@@ -1640,6 +1647,33 @@ static void len(ASTNode_T* len, va_list args)
     ASTType_T* ty = expand_typedef(v, len->expr->data_type);
     if(ty->kind != TY_ARR || ty->is_vla)
         throw_error(ERR_TYPE_ERROR, len->tok, "cannot get length of given expression");
+}
+
+static void pipe_start(ASTNode_T* pipe, va_list args)
+{
+    GET_VALIDATOR(args);
+
+    pipe->expr = v->current_pipe;
+    v->current_pipe = pipe;
+}
+
+static void pipe_end(ASTNode_T* pipe, va_list args)
+{
+    GET_VALIDATOR(args);
+    pipe->data_type = pipe->right->data_type;
+
+    v->current_pipe = pipe->expr;
+}
+
+static void hole(ASTNode_T* hole, va_list args)
+{
+    GET_VALIDATOR(args);
+    if(!v->current_pipe)
+        throw_error(ERR_SYNTAX_ERROR, hole->tok, "hole expression not in pipe or match case");
+    
+    if(!v->current_pipe->left->data_type)
+        throw_error(ERR_TYPE_ERROR_UNCR, hole->tok, "cannot resolve data type of pipe input expression");
+    hole->data_type = v->current_pipe->left->data_type;
 }
 
 static void type_expr(ASTNode_T* cmp, va_list args)

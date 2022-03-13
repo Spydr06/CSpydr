@@ -139,8 +139,10 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
         case ND_XOR:
         case ND_BIT_OR:
         case ND_BIT_AND:
+        case ND_PIPE:
             ast_node(list, node->left, custom_args);
             ast_node(list, node->right, custom_args);
+        case ND_HOLE:
             if(node->data_type) 
                 ast_type(list, node->data_type, custom_args);
             break;

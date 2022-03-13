@@ -84,6 +84,7 @@ void remove_dead_code(ASTProg_T* ast)
             case ND_BIT_AND:
             case ND_ASSIGN:
             case ND_MEMBER:
+            case ND_PIPE:
                 list_push(node_stack, stack_top->left);
                 list_push(node_stack, stack_top->right);
                 break;

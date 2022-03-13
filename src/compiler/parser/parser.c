@@ -32,6 +32,8 @@ typedef struct PARSER_STRUCT
 
     size_t cur_lambda_id;
     size_t cur_tuple_id;
+
+    bool holes_enabled;
 } Parser_T;
 
 /////////////////////////////////
@@ -43,34 +45,35 @@ typedef ASTNode_T* (*InfixParseFn_T)(Parser_T* parser, ASTNode_T* left);
 
 typedef enum 
 {
-    LOWEST     = 0,
+    LOWEST = 0,
 
-    ASSIGN     = 1,  // x = y
-    LOGIC_OR   = 2,  // x || y
-    LOGIC_AND  = 3,  // x && y
-    INFIX_CALL = 4,  // x `y` z
-    BIT_OR     = 5,  // x | y
-    BIT_XOR    = 6,  // x ^ y
-    BIT_AND    = 7,  // x & y
-    EQUALS     = 8,  // x == y
-    LT         = 9,  // x < y
-    GT         = 9,  // x > y
-    BIT_SHIFT  = 10, // x << y
-    PLUS       = 11, // x + y
-    MINUS      = 11, // x - y
-    MULT       = 12, // x * y
-    DIV        = 12, // x / y
-    MOD        = 12, // x % y
-    POWER      = 13, // x²
-    INC        = 14, // x--
-    DEC        = 14, // x++
-    X_OF    = 15,    // alignof x, sizeof x, typeof x
-    CAST       = 16, // x: y
-    CALL       = 17, // x(y)
-    ARRAY      = 18, // x[y]
-    MEMBER     = 19, // x.y
+    ASSIGN, // x = y
+    PIPE, // x |> y |> z
+    LOGIC_OR,  // x || y
+    LOGIC_AND,  // x && y
+    INFIX_CALL,  // x `y` z
+    BIT_OR,  // x | y
+    BIT_XOR,  // x ^ y
+    BIT_AND,  // x & y
+    EQUALS,  // x == y
+    LT,  // x < y
+    GT = LT,  // x > y
+    BIT_SHIFT, // x << y
+    PLUS, // x + y
+    MINUS = PLUS, // x - y
+    MULT, // x * y
+    DIV = MULT, // x / y
+    MOD, // x % y
+    POWER, // x²
+    INC, // x--
+    DEC = INC, // x++
+    X_OF, // alignof x, sizeof x, typeof x
+    CAST, // x: y
+    CALL, // x(y)
+    ARRAY, // x[y]
+    MEMBER, // x.y
 
-    HIGHEST    = 20
+    HIGHEST
 } Precedence_T;
 
 static ASTNode_T* parse_id(Parser_T* p);
@@ -108,6 +111,8 @@ static ASTNode_T* parse_infix_call(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_cast(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left);
+static ASTNode_T* parse_pipe(Parser_T* p, ASTNode_T* left);
+static ASTNode_T* parse_hole(Parser_T* p);
 
 static ASTNode_T* parse_pow_2(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_pow_3(Parser_T* p, ASTNode_T* left);
@@ -168,6 +173,8 @@ static struct {
     [TOKEN_LSHIFT]   = {NULL, parse_bit_op, BIT_SHIFT},
     [TOKEN_RSHIFT]   = {NULL, parse_bit_op, BIT_SHIFT},
     [TOKEN_XOR]      = {NULL, parse_bit_op, BIT_XOR},
+    [TOKEN_PIPE]     = {NULL, parse_pipe, PIPE},
+    [TOKEN_UNDERSCORE] = {parse_hole, NULL, LOWEST},
     [TOKEN_LSHIFT_ASSIGN] = {NULL, parse_assignment, ASSIGN},
     [TOKEN_RSHIFT_ASSIGN] = {NULL, parse_assignment, ASSIGN},
     [TOKEN_XOR_ASSIGN] = {NULL, parse_assignment, ASSIGN},
@@ -314,6 +321,21 @@ Token_T* parser_consume(Parser_T* p, TokenType_T type, const char* msg)
         throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, %s", p->tok->value,  msg);
 
     return parser_advance(p);
+}
+
+static inline void parser_enable_holes(Parser_T* p)
+{
+    p->holes_enabled = true;
+}
+
+static inline void parser_disable_holes(Parser_T* p)
+{
+    p->holes_enabled = false;
+}
+
+static inline bool parser_holes_enabled(Parser_T* p)
+{
+    return p->holes_enabled;
 }
 
 static inline bool is_executable(ASTNode_T* n)
@@ -1382,15 +1404,10 @@ static ASTNode_T* parse_expr_stmt(Parser_T* p, bool needs_semicolon)
     ASTNode_T* stmt = init_ast_node(ND_EXPR_STMT, p->tok);
     stmt->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
 
-    ASTNode_T* node = stmt->expr;
-
-    
-
-    if(!is_executable(node))
+    if(!is_executable(stmt->expr))
         throw_error(ERR_SYNTAX_ERROR, stmt->expr->tok, "cannot treat `%s` as a statement, expect function call, assignment or similar", stmt->expr->tok->value);
     if(needs_semicolon)
         parser_consume(p, TOKEN_SEMICOLON, "expect `;` after expression statement");
-
     return stmt;
 }
 
@@ -1985,6 +2002,29 @@ static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left)
     parser_consume(p, TOKEN_RBRACKET, "expect `]` after array index");
 
     return index;
+}
+
+static ASTNode_T* parse_pipe(Parser_T* p, ASTNode_T* left)
+{
+    ASTNode_T* pipe = init_ast_node(ND_PIPE, p->tok);
+    pipe->left = left;
+
+    parser_consume(p, TOKEN_PIPE, "expect `|>` for pipe expression");
+
+    parser_enable_holes(p);
+    pipe->right = parse_expr(p, PIPE, TOKEN_SEMICOLON);
+    parser_disable_holes(p);
+
+    return pipe;
+}
+
+static ASTNode_T* parse_hole(Parser_T* p)
+{
+    Token_T* tok = p->tok;
+    if(!parser_holes_enabled(p))
+        throw_error(ERR_SYNTAX_ERROR, tok, "cannot have `_` here, only use `_` in match cases or pipe expressions");
+    parser_consume(p, TOKEN_UNDERSCORE, "expect `_` for hole expression");
+    return init_ast_node(ND_HOLE, tok);
 }
 
 static ASTNode_T* parse_builtin_type_exprs(Parser_T* p, ASTNode_T* expr)

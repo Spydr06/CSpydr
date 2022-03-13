@@ -73,6 +73,7 @@ const struct {
     {">>", TOKEN_RSHIFT},
     {"||", TOKEN_OR},
     {"|=", TOKEN_BIT_OR_ASSIGN},
+    {"|>", TOKEN_PIPE},
     {"|", TOKEN_BIT_OR},
     {"==", TOKEN_EQ},
     {"=>", TOKEN_ARROW},

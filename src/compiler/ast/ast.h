@@ -79,6 +79,9 @@ typedef enum {
     ND_SIZEOF,  // sizeof x
     ND_ALIGNOF, // alignof x
 
+    ND_PIPE,    // x |> y
+    ND_HOLE,    // _
+
     ND_TYPE_EXPR, // type expressions like: "(type) T == U" or "(type) reg_class(T)"
 
     // statements
@@ -99,7 +102,6 @@ typedef enum {
     ND_LEN,       // len x
     ND_USING,     // using x::y
     ND_WITH,      // with x = y {}
-
     ND_STRUCT_MEMBER,  // struct members
 
     ND_ASM, // inline assembly

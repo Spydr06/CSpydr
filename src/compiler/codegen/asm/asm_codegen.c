@@ -60,6 +60,7 @@ static char* argreg8[]  = {"%dil", "%sil", "%dl", "%cl", "%r8b", "%r9b"};
 static char* argreg16[] = {"%di", "%si", "%dx", "%cx", "%r8w", "%r9w"};
 static char* argreg32[] = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d"};
 static char* argreg64[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
+static char pipe_reg[] = "%r15";
 
 // The table for type casts
 static char i32i8[]  = "movsbl %al, %eax";
@@ -900,6 +901,9 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
                 asm_gen_addr(cg, &converted);
             }
             return;
+        case ND_HOLE:
+            asm_println(cg, "  mov %s, %%rax", pipe_reg);
+            return;
         case ND_IF_EXPR:
             if(unpack(node->data_type)->kind == TY_STRUCT)
             {
@@ -1472,6 +1476,20 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_gen_expr(cg, unpack(node->expr->data_type)->num_indices);
             return;
         
+        case ND_PIPE:
+            asm_gen_expr(cg, node->left);
+           // if(node->left->data_type->size < 8)
+                asm_println(cg, "  mov %%rax, %s", pipe_reg);
+           // else
+           //     throw_error(ERR_INTERNAL, node->tok, "pipe only supports data types of 8 or less bytes size");
+
+            asm_gen_expr(cg, node->right);
+            return;
+        
+        case ND_HOLE:
+            asm_println(cg, "  mov %s, %%rax", pipe_reg);
+            return;
+
         case ND_NEG:
             asm_gen_expr(cg, node->right);
             switch(node->data_type->kind)
@@ -1844,7 +1862,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             break;
     }
 
-    switch(node->left->data_type->kind)
+    switch(unpack(node->left->data_type)->kind)
     {
         case TY_F32:
         case TY_F64:
