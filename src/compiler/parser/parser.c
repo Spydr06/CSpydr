@@ -174,7 +174,7 @@ static struct {
     [TOKEN_RSHIFT]   = {NULL, parse_bit_op, BIT_SHIFT},
     [TOKEN_XOR]      = {NULL, parse_bit_op, BIT_XOR},
     [TOKEN_PIPE]     = {NULL, parse_pipe, PIPE},
-    [TOKEN_UNDERSCORE] = {parse_hole, NULL, LOWEST},
+    [TOKEN_DOLLAR]   = {parse_hole, NULL, LOWEST},
     [TOKEN_LSHIFT_ASSIGN] = {NULL, parse_assignment, ASSIGN},
     [TOKEN_RSHIFT_ASSIGN] = {NULL, parse_assignment, ASSIGN},
     [TOKEN_XOR_ASSIGN] = {NULL, parse_assignment, ASSIGN},
@@ -342,6 +342,8 @@ static inline bool is_executable(ASTNode_T* n)
 {
     if(n->kind == ND_CLOSURE)
         return is_executable(n->expr);
+    if(n->kind == ND_PIPE)
+        return is_executable(n->right);
     if(n->kind == ND_IF_EXPR)
         return is_executable(n->if_branch) && is_executable(n->else_branch);
     return n->kind == ND_CALL || n->kind == ND_ASSIGN || n->kind == ND_INC || n->kind == ND_DEC || n->kind == ND_CAST || n->kind == ND_MEMBER || n->kind == ND_ASM;
@@ -2022,8 +2024,8 @@ static ASTNode_T* parse_hole(Parser_T* p)
 {
     Token_T* tok = p->tok;
     if(!parser_holes_enabled(p))
-        throw_error(ERR_SYNTAX_ERROR, tok, "cannot have `_` here, only use `_` in match cases or pipe expressions");
-    parser_consume(p, TOKEN_UNDERSCORE, "expect `_` for hole expression");
+        throw_error(ERR_SYNTAX_ERROR, tok, "cannot have `$` here, only use `$` in pipe expressions");
+    parser_consume(p, TOKEN_DOLLAR, "expect `$`");
     return init_ast_node(ND_HOLE, tok);
 }
 

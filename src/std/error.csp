@@ -4,7 +4,6 @@ namespace std {
     type ErrorType: enum {
         GENERIC,
         NONE,
-
     };
 
     type Error: struct {

@@ -51,6 +51,8 @@ namespace std {
     };
 
     namespace mem {
+        let unfreed_allocs: u64 = 0;
+
         const MMAP_FAILED: &void = -1;
         
         # TODO: implement correct values
@@ -66,6 +68,8 @@ namespace std {
 
         fn alloc(size: usize): &void
         {
+            unfreed_allocs++;
+
             let length = size + sizeof usize;
             let plen: &usize = syscall::mmap(0, length, Prot::READ | Prot::WRITE, MMap::PRIVATE | MMap::ANONYMOUS, 0, 0);
             if plen == MMAP_FAILED ret nil;
@@ -85,6 +89,7 @@ namespace std {
         fn free(ptr: &void)
         {
             if ptr == nil ret;
+            unfreed_allocs--;
 
             let plen = &(ptr: &usize)[-1];
             let length = *plen;

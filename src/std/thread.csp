@@ -1,0 +1,11 @@
+import "process.csp";
+
+namespace std {
+    type Thread: struct {
+
+    };
+
+    namespace thread {
+
+    }
+}

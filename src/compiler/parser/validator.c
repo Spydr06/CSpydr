@@ -1669,7 +1669,7 @@ static void hole(ASTNode_T* hole, va_list args)
 {
     GET_VALIDATOR(args);
     if(!v->current_pipe)
-        throw_error(ERR_SYNTAX_ERROR, hole->tok, "hole expression not in pipe or match case");
+        throw_error(ERR_SYNTAX_ERROR, hole->tok, "hole expression not in pipe");
     
     if(!v->current_pipe->left->data_type)
         throw_error(ERR_TYPE_ERROR_UNCR, hole->tok, "cannot resolve data type of pipe input expression");

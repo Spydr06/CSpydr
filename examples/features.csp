@@ -1,21 +1,22 @@
 import "std.csp";
 
 type T: struct {
-    a: i64,
-    b: i64,
-    c: i64
+    a: i32,
+    b: i32,
+    c: i32
 };
 
 fn main(): i32 {
     using std;
-    
-    io::printf("%i\n", 
-        T :: {1, 2, 6} |> _.c: i32 |> _ `add` _
-    );
+
+    with s = str!{} {
+        concat!(s, "Hello, World!");
+        io::printf("%s\n", s);
+    }
+
+    T :: {1, 2, 3} 
+    |> $.a + $.b + $.c 
+    |> io::printf("%i\n", $);
 
     <- 0;
-}
-
-fn add(a: i32, b: i32): i32 {
-    <- a + b;
 }

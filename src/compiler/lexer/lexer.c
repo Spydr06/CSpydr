@@ -102,6 +102,7 @@ const struct {
     {".", TOKEN_DOT},
     {"²", TOKEN_POW_2},
     {"³", TOKEN_POW_3},
+    {"$", TOKEN_DOLLAR},
     {"`", TOKEN_INFIX_CALL},
     {NULL, TOKEN_EOF}   // the last one has to be null as an indicator for the end of the array
 };  
