@@ -1398,7 +1398,6 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
 {
     if(node->tok && cg->embed_file_locations)
         asm_println(cg, "  .loc %d %d", node->tok->source->file_no + 1, node->tok->line + 1);
-    
     switch(node->kind)
     {
         case ND_NOOP:

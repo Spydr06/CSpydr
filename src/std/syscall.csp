@@ -490,6 +490,27 @@ namespace std {
         fn rmdir(pathname: const &char): i32
             syscall!(Syscall::RMDIR, pathname);
         
+        fn creat(pathname: const &char, mode: mode_t): i32
+            syscall!(Syscall::CREAT, pathname, mode);
+        
+        fn link(oldpath: const &char, newpath: const &char): i32
+            syscall!(Syscall::LINK, oldpath, newpath);
+        
+        fn unlink(pathname: const &char): i32
+            syscall!(Syscall::UNLINK, pathname);
+        
+        fn symlink(oldpath: const &char, newpath: const &char): i32
+            syscall!(Syscall::SYMLINK, oldpath, newpath);
+
+        fn readlink(path: const &char, buf: &char, bufsiz: usize): ssize_t
+            syscall!(Syscall::READLINK, path, buf, bufsiz);
+        
+        fn chmod(path: const &char, mode: mode_t): i32
+            syscall!(Syscall::CHMOD, path, mode);
+        
+        fn fchmod(fd: i32, mode: mode_t): i32
+            syscall!(Syscall::FCHMOD, fd, mode);
+        
         [no_return("*")] # every function in this scope will not return anything via the `ret` statement.
     }
 }

@@ -254,6 +254,7 @@ struct AST_NODE_STRUCT
     union { 
         bool is_default_case: 1; // case
         bool pass_by_stack: 1;   // call
+        bool from_back: 1;       // index
     };
 
     // assignment expression

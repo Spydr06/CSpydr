@@ -2000,6 +2000,11 @@ static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left)
 
     parser_consume(p, TOKEN_LBRACKET, "expect `[` after array name for an index expression");
 
+    if(tok_is(p, TOKEN_XOR))
+    {
+        parser_advance(p);
+        index->from_back = true;
+    }
     index->expr = parse_expr(p, LOWEST, TOKEN_RBRACKET);
     parser_consume(p, TOKEN_RBRACKET, "expect `]` after array index");
 
