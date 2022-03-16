@@ -1332,45 +1332,6 @@ static void asm_gen_inc(ASMCodegenData_T* cg, ASTNode_T* node)
     asm_gen_expr(cg, &converted);
 }
 
-static char asm_gen_char(ASMCodegenData_T* cg, ASTNode_T* node)
-{
-    if(node->str_val[0] == '\\')
-    {
-        switch(node->str_val[1])
-        {
-            case 'n':
-                return '\n';
-            case 't':
-                return '\t';
-            case 'b':
-                return '\b';
-            case 'r':
-                return '\r';
-            case 'a':
-                return '\a';
-            case '\'':
-                return '\'';
-            case '\"':
-                return '"';
-            case '?':
-                return '\?';
-            case '\\':
-                return '\\';
-            case 'f':
-                return '\f';
-            case 'v':
-                return '\v';
-            case '0':
-                return '\0';
-            default:
-                throw_error(ERR_SYNTAX_ERROR, node->tok, "invalid escape sequence `%c` (%d)", node->str_val[1], node->str_val[1]);
-                exit(1);
-        }
-    }
-
-    return node->str_val[0];
-}
-
 static void asm_gen_id_ptr(ASMCodegenData_T* cg, ASTNode_T* id)
 {
     switch(id->referenced_obj->kind)
@@ -1458,7 +1419,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_println(cg, "  mov $%lu, %%rax", node->ulong_val);
             return;
         case ND_CHAR:
-            asm_println(cg, "  mov $%d, %%rax", (i32) asm_gen_char(cg, node));
+            asm_println(cg, "  mov $%d, %%rax", node->int_val);
             return;
         case ND_NIL:
             asm_println(cg, "  mov $0, %%rax");

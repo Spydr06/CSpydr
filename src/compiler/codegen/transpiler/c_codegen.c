@@ -604,7 +604,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, node->bool_val ? "true" : "false");
             break;
         case ND_CHAR:
-            print(cg, "'%s'", node->str_val);
+            print(cg, "((char)%d)", node->int_val);
             break;
         case ND_NIL:
             print(cg, "NULL");

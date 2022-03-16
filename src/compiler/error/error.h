@@ -12,6 +12,7 @@
 typedef enum ERROR_TYPE
 {   
     ERR_SYNTAX_ERROR,   // syntax error
+    ERR_SYNTAX_ERROR_UNCR, // uncritical syntax error
     ERR_SYNTAX_WARNING, // syntax warning
     ERR_REDEFINITION,   // redefinition of identifier/type
     ERR_REDEFINITION_UNCR, // uncritical redefinition

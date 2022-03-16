@@ -1766,7 +1766,6 @@ static ASTNode_T* parse_char_lit(Parser_T* p)
 
     parser_consume(p, TOKEN_CHAR, "expect char literal ('a', 'b', ...)");
     
-    mem_add_ptr(char_lit->str_val);
     return char_lit;
 }
 

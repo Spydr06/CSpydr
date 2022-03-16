@@ -121,6 +121,8 @@ static void type_expr(ASTNode_T* cmp, va_list args);
 static void pipe_start(ASTNode_T* pipe, va_list args);
 static void pipe_end(ASTNode_T* pipe, va_list args);
 static void hole(ASTNode_T* hole, va_list args);
+static void string_lit(ASTNode_T* str, va_list args);
+static void char_lit(ASTNode_T* ch, va_list args);
 
 //types
 static void struct_type(ASTType_T* s_type, va_list args);
@@ -194,6 +196,8 @@ static ASTIteratorList_T main_iterator_list =
         [ND_TYPE_EXPR] = type_expr,
         [ND_PIPE]    = pipe_end,
         [ND_HOLE]    = hole,
+        [ND_STR]  = string_lit,
+        [ND_CHAR] = char_lit,
     },
 
     .type_fns = 
@@ -1678,6 +1682,12 @@ static void pipe_end(ASTNode_T* pipe, va_list args)
     GET_VALIDATOR(args);
     pipe->data_type = pipe->right->data_type;
 
+    if(pipe->right->kind == ND_HOLE)
+    {
+        throw_error(ERR_SYNTAX_WARNING, pipe->tok, "unnecessary `|>` expression");
+        *pipe = *pipe->left;
+    }
+
     v->current_pipe = pipe->expr;
 }
 
@@ -1690,6 +1700,88 @@ static void hole(ASTNode_T* hole, va_list args)
     if(!v->current_pipe->left->data_type)
         throw_error(ERR_TYPE_ERROR_UNCR, hole->tok, "cannot resolve data type of pipe input expression");
     hole->data_type = v->current_pipe->left->data_type;
+}
+
+static void string_lit(ASTNode_T* str, va_list args)
+{
+    // check for invalid escape sequences
+    for(size_t i = 0; i < strlen(str->str_val); i++)
+    {
+        if(str->str_val[i] == '\\')
+        {
+            switch(str->str_val[++i])
+            {
+                case 'a':
+                case 'b':
+                case 't':
+                case 'v':
+                case 'n':
+                case 'r':
+                case 'f':
+                case '"':
+                case '\'':
+                case '\\':  
+                case '0':
+                    continue;
+
+                default:
+                    throw_error(ERR_SYNTAX_ERROR_UNCR, str->tok, "invalid escape sequence `\\%c` found in string literal", str->str_val[i]);
+                    return;
+            }
+        }
+    }
+}
+
+static void char_lit(ASTNode_T* ch, va_list args)
+{
+    // check for invalid escape sequences and evaluate them
+    char c = ch->str_val[0];
+
+    if(c == '\\')
+    {
+        switch(ch->str_val[1])
+        {
+            case 'a':
+                c = '\a';
+                break;
+            case 'b':
+                c = '\b';
+                break;
+            case 't':
+                c = '\t';
+                break;
+            case 'v':
+                c = '\v';
+                break;
+            case 'n':
+                c = '\n';
+                break;
+            case 'r':
+                c = '\r';
+                break;
+            case 'f':
+                c = '\f';
+                break;
+            case '\'':
+                c = '\'';
+                break;
+            case '"':
+                c = '"';
+                break;
+            case '\\':
+                c = '\\';
+                break;  
+            case '0':
+                c = '\0';
+                break;
+            default:
+                throw_error(ERR_SYNTAX_ERROR_UNCR, ch->tok, "invalid escape sequence `\\%c` found in char literal", ch->str_val[1]);
+                return;
+        }
+    }
+    
+    free(ch->str_val);
+    ch->int_val = c;
 }
 
 static void type_expr(ASTNode_T* cmp, va_list args)

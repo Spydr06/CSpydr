@@ -173,7 +173,7 @@ struct AST_NODE_STRUCT
         f32 float_val;
         f64 double_val;
         bool bool_val;
-        char* str_val;  // also used for chars
+        char* str_val;
 
         TokenType_T cmp_kind; // kind of type comparisons
     };
