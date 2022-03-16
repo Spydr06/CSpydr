@@ -25,6 +25,8 @@ macro SEEK_CUR { 1 }
 macro SEEK_END { 2 }
 macro SEEK_SET { 0 }
 
+namespace libc {
+
 type FILE: void;
 
 type off_t: i64;
@@ -40,13 +42,13 @@ type fpos_t: struct {
     state: mbstate_t
 };
 
-extern {
+extern "C" {
     let stdin: &FILE;
     let stdout: &FILE;
     let stderr: &FILE;
 }
 
-extern {
+extern "C" {
 
     fn remove(filename: const &char): i32;
     fn rename(old: const &char, new: const &char);
@@ -105,4 +107,5 @@ extern {
     fn ferror(stream: &FILE): i32;
     fn perror(s: const &char): i32;
 
+}
 }

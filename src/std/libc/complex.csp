@@ -2,7 +2,8 @@
 
 import "link.csp";
 
-extern {
+namespace libc {
+extern "C" {
 
     fn casin(z: __libc_complex! f64): __libc_complex! f64;
     fn casinf(z: __libc_complex! f32): __libc_complex! f32;
@@ -96,4 +97,5 @@ extern {
     fn crealf(z: __libc_complex! f32): f32;
     fn creall(z: __libc_complex! f80): f80;
 
+}
 }

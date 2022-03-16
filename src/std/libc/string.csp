@@ -3,8 +3,9 @@
 # link with the gnulibc standard library
 import "link.csp";
 
+namespace libc {
 
-extern {
+extern "C" {
 
     fn memcpy(s1: &void, s2: const &void, n: size_t): &void;
     fn memmove(s1: &void, s2: const &void, n: size_t): &void;
@@ -39,4 +40,6 @@ extern {
 
     fn strlen(s: const &char): size_t;
     
+}
+
 }

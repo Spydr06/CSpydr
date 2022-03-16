@@ -6,10 +6,12 @@ import "link.csp";
 
 import "libc/wchar.csp";
 
+namespace libc {
+
 type wctrans_t: const &i32;
 type wctype_t: u64;
 
-extern {
+extern "C" {
 
     fn iswalnum(wc: wint_t): i32;
     fn iswalpha(wc: wint_t): i32;
@@ -33,5 +35,7 @@ extern {
     fn towctrans(wc: wint_t, desc: wctrans_t): wint_t;
 
     fn wctrans(property: const &char): wctrans_t;
+
+}
 
 }

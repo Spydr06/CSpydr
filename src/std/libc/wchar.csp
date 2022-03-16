@@ -11,9 +11,11 @@ import "libc/stdarg.csp";
 
 macro WEOF { (0xffffffff : wint_t) }
 
+namespace libc {
+
 type wint_t: u32;
 
-extern {
+extern "C" {
 
     fn fwprintf(stream: &FILE, format: const &wchar_t,args: ...): i32;
     fn fwscanf(stream: &FILE, format: const &wchar_t,args: ...): i32;
@@ -93,5 +95,7 @@ extern {
 
     fn mbsrtowcs(dst: &wchar_t, src: const &&char, length: size_t, ps: &mbstate_t): size_t;
     fn wcsrtombs(dst: &char, src: const &&wchar_t, length: size_t, ps: &mbstate_t): size_t;
+
+}
 
 }

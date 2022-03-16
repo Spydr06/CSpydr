@@ -56,8 +56,9 @@ char* gen_identifier(ASTIdentifier_T* id, const char* prefix, bool prefix_at_sta
     }
     else
     {
-        new_c = calloc(strlen(id->callee) + 1, sizeof(char));
-        strcpy(new_c, id->callee);
+        new_c = calloc(strlen(id->callee) + strlen(prefix) + 1, sizeof(char));
+        strcat(new_c, prefix);
+        strcat(new_c, id->callee);
     }
 
     return new_c;

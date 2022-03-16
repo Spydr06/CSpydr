@@ -2,7 +2,8 @@
 
 import "link.csp";
 
-extern {
+namespace libc {
+extern "C" {
 
     fn isalnum(c: i32): i32;
     fn isalpha(c: i32): i32;
@@ -20,4 +21,5 @@ extern {
     fn tolower(c: i32): i32;
     fn toupper(c: i32): i32;
 
+}
 }

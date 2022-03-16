@@ -11,8 +11,11 @@ macro EXIT_SUCCESS { 0 }
 
 macro RAND_MAX { 2147483647 } # same as INT_MAX
 
-macro MB_CUR_MAX { __ctype_get_mb_cur_max() } # FIXME: not correct
-extern fn __ctype_get_mb_cur_max(): size_t;
+macro MB_CUR_MAX { ::libc::__ctype_get_mb_cur_max() } # FIXME: not correct
+
+namespace libc {
+
+extern "C" fn __ctype_get_mb_cur_max(): size_t;
 
 type div_t: struct {
     quot: i32,
@@ -31,7 +34,7 @@ type lldiv_t: struct {
 };
 ##
 
-extern {
+extern "C" {
 
     fn atof(nptr: const &char): f64;
     fn atoi(nptr: const &char): i32;
@@ -82,5 +85,7 @@ extern {
     fn wctomb(s: &char, wc: wchar_t): i32;
     fn mbstowcs(pwcs: &wchar_t, s: const &char, n: size_t): size_t;
     fn wctombs(s: &char, pwcs: const &wchar_t, n: size_t): size_t;
+
+}
 
 }

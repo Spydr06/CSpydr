@@ -28,13 +28,15 @@ import "options.csp";
 macro CURL_BLOB_COPY { 1 }
 macro CURL_BLOB_NOCOPY { 0 }
 
+namespace curl {
+
 type curl_blob: struct {
     data: &void,
     lenght: u64,
     flags: u32
 };
 
-extern {
+extern  {
     fn curl_easy_init(): &CURL;
     fn curl_easy_setopt(curl: &CURL, option: CURLoption, args: ...): CURLcode;
     fn curl_easy_perform(curl: &CURL): CURLcode;
@@ -46,4 +48,6 @@ extern {
     fn curl_easy_recv(curl: &CURL, buffer: &void, buflen: u64, n: &u64): CURLcode;
     fn curl_easy_send(curl: &CURL, buffer: const &void, buflen: u64, n: &u64): CURLcode;
     fn curl_easy_upkeep(curl: &CURL): CURLcode;
+}
+
 }

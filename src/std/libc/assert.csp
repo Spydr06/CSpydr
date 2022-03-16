@@ -3,4 +3,3 @@
 import "link.csp";
 
 macro assert(#[ TODO: ignore ]#) { (0: void) }
-macro static_assert { _Static_assert }

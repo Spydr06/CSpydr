@@ -445,6 +445,8 @@ macro GLFW_DONT_CARE { (-1) }
 
 # data types and function callbacks
 
+namespace glfw {
+
 type GLFWglproc: fn<void>();
 type GLFWvkproc: fn<void>();
 
@@ -536,7 +538,7 @@ type GLFWallocator: struct
 *** GLFW API functions ***
 ]#
 
-extern
+extern "C"
 {
     fn glfwInit(): i32;
     fn glfwTerminate();
@@ -678,5 +680,7 @@ extern
     fn glfwGetProcAddress(procname: const &char): GLFWglproc;
     fn glfwVulkanSupported(): i32;
     fn glfwGetRequiredInstanceExtensions(count: &u32): const &&char;
+
+}
 
 }

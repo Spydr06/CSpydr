@@ -30,13 +30,13 @@ let program: Instruction[PROG_SIZE];
 let stack: u16[STACK_SIZE];
 let sp: u32;
 
-fn compile(fp: &FILE): Status
+fn compile(fp: &libc::FILE): Status
 {
     let pc: u16 = 0;
     let jmp_pc: u16;
     let c: i32;
 
-    while (c = getc(fp)) != EOF! && pc < PROG_SIZE
+    while (c = libc::getc(fp)) != EOF! && pc < PROG_SIZE
     {
         match c 
         {
@@ -72,6 +72,8 @@ fn compile(fp: &FILE): Status
 
 fn execute(): Status
 {
+    using libc;
+
     let data: u16[DATA_SIZE];
     memset(data, 0, DATA_SIZE * sizeof u16);
 
@@ -100,7 +102,9 @@ fn execute(): Status
 
 fn main(argc: i32, argv: &&char): i32
 {
-    let fp: &FILE = nil;
+    using libc;
+
+    let fp: &libc::FILE = nil;
 
     if argc != 2 || (fp = fopen(argv[1], "r")) == nil
     {

@@ -2,6 +2,8 @@
 
 import "link.csp";
 
+namespace libc {
+
 type lconv: struct {
     decimal_point: &char,
     thousands_sep: &char,
@@ -36,6 +38,7 @@ macro LC_MONETARY { nil }
 macro LC_NUMERIC { nil }
 macro LC_TIME { nil }
 
-extern fn setlocale(category: i32, locale: const &char): &char;
-extern fn localeconv(): lconv;
+extern "C" fn setlocale(category: i32, locale: const &char): &char;
+extern "C" fn localeconv(): lconv;
 
+}

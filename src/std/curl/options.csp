@@ -22,6 +22,8 @@
 
 import "curl.csp";
 
+namespace curl {
+
 type curl_easytype: enum {
     CURLOT_LONG,    # long (a range of values)
     CURLOT_VALUES,  #      (a defined set or bitmask)
@@ -43,9 +45,11 @@ type curl_easyoption: struct {
     flags: u32
 };
 
-extern {
+extern "C" {
     fn curl_easy_option_by_name(name: const &char): const &curl_easyoption;
     fn curl_easy_option_by_id(id: CURLoption): const &curl_easyoption;
     fn curl_easy_option_next(prev: const &curl_easyoption): const &curl_easyoption;
+
+}
 
 }

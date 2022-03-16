@@ -5,7 +5,7 @@ import "glfw/glfw3.csp";
 let theta_y: f32 = 0.0;
 let theta_x: f32 = 0.0;
 
-const vertices: GLfloat[] = [
+const vertices: gl::GLfloat[] = [
     -1.0, -1.0, -1.0,   -1.0, -1.0,  1.0,   -1.0,  1.0,  1.0,   -1.0,  1.0, -1.0,
      1.0, -1.0, -1.0,    1.0, -1.0,  1.0,    1.0,  1.0,  1.0,    1.0,  1.0, -1.0,
     -1.0, -1.0, -1.0,   -1.0, -1.0,  1.0,    1.0, -1.0,  1.0,    1.0, -1.0, -1.0,
@@ -14,7 +14,7 @@ const vertices: GLfloat[] = [
     -1.0, -1.0,  1.0,   -1.0,  1.0,  1.0,    1.0,  1.0,  1.0,    1.0, -1.0,  1.0
 ];
 
-const colors: GLfloat[] = [
+const colors: gl::GLfloat[] = [
     0.0, 0.0, 0.0,   0.0, 0.0, 1.0,   0.0, 1.0, 1.0,   0.0, 1.0, 0.0,
     1.0, 0.0, 0.0,   1.0, 0.0, 1.0,   1.0, 1.0, 1.0,   1.0, 1.0, 0.0,
     0.0, 0.0, 0.0,   0.0, 0.0, 1.0,   1.0, 0.0, 1.0,   1.0, 0.0, 0.0,
@@ -23,8 +23,10 @@ const colors: GLfloat[] = [
     0.0, 0.0, 1.0,   0.0, 1.0, 1.0,   1.0, 1.0, 1.0,   1.0, 0.0, 1.0
 ];
 
-fn init_glfw_window(res_x: const i32, res_y: const i32): &GLFWwindow
+fn init_glfw_window(res_x: const i32, res_y: const i32): &glfw::GLFWwindow
 {
+    using glfw, gl;
+
     if(!glfwInit()) {
      #   std::io::eputs("failed to initialize GLFW\n");
         <- nil;
@@ -50,6 +52,8 @@ fn init_glfw_window(res_x: const i32, res_y: const i32): &GLFWwindow
 
 fn drawCube()
 {
+    using gl;
+
     glRotatef(theta_y++, 0.0, 1.0, 0.0);
     glRotatef(theta_x++, 1.0, 0.0, 0.0);
 
@@ -64,11 +68,13 @@ fn drawCube()
     glDisableClientState(GL_VERTEX_ARRAY!);
 }
 
-fn display(window: &GLFWwindow)
+fn display(window: &glfw::GLFWwindow)
 {
+    using glfw, gl, glu;
+
     while !glfwWindowShouldClose(window) {
-        let window_w: GLint;
-        let window_h: GLint;
+        let window_w: gl::GLint;
+        let window_h: gl::GLint;
 
         glfwGetWindowSize(window, &window_w, &window_h);
         glViewport(0, 0, window_w, window_h);
@@ -93,6 +99,8 @@ fn display(window: &GLFWwindow)
 
 fn main(): i32
 {
+    using glfw;
+    
     let window = init_glfw_window(1024, 620);
     if(window)
         display(window);

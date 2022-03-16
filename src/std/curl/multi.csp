@@ -39,6 +39,8 @@
 
 import "curl.csp";
 
+namespace curl {
+
 type CURLM: void;
 type CURLMcode: enum {
     OK,
@@ -88,7 +90,7 @@ type curl_waitfd: struct {
     revents: i16 # not supported yet
 };
 
-extern {
+extern "C" {
     fn curl_multi_init(): &CURLM;
     fn curl_multi_add_handle(multi_handle: &CURLM, curl_handle: &CURL): CURLMcode;
     fn curl_multi_remove_handle(multi_handle: &CURLM, curl_handle: &CURL): CURLMcode;
@@ -118,7 +120,7 @@ macro CURL_CSELECT_ERR { 0x04 }
 type curl_socket_callback: fn<i32>(&CURL, curl_socket_t, i32, &void, &void);
 type curl_multi_time_callback: fn<i32>(&CURLM, i64, &void);
 
-extern {
+extern "C" {
     fn curl_multi_socket_action(multi_handle: &CURLM, s: curl_socket_t, ev_bitmask: i32, running_handles: &i32): CURLMcode;
     fn curl_multi_socket_all(multi_handle: &CURLM, running_handles: &i32);
 }
@@ -131,7 +133,7 @@ fn curl_multi_socket(multi_handle: &CURLM, s: curl_socket_t, running_handles: &i
     <- curl_multi_socket_action(multi_handle, s, 0, running_handles);
 }
 
-extern fn curl_multi_timeout(multi_handle: &CURLM, milliseconds: &i64): CURLMcode;
+extern "C" fn curl_multi_timeout(multi_handle: &CURLM, milliseconds: &i64): CURLMcode;
 
 type CURLMoption: enum {
     SOCKETFUNCTION = 20001,
@@ -151,7 +153,7 @@ type CURLMoption: enum {
     LASTENTRY = 17 # the last unused
 };
 
-extern {
+extern "C" {
     fn curl_multi_setopt(multi_handle: &CURLM, option: CURLMoption, args: ...): CURLMcode;
     fn curl_multi_assign(multi_handle: &CURLM, sockfd: curl_socket_t, sockp: &void): CURLMcode;
 }
@@ -162,9 +164,11 @@ macro CURL_PUSH_ERROROUT { 2 }
 
 type curl_pushheaders: void;
 
-extern {
+extern "C" {
     fn curl_pushheader_bynum(h: &curl_pushheaders, num: u64): &char;
     fn curl_pushheader_byname(h: &curl_pushheaders, name: const &char): &char;
 }
 
 type curl_push_callback: fn<i32>(&CURL, &CURL, u64, &curl_pushheaders, &void);
+
+}

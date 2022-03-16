@@ -7,5 +7,7 @@ macro EDOM { 1 }
 macro EILSEQ { 1 }
 macro ERANGE { 1 }
 
-extern fn __errno_location(): &i32;
+namespace libc {
+extern "C" fn __errno_location(): &i32;
+}
 macro errno() { (*__errno_location()) }

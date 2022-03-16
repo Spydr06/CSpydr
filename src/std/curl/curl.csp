@@ -31,6 +31,8 @@ import "easy.csp";
 import "urlapi.csp";
 import "options.csp";
 
+namespace curl {
+
 type CURL: void;
 type CURLSH: void;
 
@@ -1794,7 +1796,7 @@ type curl_TimeCond: enum {
 
 macro CURL_ZERO_TERMINATED { (-1: u64) }
 
-extern {
+extern "C" {
     fn curl_strequal(s1: const &char, s2: const &char): i32;
     fn curl_strnequal(s1: const &char, s2: const &char, n: u64): i32;
 }
@@ -1804,7 +1806,7 @@ type curl_mimepart: void;
 
 macro CURLMIMEOPT_FORMESCAPE { (1 << 0) }
 
-extern {
+extern "C" {
     fn curl_mime_init(easy: &CURL): &curl_mime;
     fn curl_mime_free(mime: &curl_mime);
     fn curl_mime_addpart(mime: &curl_mime): &curl_mimepart;
@@ -1865,11 +1867,11 @@ type CURLFORMcode: enum {
     LAST # never use
 };
 
-extern fn curl_formadd(httppost: &&curl_httppost, last_post: &&curl_httppost, args: ...): CURLFORMcode;
+extern "C" fn curl_formadd(httppost: &&curl_httppost, last_post: &&curl_httppost, args: ...): CURLFORMcode;
 
 type curl_formget_callback: fn<u64>(&void, const &char, u64);
 
-extern {
+extern "C" {
     fn curl_formget(form: &curl_httppost, arg: &void, append: curl_formget_callback): i32;
     fn curl_formfree(form: &curl_httppost);
 
@@ -1929,7 +1931,7 @@ type CURLsslset: enum {
     NO_BACKENDS
 };
 
-extern {
+extern "C" {
     fn curl_global_sslset(id: curl_sslbackend, name: const &char, avail: const &&&curl_ssl_backend): CURLsslset;
 
     fn curl_slist_append(list: &curl_slist, new: const &char): &curl_slist;
@@ -2096,7 +2098,7 @@ type CURLSHoption: enum {
     LAST # never use
 };
 
-extern {
+extern "C" {
     fn curl_share_init(): &CURLSH;
     fn curl_share_setopt(c: &CURLSH, option: CURLSHoption, args: ...): CURLSHcode;
     fn curl_share_cleanup(c: &CURLSH): &CURLSHcode;
@@ -2116,7 +2118,7 @@ type CURLversion: enum {
     LAST # never use
 };
 
-macro CURLVERSION_NOW { ::CURLversion::TENTH }
+macro CURLVERSION_NOW { ::curl::CURLversion::TENTH }
 
 type curl_version_info_data: struct {
     age: CURLversion,
@@ -2187,7 +2189,7 @@ macro CURL_VERSION_UNICODE      { (1<<27) } # Unicode support on Windows
 macro CURL_VERSION_HSTS         { (1<<28) } # HSTS is supported
 macro CURL_VERSION_GSASL        { (1<<29) } # libgsasl is supported
 
-extern {
+extern "C" {
     fn curl_version_info(version: CURLversion): &curl_version_info_data;
     fn curl_easy_stderr(code: CURLcode): const &char;
     fn curl_share_strerror(code: CURLSHcode): const &char;
@@ -2200,3 +2202,5 @@ macro CURLPAUSE_SEND      { (1<<2) }
 macro CURLPAUSE_SEND_CONT { (0) }
 macro CURLPAUSE_ALL       { (CURLPAUSE_RECV|CURLPAUSE_SEND) }
 macro CURLPAUSE_CONT      { (CURLPAUSE_RECV_CONT|CURLPAUSE_SEND_CONT) }
+
+}

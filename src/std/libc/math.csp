@@ -36,6 +36,8 @@ macro islessequal(x, y)    { ((x) <= (y))             }
 macro islessgreater(x, y)  { ((x) < (y) || (x) > (y)) }
 # macro isunordered(x, y)    { TODO:                    }
 
+namespace libc {
+
 type float_t: f32;
 type double_t: f64;
 
@@ -47,7 +49,7 @@ type math_FP: enum {
     FP_NORMAL    = 4
 };
 
-extern {
+extern "C" {
 
     fn acos(x: f64): f64;
     fn acosf(x: f32): f32;
@@ -274,4 +276,5 @@ extern {
     fn fmaf(x: f32, y: f32, z: f32): f32;
     fn fmal(x: f80, y: f80, z: f80): f80;
 
+}
 }

@@ -20,6 +20,8 @@
  *
  **************************************************************************]#
 
+namespace curl {
+
 type CURLUcode: enum {
     OK,
     BAD_HANDLE,          # 1 
@@ -83,7 +85,7 @@ macro CURLU_ALLOW_SPACE { (1<<11) }       # Allow spaces in the URL
 
 type CURLU: void;
 
-extern {
+extern "C" {
     fn curl_url(): &CURLU;
     fn curl_url_cleanup(handle: &CURLU);
     fn curl_url_dup(in: &CURLU): &CURLU;
@@ -91,4 +93,6 @@ extern {
     fn curl_url_set(handle: &CURLU, what: CURLUPart, part: const &char, flags: u32): CURLUcode;
 
     fn curl_url_strerror(code: CURLUcode): const &char;
+}
+
 }

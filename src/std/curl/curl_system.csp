@@ -60,6 +60,7 @@ macro CURL_TYPEOF_CURL_SOCKLEN_T { ::std::socklen_t }
 macro CURL_PULL_SYS_TYPES_H { 1 }
 macro CURL_PULL_SYS_SOCKET_H { 1 }
 
-
+namespace curl {
 type curl_socklen_t: CURL_TYPEOF_CURL_SOCKLEN_T!;
 type curl_off_t: CURL_TYPEOF_CURL_OFF_T!;
+}

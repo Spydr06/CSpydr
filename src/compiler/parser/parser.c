@@ -875,7 +875,7 @@ static ASTObj_T* parse_typedef(Parser_T* p)
     return tydef;
 }
 
-static ASTObj_T* parse_extern_def(Parser_T *p)
+static ASTObj_T* parse_extern_def(Parser_T *p, bool is_extern_c)
 {
     switch(p->tok->type)
     {
@@ -883,6 +883,7 @@ static ASTObj_T* parse_extern_def(Parser_T *p)
         {
             ASTObj_T* ext_var = parse_global(p);
             ext_var->is_extern = true;
+            ext_var->is_extern_c = is_extern_c;
 
             if(ext_var->value)
                 throw_error(ERR_SYNTAX_WARNING, ext_var->value->tok, "cannot set a value to an extern variable");
@@ -894,6 +895,7 @@ static ASTObj_T* parse_extern_def(Parser_T *p)
             if(tok_is(p, TOKEN_SEMICOLON))
                 parser_advance(p);
             ext_fn->is_extern = true;
+            ext_fn->is_extern_c = is_extern_c;
 
             return ext_fn;
         }
@@ -910,18 +912,24 @@ static void parse_extern(Parser_T* p, List_T* objs)
 {
     parser_advance(p);
 
+    bool extern_c = tok_is(p, TOKEN_STRING) && (streq(p->tok->value, "C") || streq(p->tok->value, "c"));
+    if(extern_c)
+        parser_advance(p);
+    else if(tok_is(p, TOKEN_STRING))
+        throw_error(ERR_SYNTAX_ERROR, p->tok, "invalid `extern` parameter `\"%s\"`, expect `\"C\"` or `{`", p->tok->value);
+
     if(tok_is(p, TOKEN_LBRACE)) {
         parser_advance(p);
         while(!tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF))
         {
-            list_push(objs, parse_extern_def(p));  
+            list_push(objs, parse_extern_def(p, extern_c));  
         }
 
         parser_consume(p, TOKEN_RBRACE, "expect `}` after extern function/variable definitions");
         return;
     }
 
-    list_push(objs, parse_extern_def(p));    
+    list_push(objs, parse_extern_def(p, extern_c));    
 }
 
 List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok, ASTIdentifier_T** variadic_id)

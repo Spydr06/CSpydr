@@ -8,6 +8,8 @@ macro GL_VERSION_1_2 { 1 }
 macro GL_VERSION_1_3 { 1 }
 macro GL_ARB_imaging { 1 }
 
+namespace gl {
+
 #[
 * Datatypes
 ]#
@@ -635,7 +637,7 @@ macro GL_CLIENT_ALL_ATTRIB_BITS 	{ 0xFFFFFFFF }
 * Miscellaneous
 ]#
 
-extern {
+extern "C" {
 
     fn glClearIndex(c: GLfloat);
     fn glClearColor(red: GLclampf, green: GLclampf, blue: GLclampf, alpha: GLclampf);
@@ -906,4 +908,6 @@ extern {
     fn glDrawArrays(mode: GLenum, first: GLint, count: GLsizei);
     fn glDrawElements(mode: GLenum, count: GLsizei, kind: GLenum, indices: const &GLvoid);
     fn glInterleavedArrays(format: GLenum, stride: GLsizei, pointer: const &GLvoid);
+}
+
 }

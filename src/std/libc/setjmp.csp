@@ -5,6 +5,8 @@ import "link.csp";
 
 macro _SIGSET_NWORDS { (1024 / 64) }
 
+namespace libc {
+
 type __jmp_buf: i64[8];
 type __sigset_t: struct {
     __val: u64[_SIGSET_NWORDS!]
@@ -16,5 +18,7 @@ type jmp_buf: struct {
     __saved_mask: __sigset_t
 };
 
-extern fn setjmp(env: jmp_buf): i32;
-extern fn longjmp(env: jmp_buf, val: i32);
+extern "C" fn setjmp(env: jmp_buf): i32;
+extern "C" fn longjmp(env: jmp_buf, val: i32);
+
+}

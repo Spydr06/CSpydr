@@ -14,6 +14,8 @@ macro TSS_DTOR_ITERATIONS { 4 }
 macro __SIZEOF_PTHREAD_COND_T { 48 }
 macro __SIZEOF_PTHREAD_MUTEX_T { 40 }
 
+namespace libc {
+
 type cnd_t: struct {
     __size: i8[__SIZEOF_PTHREAD_COND_T!]
 };
@@ -46,7 +48,7 @@ type exit_codes: enum {
     thrd_timedout = 4
 };
 
-extern {
+extern "C" {
 
     fn call_once(flag: &once_flag, func: fn<void>());
 
@@ -77,5 +79,7 @@ extern {
     fn tss_delete(key: tss_t);
     fn tss_get(key: tss_t): &void;
     fn tss_set(key: tss_t, val: &void): i32;
+
+}
 
 }

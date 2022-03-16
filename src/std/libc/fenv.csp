@@ -3,6 +3,7 @@
 # link with the gnulibc standard library
 import "link.csp";
 
+namespace libc {
 # TODO: find a way to define this libc- and platform independant.
 type fenv_t: struct {
     __control_word: u16,
@@ -23,7 +24,7 @@ type fenv_t: struct {
 
 type fexcept_t: u16;
 
-extern {
+extern "C" {
 
     fn feclearexcept(excepts: i32): i32;
     fn fegetexceptflag(flagp: &fexcept_t, excepts: i32): i32;
@@ -39,4 +40,5 @@ extern {
     fn fesetenv(envp: const &fenv_t): i32;
     fn feupdateenv(envp: const &fenv_t): i32;
 
+}
 }

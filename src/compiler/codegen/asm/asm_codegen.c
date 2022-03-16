@@ -25,7 +25,7 @@ static const char* asm_start_text[] =
         "  .globl _start\n"
         "  .text\n"
         "_start:\n"
-        "  call main\n"
+        "  call .main\n"
         "  movq %rax, %rdi\n"
         "  movq $60, %rax\n"
         "  syscall",
@@ -37,7 +37,7 @@ static const char* asm_start_text[] =
         "  xorl %ebp, %ebp\n"
         "  popq %rdi\n"
         "  movq %rsp, %rdi\n"
-        "  call main\n"
+        "  call .main\n"
         "  movq %rax, %rdi\n"
         "  movq $60, %rax\n"
         "  syscall",
@@ -50,7 +50,7 @@ static const char* asm_start_text[] =
         "  popq %rdi\n"
         "  movq %rsp, %rsi\n"
         "  andq $~15, %rsp\n"
-        "  call main\n"
+        "  call .main\n"
         "  movq %rax, %rdi\n"
         "  movq $60, %rax\n"
         "  syscall",
@@ -856,13 +856,15 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
 
                 case OBJ_GLOBAL:
                 case OBJ_ENUM_MEMBER:
-                    asm_println(cg, "  lea %s(%%rip), %%rax", asm_gen_identifier(node->id));
+                    asm_println(cg, "  lea %s(%%rip), %%rax", node->referenced_obj->is_extern_c ? node->id->callee : asm_gen_identifier(node->id));
                     return;
                 
                 case OBJ_FUNCTION:
                     if(node->call)
                     {
-                        if(node->call->referenced_obj->is_extern)
+                        if(node->call->referenced_obj->is_extern_c)
+                            asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", node->id->callee);
+                        else if(node->call->referenced_obj->is_extern)
                             asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", asm_gen_identifier(node->id));
                         else if(node->call->referenced_obj->kind != OBJ_FUNCTION)
                         {
@@ -872,8 +874,10 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
                         else
                             asm_println(cg, "  lea %s(%%rip), %%rax", asm_gen_identifier(node->id));
                     }
+                    else if(node->referenced_obj->is_extern_c)
+                        asm_println(cg, "  lea %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", node->id->callee);
                     else if(node->referenced_obj->is_extern)
-                        asm_println(cg, "  lea %s@GOTPCREL(%%rip), %%rax", asm_gen_identifier(node->id));
+                        asm_println(cg, "  lea %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", asm_gen_identifier(node->id));
                     else
                         asm_println(cg, "  lea %s(%%rip), %%rax", asm_gen_identifier(node->id));
                     return;
@@ -1345,8 +1349,10 @@ static void asm_gen_id_ptr(ASMCodegenData_T* cg, ASTNode_T* id)
             asm_print(cg, "%s(%%rip)", asm_gen_identifier(id->id));
             break;
         case OBJ_FUNCTION:
-            if(id->referenced_obj->is_extern)
-                asm_print(cg, "%s@GOTPCREL(%%rip)", asm_gen_identifier(id->id));
+            if(id->referenced_obj->is_extern_c)
+                asm_print(cg, "%s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip)", id->id->callee);
+            else if(id->referenced_obj->is_extern)
+                asm_print(cg, "%s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip)", asm_gen_identifier(id->id));
             else
                 asm_print(cg, "%s(%%rip)", asm_gen_identifier(id->id));
             break;

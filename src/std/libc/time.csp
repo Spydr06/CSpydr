@@ -9,6 +9,8 @@ import "link.csp";
 macro CLOCKS_PER_SEC { (1000000: __clock_t) }
 macro TIME_UTC { 1 }
 
+namespace libc {
+
 type __clock_t: i64;    #FIXME: highly platform dependant
 type __time_t: i64;     #FIXME:    "     "        "
 type clock_t: __clock_t;
@@ -32,7 +34,7 @@ type tm: struct {
     tm_isdst: i32,
 };
 
-extern {
+extern "C" {
 
     fn clock(): clock_t;
 
@@ -45,5 +47,7 @@ extern {
     fn gmtime(timer: const &time_t): & tm;
     fn localtime(timer: const &time_t): & tm;
     fn strftime(s: &char, maxsize: size_t, format: const &char, timeptr: const & tm): size_t;
+
+}
 
 }

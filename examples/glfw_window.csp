@@ -1,6 +1,8 @@
 import "glfw/glfw3.csp";
 
 fn main(): i32 {
+    using glfw, gl;
+
     if !glfwInit()
         <- -1;
     
@@ -30,6 +32,8 @@ fn main(): i32 {
 }
 
 fn draw() {
+    using gl;
+
     glBegin(GL_POLYGON!);
     glColor3f(1.0, 0.0, 0.0); glVertex3f(-0.6, -0.75, 0.5);
     glColor3f(0.0, 1.0, 0.0); glVertex3f(0.6, -0.75, 0.0);

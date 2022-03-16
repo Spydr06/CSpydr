@@ -24,7 +24,8 @@
 
 import "utils.csp";
 
-extern {
+namespace curl {
+extern "C" {
     fn curl_mprintf(format: const &char, args: ...): i32;
     fn curl_mfprintf(fd: &void, format: const &char, args: ...): i32;
     fn curl_msprintf(buffer: &char, format: const &char, args: ...): i32;
@@ -37,4 +38,5 @@ extern {
 
     fn curl_maprintf(format: const &char, args: ...): &char;
     fn curl_mvaprintf(format: const &char, args: std::VAList): &char;
+}
 }
