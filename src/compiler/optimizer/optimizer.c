@@ -2,6 +2,7 @@
 #include "ast/ast.h"
 #include "ast/ast_iterator.h"
 #include "config.h"
+#include "constexpr.h"
 #include "error/error.h"
 #include "io/log.h"
 #include "list.h"
@@ -13,6 +14,7 @@
     } while(0)
 
 void remove_dead_code(ASTProg_T* ast);
+void evaluate_const_exprs(ASTProg_T* ast);
 
 void optimize(ASTProg_T *ast)
 {
@@ -20,7 +22,8 @@ void optimize(ASTProg_T *ast)
         void (*fn)(ASTProg_T*);
         const char* description;
     } passes[] = {
-        {remove_dead_code, "remove dead code"}
+        {remove_dead_code, "remove dead code"},
+        {evaluate_const_exprs, "evaluate constant expressions"}
     };
 
     u32 count = sizeof(passes) / sizeof(*passes);
@@ -29,7 +32,7 @@ void optimize(ASTProg_T *ast)
     {
         if(!global.silent)
         {
-            LOG_OK_F("%s" COLOR_BOLD_GREEN "  Optimizing" COLOR_RESET " (%d/%d): %s", i ? "\33[2K\r" : "", i + 1, count, passes[i].description);
+            LOG_OK_F("%s" COLOR_BOLD_GREEN "  Optimizing" COLOR_RESET " (%d/%d) %s", i ? "\33[2K\r" : "", i + 1, count, passes[i].description);
             fflush(OUTPUT_STREAM);
         }
         passes[i].fn(ast);

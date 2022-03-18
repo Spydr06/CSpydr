@@ -89,6 +89,7 @@ static void match_type_end(ASTNode_T* match, va_list args);
 static void using_end(ASTNode_T* using, va_list args);
 static void with_start(ASTNode_T* with, va_list args);
 static void with_end(ASTNode_T* with, va_list args);
+static void expr_stmt(ASTNode_T* expr_stmt, va_list args);
 
 // expressions
 static void call(ASTNode_T* call, va_list args);
@@ -155,6 +156,7 @@ static ASTIteratorList_T main_iterator_list =
         [ND_MATCH_TYPE] = match_type_end,
         [ND_USING] = using_end,
         [ND_WITH] = with_end,
+        [ND_EXPR_STMT] = expr_stmt,
 
         // expressions
         [ND_ID]      = identifier,
@@ -427,11 +429,10 @@ static ASTType_T* expand_typedef(Validator_T* v, ASTType_T* type)
         return type;
 
     ASTObj_T* ty_def = search_identifier(v, v->current_scope, type->id);
-    if(!ty_def || ty_def->kind != OBJ_TYPEDEF)
-    {
+    if(!ty_def)
         throw_error(ERR_TYPE_ERROR, type->tok, "undefined data type `%s`", type->id->callee);
-        return NULL;
-    }
+    if(ty_def->kind != OBJ_TYPEDEF)
+        throw_error(ERR_TYPE_ERROR, type->tok, "identifier `%s` references object of kind `%s`, expect type", type->id->callee, obj_kind_to_str(ty_def->kind));
 
     return ty_def->data_type->kind == TY_UNDEF ? expand_typedef(v, ty_def->data_type) : ty_def->data_type;
 }
@@ -841,10 +842,7 @@ static void fn_end(ASTObj_T* fn, va_list args)
 
 static void namespace_start(ASTObj_T* namespace, va_list args)
 {
-    GET_VALIDATOR(args);
-
-    
-
+    GET_VALIDATOR(args);    
     begin_obj_scope(v, namespace->id, namespace->objs);
 }
 
@@ -1089,6 +1087,11 @@ static void with_end(ASTNode_T* with, va_list args)
     with->exit_fn = handle->fn;
 
     end_scope(v);
+}
+
+static void expr_stmt(ASTNode_T* expr_stmt, va_list args)
+{
+    expr_stmt->expr->result_ignored = expr_stmt->expr->kind == ND_ASSIGN;
 }
 
 // expressions

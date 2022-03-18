@@ -11,6 +11,7 @@ void init_globals(void)
 {
     memset(&global, 0, sizeof(global));
     global.optimize = true;
+    global.embed_debug_info = true;
     global.max_macro_call_depth = __CSP_DEFAULT_MAX_MACRO_CALL_DEPTH;
     global.compiler_flags = init_list(sizeof(char*));
 

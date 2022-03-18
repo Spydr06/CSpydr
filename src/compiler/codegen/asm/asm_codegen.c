@@ -61,7 +61,7 @@ static char* argreg16[] = {"%di", "%si", "%dx", "%cx", "%r8w", "%r9w"};
 static char* argreg32[] = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d"};
 static char* argreg64[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
 static char call_reg[] = "%r10";
-static char pipe_reg[] = "%r11";
+static char pipe_reg[] = "%r15";
 
 // The table for type casts
 static char i32i8[]  = "movsbl %al, %eax";
@@ -1614,9 +1614,31 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                         };
 
                         asm_gen_expr(cg, &converted);
-
-                        asm_gen_expr(cg, node->left);
-                    } return;
+                    }
+                    
+                    if(!node->result_ignored) 
+                    {
+                        ASTType_T* base_type = unpack(node->left->data_type)->base;
+                        if(!base_type)
+                            return;
+                        ASTNode_T converted = {
+                            .kind = ND_REF,
+                            .tok = node->left->tok,
+                            .data_type = &(ASTType_T){
+                                .kind = TY_PTR,
+                                .base = base_type,
+                                .size = PTR_S
+                            },
+                            .right = &(ASTNode_T){
+                                .kind = ND_DEREF,
+                                .tok = node->left->tok,
+                                .data_type = base_type,
+                                .right = node->left
+                            }
+                        };
+                        asm_gen_expr(cg, &converted);
+                    }
+                    return;
                 case ND_STRUCT:
                     // x = y :: {1, 2, 3} gets converted to x.z = 1, x.w = 2, x.u = 3
                     {
@@ -1646,9 +1668,8 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                             };
 
                             asm_gen_expr(cg, &converted);
-
-                            asm_gen_expr(cg, node->left);
                         }
+                        asm_gen_expr(cg, node->left);
                     } return;
                 default:
                     asm_gen_addr(cg, node->left);

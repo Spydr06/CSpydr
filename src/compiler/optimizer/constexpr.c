@@ -110,3 +110,8 @@ u64 const_i64(ASTNode_T* node)
             return 0;
     }
 }
+
+void evaluate_const_exprs(ASTProg_T* ast)
+{
+    
+}

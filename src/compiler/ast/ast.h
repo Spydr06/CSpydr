@@ -252,17 +252,18 @@ struct AST_NODE_STRUCT
     };
 
     union { 
-        bool is_default_case: 1; // case
-        bool pass_by_stack: 1;   // call
-        bool from_back: 1;       // index
+        bool is_default_case : 1; // case
+        bool pass_by_stack   : 1; // call
+        bool from_back       : 1; // index
     };
 
     // assignment expression
-    bool is_assigning: 1;
-    bool is_initializing: 1;
+    bool is_assigning    : 1;
+    bool is_initializing : 1;
+    bool result_ignored  : 1;
 
     // expression statement
-    bool is_constant: 1;
+    bool is_constant : 1;
     
 } __attribute__((packed));
 

@@ -613,7 +613,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, "\"%s\"", node->str_val);
             break;
         case ND_ID: 
-            print(cg, "%s", c_gen_identifier(cg, node->id));
+            print(cg, "%s", node->referenced_obj && node->referenced_obj->is_extern_c ? node->id->callee : c_gen_identifier(cg, node->id));
             break;
         case ND_CALL:
             c_gen_expr(cg, node->expr);

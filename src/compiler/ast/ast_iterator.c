@@ -55,8 +55,8 @@ static void ast_obj(ASTIteratorList_T* list, ASTObj_T* obj, va_list custom_args)
             break;
 
         case OBJ_FN_ARG:
-            ast_id(list, true, obj->id, custom_args);
             ast_type(list, obj->data_type, custom_args);
+            ast_id(list, true, obj->id, custom_args);
             break;
 
         case OBJ_NAMESPACE:
