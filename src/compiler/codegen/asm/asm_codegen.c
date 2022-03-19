@@ -910,6 +910,7 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_println(cg, "  mov %s, %%rax", pipe_reg);
             return;
         case ND_TERNARY:
+        case ND_ELSE_EXPR:
             if(unpack(node->data_type)->kind == TY_STRUCT)
             {
                 asm_gen_expr(cg, node);
@@ -1720,8 +1721,26 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_println(cg, "  je .L.else.%ld", c);
             asm_gen_expr(cg, node->if_branch);
             asm_println(cg, "  jmp .L.end.%ld", c);
-            asm_println(cg, "  .L.else.%ld:", c);
+            asm_println(cg, ".L.else.%ld:", c);
             asm_gen_expr(cg, node->else_branch);
+            asm_println(cg, ".L.end.%ld:", c);
+            cg->cur_count = pc;
+        } return;
+    
+        case ND_ELSE_EXPR:
+        {
+            u64 pc = cg->cur_count;
+            u64 c = cg->cur_count = cg->max_count++;
+            asm_gen_expr(cg, node->left);
+            asm_push(cg);
+            asm_push(cg);
+            asm_cmp_zero(cg, node->left->data_type);
+            asm_println(cg, "  je .L.else.%ld", c);
+            asm_pop(cg, "%rax");
+            asm_println(cg, "  jmp .L.end.%ld", c);
+            asm_println(cg, ".L.else.%ld:", c);
+            asm_pop(cg, "%rax");
+            asm_gen_expr(cg, node->right);
             asm_println(cg, ".L.end.%ld:", c);
             cg->cur_count = pc;
         } return;

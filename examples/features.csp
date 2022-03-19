@@ -1,5 +1,7 @@
 import "std.csp";
 
 fn main(): i32 {
+    std::io::printf("%i\n", 1 else 23);
+
     <- 0;
 }

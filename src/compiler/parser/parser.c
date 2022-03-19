@@ -91,7 +91,8 @@ static ASTNode_T* parse_struct_lit(Parser_T* p, ASTNode_T* id);
 static ASTNode_T* parse_anonymous_struct_lit(Parser_T* p);
 
 static ASTNode_T* parse_lambda_lit(Parser_T* p);
-static ASTNode_T* parse_if_expr(Parser_T* p);
+static ASTNode_T* parse_ternary(Parser_T* p);
+static ASTNode_T* parse_else_expr(Parser_T* p, ASTNode_T* left);
 
 static ASTNode_T* parse_sizeof(Parser_T* p);
 static ASTNode_T* parse_alignof(Parser_T* p);
@@ -175,6 +176,7 @@ static struct {
     [TOKEN_XOR]      = {NULL, parse_bit_op, BIT_XOR},
     [TOKEN_PIPE]     = {NULL, parse_pipe, PIPE},
     [TOKEN_DOLLAR]   = {parse_hole, NULL, LOWEST},
+    [TOKEN_ELSE]     = {NULL, parse_else_expr, INFIX_CALL},
     [TOKEN_LSHIFT_ASSIGN] = {NULL, parse_assignment, ASSIGN},
     [TOKEN_RSHIFT_ASSIGN] = {NULL, parse_assignment, ASSIGN},
     [TOKEN_XOR_ASSIGN] = {NULL, parse_assignment, ASSIGN},
@@ -182,7 +184,7 @@ static struct {
     [TOKEN_BIT_OR_ASSIGN] = {NULL, parse_assignment, ASSIGN},  
     [TOKEN_INFIX_CALL] = {NULL, parse_infix_call, INFIX_CALL},
     [TOKEN_STATIC_MEMBER] = {parse_id, NULL, LOWEST},
-    [TOKEN_IF]       = {parse_if_expr, NULL, LOWEST},
+    [TOKEN_IF]       = {parse_ternary, NULL, LOWEST},
     [TOKEN_CURRENT_FN] = {parse_current_fn_token, NULL, LOWEST},
 }; 
 
@@ -1903,20 +1905,31 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p)
     return caller;
 }
 
-static ASTNode_T* parse_if_expr(Parser_T* p)
+static ASTNode_T* parse_ternary(Parser_T* p)
 {
-    ASTNode_T* if_expr = init_ast_node(ND_TERNARY, p->tok);
+    ASTNode_T* ternary = init_ast_node(ND_TERNARY, p->tok);
     parser_consume(p, TOKEN_IF, "expect `if` keyword");
 
-    if_expr->condition = parse_expr(p, LOWEST, TOKEN_ARROW);
+    ternary->condition = parse_expr(p, LOWEST, TOKEN_ARROW);
     parser_consume(p, TOKEN_ARROW, "expect `=>` after condition");
 
-    if_expr->if_branch = parse_expr(p, LOWEST, TOKEN_ELSE);
+    ternary->if_branch = parse_expr(p, LOWEST, TOKEN_ELSE);
     parser_consume(p, TOKEN_ELSE, "expect `else` between if branches");
 
-    if_expr->else_branch = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+    ternary->else_branch = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
 
-    return if_expr;
+    return ternary;
+}
+
+static ASTNode_T* parse_else_expr(Parser_T* p, ASTNode_T* left)
+{
+    ASTNode_T* else_expr = init_ast_node(ND_ELSE_EXPR, p->tok);
+    parser_consume(p, TOKEN_ELSE, "expect `else`");
+
+    else_expr->left = left;
+    else_expr->right = parse_expr(p, INFIX_CALL, TOKEN_SEMICOLON);
+
+    return else_expr;
 }
 
 static ASTNode_T* parse_unary(Parser_T* p)

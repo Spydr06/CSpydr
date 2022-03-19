@@ -131,6 +131,11 @@ void remove_dead_code(ASTProg_T* ast)
                 if(stack_top->else_branch)
                     list_push(node_stack, stack_top->else_branch);
                 break;
+            
+            case ND_ELSE_EXPR:
+                list_push(node_stack, stack_top->left);
+                list_push(node_stack, stack_top->right);
+                break;
 
             case ND_CASE:
             case ND_WHILE:

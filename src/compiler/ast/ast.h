@@ -82,6 +82,8 @@ typedef enum {
     ND_PIPE,    // x |> y
     ND_HOLE,    // _
 
+    ND_ELSE_EXPR, // x else y
+
     ND_TYPE_EXPR, // type expressions like: "(type) T == U" or "(type) reg_class(T)"
 
     // statements

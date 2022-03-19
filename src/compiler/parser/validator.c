@@ -116,6 +116,7 @@ static void struct_member(ASTNode_T* member, va_list args);
 static void struct_lit(ASTNode_T* s_lit, va_list args);
 static void array_lit(ASTNode_T* a_lit, va_list args);
 static void ternary(ASTNode_T* ternary, va_list args);
+static void else_expr(ASTNode_T* else_expr, va_list args);
 static void closure(ASTNode_T* closure, va_list args);
 static void len(ASTNode_T* len, va_list args);
 static void type_expr(ASTNode_T* cmp, va_list args);
@@ -193,6 +194,7 @@ static ASTIteratorList_T main_iterator_list =
         [ND_STRUCT]  = struct_lit,
         [ND_ARRAY]   = array_lit,
         [ND_TERNARY] = ternary,
+        [ND_ELSE_EXPR] = else_expr,
         [ND_CLOSURE] = closure,
         [ND_LEN]     = len,
         [ND_TYPE_EXPR] = type_expr,
@@ -1644,9 +1646,22 @@ static void ternary(ASTNode_T* ternary, va_list args)
     GET_VALIDATOR(args);
 
     if(!is_bool(v, ternary->condition->data_type))
-        throw_error(ERR_TYPE_ERROR, ternary->condition->tok, "expect `bool` type for if condition");
+        throw_error(ERR_TYPE_ERROR_UNCR, ternary->condition->tok, "expect `bool` type for if condition");
     
     ternary->data_type = ternary->if_branch->data_type;
+
+    if(!types_equal(ternary->if_branch->data_type, ternary->else_branch->data_type))
+        throw_error(ERR_TYPE_ERROR_UNCR, ternary->tok, "data types for ternary branches do not match");
+}
+
+static void else_expr(ASTNode_T* else_expr, va_list args)
+{
+    GET_VALIDATOR(args);
+
+    else_expr->data_type = else_expr->left->data_type;
+
+    if(!types_equal(else_expr->left->data_type, else_expr->right->data_type))
+        throw_error(ERR_TYPE_ERROR_UNCR, else_expr->tok, "data types of `else` branches do not match");
 }
 
 static void len(ASTNode_T* len, va_list args)
