@@ -87,7 +87,7 @@ typedef enum {
     // statements
     ND_BLOCK,   // {...}
     ND_IF,      // if x {}
-    ND_IF_EXPR, // if x => y <> z
+    ND_TERNARY, // if x => y <> z
     ND_LOOP,    // loop {}
     ND_WHILE,   // while x {}
     ND_FOR,     // for let i: i32 = 0; i < x; i++ {}

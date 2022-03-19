@@ -124,7 +124,7 @@ void remove_dead_code(ASTProg_T* ast)
                 stack_top->exit_fn->referenced = true;
                 if(stack_top->exit_fn->kind == OBJ_FUNCTION && !stack_top->exit_fn->is_extern)
                         list_push(node_stack, stack_top->exit_fn->body);
-            case ND_IF_EXPR:
+            case ND_TERNARY:
             case ND_IF:
                 list_push(node_stack, stack_top->condition);
                 list_push(node_stack, stack_top->if_branch);

@@ -872,7 +872,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             c_gen_expr(cg, unpack(node->expr->data_type)->num_indices);
             print(cg, ")");
             break;
-        case ND_IF_EXPR:
+        case ND_TERNARY:
             print(cg, "(");
             c_gen_expr(cg, node->condition);
             print(cg, ")?(");

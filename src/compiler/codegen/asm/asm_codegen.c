@@ -909,7 +909,7 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_HOLE:
             asm_println(cg, "  mov %s, %%rax", pipe_reg);
             return;
-        case ND_IF_EXPR:
+        case ND_TERNARY:
             if(unpack(node->data_type)->kind == TY_STRUCT)
             {
                 asm_gen_expr(cg, node);
@@ -1711,7 +1711,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             cg->cur_count = pc;
         } return;
 
-        case ND_IF_EXPR:
+        case ND_TERNARY:
         {
             u64 pc = cg->cur_count;
             u64 c = cg->cur_count = cg->max_count++;

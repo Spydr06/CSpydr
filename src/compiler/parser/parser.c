@@ -344,7 +344,7 @@ static inline bool is_executable(ASTNode_T* n)
         return is_executable(n->expr);
     if(n->kind == ND_PIPE)
         return is_executable(n->right);
-    if(n->kind == ND_IF_EXPR)
+    if(n->kind == ND_TERNARY)
         return is_executable(n->if_branch) && is_executable(n->else_branch);
     return n->kind == ND_CALL || n->kind == ND_ASSIGN || n->kind == ND_INC || n->kind == ND_DEC || n->kind == ND_CAST || n->kind == ND_MEMBER || n->kind == ND_ASM;
 }
@@ -740,7 +740,7 @@ static ASTType_T* parse_lambda_type(Parser_T* p)
 
         parser_consume(p, TOKEN_RPAREN, "expect `)` after lambda argument types");
     }
-    
+
     return lambda;
 }
 
@@ -1905,7 +1905,7 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p)
 
 static ASTNode_T* parse_if_expr(Parser_T* p)
 {
-    ASTNode_T* if_expr = init_ast_node(ND_IF_EXPR, p->tok);
+    ASTNode_T* if_expr = init_ast_node(ND_TERNARY, p->tok);
     parser_consume(p, TOKEN_IF, "expect `if` keyword");
 
     if_expr->condition = parse_expr(p, LOWEST, TOKEN_ARROW);

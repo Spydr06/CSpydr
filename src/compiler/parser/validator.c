@@ -115,7 +115,7 @@ static void assignment_end(ASTNode_T* assign, va_list args);
 static void struct_member(ASTNode_T* member, va_list args);
 static void struct_lit(ASTNode_T* s_lit, va_list args);
 static void array_lit(ASTNode_T* a_lit, va_list args);
-static void if_expr(ASTNode_T* if_expr, va_list args);
+static void ternary(ASTNode_T* ternary, va_list args);
 static void closure(ASTNode_T* closure, va_list args);
 static void len(ASTNode_T* len, va_list args);
 static void type_expr(ASTNode_T* cmp, va_list args);
@@ -192,7 +192,7 @@ static ASTIteratorList_T main_iterator_list =
         [ND_ASSIGN]  = assignment_end,
         [ND_STRUCT]  = struct_lit,
         [ND_ARRAY]   = array_lit,
-        [ND_IF_EXPR] = if_expr,
+        [ND_TERNARY] = ternary,
         [ND_CLOSURE] = closure,
         [ND_LEN]     = len,
         [ND_TYPE_EXPR] = type_expr,
@@ -1639,14 +1639,14 @@ static void array_lit(ASTNode_T* a_lit, va_list args)
     }
 }
 
-static void if_expr(ASTNode_T* if_expr, va_list args)
+static void ternary(ASTNode_T* ternary, va_list args)
 {
     GET_VALIDATOR(args);
 
-    if(!is_bool(v, if_expr->condition->data_type))
-        throw_error(ERR_TYPE_ERROR, if_expr->condition->tok, "expect `bool` type for if condition");
+    if(!is_bool(v, ternary->condition->data_type))
+        throw_error(ERR_TYPE_ERROR, ternary->condition->tok, "expect `bool` type for if condition");
     
-    if_expr->data_type = if_expr->if_branch->data_type;
+    ternary->data_type = ternary->if_branch->data_type;
 }
 
 static void len(ASTNode_T* len, va_list args)
