@@ -1,25 +1,13 @@
 # fibonacci.csp
 import "io.csp";
 
-const MAX: i32 = 10;
+fn fib(n: i32): i32 
+    ret if n < 2 => 1 
+        else fib(n - 1) + fib(n - 2);
 
 fn main(): i32 {
-    let t1 = 0;
-    let t2 = 1;
-
-    write!(std::out, t1);
-    write!(std::out, "\n");
-    write!(std::out, t2);
-    write!(std::out, "\n");
-
-    let cur = t1 + t2;
-    for let i = 3; i <= MAX; i++; {
-        write!(std::out, cur);
-        write!(std::out, "\n");
-        t1 = t2;
-        t2 = cur;
-        cur = t1 + t2;
-    }
+    let n = 10;
+    std::io::printf("fib(%i) = %i\n", n, fib(n));
 
     <- 0;
 }
