@@ -128,3 +128,13 @@ ASTType_T* get_primitive_type(char* type)
 
     return NULL;
 }
+
+ASTType_T* ptr_to(Token_T* tok, ASTType_T* base)
+{
+    ASTType_T* ptr = init_ast_type(TY_PTR, tok);
+
+    ptr->base = base;
+    ptr->size = PTR_S;
+
+    return ptr;
+}

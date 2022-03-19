@@ -137,7 +137,7 @@ static struct {
     [TOKEN_STRING]   = {(PrefixParseFn_T) parse_str_lit, NULL, LOWEST},
     [TOKEN_BANG]     = {parse_unary, NULL, LOWEST},
     [TOKEN_MINUS]    = {parse_unary, parse_num_op, MINUS},
-    [TOKEN_LPAREN]   = {parse_closure, NULL, CALL}, 
+    [TOKEN_LPAREN]   = {parse_closure, parse_call, CALL}, 
     [TOKEN_LBRACKET] = {parse_array_lit, parse_index, ARRAY},   
     [TOKEN_LBRACE]   = {parse_anonymous_struct_lit, NULL, LOWEST}, 
     [TOKEN_STAR]     = {parse_unary, parse_num_op, MULT},
@@ -707,7 +707,7 @@ static ASTType_T* parse_enum_type(Parser_T* p)
 
 static ASTType_T* parse_lambda_type(Parser_T* p)
 {
-    ASTType_T* lambda = init_ast_type(TY_LAMBDA, p->tok);
+    ASTType_T* lambda = init_ast_type(TY_FN, p->tok);
 
     parser_consume(p, TOKEN_FN, "expect `fn` keyword for lambda type");
 
@@ -722,19 +722,25 @@ static ASTType_T* parse_lambda_type(Parser_T* p)
         lambda->base = (ASTType_T*) primitives[TY_VOID];
     }
 
-    parser_consume(p, TOKEN_LPAREN, "expect `(` before lambda argument types");
     lambda->arg_types = init_list(sizeof(struct AST_TYPE_STRUCT*));
     mem_add_list(lambda->arg_types);
 
-    while(!tok_is(p, TOKEN_RPAREN) && !tok_is(p, TOKEN_EOF))
+    if(tok_is(p, TOKEN_LPAREN))
     {
-        list_push(lambda->arg_types, parse_type(p));
+        parser_consume(p, TOKEN_LPAREN, "expect `(` before lambda argument types");
+        
 
-        if(!tok_is(p, TOKEN_RPAREN))
-            parser_consume(p, TOKEN_COMMA, "expect `,` between lambda argument types");
+        while(!tok_is(p, TOKEN_RPAREN) && !tok_is(p, TOKEN_EOF))
+        {
+            list_push(lambda->arg_types, parse_type(p));
+
+            if(!tok_is(p, TOKEN_RPAREN))
+                parser_consume(p, TOKEN_COMMA, "expect `,` between lambda argument types");
+        }
+
+        parser_consume(p, TOKEN_RPAREN, "expect `)` after lambda argument types");
     }
-
-    parser_consume(p, TOKEN_RPAREN, "expect `)` after lambda argument types");
+    
     return lambda;
 }
 
@@ -983,8 +989,6 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
 
     if(va_id)
     {
-        fn->is_variadic = true;
-
         fn->va_area = init_ast_obj(OBJ_LOCAL, fn->tok);
         fn->va_area->id = va_id;
         fn->va_area->data_type = init_ast_type(TY_ARR, fn->tok);
@@ -1002,7 +1006,13 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
     } else
         fn->return_type = (ASTType_T*) primitives[TY_VOID];
 
-    fn->data_type = (ASTType_T*) primitives[TY_FN];
+    fn->data_type = init_ast_type(TY_FN, fn->tok);
+    fn->data_type->base = fn->return_type;
+    fn->data_type->arg_types = init_list(sizeof(struct AST_TYPE_STRUCT*));
+    for(size_t i = 0; i < fn->args->size; i++)
+        list_push(fn->data_type->arg_types, ((ASTObj_T*) fn->args->items[i])->data_type);
+    mem_add_list(fn->data_type->arg_types);
+    fn->data_type->is_variadic = fn->va_area != NULL;
 
     if(global.ct == CT_ASM)
         fn->alloca_bottom = &alloca_bottom;
@@ -1646,8 +1656,6 @@ static ASTNode_T* parse_id(Parser_T* p)
 
     switch(p->tok->type) 
     {
-        case TOKEN_LPAREN:
-            return parse_call(p, id);
         case TOKEN_STATIC_MEMBER:
             if(parser_peek(p, 1)->type == TOKEN_LBRACE)
                 return parse_struct_lit(p, id);
@@ -1867,7 +1875,13 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p)
     sprintf(callee, callee_tmp, p->cur_lambda_id++);
     
     lambda->id = init_ast_identifier(lambda->tok, callee);
-    lambda->data_type = (ASTType_T*) primitives[TY_FN];
+    lambda->data_type = init_ast_type(TY_FN, lambda->tok);
+    lambda->data_type->base = lambda->return_type;
+    lambda->data_type->arg_types = init_list(sizeof(struct AST_TYPE_STRUCT*));
+    for(size_t i = 0; i < lambda->args->size; i++)
+        list_push(lambda->data_type->arg_types, ((ASTObj_T*) lambda->args->items[i])->data_type);
+    mem_add_list(lambda->data_type->arg_types);
+    lambda->data_type->is_variadic = lambda->va_area != NULL;
 
     ASTObj_T* prev_fn = p->cur_fn;
     p->cur_fn = lambda;
@@ -1986,9 +2000,6 @@ static ASTNode_T* parse_postfix(Parser_T* p, ASTNode_T* left)
 static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left)
 {
     ASTNode_T* call = init_ast_node(ND_CALL, p->tok);
-
-    if(left->kind != ND_ID)
-        throw_error(ERR_SYNTAX_ERROR, p->tok, "can only call identifiers");
 
     call->expr = left;  // the expression to call
 

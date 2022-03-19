@@ -425,7 +425,7 @@ static void scope_add_node(Validator_T* v, ASTNode_T* node)
 
 static ASTType_T* expand_typedef(Validator_T* v, ASTType_T* type)
 {
-    if(type->kind != TY_UNDEF)
+    if(!type || type->kind != TY_UNDEF)
         return type;
 
     ASTObj_T* ty_def = search_identifier(v, v->current_scope, type->id);
@@ -752,7 +752,7 @@ static void fn_start(ASTObj_T* fn, va_list args)
     v->current_function = fn;
 
     
-    if(fn->is_variadic && !fn->is_extern)
+    if(fn->data_type->is_variadic && !fn->is_extern)
         scope_add_obj(v, fn->va_area);
 }
 
@@ -1100,72 +1100,58 @@ static void call(ASTNode_T* call, va_list args)
 {
     GET_VALIDATOR(args);
 
-    ASTObj_T* called_obj = search_identifier(v, v->current_scope, call->expr->id);
-    if(!called_obj)
+    ASTType_T* call_type = expand_typedef(v, call->expr->data_type);
+    if(!call_type)
     {
-        throw_error(ERR_UNDEFINED, call->expr->tok, "undefined callee");
-        return;
+        char* buf[BUFSIZ] = {};
+        throw_error(ERR_TYPE_ERROR, call->tok, "could not resolve data type of expression trying to call");
     }
-    call->called_obj = called_obj;
 
-    switch(called_obj->kind)
+    switch(call_type->kind)
     {
-        case OBJ_FUNCTION:
-            {
-                call->data_type = called_obj->return_type;
-
-                if(call->args->size != called_obj->args->size && !is_variadic(called_obj))
-                    throw_error(ERR_SYNTAX_ERROR, call->tok, "`%s` expects %ld call arguments, got %ld", called_obj->id->callee, called_obj->args->size, call->args->size);
-                if(is_variadic(called_obj) && call->args->size < called_obj->args->size)
-                    throw_error(ERR_SYNTAX_ERROR, call->tok, "`%s` expects at least %ld call arguments, got %ld", called_obj->id->callee, called_obj->args->size, call->args->size);
-
-                for(size_t i = 0; i < MIN(called_obj->args->size, call->args->size); i++)
-                {
-                    ASTObj_T* expected = called_obj->args->items[i];
-                    ASTNode_T* received = call->args->items[i];
-
-                    if(!expected->data_type)
-                    {
-                        throw_error(ERR_TYPE_CAST_WARN, expected->tok, "could not resolve data type for `%s`", expected->tok->value);
-                        continue;
-                    }
-                    if(!received->data_type)
-                    {
-                        //throw_error(ERR_TYPE_CAST_WARN, received->tok, "could not resolve data type for `%s`", received->tok->value);
-                        continue;
-                    }
-
-                    if(!compatible(v, expected->data_type, received->data_type))
-                    {
-                        char buf1[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
-                        char buf2[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
-
-                        throw_error(ERR_TYPE_ERROR, ((ASTNode_T*) call->args->items[i])->tok, "unexpected data type `%s`, expect `%s`", ast_type_to_str(buf1, received->data_type, LEN(buf1)), ast_type_to_str(buf2, expected->data_type, LEN(buf2)));
-                    }
-                }
-            } break;
-        
-        case OBJ_GLOBAL:
-        case OBJ_LOCAL:
-        case OBJ_FN_ARG:
-            {
-                if(called_obj->data_type->kind != TY_LAMBDA)
-                {
-                    char buf[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
-                    throw_error(ERR_TYPE_ERROR, call->expr->tok, "can only call variables of lambda type, got `%s`", ast_type_to_str(buf, called_obj->data_type, LEN(buf)));
-                    return;
-                }
-
-                call->data_type = called_obj->data_type->base;
-            } break;
-        
+        case TY_FN:
+            call->data_type = call_type->base ? call_type->base : (ASTType_T*) primitives[TY_VOID];
+            call->called_obj = call->expr->referenced_obj;
+            break;
         default:
-            throw_error(ERR_TYPE_ERROR, call->expr->tok, "cannot call %s `%s`", obj_kind_to_str(called_obj->kind), called_obj->id->callee);
-            return;
+            {   
+                char buf[BUFSIZ] = {};
+                throw_error(ERR_TYPE_ERROR, call->tok, "cannot call expression of data type `%s`", ast_type_to_str(buf, call_type, LEN(buf)));
+            } return;
+    }
+
+    size_t expected_arg_num = call_type->arg_types->size;
+    size_t received_arg_num = call->args->size;
+
+    if(is_variadic(call_type) && received_arg_num < expected_arg_num)
+    {
+        char buf[BUFSIZ] = {};
+        throw_error(ERR_CALL_ERROR, call->tok, "type `%s` expects %lu or more call arguments, got %lu", ast_type_to_str(buf, call_type, LEN(buf)), expected_arg_num, received_arg_num);
+    }
+    else if(!is_variadic(call_type) && received_arg_num != expected_arg_num)
+    {
+        char buf[BUFSIZ] = {};
+        throw_error(ERR_CALL_ERROR, call->tok, "type `%s` expects %lu call arguments, got %lu", ast_type_to_str(buf, call_type, LEN(buf)), expected_arg_num, received_arg_num);
+    }
+
+    for(size_t i = 0; i < expected_arg_num; i++)
+    {
+        ASTType_T* expected_arg = call_type->arg_types->items[i];
+        ASTType_T* received_arg = ((ASTNode_T*) call->args->items[i])->data_type;
+
+        if(!compatible(v, expected_arg, received_arg))
+        {
+            char expected_buf[BUFSIZ] = {};
+            char received_buf[BUFSIZ] = {};
+            throw_error(ERR_CALL_ERROR, ((ASTNode_T*) call->args->items[i])->tok, "call argument %ld expects type `%s`, got `%s`", i + 1, 
+                ast_type_to_str(expected_buf, expected_arg, LEN(expected_buf)),
+                ast_type_to_str(received_buf, received_arg, LEN(received_buf))
+            );
+        }
     }
     
     // if we compile using the assembly compiler, a buffer for the return value is needed when handling big structs
-    if(global.ct == CT_ASM && expand_typedef(v, call->data_type)->kind == TY_STRUCT)
+    if(global.ct == CT_ASM && call->data_type && expand_typedef(v, call->data_type)->kind == TY_STRUCT)
     {
         ASTObj_T* ret_buf = init_ast_obj(OBJ_LOCAL, call->tok);
         ret_buf->data_type = call->data_type;
@@ -1173,8 +1159,6 @@ static void call(ASTNode_T* call, va_list args)
         list_push(v->current_function->objs, ret_buf);
         call->return_buffer = ret_buf;
     }
-
-    call->expr->call = call;
 }
 
 static void identifier(ASTNode_T* id, va_list args)
@@ -1480,6 +1464,8 @@ static void local_initializer(Validator_T* v, ASTNode_T* assign, ASTObj_T* local
 static void assignment_start(ASTNode_T* assign, va_list args)
 {
     GET_VALIDATOR(args);
+    if(assign->right->kind == ND_ARRAY)
+        assign->right->is_assigning = true;
 }
 
 static void assignment_end(ASTNode_T* assign, va_list args)
@@ -1703,6 +1689,7 @@ static void hole(ASTNode_T* hole, va_list args)
     if(!v->current_pipe->left->data_type)
         throw_error(ERR_TYPE_ERROR_UNCR, hole->tok, "cannot resolve data type of pipe input expression");
     hole->data_type = v->current_pipe->left->data_type;
+    hole->referenced_obj = v->current_pipe->left->referenced_obj;
 }
 
 static void string_lit(ASTNode_T* str, va_list args)
@@ -2022,7 +2009,7 @@ static i32 get_type_size(Validator_T* v, ASTType_T* type)
         case TY_VOID:
             return VOID_S;
         case TY_PTR:
-        case TY_LAMBDA:
+        case TY_FN:
             return PTR_S;
         case TY_TYPEOF:
             return get_type_size(v, expand_typedef(v, type->num_indices->data_type));
@@ -2043,7 +2030,6 @@ static i32 get_type_size(Validator_T* v, ASTType_T* type)
                 return get_union_size(v, type);
             else
                 return get_struct_size(v, type);
-        case TY_FN:
         default:
             return 0;
     }

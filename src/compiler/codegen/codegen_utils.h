@@ -17,7 +17,7 @@ char* find_gcc_libpath(void);
 char* find_libpath(void);
 bool unsigned_type(ASTType_T* ty);
 bool vla_type(ASTType_T* ty);
-bool is_variadic(ASTObj_T* fn);
+bool is_variadic(ASTType_T* ty);
 ASTType_T* unpack(ASTType_T* ty);
 bool should_emit(ASTObj_T* obj);
 

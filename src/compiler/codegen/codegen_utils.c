@@ -151,9 +151,9 @@ ASTType_T* unpack(ASTType_T* ty)
     return ty && ty->kind == TY_UNDEF ? ty->base : ty;
 }
 
-bool is_variadic(ASTObj_T* fn)
+bool is_variadic(ASTType_T* ty)
 {
-    return fn->is_variadic;
+    return ty && ty->is_variadic;
 }
 
 bool should_emit(ASTObj_T* obj)

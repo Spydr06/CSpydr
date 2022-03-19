@@ -133,7 +133,6 @@ typedef enum {
     TY_STRUCT,
     TY_ENUM,
 
-    TY_LAMBDA,
     TY_FN,
 
     TY_UNDEF,
@@ -297,6 +296,7 @@ struct AST_TYPE_STRUCT
             bool is_fn        : 1;
             bool is_union     : 1;
             bool is_vla       : 1;
+            bool is_variadic  : 1;
         };
         u8 flags;
     };
@@ -330,7 +330,6 @@ struct AST_OBJ_STRUCT
             bool referenced     : 1;
             bool is_entry_point : 1;
             bool no_return      : 1;
-            bool is_variadic    : 1;
             bool ignore_unused  : 1;
         };
         u8 flags;

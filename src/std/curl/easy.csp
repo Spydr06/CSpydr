@@ -37,8 +37,9 @@ type curl_blob: struct {
 };
 
 extern  {
+
     fn curl_easy_init(): &CURL;
-    fn curl_easy_setopt(curl: &CURL, option: CURLoption, args: ...): CURLcode;
+    fn curl_easy_setopt(curl: &CURL, option: curl::CURLoption, args: ...): CURLcode;
     fn curl_easy_perform(curl: &CURL): CURLcode;
     fn curl_easy_cleanup(curl: &CURL);
 

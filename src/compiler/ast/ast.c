@@ -1,6 +1,7 @@
 #include "ast.h"
 #include "../io/log.h"
 
+#include "codegen/codegen_utils.h"
 #include "config.h"
 #include "types.h"
 #include "../mem/mem.h"
@@ -151,7 +152,6 @@ const char* type_kind_to_str(ASTTypeKind_T kind)
             return "struct";
         case TY_ENUM:
             return "enum";
-        case TY_LAMBDA:
         case TY_FN:
             return "fn";
         case TY_UNDEF:
@@ -194,7 +194,7 @@ char* ast_type_to_str(char* dest, ASTType_T* ty, size_t size)
         case TY_ENUM:
             strcat(dest, "enum");
             break;
-        case TY_LAMBDA:
+        case TY_FN:
             strcat(dest, "fn<");
             ast_type_to_str(dest, ty->base, size);
             strcat(dest, ">(");
@@ -204,10 +204,9 @@ char* ast_type_to_str(char* dest, ASTType_T* ty, size_t size)
                 if(ty->arg_types->size - i > 1)
                     strcat(dest, ", ");
             }
+            if(is_variadic(ty))
+                strcat(dest, ", ...");
             strcat(dest, ")");
-            break;
-        case TY_FN:
-            strcat(dest, "<function>");
             break;
         case TY_UNDEF:
             ast_id_to_str(dest, ty->id, size);

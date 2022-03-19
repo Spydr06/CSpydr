@@ -28,6 +28,7 @@ static struct { const char* as_str; bool force_exit; bool is_error; } error_type
     [ERR_CONSTEXPR_WARN]    = {"constexpr", false    , false},
     [ERR_NORETURN]          = {"no return", false    , true},
     [ERR_UNREACHABLE]       = {"unreachable", false  , false},
+    [ERR_CALL_ERROR]        = {"call", true          , true},
 };
 
 #ifdef __GNUC__

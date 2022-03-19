@@ -98,6 +98,13 @@ static const char* c_keywords[] = {
     NULL
 };
 
+static const char* c_start_text[] = 
+{
+    [0] = "int main(){ return __csp_main(); }",
+    [1] = "int main(int argc, char** argv) { retrun __csp_main(argv); }",
+    [2] = "int main(int argc, char** argv) { return __csp_main(argc, argv); }",
+};
+
 void init_c_cg(CCodegenData_T* cg, ASTProg_T* ast)
 {
     cg->ast = ast;
@@ -183,6 +190,7 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
     for(size_t i = 0; i < cg->ast->objs->size; i++)
         c_gen_obj(cg, cg->ast->objs->items[i]);
 
+    println(cg, "%s", c_start_text[cg->ast->entry_point->args->size]);
     write_code(cg, target);
 
     if(cg->print_c)
@@ -253,7 +261,7 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
     else
         switch(ty->kind)
         {
-            case TY_LAMBDA:
+            case TY_FN:
                 c_gen_type(cg, ty->base, "");
                 print(cg, " (*%s)(", struct_name);
                 for(size_t i = 0; i < ty->arg_types->size; i++)
@@ -359,7 +367,7 @@ static void c_gen_typedefs(CCodegenData_T* cg, ASTObj_T* obj)
             else
                 c_gen_type(cg, obj->data_type, callee);
         
-            if(obj->data_type->kind != TY_LAMBDA) {
+            if(obj->data_type->kind != TY_FN) {
                 print(cg, " %s", callee);
             }
             if(obj->data_type->kind == TY_ARR) {
@@ -389,7 +397,7 @@ static bool c_gen_fn_arg_list(CCodegenData_T* cg, List_T* args)
      
         char* callee = c_gen_identifier(cg, arg->id);
 
-        if(arg->data_type->kind == TY_LAMBDA)
+        if(arg->data_type->kind == TY_FN)
             c_gen_type(cg, arg->data_type, callee);
         else
         {   
@@ -439,7 +447,7 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
 
             if(obj->args)
                 c_gen_fn_arg_list(cg, obj->args);
-            if(is_variadic(obj))
+            if(is_variadic(obj->data_type))
                 print(cg, ",...");
             println(cg, ");");
             break;
@@ -495,7 +503,7 @@ static void c_gen_obj(CCodegenData_T* cg, ASTObj_T* obj)
 
                 if(obj->args)
                     has_va_list = c_gen_fn_arg_list(cg, obj->args);
-                if(is_variadic(obj))
+                if(is_variadic(obj->data_type))
                     print(cg, ",...");
                 println(cg, "){");
 

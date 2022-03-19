@@ -41,5 +41,6 @@ extern const ASTType_T* void_ptr_type;
 ASTTypeKind_T get_datatype_from_str(char* str);
 ASTType_T* get_primitive_type(char* type);
 bool check_type_compatibility(ASTType_T* a, ASTType_T* b);
+ASTType_T* ptr_to(Token_T* tok, ASTType_T* base);
 
 #endif

@@ -411,7 +411,7 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
             }
 
             // va_area
-            if(is_variadic(obj))
+            if(is_variadic(obj->data_type))
             {
                 bottom += obj->va_area->data_type->size;
                 bottom = align_to(bottom, obj->va_area->data_type->align);
@@ -641,7 +641,7 @@ static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs)
                     asm_println(cg, "  mov %%rsp, %d(%%rbp)", obj->alloca_bottom->offset);
 
                     // save arg registers if function is variadic
-                    if(is_variadic(obj))
+                    if(is_variadic(obj->data_type))
                     {
                         i32 gp = 0, fp = 0;
                         if(obj->return_ptr)
@@ -1617,27 +1617,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                     }
                     
                     if(!node->result_ignored) 
-                    {
-                        ASTType_T* base_type = unpack(node->left->data_type)->base;
-                        if(!base_type)
-                            return;
-                        ASTNode_T converted = {
-                            .kind = ND_REF,
-                            .tok = node->left->tok,
-                            .data_type = &(ASTType_T){
-                                .kind = TY_PTR,
-                                .base = base_type,
-                                .size = PTR_S
-                            },
-                            .right = &(ASTNode_T){
-                                .kind = ND_DEREF,
-                                .tok = node->left->tok,
-                                .data_type = base_type,
-                                .right = node->left
-                            }
-                        };
-                        asm_gen_expr(cg, &converted);
-                    }
+                        asm_gen_expr(cg, node->left);
                     return;
                 case ND_STRUCT:
                     // x = y :: {1, 2, 3} gets converted to x.z = 1, x.w = 2, x.u = 3
@@ -1751,14 +1731,13 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             i32 stack_args = asm_push_args(cg, node);
             asm_gen_addr(cg, node->expr);
 
-            if(node->expr->referenced_obj->kind == OBJ_LOCAL || node->expr->referenced_obj->kind == OBJ_FN_ARG)
+            if(!node->called_obj || node->called_obj->kind == OBJ_LOCAL || node->called_obj->kind == OBJ_FN_ARG)
                 asm_println(cg, "  mov (%%rax), %%rax");
 
             i32 gp = 0, fp = 0;
 
             if(node->data_type->kind != TY_VOID && node->data_type->size > 16)
                 asm_pop(cg, argreg64[gp++]);
-            
             for(i64 i = 0; i < node->args->size; i++)
             {
                 ASTNode_T* arg = node->args->items[i];

@@ -27,6 +27,7 @@ typedef enum ERROR_TYPE
     ERR_CONSTEXPR_WARN, // warning in a constant expression
     ERR_NORETURN,       // function does not return a value
     ERR_UNREACHABLE,    // "unreachable" code found after a return statement
+    ERR_CALL_ERROR,     // error while calling
 
     ERR_ILLEGAL_TYPE_CAST, // illegal cast from/to a type
     ERR_TYPE_CAST_WARN,    // warning when casting (implicit casts, etc.)
