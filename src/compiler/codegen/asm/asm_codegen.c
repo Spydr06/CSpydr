@@ -211,24 +211,31 @@ static void asm_println(ASMCodegenData_T* cg, char* fmt, ...)
     va_end(va);    fprintf(cg->code_buffer, "\n");
 }
 
-static void write_code(ASMCodegenData_T* cg, const char* target_bin)
+static void write_code(ASMCodegenData_T* cg, const char* target, bool cachefile)
 {
-    char* homedir = get_home_directory();
-    char cache_dir[BUFSIZ] = {'\0'};
-    sprintf(cache_dir, "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS, homedir);
-
-    if(make_dir(cache_dir))
+    char file_path[BUFSIZ * 2] = {'\0'};
+    
+    if(cachefile)
     {
-        LOG_ERROR("error creating cache directory `" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "`.\n");
-        exit(1);
-    }
+        char* homedir = get_home_directory();
+        char cache_dir[BUFSIZ] = {'\0'};
 
-    char c_file_path[BUFSIZ * 2] = {'\0'};
-    sprintf(c_file_path, "%s" DIRECTORY_DELIMS "%s.a", cache_dir, target_bin);
+        if(cachefile)
+            sprintf(cache_dir, "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS, homedir);
+
+        if(make_dir(cache_dir))
+        {
+            LOG_ERROR("error creating cache directory `" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "`.\n");
+            exit(1);
+        }
+        sprintf(file_path, "%s" DIRECTORY_DELIMS "%s.s", cache_dir, target);
+    }
+    else
+        sprintf(file_path, "%s.s", target);
 
     fclose(cg->code_buffer);
 
-    FILE* out = open_file(c_file_path);
+    FILE* out = open_file(file_path);
     fwrite(cg->buf, cg->buf_len, 1, out);
     fclose(out);
 }
@@ -268,7 +275,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
     asm_gen_data(cg, cg->ast->objs);
     asm_println(cg, "%s", asm_start_text[cg->ast->entry_point->args->size]);
     asm_gen_text(cg, cg->ast->objs);
-    write_code(cg, target);
+    write_code(cg, target, global.do_assemble);
 
     if(cg->print)
     {
@@ -277,64 +284,71 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         fprintf(OUTPUT_STREAM, "%s", cg->buf);
     }
 
-    char asm_source_file[BUFSIZ] = {'\0'};
-    sprintf(asm_source_file, "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.a", get_home_directory(), target);
-
-    char obj_file[BUFSIZ] = {'\n'};
-    sprintf(obj_file, "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.o", get_home_directory(), target);
-    
-    // run the assembler
+    if(global.do_assemble)
     {
-        const char* args[] = {
-            DEFAULT_ASSEMBLER,
-            "-c",
-            asm_source_file,
-            "-o",
-            obj_file,
-            NULL
-        };
-        i32 exit_code = subprocess(args[0], (char* const*) args, false);
+        char asm_source_file[BUFSIZ] = {'\0'};
+        sprintf(asm_source_file, "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.a", get_home_directory(), target);
 
-        if(exit_code != 0)
+        char obj_file[BUFSIZ] = {'\n'};
+        if(global.do_link)
+            sprintf(obj_file, "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.o", get_home_directory(), target);
+        else
+            sprintf(obj_file, "%s.o", target);
+
+        // run the assembler
         {
-            LOG_ERROR_F("error assembling code. (exit code %d)\n", exit_code);
-            exit(1);
-        }
-    }
+            const char* args[] = {
+                DEFAULT_ASSEMBLER,
+                "-c",
+                asm_source_file,
+                "-o",
+                obj_file,
+                NULL
+            };
+            i32 exit_code = subprocess(args[0], (char* const*) args, false);
 
-    // run the linker
-    {
-        if(!cg->silent)
-            LOG_OK_F(COLOR_BOLD_BLUE "  Linking    " COLOR_RESET "%s\n", target);
-
-        List_T* args = init_list(sizeof(char*));
-        list_push(args, DEFAULT_LINKER);
-        list_push(args, "-o");
-        list_push(args, (void*) target);
-        list_push(args, "-m");
-        list_push(args, "elf_x86_64");
-        list_push(args, "-L/usr/lib64");
-        list_push(args, "-L/lib64");
-        list_push(args, "-L/usr/lib");
-        list_push(args, "-L/lib");
-
-        for(size_t i = 0; i < global.linker_flags->size; i++)
-            list_push(args, global.linker_flags->items[i]);
-
-        list_push(args, "-dynamic-linker");
-        list_push(args, "/lib64/ld-linux-x86-64.so.2");
-        list_push(args, obj_file);
-        list_push(args, NULL);
-
-
-        i32 exit_code = subprocess((char*) args->items[0], (char* const*) args->items, false);
-        if(exit_code != 0)
-        {
-            LOG_ERROR_F("error linking code. (exit code %d)\n", exit_code);
-            exit(1);
+            if(exit_code != 0)
+            {
+                LOG_ERROR_F("error assembling code. (exit code %d)\n", exit_code);
+                exit(1);
+            }
         }
 
-        free_list(args);
+        // run the linker
+        if(global.do_link) 
+        {
+            if(!cg->silent)
+                LOG_OK_F(COLOR_BOLD_BLUE "  Linking    " COLOR_RESET "%s\n", target);
+
+            List_T* args = init_list(sizeof(char*));
+            list_push(args, DEFAULT_LINKER);
+            list_push(args, "-o");
+            list_push(args, (void*) target);
+            list_push(args, "-m");
+            list_push(args, "elf_x86_64");
+            list_push(args, "-L/usr/lib64");
+            list_push(args, "-L/lib64");
+            list_push(args, "-L/usr/lib");
+            list_push(args, "-L/lib");
+
+            for(size_t i = 0; i < global.linker_flags->size; i++)
+                list_push(args, global.linker_flags->items[i]);
+
+            list_push(args, "-dynamic-linker");
+            list_push(args, "/lib64/ld-linux-x86-64.so.2");
+            list_push(args, obj_file);
+            list_push(args, NULL);
+
+
+            i32 exit_code = subprocess((char*) args->items[0], (char* const*) args->items, false);
+            if(exit_code != 0)
+            {
+                LOG_ERROR_F("error linking code. (exit code %d)\n", exit_code);
+                exit(1);
+            }
+
+            free_list(args);
+        }
     }
 }
 

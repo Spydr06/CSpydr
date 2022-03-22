@@ -21,11 +21,19 @@ struct {
 
     u32 max_macro_call_depth;
 
-    bool silent;
-    bool print_code;
-    bool optimize;
-    bool embed_debug_info;
-    bool from_json;
+    union {
+        struct {
+            bool silent           : 1;
+            bool print_code       : 1;
+            bool optimize         : 1;
+            bool embed_debug_info : 1;
+            bool from_json        : 1;
+            bool do_link          : 1;
+            bool do_assemble      : 1;
+            bool do_parsing       : 1;
+        };
+        u8 flags;
+    };
 
     u32 emitted_warnings;
     u32 emitted_errors;

@@ -123,6 +123,12 @@ static void generate_json(ASTProg_T* ast, char* target, bool print_json, bool si
 
 static void run(char* file)
 {
+    if(!global.do_assemble || !global.do_link) 
+    {
+        LOG_OK(COLOR_BOLD_RED "! Cannot execute target since no executable was generated !\n");
+        return;
+    }
+
     if(!global.silent)
         LOG_OK_F(COLOR_BOLD_BLUE "  Executing " COLOR_RESET " %s\n", file);
     
