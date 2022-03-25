@@ -93,6 +93,8 @@ const char* obj_kind_to_str(ASTObjKind_T kind)
             return "namespace";
         case OBJ_ENUM_MEMBER:
             return "enum member";
+        case OBJ_LAMBDA:
+            return "lambda function";
         default:
             return "<undefined ASTObj_T kind>";
     }
@@ -163,7 +165,7 @@ const char* type_kind_to_str(ASTTypeKind_T kind)
 
 char* ast_type_to_str(char* dest, ASTType_T* ty, size_t size)
 {
-    if(size - strlen(dest) < 10) // if not enough memory is left, return
+    if(size - strlen(dest) < 32) // if not enough memory is left, return
         return dest;
     switch(ty->kind)
     {

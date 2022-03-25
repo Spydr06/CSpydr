@@ -12,6 +12,7 @@
 #include "lexer/token.h"
 #include "mem/mem.h"
 #include "parser/parser.h"
+#include "parser/utils.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -123,6 +124,8 @@ static void type_expr(ASTNode_T* cmp, va_list args);
 static void pipe_start(ASTNode_T* pipe, va_list args);
 static void pipe_end(ASTNode_T* pipe, va_list args);
 static void hole(ASTNode_T* hole, va_list args);
+static void lambda_start(ASTNode_T* lambda, va_list args);
+static void lambda_end(ASTNode_T* lambda, va_list args);
 static void string_lit(ASTNode_T* str, va_list args);
 static void char_lit(ASTNode_T* ch, va_list args);
 
@@ -145,6 +148,7 @@ static ASTIteratorList_T main_iterator_list =
         [ND_ASSIGN] = assignment_start,
         [ND_WITH] = with_start,
         [ND_PIPE] = pipe_start,
+        [ND_LAMBDA] = lambda_start,
     },
 
     .node_end_fns = 
@@ -199,6 +203,7 @@ static ASTIteratorList_T main_iterator_list =
         [ND_LEN]     = len,
         [ND_TYPE_EXPR] = type_expr,
         [ND_PIPE]    = pipe_end,
+        [ND_LAMBDA] = lambda_end,
         [ND_HOLE]    = hole,
         [ND_STR]  = string_lit,
         [ND_CHAR] = char_lit,
@@ -1705,6 +1710,44 @@ static void hole(ASTNode_T* hole, va_list args)
         throw_error(ERR_TYPE_ERROR_UNCR, hole->tok, "cannot resolve data type of pipe input expression");
     hole->data_type = v->current_pipe->left->data_type;
     hole->referenced_obj = v->current_pipe->left->referenced_obj;
+}
+
+static void lambda_start(ASTNode_T* lambda, va_list args)
+{
+    static u64 id = 0;
+    lambda->long_val = id++;
+
+    GET_VALIDATOR(args);
+    begin_scope(v, NULL);
+}
+
+static void lambda_end(ASTNode_T* lambda, va_list args)
+{
+    GET_VALIDATOR(args);
+    end_scope(v);
+
+    if(global.ct == CT_ASM)
+    {
+        ASTObj_T* lambda_stack_ptr = init_ast_obj(OBJ_GLOBAL, lambda->tok);
+        lambda_stack_ptr->data_type = (ASTType_T*) void_ptr_type;
+        lambda_stack_ptr->id = init_ast_identifier(lambda->tok, "");
+        sprintf(lambda_stack_ptr->id->callee, "lambda.stackptr.%ld", lambda->long_val);
+
+        list_push(v->ast->objs, lambda_stack_ptr);
+        lambda->stack_ptr = lambda_stack_ptr;
+
+        ASTType_T* return_type = expand_typedef(v, lambda->data_type->base);
+        if(return_type->kind == TY_ARR) 
+            throw_error(ERR_TYPE_ERROR_UNCR, return_type->tok ? return_type->tok : lambda->tok, "cannot return an array type from a function");
+        else if(return_type->kind == TY_STRUCT && return_type->size > 16)
+        {
+            lambda->return_ptr = init_ast_obj(OBJ_LOCAL, lambda->data_type->base->tok);
+            lambda->return_ptr->data_type = init_ast_type(TY_PTR, lambda->data_type->base->tok);
+            lambda->return_ptr->data_type->base = lambda->data_type->base;
+            lambda->return_ptr->data_type->size = get_type_size(v, lambda->return_ptr->data_type);
+            lambda->return_ptr->data_type->align = 8;
+        }
+    }
 }
 
 static void string_lit(ASTNode_T* str, va_list args)

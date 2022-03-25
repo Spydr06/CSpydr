@@ -1,7 +1,21 @@
-import "std.csp";
+import "io.csp";
 
 fn main(): i32 {
-    std::io::printf("%i\n", 1 else 23);
+    using std;
+
+    let array = [1, 2, 3, 4, 5];
+    let i = 0;
+
+    for_each(array, 5, |val: i32| => { 
+        std::io::printf("array[%i] = %i\n", i++, val);
+    });
 
     <- 0;
+}
+
+fn for_each(array: i32[], size: i32, func: fn(i32))
+{
+    for let i = 0; i < size; i++; {
+        func(array[i]);   
+    }
 }

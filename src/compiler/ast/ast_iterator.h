@@ -30,5 +30,6 @@ typedef struct AST_ITERATOR_LIST_STRUCT
 } ASTIteratorList_T;
 
 void ast_iterate(ASTIteratorList_T* list, ASTProg_T* ast, ...);
+void ast_iterate_stmt(ASTIteratorList_T* list, ASTNode_T* stmt, ...);
 
 #endif

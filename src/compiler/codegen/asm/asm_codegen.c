@@ -10,6 +10,7 @@
 #include "ast/ast.h"
 #include "config.h"
 #include "globals.h"
+#include "list.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -62,6 +63,7 @@ static char* argreg32[] = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d"};
 static char* argreg64[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
 static char call_reg[] = "%r10";
 static char pipe_reg[] = "%r15";
+static char lambda_reg[] = "%r14";
 
 // The table for type casts
 static char i32i8[]  = "movsbl %al, %eax";
@@ -179,6 +181,7 @@ static void asm_store_fp(ASMCodegenData_T* cg, i32 r, i32 offset, i32 sz);
 static void asm_store_gp(ASMCodegenData_T* cg, i32 r, i32 offset, i32 sz);
 static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node);
 static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node);
+static void asm_gen_lambda(ASMCodegenData_T* cg, ASTNode_T* lambda);
 
 void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast)
 {
@@ -187,6 +190,11 @@ void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast)
     cg->ast = ast;
     cg->embed_file_locations = global.embed_debug_info;
     cg->code_buffer = open_memstream(&cg->buf, &cg->buf_len);
+}
+
+void free_asm_cg(ASMCodegenData_T* cg)
+{
+    free(cg->buf);
 }
 
 #ifdef __GNUC__
@@ -287,7 +295,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
     if(global.do_assemble)
     {
         char asm_source_file[BUFSIZ] = {'\0'};
-        sprintf(asm_source_file, "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.a", get_home_directory(), target);
+        sprintf(asm_source_file, "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.s", get_home_directory(), target);
 
         char obj_file[BUFSIZ] = {'\n'};
         if(global.do_link)
@@ -623,6 +631,121 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
     }
 }
 
+static void asm_gen_function(ASMCodegenData_T* cg, ASTObj_T* obj)
+{
+    char* fn_name = asm_gen_identifier(obj->id);
+
+    asm_println(cg, "  .globl %s", fn_name);
+    asm_println(cg, "  .text");
+    asm_println(cg, "  .type %s, @function", fn_name);
+    asm_println(cg, "%s:", fn_name);
+
+    cg->current_fn = obj;
+
+    // prologue
+    asm_println(cg, "  push %%rbp");
+    asm_println(cg, "  mov %%rsp, %%rbp");
+    asm_println(cg, "  sub $%d, %%rsp", obj->stack_size);
+    asm_println(cg, "  mov %%rsp, %d(%%rbp)", obj->alloca_bottom->offset);
+
+    // save arg registers if function is variadic
+    if(is_variadic(obj->data_type))
+    {
+        i32 gp = 0, fp = 0;
+        if(obj->return_ptr)
+            gp++;
+        for(size_t j = 0; j < obj->args->size; j++)
+        {
+            ASTObj_T* arg = obj->args->items[j];
+            if(is_flonum(unpack(arg->data_type)))
+                fp++;
+            else
+                gp++;
+        }
+
+        i32 off = obj->va_area->offset;
+
+        // va_elem
+		asm_println(cg, "  movl $%d, %d(%%rbp)", gp * 8, off);          // gp_offset
+		asm_println(cg, "  movl $%d, %d(%%rbp)", fp * 8 + 48, off + 4); // fp_offset
+		asm_println(cg, "  movq %%rbp, %d(%%rbp)", off + 8);            // overflow_arg_area
+		asm_println(cg, "  addq $16, %d(%%rbp)", off + 8);
+		asm_println(cg, "  movq %%rbp, %d(%%rbp)", off + 16);           // reg_save_area
+		asm_println(cg, "  addq $%d, %d(%%rbp)", off + 24, off + 16);
+            
+		// __reg_save_area__
+	    asm_println(cg, "  movq %%rdi, %d(%%rbp)", off + 24);
+	    asm_println(cg, "  movq %%rsi, %d(%%rbp)", off + 32);
+	    asm_println(cg, "  movq %%rdx, %d(%%rbp)", off + 40);
+	    asm_println(cg, "  movq %%rcx, %d(%%rbp)", off + 48);
+	    asm_println(cg, "  movq %%r8, %d(%%rbp)", off + 56);
+	    asm_println(cg, "  movq %%r9, %d(%%rbp)", off + 64);
+	    asm_println(cg, "  movsd %%xmm0, %d(%%rbp)", off + 72);
+	    asm_println(cg, "  movsd %%xmm1, %d(%%rbp)", off + 80);
+	    asm_println(cg, "  movsd %%xmm2, %d(%%rbp)", off + 88);
+	    asm_println(cg, "  movsd %%xmm3, %d(%%rbp)", off + 96);
+	    asm_println(cg, "  movsd %%xmm4, %d(%%rbp)", off + 104);
+	    asm_println(cg, "  movsd %%xmm5, %d(%%rbp)", off + 112);
+	    asm_println(cg, "  movsd %%xmm6, %d(%%rbp)", off + 120);
+	    asm_println(cg, "  movsd %%xmm7, %d(%%rbp)", off + 128);
+    }
+
+    // save passed-by-register arguments to the stack
+    i32 gp = 0, fp = 0;
+
+    if(obj->return_ptr)
+        asm_store_gp(cg, gp++, obj->return_ptr->offset, obj->return_ptr->data_type->size);
+
+    for(size_t j = 0; j < obj->args->size; j++)
+    {
+        ASTObj_T* arg = obj->args->items[j];
+        if(arg->offset > 0)
+            continue;
+                        
+        ASTType_T* ty = unpack(arg->data_type);
+
+        switch(ty->kind)
+        {
+            case TY_STRUCT:
+                assert(ty->size <= 16);
+                if(asm_has_flonum(ty, 0, 8, 0))
+                    asm_store_fp(cg, fp++, arg->offset, MIN(8, ty->size));
+                else
+                    asm_store_gp(cg, gp++, arg->offset, MIN(8, ty->size));
+                                
+                if(ty->size > 8)
+                {
+                    if(asm_has_flonum(ty, 8, 16, 0))
+                        asm_store_fp(cg, fp++, arg->offset + 8, ty->size - 8);
+                    else
+                        asm_store_gp(cg, gp++, arg->offset + 8, ty->size - 8);
+                }
+                break;
+            case TY_F32:
+            case TY_F64:
+                asm_store_fp(cg, fp++, arg->offset, ty->size);
+                break;
+            default:
+                asm_store_gp(cg, gp++, arg->offset, ty->size);
+        }
+    }
+
+    // emit code
+    cg->current_fn_name = fn_name;
+    asm_gen_stmt(cg, obj->body);
+    if(cg->depth != 0) {
+        cg->depth = 0;
+        throw_error(ERR_CODEGEN_WARN, obj->tok, "cg->depth is not 0");
+    }
+    cg->current_fn_name = NULL;
+
+    // epilogue
+    asm_println(cg, ".L.return.%s:", fn_name);
+    asm_println(cg, "  mov %%rbp, %%rsp");
+    asm_println(cg, "  pop %%rbp");
+    asm_println(cg, "  ret");
+}
+
 static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs)
 {
     for(size_t i = 0; i < objs->size; i++)
@@ -635,123 +758,13 @@ static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs)
                 break;
 
             case OBJ_FUNCTION:
-                {
-                    if(obj->is_extern || !should_emit(obj)) 
-                        continue;
-                    
-
-                    char* fn_name = asm_gen_identifier(obj->id);
-                    asm_println(cg, "  .globl %s", fn_name);
-                    asm_println(cg, "  .text");
-                    asm_println(cg, "  .type %s, @function", fn_name);
-                    asm_println(cg, "%s:", fn_name);
-
-                    cg->current_fn = obj;
-
-                    // prologue
-                    asm_println(cg, "  push %%rbp");
-                    asm_println(cg, "  mov %%rsp, %%rbp");
-                    asm_println(cg, "  sub $%d, %%rsp", obj->stack_size);
-                    asm_println(cg, "  mov %%rsp, %d(%%rbp)", obj->alloca_bottom->offset);
-
-                    // save arg registers if function is variadic
-                    if(is_variadic(obj->data_type))
-                    {
-                        i32 gp = 0, fp = 0;
-                        if(obj->return_ptr)
-                            gp++;
-                        for(size_t j = 0; j < obj->args->size; j++)
-                        {
-                            ASTObj_T* arg = obj->args->items[j];
-                            if(is_flonum(unpack(arg->data_type)))
-                                fp++;
-                            else
-                                gp++;
-                        }
-
-                     //   obj->va_area->offset = -144;
-                        i32 off = obj->va_area->offset;
-
-                        // va_elem
-			            asm_println(cg, "  movl $%d, %d(%%rbp)", gp * 8, off);          // gp_offset
-			            asm_println(cg, "  movl $%d, %d(%%rbp)", fp * 8 + 48, off + 4); // fp_offset
-			            asm_println(cg, "  movq %%rbp, %d(%%rbp)", off + 8);            // overflow_arg_area
-			            asm_println(cg, "  addq $16, %d(%%rbp)", off + 8);
-			            asm_println(cg, "  movq %%rbp, %d(%%rbp)", off + 16);           // reg_save_area
-			            asm_println(cg, "  addq $%d, %d(%%rbp)", off + 24, off + 16);
+                if(obj->is_extern || !should_emit(obj)) 
+                    continue;
+                asm_gen_function(cg, obj);
+                break;
             
-			            // __reg_save_area__
-			            asm_println(cg, "  movq %%rdi, %d(%%rbp)", off + 24);
-			            asm_println(cg, "  movq %%rsi, %d(%%rbp)", off + 32);
-			            asm_println(cg, "  movq %%rdx, %d(%%rbp)", off + 40);
-			            asm_println(cg, "  movq %%rcx, %d(%%rbp)", off + 48);
-			            asm_println(cg, "  movq %%r8, %d(%%rbp)", off + 56);
-			            asm_println(cg, "  movq %%r9, %d(%%rbp)", off + 64);
-			            asm_println(cg, "  movsd %%xmm0, %d(%%rbp)", off + 72);
-			            asm_println(cg, "  movsd %%xmm1, %d(%%rbp)", off + 80);
-			            asm_println(cg, "  movsd %%xmm2, %d(%%rbp)", off + 88);
-			            asm_println(cg, "  movsd %%xmm3, %d(%%rbp)", off + 96);
-			            asm_println(cg, "  movsd %%xmm4, %d(%%rbp)", off + 104);
-			            asm_println(cg, "  movsd %%xmm5, %d(%%rbp)", off + 112);
-			            asm_println(cg, "  movsd %%xmm6, %d(%%rbp)", off + 120);
-			            asm_println(cg, "  movsd %%xmm7, %d(%%rbp)", off + 128);
-                    }
-
-                    // save passed-by-register arguments to the stack
-                    i32 gp = 0, fp = 0;
-
-                    if(obj->return_ptr)
-                        asm_store_gp(cg, gp++, obj->return_ptr->offset, obj->return_ptr->data_type->size);
-
-                    for(size_t j = 0; j < obj->args->size; j++)
-                    {
-                        ASTObj_T* arg = obj->args->items[j];
-                        if(arg->offset > 0)
-                            continue;
-                        
-                        ASTType_T* ty = unpack(arg->data_type);
-
-                        switch(ty->kind)
-                        {
-                            case TY_STRUCT:
-                                assert(ty->size <= 16);
-                                if(asm_has_flonum(ty, 0, 8, 0))
-                                    asm_store_fp(cg, fp++, arg->offset, MIN(8, ty->size));
-                                else
-                                    asm_store_gp(cg, gp++, arg->offset, MIN(8, ty->size));
-                                
-                                if(ty->size > 8)
-                                {
-                                    if(asm_has_flonum(ty, 8, 16, 0))
-                                        asm_store_fp(cg, fp++, arg->offset + 8, ty->size - 8);
-                                    else
-                                        asm_store_gp(cg, gp++, arg->offset + 8, ty->size - 8);
-                                }
-                                break;
-                            case TY_F32:
-                            case TY_F64:
-                                asm_store_fp(cg, fp++, arg->offset, ty->size);
-                                break;
-                            default:
-                                asm_store_gp(cg, gp++, arg->offset, ty->size);
-                        }
-                    }
-
-                    // emit code
-                    cg->current_fn_name = fn_name;
-                    asm_gen_stmt(cg, obj->body);
-                    if(cg->depth != 0) {
-                        cg->depth = 0;
-                        throw_error(ERR_CODEGEN_WARN, obj->tok, "cg->depth is not 0");
-                    }
-                    cg->current_fn_name = NULL;
-
-                    // epilogue
-                    asm_println(cg, ".L.return.%s:", fn_name);
-                    asm_println(cg, "  mov %%rbp, %%rsp");
-                    asm_println(cg, "  pop %%rbp");
-                    asm_println(cg, "  ret");
-                }
+            case OBJ_LAMBDA:
+                asm_gen_lambda(cg, obj->body);
                 break;
 
             default:
@@ -889,9 +902,9 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
                             asm_println(cg, "  lea %s(%%rip), %%rax", asm_gen_identifier(node->id));
                     }
                     else if(node->referenced_obj->is_extern_c)
-                        asm_println(cg, "  lea %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", node->id->callee);
+                        asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", node->id->callee);
                     else if(node->referenced_obj->is_extern)
-                        asm_println(cg, "  lea %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", asm_gen_identifier(node->id));
+                        asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", asm_gen_identifier(node->id));
                     else
                         asm_println(cg, "  lea %s(%%rip), %%rax", asm_gen_identifier(node->id));
                     return;
@@ -930,6 +943,9 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
                 asm_gen_expr(cg, node);
                 return;
             }
+        case ND_LAMBDA:
+            asm_gen_expr(cg, node);
+            return;
 
         default:
             throw_error(ERR_CODEGEN, node->tok, "cannot generate address from node of kind %d", node->kind);
@@ -1376,6 +1392,68 @@ static void asm_gen_id_ptr(ASMCodegenData_T* cg, ASTNode_T* id)
     }
 }
 
+static void asm_gen_array_lit(ASMCodegenData_T* cg, ASTNode_T* node)
+{
+    // x = [1, 2, 3] gets converted to x[0] = 1; x[1] = 2; x[2] = 3;
+    for(size_t i = 0; i < node->right->args->size; i++)
+    {
+        ASTNode_T* item = node->right->args->items[i];
+        ASTNode_T converted = {
+            .kind = ND_ASSIGN,
+            .tok = node->tok,
+            .data_type = unpack(node->left->data_type)->base,
+            .left = &(ASTNode_T) {
+                .kind = ND_INDEX,
+                .tok = node->left->tok,
+                .data_type = unpack(node->left->data_type)->base,
+                .left = node->left,
+                .expr = &(ASTNode_T) {
+                    .kind = ND_LONG,
+                    .data_type = (ASTType_T*) primitives[TY_I64],
+                    .long_val = i
+                }
+            },
+            .right = item
+        };
+        asm_gen_expr(cg, &converted);
+    }
+                
+    if(!node->result_ignored) 
+        asm_gen_expr(cg, node->left);
+}
+
+static void asm_gen_struct_lit(ASMCodegenData_T* cg, ASTNode_T* node)
+{
+    // x = y :: {1, 2, 3} gets converted to x.z = 1, x.w = 2, x.u = 3
+    ASTType_T* struct_type = unpack(node->left->data_type);
+
+    if(struct_type->members->size > unpack(node->left->data_type)->members->size)
+        throw_error(ERR_TYPE_ERROR, node->right->tok, "too many struct arguments, maximum allowed is %ld", unpack(node->left->data_type)->members->size);
+    if(node->right->args->size > struct_type->members->size)
+        throw_error(ERR_TYPE_ERROR, node->right->tok, "too many struct arguments, maximum allowed is %ld", struct_type->members->size);
+    for(size_t i = 0; i < node->right->args->size; i++)
+    {
+        ASTNode_T* item = node->right->args->items[i];
+        ASTNode_T* struct_member = struct_type->members->items[i];
+        ASTNode_T converted = {
+            .kind = ND_ASSIGN,
+            .tok = node->tok,
+            .data_type = struct_member->data_type,
+            .left = &(ASTNode_T) {
+                .kind = ND_MEMBER,
+                .tok = node->left->tok,
+                .data_type = struct_member->data_type,
+                .left = node->left,
+                .body = struct_member,
+            },
+            .right = item
+        };
+
+        asm_gen_expr(cg, &converted);
+    }
+    asm_gen_expr(cg, node->left);
+}
+
 static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
 {
     if(node->tok && cg->embed_file_locations)
@@ -1604,75 +1682,30 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_ASSIGN:
             switch(node->right->kind)
             {
-                case ND_ARRAY:
-                    // x = [1, 2, 3] gets converted to x[0] = 1; x[1] = 2; x[2] = 3;
-                    for(size_t i = 0; i < node->right->args->size; i++)
-                    {
-                        ASTNode_T* item = node->right->args->items[i];
-
-                        ASTNode_T converted = {
-                            .kind = ND_ASSIGN,
-                            .tok = node->tok,
-                            .data_type = unpack(node->left->data_type)->base,
-                            .left = &(ASTNode_T) {
-                                .kind = ND_INDEX,
-                                .tok = node->left->tok,
-                                .data_type = unpack(node->left->data_type)->base,
-                                .left = node->left,
-                                .expr = &(ASTNode_T) {
-                                    .kind = ND_LONG,
-                                    .data_type = (ASTType_T*) primitives[TY_I64],
-                                    .long_val = i
-                                }
-                            },
-                            .right = item
-                        };
-
-                        asm_gen_expr(cg, &converted);
-                    }
-                    
-                    if(!node->result_ignored) 
-                        asm_gen_expr(cg, node->left);
-                    return;
-                case ND_STRUCT:
-                    // x = y :: {1, 2, 3} gets converted to x.z = 1, x.w = 2, x.u = 3
-                    {
-                        ASTType_T* struct_type = unpack(node->left->data_type);
-
-                        if(struct_type->members->size > unpack(node->left->data_type)->members->size)
-                            throw_error(ERR_TYPE_ERROR, node->right->tok, "too many struct arguments, maximum allowed is %ld", unpack(node->left->data_type)->members->size);
-                        if(node->right->args->size > struct_type->members->size)
-                            throw_error(ERR_TYPE_ERROR, node->right->tok, "too many struct arguments, maximum allowed is %ld", struct_type->members->size);
-                        for(size_t i = 0; i < node->right->args->size; i++)
-                        {
-                            ASTNode_T* item = node->right->args->items[i];
-                            ASTNode_T* struct_member = struct_type->members->items[i];
-
-                            ASTNode_T converted = {
-                                .kind = ND_ASSIGN,
-                                .tok = node->tok,
-                                .data_type = struct_member->data_type,
-                                .left = &(ASTNode_T) {
-                                    .kind = ND_MEMBER,
-                                    .tok = node->left->tok,
-                                    .data_type = struct_member->data_type,
-                                    .left = node->left,
-                                    .body = struct_member,
-                                },
-                                .right = item
-                            };
-
-                            asm_gen_expr(cg, &converted);
-                        }
-                        asm_gen_expr(cg, node->left);
-                    } return;
-                default:
-                    asm_gen_addr(cg, node->left);
-                    asm_push(cg);
-                    asm_gen_expr(cg, node->right);
-                    asm_store(cg, node->left->data_type);
-                    return;
+            case ND_ARRAY:
+                asm_gen_array_lit(cg, node);
+                return;
+            case ND_STRUCT:
+                asm_gen_struct_lit(cg, node);
+                return;
+            default:
+                asm_gen_addr(cg, node->left);
+                asm_push(cg);
+                asm_gen_expr(cg, node->right);
+                asm_store(cg, node->left->data_type);
+                return;
             }
+
+        case ND_LAMBDA:
+            {
+                asm_println(cg, "  mov %%rbp, .lambda.stackptr.%ld", node->long_val);
+                asm_println(cg, "  lea lambda.%ld(%%rip), %%rax", node->long_val);
+
+                ASTObj_T* impl = init_ast_obj(OBJ_LAMBDA, node->tok);
+                impl->body = node;
+                list_push(cg->ast->objs, impl);
+            } return;
+
         case ND_CAST:
             asm_gen_expr(cg, node->left);
             asm_cast(cg, node->left->data_type, node->data_type);
@@ -2375,4 +2408,67 @@ static void asm_store_gp(ASMCodegenData_T* cg, i32 r, i32 offset, i32 sz)
             }
             return;
     }
+}
+
+static void asm_gen_lambda(ASMCodegenData_T* cg, ASTNode_T* lambda)
+{
+    char* prev_fn_name = cg->current_fn_name;
+    char lambda_name[__CSP_MAX_TOKEN_SIZE] = {};
+    sprintf(lambda_name, "lambda.%ld", lambda->long_val);
+    cg->current_fn_name = &(lambda_name[0]);
+
+    asm_println(cg, "  .globl %s", lambda_name);
+    asm_println(cg, "  .text");
+    asm_println(cg, "  .type %s, @function", lambda_name);
+    asm_println(cg, "%s:", lambda_name);
+    asm_println(cg, "  push %%rbp");
+    asm_println(cg, "  mov .lambda.stackptr.%ld, %%rbp", lambda->long_val);
+
+    // save passed-by-register arguments to the stack
+    i32 gp = 0, fp = 0;
+
+    if(lambda->return_ptr)
+        asm_store_gp(cg, gp++, lambda->return_ptr->offset, lambda->return_ptr->data_type->size);
+
+    for(size_t j = 0; j < lambda->args->size; j++)
+    {
+        ASTObj_T* arg = lambda->args->items[j];
+        if(arg->offset > 0)
+            continue;
+                        
+        ASTType_T* ty = unpack(arg->data_type);
+
+        switch(ty->kind)
+        {
+            case TY_STRUCT:
+                assert(ty->size <= 16);
+                if(asm_has_flonum(ty, 0, 8, 0))
+                    asm_store_fp(cg, fp++, arg->offset, MIN(8, ty->size));
+                else
+                    asm_store_gp(cg, gp++, arg->offset, MIN(8, ty->size));
+                                
+                if(ty->size > 8)
+                {
+                    if(asm_has_flonum(ty, 8, 16, 0))
+                        asm_store_fp(cg, fp++, arg->offset + 8, ty->size - 8);
+                    else
+                        asm_store_gp(cg, gp++, arg->offset + 8, ty->size - 8);
+                }
+                break;
+            case TY_F32:
+            case TY_F64:
+                asm_store_fp(cg, fp++, arg->offset, ty->size);
+                break;
+            default:
+                asm_store_gp(cg, gp++, arg->offset, ty->size);
+        }
+    }
+
+    asm_gen_stmt(cg, lambda->body);
+
+    asm_println(cg, ".L.return.%s:", lambda_name);
+    asm_println(cg, "  pop %%rbp");
+    asm_println(cg, "  ret");
+
+    cg->current_fn_name = prev_fn_name;
 }

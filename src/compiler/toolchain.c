@@ -111,7 +111,7 @@ static void generate_asm(ASTProg_T* ast, char* target, Action_T action, bool pri
     cg.print = print_asm;
 
     asm_gen_code(&cg, target);
-    free(cg.buf);
+    free_asm_cg(&cg);
 }
 
 static void generate_json(ASTProg_T* ast, char* target, bool print_json, bool silent)

@@ -81,6 +81,7 @@ typedef enum {
 
     ND_PIPE,    // x |> y
     ND_HOLE,    // _
+    ND_LAMBDA,  // |x: i32| => {}
 
     ND_ELSE_EXPR, // x else y
 
@@ -151,6 +152,8 @@ typedef enum {
     OBJ_TYPEDEF,
     OBJ_NAMESPACE,
     OBJ_ENUM_MEMBER,
+
+    OBJ_LAMBDA, // lambda implementation used internally
 
     OBJ_KIND_LEN
 } ASTObjKind_T;
@@ -242,6 +245,9 @@ struct AST_NODE_STRUCT
 
         // with statement
         ASTObj_T* exit_fn;
+
+        // lambda
+        ASTObj_T* return_ptr;
     };
 
     union {
@@ -250,6 +256,9 @@ struct AST_NODE_STRUCT
         
         // sizeof
         ASTType_T* the_type;
+
+        // lambda
+        ASTObj_T* stack_ptr;
     };
 
     union { 

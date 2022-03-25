@@ -1,21 +1,22 @@
 #include "parser.h"
 
 #include "ast/ast.h"
-#include "../util.h"
+#include "util.h"
 #include "config.h"
 #include "error/error.h"
 #include "lexer/token.h"
 #include "list.h"
 #include "validator.h"
-#include "../io/log.h"
-#include "../io/io.h"
-#include "../ast/types.h"
-#include "../mem/mem.h"
-#include "../platform/platform_bindings.h"
-#include "../lexer/lexer.h"
-#include "../preprocessor/preprocessor.h"
-#include "../toolchain.h"
-#include "../codegen/codegen_utils.h"
+#include "io/log.h"
+#include "io/io.h"
+#include "ast/types.h"
+#include "mem/mem.h"
+#include "platform/platform_bindings.h"
+#include "lexer/lexer.h"
+#include "preprocessor/preprocessor.h"
+#include "toolchain.h"
+#include "codegen/codegen_utils.h"
+#include "utils.h"
 
 #include <limits.h>
 #include <string.h>
@@ -247,18 +248,6 @@ static ASTNodeKind_T infix_ops[TOKEN_EOF + 1] = {
 
     [TOKEN_INC] = ND_INC,   // technically postfix operators, but get treated like infix ops internally
     [TOKEN_DEC] = ND_DEC    // technically postfix operators, but get treated like infix ops internally
-};
-
-static ASTObj_T alloca_bottom = {
-    .kind = OBJ_LOCAL,
-    .id = &(ASTIdentifier_T) {
-        .callee = "__alloca_size__"
-    },
-    .data_type = &(ASTType_T){
-        .size = sizeof(void*),
-        .align = sizeof(void*)
-    },
-    .offset = 0
 };
 
 static inline PrefixParseFn_T get_PrefixParseFn_T(TokenType_T tt)
@@ -1020,42 +1009,6 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
         fn->alloca_bottom = &alloca_bottom;
 
     return fn;
-}
-
-static void collect_locals(ASTNode_T* stmt, List_T* locals)
-{
-    switch(stmt->kind)
-    {
-        case ND_BLOCK:
-            for(size_t i = 0; i < stmt->locals->size; i++)
-                list_push(locals, stmt->locals->items[i]);
-            for(size_t i = 0; i < stmt->stmts->size; i++)
-                collect_locals(stmt->stmts->items[i], locals);
-            break;
-        case ND_WITH:
-            list_push(locals, stmt->obj);
-        case ND_IF:
-            collect_locals(stmt->if_branch, locals);
-            if(stmt->else_branch)
-                collect_locals(stmt->else_branch, locals);
-            break;
-        case ND_FOR:
-            for(size_t i = 0; i < stmt->locals->size; i++)
-                list_push(locals, stmt->locals->items[i]);
-        case ND_WHILE:
-        case ND_LOOP:
-        case ND_CASE:
-            collect_locals(stmt->body, locals);
-            break;
-        case ND_MATCH:
-            for(size_t i = 0; i < stmt->cases->size; i++)
-                collect_locals(stmt->cases->items[i], locals);
-            if(stmt->default_case)
-                collect_locals(stmt->default_case, locals);
-            break;
-        default:
-            break;
-    }
 }
 
 static ASTObj_T* parse_fn(Parser_T* p)
@@ -1842,7 +1795,7 @@ static ASTNode_T* parse_anonymous_struct_lit(Parser_T* p)
 
 static ASTNode_T* parse_lambda_lit(Parser_T* p)
 {
-    ASTObj_T* lambda = init_ast_obj(OBJ_FUNCTION, p->tok);
+    /*ASTObj_T* lambda = init_ast_obj(OBJ_FUNCTION, p->tok);
     lambda->args = init_list(sizeof(struct AST_OBJ_STRUCT*));
     mem_add_list(lambda->args);
 
@@ -1902,7 +1855,43 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p)
     ASTNode_T* caller = init_ast_node(ND_ID, lambda->tok);
     caller->id = lambda->id;
 
-    return caller;
+    return caller;*/
+
+    ASTNode_T* lambda = init_ast_node(ND_LAMBDA, p->tok);
+    lambda->args = init_list(sizeof(struct AST_OBJ_STRUCT*));
+    lambda->data_type = init_ast_type(TY_FN, p->tok);
+    lambda->data_type->arg_types = init_list(sizeof(struct AST_TYPE_STUCT*));
+
+    if(tok_is(p, TOKEN_OR))
+        parser_advance(p);
+    else 
+    {
+        parser_consume(p, TOKEN_BIT_OR, "expect `|` for lambda function");
+
+        while(!tok_is(p, TOKEN_BIT_OR))
+        {
+            ASTObj_T* arg = init_ast_obj(OBJ_FN_ARG, p->tok);
+            arg->id = parse_simple_identifier(p);
+        
+            parser_consume(p, TOKEN_COLON, "expect `:` between argument name and data type");
+            arg->data_type = parse_type(p);
+
+            list_push(lambda->args, arg);
+            list_push(lambda->data_type->arg_types, arg->data_type);
+            if(!tok_is(p, TOKEN_BIT_OR))
+                parser_consume(p, TOKEN_COMMA, "expect `,` between arguments");
+        }
+
+        parser_consume(p, TOKEN_BIT_OR, "expect `|` after lambda arguments");
+    }
+
+    lambda->data_type->base = (ASTType_T*) primitives[TY_VOID];
+    if(!tok_is(p, TOKEN_ARROW)) 
+        lambda->data_type->base = parse_type(p);
+    parser_consume(p, TOKEN_ARROW, "expect `=>` after definition");
+
+    lambda->body = parse_stmt(p, false);
+    return lambda;
 }
 
 static ASTNode_T* parse_ternary(Parser_T* p)

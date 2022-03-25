@@ -27,10 +27,16 @@ void ast_iterate(ASTIteratorList_T* list, ASTProg_T* ast, ...)
 
     // iterate over every object
     for(size_t i = 0; i < ast->objs->size; i++)
-    {
         ast_obj(list, ast->objs->items[i], custom_args);
-    }
 
+    va_end(custom_args);
+}
+
+void ast_iterate_stmt(ASTIteratorList_T* list, ASTNode_T* stmt, ...)
+{
+    va_list custom_args;
+    va_start(custom_args, stmt);
+    ast_node(list, stmt, custom_args);
     va_end(custom_args);
 }
 
@@ -329,6 +335,12 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
         case ND_TYPE_EXPR:
             ast_type(list, node->l_type, custom_args);
             ast_type(list, node->r_type, custom_args);
+            break;
+        
+        case ND_LAMBDA:
+            for(size_t i = 0; i < node->args->size; i++)
+                ast_obj(list, node->args->items[i], custom_args);
+            ast_node(list, node->body, custom_args);
             break;
         
         default:

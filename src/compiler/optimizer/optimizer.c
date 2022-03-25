@@ -176,6 +176,12 @@ void remove_dead_code(ASTProg_T* ast)
                     list_push(node_stack, stack_top->return_val);
                 break;
 
+            case ND_LAMBDA:
+                if(stack_top->stack_ptr)
+                    stack_top->stack_ptr->referenced = true;
+                list_push(node_stack, stack_top->body);
+                break;
+
             case ND_ID:
                 if(stack_top->referenced_obj && !stack_top->referenced_obj->referenced)
                 {
