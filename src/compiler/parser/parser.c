@@ -1801,6 +1801,9 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p)
     lambda->args = init_list(sizeof(struct AST_OBJ_STRUCT*));
     lambda->data_type = init_ast_type(TY_FN, p->tok);
     lambda->data_type->arg_types = init_list(sizeof(struct AST_TYPE_STUCT*));
+    
+    mem_add_list(lambda->args);
+    mem_add_list(lambda->data_type->arg_types);
 
     if(tok_is(p, TOKEN_OR))
         parser_advance(p);
@@ -1845,6 +1848,10 @@ static ASTNode_T* parse_const_lambda(Parser_T* p)
     lambda_fn->data_type->arg_types = init_list(sizeof(struct AST_TYPE_STUCT*));
     lambda_fn->id = init_ast_identifier(p->tok, "");
     lambda_fn->objs = init_list(sizeof(struct AST_OBJ_STRUCT*));
+
+    mem_add_list(lambda_fn->args);
+    mem_add_list(lambda_fn->data_type->arg_types);
+    mem_add_list(lambda_fn->objs);
 
     if(global.ct == CT_ASM)
         sprintf(lambda_fn->id->callee, "const.lambda.%ld", count++);
