@@ -14,6 +14,7 @@
 #include "codegen/asm/asm_codegen.h"
 #include "ast/ast_json.h"
 #include "debugger/dbg.h"
+#include "globals.h"
 
 // generate the ast from the source file (lexing, preprocessing, parsing)
 static void generate_ast(ASTProg_T* ast, char* path, char* target, bool silent);

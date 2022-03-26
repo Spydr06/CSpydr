@@ -6,6 +6,7 @@
 #include "error/error.h"
 #include "io/log.h"
 #include "list.h"
+#include "globals.h"
 
 #define throw_error(...)              \
     do {                              \

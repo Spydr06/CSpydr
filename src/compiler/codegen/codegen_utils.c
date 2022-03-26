@@ -1,9 +1,10 @@
 #include "codegen_utils.h"
 
-#include "../list.h"
-#include "../mem/mem.h"
-#include "../io/log.h"
-#include "../io/io.h"
+#include "list.h"
+#include "mem/mem.h"
+#include "io/log.h"
+#include "io/io.h"
+#include "globals.h"
 
 #include <libgen.h>
 #include <string.h>

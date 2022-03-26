@@ -1,5 +1,8 @@
 #include "error.h"
 #include "../io/log.h"
+#include "ast/ast.h"
+#include "config.h"
+#include "globals.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -56,6 +59,12 @@ void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
     va_start(arg_list, format);
 
     // print the error
+    if(global.current_fn && *global.current_fn) 
+    {
+        char buf[BUFSIZ] = {};
+        fprintf(ERR_OUTPUT_STREAM, COLOR_MAGENTA "In function " COLOR_BOLD_MAGENTA "%s:\n" COLOR_RESET, ast_id_to_str(buf, (*global.current_fn)->id, LEN(buf)));
+    }
+
     fprintf(ERR_OUTPUT_STREAM, err_tmp1, source_file_path, line, character, error_types[ty].is_error ? COLOR_BOLD_RED : COLOR_BOLD_YELLOW, err_ty_str);
     vfprintf(ERR_OUTPUT_STREAM, format, arg_list);
     fprintf(ERR_OUTPUT_STREAM, err_tmp2, ERR_LINE_NUMBER_SPACES, line, src_line, src_line[strlen(src_line) - 1] == '\n' ? "" : "\n ", ERR_LINE_NUMBER_SPACES, "", character - strlen(tok->value), "");

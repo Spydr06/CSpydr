@@ -5,7 +5,6 @@
 
 #include "../list.h"
 #include "../lexer/token.h"
-#include "../globals.h"
 #include "../config.h"
 
 #include <stdint.h>

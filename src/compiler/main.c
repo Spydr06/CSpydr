@@ -23,6 +23,7 @@
 #include "util.h"
 #include "version.h"
 #include "config.h"
+#include "globals.h"
 
 #define streq(a, b) (strcmp(a, b) == 0)
 

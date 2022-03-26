@@ -2,7 +2,6 @@
 #define CSPYDR_TOKEN_H
 
 #include "../io/file.h"
-#include "../globals.h"
 #include "../config.h"
 
 typedef enum TOKEN_TYPE {

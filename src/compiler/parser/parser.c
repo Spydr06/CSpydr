@@ -17,6 +17,7 @@
 #include "toolchain.h"
 #include "codegen/codegen_utils.h"
 #include "utils.h"
+#include "globals.h"
 
 #include <limits.h>
 #include <string.h>
@@ -408,6 +409,8 @@ void parse(ASTProg_T* ast, List_T* files, bool is_silent)
     Parser_T parser;
     init_parser(&parser, tokens);
 
+    global.current_fn = &parser.cur_fn;
+
     if(!is_silent)
     {
         LOG_OK_F(COLOR_BOLD_GREEN "\33[2K\r  Compiling " COLOR_RESET " %s\n", main_file->path);
@@ -431,6 +434,8 @@ void parse(ASTProg_T* ast, List_T* files, bool is_silent)
                 parse_obj(&parser, ast->objs);
         }
     }
+
+    global.current_fn = NULL;
 
     // dispose
     free_list(tokens);

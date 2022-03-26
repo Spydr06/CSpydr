@@ -1,6 +1,8 @@
 #ifndef CSPYDR_GLOBALS_H
 #define CSPYDR_GLOBALS_H
 
+#include "ast/ast.h"
+
 #ifdef __CSP_GLOBAL_OWNER
     #define __CSP_GLOBAL
 #else
@@ -40,6 +42,8 @@ struct {
 
     char* exec_name;
     char* main_src_file;
+
+    ASTObj_T** current_fn;
 
     List_T* compiler_flags;
     List_T* linker_flags;

@@ -13,6 +13,7 @@
 #include "mem/mem.h"
 #include "parser/parser.h"
 #include "parser/utils.h"
+#include "globals.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -252,6 +253,8 @@ void validate_ast(ASTProg_T* ast)
     Validator_T v;
     init_validator(&v);
 
+    global.current_fn = &v.current_function;
+
     v.ast = ast;
 
     begin_obj_scope(&v, NULL, ast->objs);
@@ -264,6 +267,8 @@ void validate_ast(ASTProg_T* ast)
 
     check_exit_fns(&v);
 
+    global.current_fn = NULL;
+    
     if(!v.main_function_found)
     {
         LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " mssing entrypoint; no `main` function declared.\n");
