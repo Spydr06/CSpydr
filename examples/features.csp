@@ -1,10 +1,9 @@
 import "io.csp";
 
-fn main(): i32 {
-    using std;
-
-    let array = [1, 2, 3, 4, 5];
+fn main(): i32 
+{
     let i = 0;
+    let array = [1, 2, 3, 4, 5];
 
     for_each(array, 5, |val: i32| => { 
         std::io::printf("array[%i] = %i\n", i++, val);

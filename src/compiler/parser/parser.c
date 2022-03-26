@@ -115,6 +115,7 @@ static ASTNode_T* parse_cast(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_pipe(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_hole(Parser_T* p);
+static ASTNode_T* parse_const_expr(Parser_T* p);
 
 static ASTNode_T* parse_pow_2(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_pow_3(Parser_T* p, ASTNode_T* left);
@@ -178,6 +179,7 @@ static struct {
     [TOKEN_PIPE]     = {NULL, parse_pipe, PIPE},
     [TOKEN_DOLLAR]   = {parse_hole, NULL, LOWEST},
     [TOKEN_ELSE]     = {NULL, parse_else_expr, INFIX_CALL},
+    [TOKEN_CONST] =    {parse_const_expr, NULL, LOWEST},
     [TOKEN_LSHIFT_ASSIGN] = {NULL, parse_assignment, ASSIGN},
     [TOKEN_RSHIFT_ASSIGN] = {NULL, parse_assignment, ASSIGN},
     [TOKEN_XOR_ASSIGN] = {NULL, parse_assignment, ASSIGN},
@@ -1795,68 +1797,6 @@ static ASTNode_T* parse_anonymous_struct_lit(Parser_T* p)
 
 static ASTNode_T* parse_lambda_lit(Parser_T* p)
 {
-    /*ASTObj_T* lambda = init_ast_obj(OBJ_FUNCTION, p->tok);
-    lambda->args = init_list(sizeof(struct AST_OBJ_STRUCT*));
-    mem_add_list(lambda->args);
-
-    if(tok_is(p, TOKEN_BIT_OR))
-    {
-        parser_advance(p);
-        while(!tok_is(p, TOKEN_BIT_OR) && !tok_is(p, TOKEN_EOF))
-        {
-            // parse a lambda arguments
-            ASTObj_T* arg = init_ast_obj(OBJ_FN_ARG, p->tok);
-            arg->id = parse_simple_identifier(p);
-            parser_consume(p, TOKEN_COLON, "expect `:` after lambda argument");
-
-            arg->data_type = parse_type(p);
-            list_push(lambda->args, arg);
-
-            if(!tok_is(p, TOKEN_BIT_OR))
-                parser_consume(p, TOKEN_COMMA, "expect `,` between lambda arguments");
-        }
-        parser_consume(p, TOKEN_BIT_OR, "expect `|` after lambda args");
-    }
-    else if(tok_is(p, TOKEN_OR))
-        parser_advance(p);
-    else
-        throw_error(ERR_SYNTAX_ERROR, p->tok, "expect `|` for lambda literal, got `%s`", p->tok->value);
-
-    lambda->return_type = tok_is(p, TOKEN_ARROW) ? (ASTType_T*) primitives[TY_VOID] : parse_type(p);
-    parser_consume(p, TOKEN_ARROW, "expect `=>` after lambda return type");
-
-    const char* callee_tmp = "__csp_lambda_lit_%ld__";
-    char callee[__CSP_MAX_TOKEN_SIZE];
-    sprintf(callee, callee_tmp, p->cur_lambda_id++);
-    
-    lambda->id = init_ast_identifier(lambda->tok, callee);
-    lambda->data_type = init_ast_type(TY_FN, lambda->tok);
-    lambda->data_type->base = lambda->return_type;
-    lambda->data_type->arg_types = init_list(sizeof(struct AST_TYPE_STRUCT*));
-    for(size_t i = 0; i < lambda->args->size; i++)
-        list_push(lambda->data_type->arg_types, ((ASTObj_T*) lambda->args->items[i])->data_type);
-    mem_add_list(lambda->data_type->arg_types);
-    lambda->data_type->is_variadic = lambda->va_area != NULL;
-
-    ASTObj_T* prev_fn = p->cur_fn;
-    p->cur_fn = lambda;
-    lambda->body = parse_stmt(p, false);
-    p->cur_fn = prev_fn;
-
-    if(global.ct == CT_ASM)
-    {
-        lambda->alloca_bottom = &alloca_bottom;
-        lambda->objs = init_list(sizeof(struct AST_OBJ_STRUCT*));
-        mem_add_list(lambda->objs);
-    }
-
-    list_push(p->root_ref->objs, lambda);
-
-    ASTNode_T* caller = init_ast_node(ND_ID, lambda->tok);
-    caller->id = lambda->id;
-
-    return caller;*/
-
     ASTNode_T* lambda = init_ast_node(ND_LAMBDA, p->tok);
     lambda->args = init_list(sizeof(struct AST_OBJ_STRUCT*));
     lambda->data_type = init_ast_type(TY_FN, p->tok);
@@ -1892,6 +1832,65 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p)
 
     lambda->body = parse_stmt(p, false);
     return lambda;
+}
+
+// constant lambda expressions get converted to regular functions
+static ASTNode_T* parse_const_lambda(Parser_T* p)
+{
+    static u64 count = 0;
+
+    ASTObj_T* lambda_fn = init_ast_obj(OBJ_FUNCTION, p->tok);
+    lambda_fn->args = init_list(sizeof(struct AST_OBJ_STRUCT*));
+    lambda_fn->data_type = init_ast_type(TY_FN, p->tok);
+    lambda_fn->data_type->arg_types = init_list(sizeof(struct AST_TYPE_STUCT*));
+    lambda_fn->id = init_ast_identifier(p->tok, "");
+    lambda_fn->objs = init_list(sizeof(struct AST_OBJ_STRUCT*));
+
+    if(global.ct == CT_ASM)
+        sprintf(lambda_fn->id->callee, "const.lambda.%ld", count++);
+    else
+        sprintf(lambda_fn->id->callee, "__csp_const_lambda_%ld__", count++);
+
+    if(tok_is(p, TOKEN_OR))
+        parser_advance(p);
+    else
+    {
+        parser_consume(p, TOKEN_BIT_OR, "expect `|` for lambda function");
+
+        while(!tok_is(p, TOKEN_BIT_OR))
+        {
+            ASTObj_T* arg = init_ast_obj(OBJ_FN_ARG, p->tok);
+            arg->id = parse_simple_identifier(p);
+        
+            parser_consume(p, TOKEN_COLON, "expect `:` between argument name and data type");
+            arg->data_type = parse_type(p);
+
+            list_push(lambda_fn->args, arg);
+            list_push(lambda_fn->data_type->arg_types, arg->data_type);
+            if(!tok_is(p, TOKEN_BIT_OR))
+                parser_consume(p, TOKEN_COMMA, "expect `,` between arguments");
+        }
+
+        parser_consume(p, TOKEN_BIT_OR, "expect `|` after lambda_fn arguments");
+    }
+
+    lambda_fn->data_type->base = lambda_fn->return_type = (ASTType_T*) primitives[TY_VOID];
+    if(!tok_is(p, TOKEN_ARROW)) 
+        lambda_fn->data_type->base = lambda_fn->return_type = parse_type(p);
+    parser_consume(p, TOKEN_ARROW, "expect `=>` after definition");
+
+    lambda_fn->body = parse_stmt(p, false);
+    collect_locals(lambda_fn->body, lambda_fn->objs);
+    if(global.ct == CT_ASM)
+        lambda_fn->alloca_bottom = &alloca_bottom;
+    list_push(p->root_ref->objs, lambda_fn);
+
+    ASTNode_T* lambda_id = init_ast_node(ND_ID, lambda_fn->tok);
+    lambda_id->data_type = lambda_fn->data_type;
+    lambda_id->referenced_obj = lambda_fn;
+    lambda_id->id = lambda_fn->id;
+
+    return lambda_id;
 }
 
 static ASTNode_T* parse_ternary(Parser_T* p)
@@ -2052,6 +2051,22 @@ static ASTNode_T* parse_hole(Parser_T* p)
         throw_error(ERR_SYNTAX_ERROR, tok, "cannot have `$` here, only use `$` in pipe expressions");
     parser_consume(p, TOKEN_DOLLAR, "expect `$`");
     return init_ast_node(ND_HOLE, tok);
+}
+
+static ASTNode_T* parse_const_expr(Parser_T* p)
+{
+    parser_advance(p);
+
+    switch(p->tok->type)
+    {
+        case TOKEN_BIT_OR:
+        case TOKEN_OR:
+            return parse_const_lambda(p);
+        
+        default:
+            throw_error(ERR_SYNTAX_ERROR, p->tok, "unknown const expression");
+            return NULL;
+    }
 }
 
 static ASTNode_T* parse_builtin_type_exprs(Parser_T* p, ASTNode_T* expr)
