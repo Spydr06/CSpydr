@@ -942,6 +942,8 @@ static void local_end(ASTObj_T* local, va_list args)
             local->is_constant = true;
         if(expanded->kind == TY_VOID)
             throw_error(ERR_TYPE_ERROR, local->tok, "`void` type is not allowed for variables");
+
+        local->data_type->size = get_type_size(v, local->data_type);
     }
 }
 
@@ -1471,6 +1473,8 @@ static void local_initializer(Validator_T* v, ASTNode_T* assign, ASTObj_T* local
     if(local->data_type->is_constant)
         local->is_constant = true;
     assign->left->data_type = local->data_type;
+
+    local->data_type->size = get_type_size(v, local->data_type);
 }
 
 static void assignment_start(ASTNode_T* assign, va_list args)

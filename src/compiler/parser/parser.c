@@ -1006,6 +1006,7 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
 
     fn->data_type = init_ast_type(TY_FN, fn->tok);
     fn->data_type->base = fn->return_type;
+    fn->data_type->is_constant = true;
     fn->data_type->arg_types = init_list(sizeof(struct AST_TYPE_STRUCT*));
     for(size_t i = 0; i < fn->args->size; i++)
         list_push(fn->data_type->arg_types, ((ASTObj_T*) fn->args->items[i])->data_type);
@@ -1420,21 +1421,18 @@ static ASTNode_T* parse_local(Parser_T* p)
 
         if(tok_is(p, TOKEN_ASSIGN))
         {
-            ASTNode_T* assignment = init_ast_node(ND_ASSIGN, p->tok);
+            value = init_ast_node(ND_ASSIGN, p->tok);
             parser_advance(p);
-            assignment->left = id; 
-            assignment->right = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
-            value = assignment;
+            value->left = id; 
+            value->right = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
         }
     }
     else
     {
-        ASTNode_T* assignment = init_ast_node(ND_ASSIGN, p->tok);
+        value = init_ast_node(ND_ASSIGN, p->tok);
         parser_consume(p, TOKEN_ASSIGN, "expect assignment `=` after typeless variable declaration");
-        assignment->left = id;
-        assignment->right = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
-        assignment->right->is_assigning = assignment->right->kind == ND_ARRAY || assignment->right->kind == ND_STRUCT;
-        value = assignment;
+        value->left = id;
+        value->right = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
     }
 
     if(!value)
@@ -1443,7 +1441,10 @@ static ASTNode_T* parse_local(Parser_T* p)
     {
         value->referenced_obj = local;
         value->is_initializing = true;
+        //value->right->is_assigning = true;
     }
+
+    local->value = value->right;
 
     parser_consume(p, TOKEN_SEMICOLON, "expect `;` after variable definition");
                                                             // ND_FOR only for the for loop initializer
@@ -1851,6 +1852,7 @@ static ASTNode_T* parse_const_lambda(Parser_T* p)
     lambda_fn->args = init_list(sizeof(struct AST_OBJ_STRUCT*));
     lambda_fn->data_type = init_ast_type(TY_FN, p->tok);
     lambda_fn->data_type->arg_types = init_list(sizeof(struct AST_TYPE_STUCT*));
+    lambda_fn->data_type->is_constant = true;
     lambda_fn->id = init_ast_identifier(p->tok, "");
     lambda_fn->objs = init_list(sizeof(struct AST_OBJ_STRUCT*));
 

@@ -3,6 +3,7 @@
 
 #include "codegen/codegen_utils.h"
 #include "config.h"
+#include "optimizer/constexpr.h"
 #include "types.h"
 #include "../mem/mem.h"
 
@@ -178,7 +179,10 @@ char* ast_type_to_str(char* dest, ASTType_T* ty, size_t size)
             break;
         case TY_ARR:
             ast_type_to_str(dest, ty->base, size);
-            strcat(dest, "[]");
+            strcat(dest, "[");
+            if(ty->num_indices)
+                sprintf(dest, "%s%ld", dest, const_i64(ty->num_indices));
+            strcat(dest, "]");
             break;
         case TY_STRUCT:
             strcat(dest, ty->is_union ? "union {" : "struct {");
