@@ -24,22 +24,22 @@ macro concat(a, b) {
 # convert any given value to a string
 macro to_str(v) {
     (
-        if (type) __is_int(typeof (v))
+        if type::is_int(typeof (v))
             => ::std::string::from_int(v)
-        else if (type) __is_uint(typeof (v))
+        else if type:is_uint(typeof (v))
             => ::std::string::from_uint(v)
-        else if (type) (typeof (v)) == bool
+        else if type::( (typeof (v)) == bool)
             => if (v) == true =>
                 str!{"true"}
             else
                 str!{"false"}
-        else if (type) (typeof (v)) == void
+        else if type::((typeof (v)) == void)
             => str!{"void"}
-        else if (type) (typeof (v)) == char
+        else if type::((typeof (v)) == char)
             => ::std::string::from_char(v)
-        else if (type) (typeof (v)) == ::std::String
+        else if type::((typeof (v)) == ::std::String)
             => (v)
-        else if (type) (typeof (v)) == &char
+        else if type::((typeof (v)) == &char)
             => ::std::string::init(v)
         else str! {nil}
     )

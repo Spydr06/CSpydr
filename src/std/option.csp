@@ -20,7 +20,7 @@ macro err(value)
 
 macro unwrap(opt)
 {   (
-        if (type) typeof (opt) == ::std::Option
+        if type::(typeof (opt) == ::std::Option)
         => ::std::option::unwrap((opt))
         else ::std::result::unwrap((opt))
     )
@@ -29,7 +29,7 @@ macro unwrap(opt)
 macro unwrap_or(opt, then)
 {
     (
-        if (type) typeof (opt) == ::std::Option
+        if type::(typeof (opt) == ::std::Option)
         => ::std::option::unwrap_or((opt), (then): fn<&void>())
         else ::std::result::unwrap_or((opt), (then): fn<&void>(&void))
     )

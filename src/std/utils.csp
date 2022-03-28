@@ -55,9 +55,9 @@ macro va_arg(ap, ty)
 {
     (
         *((
-            if (type) __reg_class(ty) == 0
+            if type::reg_class(ty) == 0
                 => ::std::va::__gp((ap), sizeof (ty), alignof (ty))
-            else if (type) __reg_class(ty) == 1
+            else if type::reg_class(ty) == 1
                 => ::std::va::__fp((ap), sizeof (ty), alignof (ty))
             else ::std::va::__mem((ap), sizeof (ty), alignof (ty))
         ): &(ty))

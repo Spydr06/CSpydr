@@ -109,6 +109,8 @@ static ASTNode_T* parse_assignment(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_postfix(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left);
 
+static ASTNode_T* parse_type_expr(Parser_T* p);
+
 static ASTNode_T* parse_infix_call(Parser_T* p, ASTNode_T* left);
 
 static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left);
@@ -180,7 +182,8 @@ static struct {
     [TOKEN_PIPE]     = {NULL, parse_pipe, PIPE},
     [TOKEN_DOLLAR]   = {parse_hole, NULL, LOWEST},
     [TOKEN_ELSE]     = {NULL, parse_else_expr, INFIX_CALL},
-    [TOKEN_CONST] =    {parse_const_expr, NULL, LOWEST},
+    [TOKEN_CONST]    = {parse_const_expr, NULL, LOWEST},
+    [TOKEN_TYPE]     = {parse_type_expr, NULL, LOWEST},
     [TOKEN_LSHIFT_ASSIGN] = {NULL, parse_assignment, ASSIGN},
     [TOKEN_RSHIFT_ASSIGN] = {NULL, parse_assignment, ASSIGN},
     [TOKEN_XOR_ASSIGN] = {NULL, parse_assignment, ASSIGN},
@@ -2085,47 +2088,47 @@ static ASTNode_T* parse_const_expr(Parser_T* p)
 
 static ASTNode_T* parse_builtin_type_exprs(Parser_T* p, ASTNode_T* expr)
 {
-    if(streq(p->tok->value, "__reg_class"))
+    if(streq(p->tok->value, "reg_class"))
     {
         expr->cmp_kind = TOKEN_BUILTIN_REG_CLASS;
         expr->data_type = (ASTType_T*) primitives[TY_I32];
     }
-    else if(streq(p->tok->value, "__is_int"))
+    else if(streq(p->tok->value, "is_int"))
     {
         expr->cmp_kind = TOKEN_BUILTIN_IS_INT;
         expr->data_type = (ASTType_T*) primitives[TY_BOOL];
     }
-    else if(streq(p->tok->value, "__is_uint"))
+    else if(streq(p->tok->value, "is_uint"))
     {
         expr->cmp_kind = TOKEN_BUILTIN_IS_UINT;
         expr->data_type = (ASTType_T*) primitives[TY_BOOL];
     }
-    else if(streq(p->tok->value, "__is_float"))
+    else if(streq(p->tok->value, "is_float"))
     {
         expr->cmp_kind = TOKEN_BUILTIN_IS_FLOAT;
         expr->data_type = (ASTType_T*) primitives[TY_BOOL];
     }
-    else if(streq(p->tok->value, "__is_pointer"))
+    else if(streq(p->tok->value, "is_pointer"))
     {
         expr->cmp_kind = TOKEN_BUILTIN_IS_POINTER;
         expr->data_type = (ASTType_T*) primitives[TY_BOOL];
     }
-    else if(streq(p->tok->value, "__is_array"))
+    else if(streq(p->tok->value, "is_array"))
     {
         expr->cmp_kind = TOKEN_BUILTIN_IS_ARRAY;
         expr->data_type = (ASTType_T*) primitives[TY_BOOL];
     }
-    else if(streq(p->tok->value, "__is_struct"))
+    else if(streq(p->tok->value, "is_struct"))
     {
         expr->cmp_kind = TOKEN_BUILTIN_IS_STRUCT;
         expr->data_type = (ASTType_T*) primitives[TY_BOOL];
     }
-    else if(streq(p->tok->value, "__is_union"))
+    else if(streq(p->tok->value, "is_union"))
     {
         expr->cmp_kind = TOKEN_BUILTIN_IS_UNION;
         expr->data_type = (ASTType_T*) primitives[TY_BOOL];
     }
-    else if(streq(p->tok->value, "__to_str"))
+    else if(streq(p->tok->value, "to_str"))
     {
         expr->cmp_kind = TOKEN_BUILTIN_TO_STR;
         expr->data_type = (ASTType_T*) char_ptr_type; 
@@ -2146,44 +2149,43 @@ static ASTNode_T* parse_builtin_type_exprs(Parser_T* p, ASTNode_T* expr)
 static ASTNode_T* parse_type_expr(Parser_T* p)
 {
     ASTNode_T* expr = init_ast_node(ND_TYPE_EXPR, p->tok);
-    parser_consume(p, TOKEN_LPAREN, "expect `(` for type comparison");
-    parser_consume(p, TOKEN_TYPE, "expect `type` for type comparison");
-    parser_consume(p, TOKEN_RPAREN, "expect `)` after `type` keyword");
+    parser_consume(p, TOKEN_TYPE, "expect `type` keyword");
+    parser_consume(p, TOKEN_STATIC_MEMBER, "expect `::` after `type`");
 
-    if(tok_is(p, TOKEN_ID) && parser_peek(p, 1)->type == TOKEN_LPAREN)
+    if(tok_is(p, TOKEN_LPAREN))
     {
-        return parse_builtin_type_exprs(p, expr);
+        parser_advance(p);
+
+        expr->l_type = parse_type(p);
+
+        switch(p->tok->type)
+        {
+            case TOKEN_EQ:
+            case TOKEN_NOT_EQ:
+            case TOKEN_GT:
+            case TOKEN_GT_EQ:
+            case TOKEN_LT:
+            case TOKEN_LT_EQ:
+                expr->cmp_kind = p->tok->type;
+                parser_advance(p);
+                break;
+
+            default:
+                throw_error(ERR_SYNTAX_ERROR, p->tok, "expect one of `==` `!=` `>` `>=` `<` `<=`, got `%s`", p->tok->value);
+        }
+
+        expr->r_type = parse_type(p);
+        expr->data_type = (ASTType_T*) primitives[TY_BOOL];
+
+        parser_consume(p, TOKEN_RPAREN, "expect `)` after type comparison");
     }
-
-    expr->l_type = parse_type(p);
-    
-    switch(p->tok->type)
-    {
-        case TOKEN_EQ:
-        case TOKEN_NOT_EQ:
-        case TOKEN_GT:
-        case TOKEN_GT_EQ:
-        case TOKEN_LT:
-        case TOKEN_LT_EQ:
-            expr->cmp_kind = p->tok->type;
-            parser_advance(p);
-            break;
-        
-        default:
-            throw_error(ERR_SYNTAX_ERROR, p->tok, "expect one of `==` `!=` `>` `>=` `<` `<=`, got `%s`", p->tok->value);
-    }
-
-    expr->r_type = parse_type(p);
-    expr->data_type = (ASTType_T*) primitives[TY_BOOL];
-
+    else if(tok_is(p, TOKEN_ID))
+        parse_builtin_type_exprs(p, expr);
     return expr;
 }
 
 static ASTNode_T* parse_closure(Parser_T* p)
 {
-    if(parser_peek(p, 1)->type == TOKEN_TYPE)
-        return parse_type_expr(p);
-
     // if compiled to C, closures must be represented in the AST
     if(global.ct == CT_TRANSPILE)
     {

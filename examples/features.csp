@@ -11,7 +11,7 @@ fn main(): i32
         printf("array[%i] = %i\n", i++, val);
     });
 
-    printf("%s\n", (type) __to_str(typeof array));
+    printf("%s\n", type::to_str(typeof array));
 
     <- 0;
 }

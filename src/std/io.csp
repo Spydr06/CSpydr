@@ -9,18 +9,18 @@ macro stderr {2}
 
 macro write(fd, v) {
     (
-        if (type) (typeof (v)) == i8 ||
-            (type) (typeof (v)) == i16 ||
-            (type) (typeof (v)) == i32 ||
-            (type) (typeof (v)) == i64
+        if type::((typeof (v)) == i8) ||
+            type::((typeof (v)) == i16) ||
+            type::((typeof (v)) == i32) ||
+            type::((typeof (v)) == i64)
         => ::std::io::write_int(fd, (v): i64)
-        else if (type) (typeof (v)) == u8 ||
-            (type) (typeof (v)) == u16 ||
-            (type) (typeof (v)) == u32 ||
-            (type) (typeof (v)) == u64
+        else if type::((typeof (v)) == u8) ||
+            type::((typeof (v)) == u16) ||
+            type::((typeof (v)) == u32) ||
+            type::((typeof (v)) == u64)
         => ::std::io::write_uint(fd, (v): u64)
-        else if (type) (typeof (v)) == &char ||
-            (type) (typeof (v)) == char[]
+        else if type::((typeof (v)) == &char) ||
+            type::((typeof (v)) == char[])
         => ::std::io::write(fd, (v))
         else
         ::std::io::write_ptr(fd, (v)) 
