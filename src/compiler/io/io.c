@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-SrcFile_T* read_file(const char* path)
+File_T* read_file(const char* path)
 {
     List_T* buffer_list = init_list();
 
@@ -36,7 +36,7 @@ SrcFile_T* read_file(const char* path)
         free(line);
     }
 
-    return init_srcfile(buffer_list, path);
+    return init_file(buffer_list, path);
 }
 
 FILE *open_file(char *path)

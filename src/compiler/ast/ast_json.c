@@ -1,7 +1,11 @@
 #include "ast_json.h"
 #include "ast.h"
 #include "../io/io.h"
+#include "ast/ast_iterator.h"
+#include "list.h"
 
+#include <json-c/json_object.h>
+#include <stdarg.h>
 #include <string.h>
 #include <json-c/json.h>
 #include <json-c/json_types.h>
@@ -10,7 +14,6 @@ typedef json_object* (*IndexFn)(void*);
 
 json_object* gen_ast_prog(ASTProg_T* ast);
 json_object* gen_ast_type(ASTType_T* type);
-json_object* gen_ast_obj(ASTObj_T* obj);
 
 void ast_to_json(ASTProg_T* ast, const char* file, bool print_json)
 {
@@ -67,7 +70,7 @@ json_object* gen_tok(Token_T* tok)
     return obj;
 }
 
-json_object* gen_srcfile(SrcFile_T* file)
+json_object* gen_srcfile(File_T* file)
 {
     if(!file)
         return json_object_new_null();
@@ -97,86 +100,23 @@ json_object* gen_ast_identifier(ASTIdentifier_T* id)
     return obj;
 }
 
-json_object* gen_ast_node(ASTNode_T* node)
+#define GET_STACK(va) List_T* stack = va_arg(va, List_T*);
+#define STACK_TOP ((json_object*) stack->items[stack->size - 1])
+
+void gen_namespace_start(ASTObj_T* namespace, va_list args)
 {
-    if(!node)
-        return json_object_new_null();
-    json_object* obj = json_object_new_object();
+    GET_STACK(args);
 
-    json_object_object_add(obj, "kind", gen_i32(node->kind));
-    if(node->tok) json_object_object_add(obj, "tok", gen_tok(node->tok));
-    if(node->data_type) json_object_object_add(obj, "data_type", gen_ast_type(node->data_type));
-    if(node->id) json_object_object_add(obj, "id", gen_ast_identifier(node->id));
-    // todo: unions
-    if(node->left) json_object_object_add(obj, "left", gen_ast_node(node->left));
-    if(node->right) json_object_object_add(obj, "right", gen_ast_node(node->right));
-    if(node->stmts) json_object_object_add(obj, "stmts", gen_list(node->stmts, (IndexFn) gen_ast_node));
-    if(node->locals) json_object_object_add(obj, "locals", gen_list(node->locals, (IndexFn) gen_ast_obj));
-    if(node->condition) json_object_object_add(obj, "condition", gen_ast_node(node->condition));
-    if(node->if_branch) json_object_object_add(obj, "if_branch", gen_ast_node(node->if_branch));
-    if(node->else_branch) json_object_object_add(obj, "else_branch", gen_ast_node(node->else_branch));
-    if(node->body) json_object_object_add(obj, "body", gen_ast_node(node->body));
-    if(node->init_stmt) json_object_object_add(obj, "init_stmt", gen_ast_node(node->init_stmt));
-    // todo: unions
-    if(node->cases) json_object_object_add(obj, "cases", gen_list(node->cases, (IndexFn) gen_ast_node));
-    if(node->default_case) json_object_object_add(obj, "default_case", gen_ast_node(node->default_case));
-    // todo: unions
-    if(node->is_constant) json_object_object_add(obj, "is_constant", gen_bool(node->is_constant));
-    if(node->expr) json_object_object_add(obj, "expr", gen_ast_node(node->expr));
-    if(node->the_type) json_object_object_add(obj, "the_type", gen_ast_type(node->the_type));
-    if(node->args) json_object_object_add(obj, "args", gen_list(node->args, (IndexFn) gen_ast_node));
-
-    return obj;
+    list_push(stack, json_object_new_object());
 }
 
-json_object* gen_ast_type(ASTType_T* type)
+void gen_namespace_end(ASTObj_T* namespace, va_list args)
 {
-    if(!type)
-        return json_object_new_null();
-    json_object* obj = json_object_new_object();
 
-    json_object_object_add(obj, "kind", gen_i32(type->kind));
-    if(type->tok) json_object_object_add(obj, "tok", gen_tok(type->tok));
-    if(type->base) json_object_object_add(obj, "base", gen_ast_type(type->base));
-    if(type->size) json_object_object_add(obj, "size", gen_i32(type->size));
-    if(type->align) json_object_object_add(obj, "align", gen_i32(type->align));
-    if(type->id) json_object_object_add(obj, "id", gen_ast_identifier(type->id));
-    if(type->is_primitive) json_object_object_add(obj, "is_primitive", gen_bool(type->is_primitive));
-    if(type->is_constant) json_object_object_add(obj, "is_constant", gen_bool(type->is_constant));
-    if(type->is_fn) json_object_object_add(obj, "is_fn", gen_bool(type->is_fn));
-    if(type->is_union) json_object_object_add(obj, "is_union", gen_bool(type->is_union));
-    if(type->arg_types) json_object_object_add(obj, "arg_types", gen_list(type->arg_types, (IndexFn) gen_ast_type));
-    if(type->num_indices) json_object_object_add(obj, "num_indices", gen_ast_node(type->num_indices));
-    if(type->members) json_object_object_add(obj, "members", gen_list(type->members, (IndexFn) gen_ast_node));
-
-    return obj;
 }
 
-json_object* gen_ast_obj(ASTObj_T* obj)
-{
-    if(!obj)
-        return json_object_new_null();
-    json_object* jobj = json_object_new_object();
-
-    json_object_object_add(jobj, "kind", gen_i32(obj->kind));
-    if(obj->tok) json_object_object_add(jobj, "tok", gen_tok(obj->tok));
-    if(obj->id) json_object_object_add(jobj, "id", gen_ast_identifier(obj->id));
-    if(obj->offset) json_object_object_add(jobj, "offset", gen_i32(obj->offset));
-    if(obj->stack_size) json_object_object_add(jobj, "stack_size", gen_i32(obj->stack_size));
-    if(obj->is_constant) json_object_object_add(jobj, "is_constant", gen_bool(obj->is_constant));
-    if(obj->is_extern) json_object_object_add(jobj, "is_extern", gen_bool(obj->is_extern));
-    if(obj->referenced) json_object_object_add(jobj, "referenced", gen_bool(obj->referenced));
-    if(obj->data_type) json_object_object_add(jobj, "data_type", gen_ast_type(obj->data_type));
-    if(obj->value) json_object_object_add(jobj, "value", gen_ast_node(obj->value));
-    if(obj->return_type) json_object_object_add(jobj, "return_type", gen_ast_type(obj->return_type));
-    if(obj->args) json_object_object_add(jobj, "args", gen_list(obj->args, (IndexFn) gen_ast_obj));
-    if(obj->body) json_object_object_add(jobj, "body", gen_ast_node(obj->body));
-    if(obj->alloca_size) json_object_object_add(jobj, "alloca_size", gen_ast_obj(obj->alloca_size));
-    if(obj->alloca_bottom) json_object_object_add(jobj, "alloca_bottom", gen_ast_obj(obj->alloca_bottom));
-    if(obj->objs) json_object_object_add(jobj, "objs", gen_list(obj->objs, (IndexFn) gen_ast_obj));
-
-    return jobj;
-}
+#undef STACK_TOP
+#undef GET_STACK
 
 json_object* gen_ast_prog(ASTProg_T* ast)
 {   
@@ -185,8 +125,21 @@ json_object* gen_ast_prog(ASTProg_T* ast)
     json_object_object_add(obj, "target_binary", gen_str(ast->target_binary));
     
     json_object_object_add(obj, "imports", gen_list(ast->imports, (IndexFn) gen_srcfile));
-    json_object_object_add(obj, "objs", gen_list(ast->objs, (IndexFn) gen_ast_obj));
-    json_object_object_add(obj, "tuple_structs", gen_list(ast->tuple_structs, (IndexFn) gen_ast_obj));
+    //json_object_object_add(obj, "objs", gen_list(ast->objs, (IndexFn) gen_ast_obj));
+    //json_object_object_add(obj, "tuple_structs", gen_list(ast->tuple_structs, (IndexFn) gen_ast_obj));
+
+    List_T* json_object_stack = init_list();
+
+    ASTIteratorList_T iterator = {
+        .obj_start_fns = {
+            [OBJ_NAMESPACE] = gen_namespace_start,
+        },
+        .obj_end_fns = {
+            [OBJ_NAMESPACE] = gen_namespace_end,
+        }
+    };
+
+    ast_iterate(&iterator, ast, json_object_stack);
 
     return obj;
 }

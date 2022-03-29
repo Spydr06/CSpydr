@@ -113,7 +113,7 @@ static Token_T* lexer_get_id(Lexer_T* lexer);
 static Token_T* lexer_get_number(Lexer_T* lexer);
 static Token_T* lexer_get_symbol(Lexer_T* lexer);
 
-void init_lexer(Lexer_T* lexer, SrcFile_T* src) 
+void init_lexer(Lexer_T* lexer, File_T* src) 
 {
     lexer->file = src;
 

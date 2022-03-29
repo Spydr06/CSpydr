@@ -371,7 +371,7 @@ static void asm_gen_file_descriptors(ASMCodegenData_T* cg)
 {
     for(size_t i = 0; i < cg->ast->imports->size; i++)
     {
-        SrcFile_T* file = cg->ast->imports->items[i];
+        File_T* file = cg->ast->imports->items[i];
         asm_println(cg, "  .file %d \"%s\"", file->file_no + 1, file->short_path ? file->short_path : file->path);
     }
 }

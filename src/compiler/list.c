@@ -4,6 +4,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#ifndef LIST_INIT_SIZE
+    #define LIST_INIT_SIZE 32
+#endif
+
+#ifndef LIST_MULTIPLIER
+    #define LIST_MULTIPLIER 2
+#endif
+
 List_T* init_list(void)
 {
     List_T* list = malloc(sizeof(struct LIST_STRUCT));

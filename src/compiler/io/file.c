@@ -2,9 +2,9 @@
 
 #include <string.h>
 
-SrcFile_T* init_srcfile(List_T* lines, const char* path)
+File_T* init_file(List_T* lines, const char* path)
 {
-    SrcFile_T* file = calloc(1, sizeof(SrcFile_T));
+    File_T* file = malloc(sizeof(File_T));
 
     file->lines = lines;
     file->path = path;
@@ -15,7 +15,7 @@ SrcFile_T* init_srcfile(List_T* lines, const char* path)
     return file;
 }
 
-void free_srcfile(SrcFile_T* file)
+void free_file(File_T* file)
 {
     for(size_t i = 0; i < file->num_lines; i++)
         free(file->lines->items[i]);
@@ -27,7 +27,7 @@ void free_srcfile(SrcFile_T* file)
     free(file);
 }
 
-char* get_line(SrcFile_T* file, u32 line)
+char* get_line(File_T* file, u32 line)
 {
     if(line >= file->num_lines)
         return NULL;
@@ -35,7 +35,7 @@ char* get_line(SrcFile_T* file, u32 line)
     return file->lines->items[line];
 }
 
-u32 get_line_len(SrcFile_T* file, u32 line)
+u32 get_line_len(File_T* file, u32 line)
 {
     if(line >= file->num_lines)
         return 0;
@@ -43,7 +43,7 @@ u32 get_line_len(SrcFile_T* file, u32 line)
     return strlen((char*) file->lines->items[line]);
 }
 
-char get_char(SrcFile_T* file, u32 line, u32 i)
+char get_char(File_T* file, u32 line, u32 i)
 {
     if(line >= file->num_lines || i >= get_line_len(file, line))
         return -1;

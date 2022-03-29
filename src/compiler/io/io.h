@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-SrcFile_T* read_file(const char* path);
+File_T* read_file(const char* path);
 void write_file(const char* path, char* buffer);
 FILE *open_file(char *path);
 

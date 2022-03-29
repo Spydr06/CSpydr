@@ -7,7 +7,7 @@
 #include <string.h>
 #include <stdio.h>
 
-Token_T* init_token(char* value, u32 line, u32 pos, TokenType_T type, SrcFile_T* source)
+Token_T* init_token(char* value, u32 line, u32 pos, TokenType_T type, File_T* source)
 {
     Token_T* token = mem_malloc(sizeof(struct TOKEN_STRUCT));
 

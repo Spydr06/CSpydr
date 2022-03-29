@@ -58,7 +58,7 @@ void compile(char* input_file, char* output_file, Action_T action)
     }
 
     for(size_t i = 0; i < ast.imports->size; i++)
-        free_srcfile(ast.imports->items[i]);
+        free_file(ast.imports->items[i]);
     mem_free();
 
     switch(action)

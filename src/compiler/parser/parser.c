@@ -400,7 +400,7 @@ static void parse_compiler_directives(Parser_T* p, List_T* obj_list);
 void parse(ASTProg_T* ast, List_T* files, bool is_silent)
 {
     // get the main source file
-    SrcFile_T* main_file = files->items[0];
+    File_T* main_file = files->items[0];
 
     // initialize the lexer for the main file
     Lexer_T lex;
