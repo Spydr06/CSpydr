@@ -66,7 +66,7 @@ Currently, CSpydr is only available for Linux. Once a first major release is in 
 To build CSpydr on your computer enter these following commands in a terminal
 
 ```bash
-git clone https://github.com/spydr06/cspydr.git --recursive
+git clone https://github.com/spydr06/cspydr.git
 cd ./cspydr
 ```
 ```bash
