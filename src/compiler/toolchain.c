@@ -83,7 +83,7 @@ void compile(char* input_file, char* output_file, Action_T action)
 
 static void generate_ast(ASTProg_T* ast, char* path, char* target, bool silent)
 {
-    List_T* files = init_list(sizeof(struct SRC_FILE_STRUCT*));
+    List_T* files = init_list();
     list_push(files, read_file(path));
 
     parse(ast, files, silent);

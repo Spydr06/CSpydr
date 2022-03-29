@@ -1,28 +1,28 @@
 #include "mem.h"
-#include "../config.h"
-#include "../io/log.h"
 
-#include <c-vector/vec.h>
+#include "config.h"
+#include "io/log.h"
+#include "list.h"
 
-void** allocs = NULL;
-void** lists = NULL;
+static List_T* allocs = NULL;
+static List_T* lists = NULL;
 
 void mem_free(void)
 {
     if(allocs)
     {
-        for(size_t i = 0; i < vector_size(allocs); i++)
-            free(allocs[i]);
+        for(size_t i = 0; i < allocs->size; i++)
+            free(allocs->items[i]);
 
-        vector_free(allocs);
+        free_list(allocs);
         allocs = NULL;
     }
     if(lists)
     {
-        for(size_t i = 0; i < vector_size(lists); i++)
-            free_list(lists[i]);
+        for(size_t i = 0; i < lists->size; i++)
+            free_list(lists->items[i]);
 
-        vector_free(lists);
+        free_list(lists);
         lists = NULL;
     }
 }
@@ -30,7 +30,7 @@ void mem_free(void)
 void* mem_malloc(size_t size)
 {
     if(!allocs)
-        allocs = vector_create();
+        allocs = init_list();
 
     static int mallocs_failed = 0;
     void* ptr;
@@ -44,7 +44,7 @@ retry_malloc:
         exit(1);
     }
 
-    vector_add(&allocs, ptr);
+    list_push(allocs, ptr);
 
     return ptr;
 }
@@ -52,15 +52,15 @@ retry_malloc:
 void mem_add_ptr(void* ptr)
 {
     if(!allocs)
-        allocs = vector_create();
+        allocs = init_list();
 
-    vector_add(&allocs, ptr);
+    list_push(allocs, ptr);
 }
 
 void mem_add_list(List_T* list)
 {
     if(!lists)
-        lists = vector_create();
+        lists = init_list();
 
-    vector_add(&lists, list);
+    list_push(lists, list);
 }

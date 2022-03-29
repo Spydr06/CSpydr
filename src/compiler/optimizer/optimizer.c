@@ -47,7 +47,7 @@ void remove_dead_code(ASTProg_T* ast)
 {
     ast->entry_point->referenced = true;
 
-    List_T* node_stack = init_list(sizeof(struct AST_NODE_STRUCT*));
+    List_T* node_stack = init_list();
     list_push(node_stack, ast->entry_point->body);
 
     while(node_stack->size)

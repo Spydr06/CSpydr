@@ -204,7 +204,7 @@ static void run_compiler(CCodegenData_T* cg, const char* target_bin)
     char c_source_file[BUFSIZ] = {'\0'};
     sprintf(c_source_file, "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.c", get_home_directory(), target_bin);
 
-    List_T* args = init_list(sizeof(char*));
+    List_T* args = init_list();
     list_push(args, cc);
     list_push(args, c_source_file);
     list_push(args, "-o");

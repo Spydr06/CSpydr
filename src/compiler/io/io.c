@@ -11,7 +11,7 @@
 
 SrcFile_T* read_file(const char* path)
 {
-    List_T* buffer_list = init_list(sizeof(char*));
+    List_T* buffer_list = init_list();
 
     FILE* fp;
     char* line = NULL;

@@ -16,7 +16,7 @@ static void cat_id(char* callee, ASTIdentifier_T* id)
 }
 
 static List_T* get_id_path(ASTIdentifier_T* id) {
-    List_T* path = init_list(sizeof(struct AST_IDENTIFIER_STRUCT*));
+    List_T* path = init_list();
     list_push(path, id);
 
     ASTIdentifier_T* outer = id;

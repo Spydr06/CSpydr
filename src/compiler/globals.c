@@ -15,13 +15,13 @@ void init_globals(void)
     global.do_link = true;
     global.do_assemble = true;
     global.max_macro_call_depth = __CSP_DEFAULT_MAX_MACRO_CALL_DEPTH;
-    global.compiler_flags = init_list(sizeof(char*));
+    global.compiler_flags = init_list();
 
     // default compiler flags
     list_push(global.compiler_flags, (void*) optimization_flag);
     list_push(global.compiler_flags, (void*) all_warnings_flag);
 
-    global.linker_flags = init_list(sizeof(char*));
+    global.linker_flags = init_list();
 }
 
 void globals_exit_hook(void)

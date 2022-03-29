@@ -569,7 +569,7 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, Li
                 handle->tok = parser_peek(p, -2);
 
                 if(!p->root_ref->type_exit_fns)
-                    mem_add_list(p->root_ref->type_exit_fns = init_list(sizeof(ASTExitFnHandle_T*)));
+                    mem_add_list(p->root_ref->type_exit_fns = init_list());
                 list_push(p->root_ref->type_exit_fns, handle);
                 return;
             }
@@ -651,7 +651,7 @@ static ASTType_T* parse_struct_type(Parser_T* p)
     }
 
     parser_consume(p, TOKEN_LBRACE, "expect `{` or identifier after struct keyword");
-    struct_type->members = init_list(sizeof(struct AST_NODE_STRUCT*));
+    struct_type->members = init_list();
     mem_add_list(struct_type->members);
 
     while(!tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF))
@@ -678,7 +678,7 @@ static ASTType_T* parse_enum_type(Parser_T* p)
     parser_consume(p, TOKEN_ENUM, "expect `enum` keyword for enum type");
     parser_consume(p, TOKEN_LBRACE, "expect `{` after enum keyword");
 
-    enum_type->members = init_list(sizeof(struct AST_OBJ_STRUCT*));
+    enum_type->members = init_list();
     mem_add_list(enum_type->members);
 
     for(i32 i = 0; !tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF); i++)
@@ -723,7 +723,7 @@ static ASTType_T* parse_lambda_type(Parser_T* p)
         lambda->base = (ASTType_T*) primitives[TY_VOID];
     }
 
-    lambda->arg_types = init_list(sizeof(struct AST_TYPE_STRUCT*));
+    lambda->arg_types = init_list();
     mem_add_list(lambda->arg_types);
 
     if(tok_is(p, TOKEN_LPAREN))
@@ -813,7 +813,7 @@ static ASTType_T* parse_type(Parser_T* p)
                 break;
             case TOKEN_LBRACE:
                 type = init_ast_type(TY_STRUCT, p->tok);
-                type->members = init_list(sizeof(struct AST_TYPE_STRUCT*));
+                type->members = init_list();
                 mem_add_list(type->members);
                 parser_advance(p);
 
@@ -941,7 +941,7 @@ static void parse_extern(Parser_T* p, List_T* objs)
 
 List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok, ASTIdentifier_T** variadic_id)
 {
-    List_T* arg_list = init_list(sizeof(ASTObj_T*));
+    List_T* arg_list = init_list();
 
     while(p->tok->type != end_tok)
     {
@@ -1010,7 +1010,7 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
     fn->data_type = init_ast_type(TY_FN, fn->tok);
     fn->data_type->base = fn->return_type;
     fn->data_type->is_constant = true;
-    fn->data_type->arg_types = init_list(sizeof(struct AST_TYPE_STRUCT*));
+    fn->data_type->arg_types = init_list();
     for(size_t i = 0; i < fn->args->size; i++)
         list_push(fn->data_type->arg_types, ((ASTObj_T*) fn->args->items[i])->data_type);
     mem_add_list(fn->data_type->arg_types);
@@ -1031,7 +1031,7 @@ static ASTObj_T* parse_fn(Parser_T* p)
 
     if(global.ct == CT_ASM)
     {
-        fn->objs = init_list(sizeof(struct AST_OBJ_STRUCT*));
+        fn->objs = init_list();
         mem_add_list(fn->objs);
         collect_locals(fn->body, fn->objs);
     }
@@ -1092,7 +1092,7 @@ static void parse_namespace(Parser_T* p, List_T* objs)
         list_push(objs, namespace);
 
         // initialize the namespace's object list
-        namespace->objs = init_list(sizeof(struct AST_OBJ_STRUCT));
+        namespace->objs = init_list();
         mem_add_list(namespace->objs);
     }
         
@@ -1146,8 +1146,8 @@ static void parse_obj(Parser_T* p, List_T* obj_list)
 static ASTNode_T* parse_block(Parser_T* p)
 {
     ASTNode_T* block = init_ast_node(ND_BLOCK, p->tok);
-    block->locals = init_list(sizeof(struct AST_OBJ_STRUCT*));
-    block->stmts = init_list(sizeof(struct AST_NODE_STRUCT*));
+    block->locals = init_list();
+    block->stmts = init_list();
 
     parser_consume(p, TOKEN_LBRACE, "expect `{` at the beginning of a block statement");
 
@@ -1250,7 +1250,7 @@ static ASTNode_T* parse_for(Parser_T* p, bool needs_semicolon)
 
     parser_consume(p, TOKEN_FOR, "expect `for` for a for loop statement");
 
-    loop->locals = init_list(sizeof(struct AST_OBJ_STRUCT*));
+    loop->locals = init_list();
     mem_add_list(loop->locals);
 
     ASTNode_T* prev_block = p->cur_block;
@@ -1352,7 +1352,7 @@ static ASTNode_T* parse_type_match(Parser_T* p, ASTNode_T* match)
 static ASTNode_T* parse_match(Parser_T* p)
 {
     ASTNode_T* match = init_ast_node(ND_MATCH, p->tok);
-    match->cases = init_list(sizeof(struct AST_NODE_STRUCT*));
+    match->cases = init_list();
     match->default_case = NULL;
     mem_add_list(match->cases);
 
@@ -1601,7 +1601,7 @@ static ASTNode_T* parse_expr(Parser_T* p, Precedence_T prec, TokenType_T end_tok
 
 static List_T* parse_expr_list(Parser_T* p, TokenType_T end_tok)
 {
-    List_T* list = init_list(sizeof(struct AST_NODE_STRUCT*));
+    List_T* list = init_list();
     mem_add_list(list);
 
     while (!tok_is(p, end_tok) && !tok_is(p, TOKEN_EOF)) 
@@ -1633,7 +1633,7 @@ static ASTNode_T* parse_id(Parser_T* p)
 static ASTNode_T* parse_inline_asm(Parser_T* p)
 {
     ASTNode_T* asm_stmt = init_ast_node(ND_ASM, p->tok);
-    asm_stmt->args = init_list(sizeof(struct AST_NODE_STRUCT*));
+    asm_stmt->args = init_list();
     mem_add_list(asm_stmt->args);
     parser_advance(p);
 
@@ -1807,9 +1807,9 @@ static ASTNode_T* parse_anonymous_struct_lit(Parser_T* p)
 static ASTNode_T* parse_lambda_lit(Parser_T* p)
 {
     ASTNode_T* lambda = init_ast_node(ND_LAMBDA, p->tok);
-    lambda->args = init_list(sizeof(struct AST_OBJ_STRUCT*));
+    lambda->args = init_list();
     lambda->data_type = init_ast_type(TY_FN, p->tok);
-    lambda->data_type->arg_types = init_list(sizeof(struct AST_TYPE_STUCT*));
+    lambda->data_type->arg_types = init_list();
     
     mem_add_list(lambda->args);
     mem_add_list(lambda->data_type->arg_types);
@@ -1852,12 +1852,12 @@ static ASTNode_T* parse_const_lambda(Parser_T* p)
     static u64 count = 0;
 
     ASTObj_T* lambda_fn = init_ast_obj(OBJ_FUNCTION, p->tok);
-    lambda_fn->args = init_list(sizeof(struct AST_OBJ_STRUCT*));
+    lambda_fn->args = init_list();
     lambda_fn->data_type = init_ast_type(TY_FN, p->tok);
-    lambda_fn->data_type->arg_types = init_list(sizeof(struct AST_TYPE_STUCT*));
+    lambda_fn->data_type->arg_types = init_list();
     lambda_fn->data_type->is_constant = true;
     lambda_fn->id = init_ast_identifier(p->tok, "");
-    lambda_fn->objs = init_list(sizeof(struct AST_OBJ_STRUCT*));
+    lambda_fn->objs = init_list();
 
     mem_add_list(lambda_fn->args);
     mem_add_list(lambda_fn->data_type->arg_types);
@@ -2279,7 +2279,7 @@ static ASTNode_T* parse_infix_call(Parser_T* p, ASTNode_T* left)
 {
     ASTNode_T* call = init_ast_node(ND_CALL, p->tok);
     call->expr = parse_infix_call_expr(p);
-    call->args = init_list(sizeof(ASTNode_T*));
+    call->args = init_list();
     list_push(call->args, left);
     list_push(call->args, parse_expr(p, INFIX_CALL, TOKEN_SEMICOLON));
 

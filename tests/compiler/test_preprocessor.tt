@@ -5,7 +5,7 @@
 #define PREPROCESSOR_TEST_FUNC(name, src, code) void name(void) {        \
     SrcFile_T* file = get_file(1, src);                                  \
     TEST_ASSERT(file != NULL);                                           \
-    List_T* files = init_list(sizeof(struct SRC_FILE_STRUCT*));          \
+    List_T* files = init_list();                                         \
     list_push(files, file);                                              \
     Lexer_T lex;                                                         \
     init_lexer(&lex, file);                                              \

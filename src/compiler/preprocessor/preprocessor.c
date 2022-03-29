@@ -61,7 +61,7 @@ Macro_T* init_macro(Token_T* tok)
 {
     Macro_T* mac = malloc(sizeof(struct MACRO_STRUCT));
     mac->tok = tok;
-    mac->replacing_tokens = init_list(sizeof(struct TOKEN_STRUCT*));
+    mac->replacing_tokens = init_list();
     mac->argc = 0;
     mac->used = false;
 
@@ -111,10 +111,9 @@ static void free_import(Import_T* imp)
 void init_preprocessor(Preprocessor_T* pp, Lexer_T* lex)
 {
     pp->lex = lex;
-    pp->macros = init_list(sizeof(struct MACRO_STRUCT*));
-    pp->imports = init_list(sizeof(struct IMPORT_STRUCT*));
-
-    pp->tokens = init_list(sizeof(struct TOKEN_STRUCT*));
+    pp->macros = init_list();
+    pp->imports = init_list();
+    pp->tokens = init_list();
     
     pp->is_silent = false;
 
@@ -494,7 +493,7 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
     * Stage 2: parse macro definitions     *
     ***************************************/
 
-    List_T* token_stage_2 = init_list(sizeof(struct TOKEN_STRUCT*)); // init a new list for stage 2
+    List_T* token_stage_2 = init_list(); // init a new list for stage 2
     for(size_t i = 0; i < pp.tokens->size;)
     {
         tok = pp.tokens->items[i];
@@ -511,7 +510,7 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
     * Stage 3: expand all macro calls     *
     **************************************/
 
-    List_T* token_stage_3 = init_list(sizeof(struct TOKEN_STRUCT*)); //q init a new list for stage 3
+    List_T* token_stage_3 = init_list(); //q init a new list for stage 3
     for(size_t i = 0; i < token_stage_2->size; i++)
     {
         tok = token_stage_2->items[i];

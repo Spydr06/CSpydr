@@ -2,7 +2,7 @@
     CSPC - THE CSPYDR PROGRAMMING LANGUAGE COMPILER
     This is the main file and entry point to the compiler.
 
-    This compiler and all components of CSpydr, except external dependencies (acutest, c-vector, json-c), are licensed under the MIT license.
+    This compiler and all components of CSpydr, except external dependencies (acutest, json-c), are licensed under the MIT license.
 
     Creator:
         https://github.com/spydr06

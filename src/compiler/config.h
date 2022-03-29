@@ -36,6 +36,9 @@
     #warn "Your current libc implementation is not yet supported and might lead to problems"
 #endif
 
+#define LIST_INIT_SIZE 32
+#define LIST_MULTIPLIER 2
+
 #define DEFAULT_COMPILE_TYPE CT_ASM
 
 #define __CSP_MAX_TOKEN_SIZE 128

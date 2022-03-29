@@ -387,7 +387,7 @@ static void begin_obj_scope(Validator_T* v, ASTIdentifier_T* id, List_T* objs)
 static inline void begin_scope(Validator_T* v, ASTIdentifier_T* id)
 {
     VScope_T* scope = malloc(sizeof(VScope_T));
-    scope->objs = init_list(sizeof(ASTObj_T*));
+    scope->objs = init_list();
     scope->prev = v->current_scope;
     scope->id = id;
     v->current_scope = scope;
@@ -1543,7 +1543,7 @@ static void anonymous_struct_lit(ASTNode_T* s_lit, Validator_T* v)
         return;
     }
     ASTType_T* type = init_ast_type(TY_STRUCT, s_lit->tok);
-    mem_add_list(type->members = init_list(sizeof(struct AST_NODE_STRUCT*)));
+    mem_add_list(type->members = init_list());
     
     for(size_t i = 0; i < s_lit->args->size; i++)
     {

@@ -8,7 +8,7 @@
 
 static SrcFile_T* get_file(int num_lines, ...) 
 {
-    List_T* lines = init_list(sizeof(char*));
+    List_T* lines = init_list();
     va_list va;
 
     va_start(va, num_lines);

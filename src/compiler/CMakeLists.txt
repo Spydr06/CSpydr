@@ -7,7 +7,7 @@ file(GLOB_RECURSE compiler_source *.c *.cpp *.cc *.c++)
 list(REMOVE_ITEM compiler_source "main.c")
 
 add_library(libcsp ${compiler_source})
-target_link_libraries(libcsp LINK_PUBLIC c-vector m json-c bsd)
+target_link_libraries(libcsp LINK_PUBLIC m json-c bsd)
 set_target_properties(libcsp PROPERTIES LINKER_LANGUAGE C)
 
 # build the main executable

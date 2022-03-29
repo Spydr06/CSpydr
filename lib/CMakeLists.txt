@@ -5,10 +5,5 @@
     target_include_directories(acutest PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
     set_target_properties(acutest PROPERTIES LINKER_LANGUAGE C)
 
-# c-vector
-    add_library(c-vector c-vector/vec.c)
-    target_include_directories(c-vector PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-    set_target_properties(c-vector PROPERTIES LINKER_LANGUAGE C)
-
 # json-c
     find_package(json-c CONFIG)

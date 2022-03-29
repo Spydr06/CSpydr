@@ -328,7 +328,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
             if(!cg->silent)
                 LOG_OK_F(COLOR_BOLD_BLUE "  Linking    " COLOR_RESET "%s\n", target);
 
-            List_T* args = init_list(sizeof(char*));
+            List_T* args = init_list();
             list_push(args, DEFAULT_LINKER);
             list_push(args, "-o");
             list_push(args, (void*) target);
@@ -2185,7 +2185,6 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
                 },
                 .args = &(List_T) {
                     .size = 1,
-                    .item_size = sizeof(ASTNode_T*),
                     .items = (void**) &id
                 }
             });
