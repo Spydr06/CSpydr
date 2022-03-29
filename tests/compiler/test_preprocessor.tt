@@ -3,7 +3,7 @@
                             {"preprocessing two macros", test_preprocessing_two_macros}
 
 #define PREPROCESSOR_TEST_FUNC(name, src, code) void name(void) {        \
-    SrcFile_T* file = get_file(1, src);                                  \
+    File_T* file = get_file(1, src);                                  \
     TEST_ASSERT(file != NULL);                                           \
     List_T* files = init_list();                                         \
     list_push(files, file);                                              \

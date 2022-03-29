@@ -1,12 +1,13 @@
 #include <acutest/include/acutest.h>
 
-#include "../../src/compiler/lexer/lexer.h"
-#include "../../src/compiler/preprocessor/preprocessor.h"
-#include "../../src/compiler/parser/parser.h"
+#include "lexer/lexer.h"
+#include "preprocessor/preprocessor.h"
+#include "parser/parser.h"
+#include "globals.h"
 #include <stdarg.h>
 #include <string.h>
 
-static SrcFile_T* get_file(int num_lines, ...) 
+static File_T* get_file(int num_lines, ...) 
 {
     List_T* lines = init_list();
     va_list va;
@@ -16,12 +17,12 @@ static SrcFile_T* get_file(int num_lines, ...)
         list_push(lines, va_arg(va, char*));
     va_end(va);
 
-    return init_srcfile(lines, "generated");
+    return init_file(lines, "generated");
 }
 
 void test_file_generation(void)
 {
-    SrcFile_T* file = get_file(2, "hello", "world");
+    File_T* file = get_file(2, "hello", "world");
     TEST_ASSERT(file != NULL);
 
     TEST_ASSERT(file->path != NULL);

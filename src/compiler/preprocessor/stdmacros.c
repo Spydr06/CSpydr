@@ -141,5 +141,5 @@ const char* get_compile_type(void)
 
 const char* get_main_file(void)
 {
-    return global.main_src_file;
+    return global.main_src_file ? global.main_src_file : "nil";
 }
