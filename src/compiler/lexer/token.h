@@ -1,8 +1,8 @@
 #ifndef CSPYDR_TOKEN_H
 #define CSPYDR_TOKEN_H
 
-#include "../io/file.h"
-#include "../config.h"
+#include "io/file.h"
+#include "config.h"
 
 typedef enum TOKEN_TYPE {
     TOKEN_ID,           // names, types, etc.

@@ -1,7 +1,7 @@
 #include "lexer.h"
 #include "token.h"
 
-#include "../io/log.h"
+#include "io/log.h"
 
 #include <ctype.h>
 #include <stdio.h>

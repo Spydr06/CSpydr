@@ -1,11 +1,11 @@
 #include "ast.h"
-#include "../io/log.h"
+#include "io/log.h"
 
 #include "codegen/codegen_utils.h"
 #include "config.h"
 #include "optimizer/constexpr.h"
 #include "types.h"
-#include "../mem/mem.h"
+#include "mem/mem.h"
 
 #include <string.h>
 

@@ -1,9 +1,7 @@
 #include "token.h"
-#include "../mem/mem.h"
+#include "mem/mem.h"
 
 #include <stdlib.h>
-#include <string.h>
-
 #include <string.h>
 #include <stdio.h>
 

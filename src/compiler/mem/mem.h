@@ -1,7 +1,7 @@
 #ifndef CSPYDR_MEM_H
 #define CSPYDR_MEM_H
 
-#include "../lexer/token.h"
+#include "lexer/token.h"
 #include <stdlib.h>
 
 void mem_free(void);

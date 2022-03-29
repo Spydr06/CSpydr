@@ -2,7 +2,7 @@
 #define CSPYDR_CODEGEN_UTILS_H
 
 #include <stdint.h>
-#include "../ast/ast.h"
+#include "ast/ast.h"
 
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))

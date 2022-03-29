@@ -1,10 +1,10 @@
 #ifndef CSPYDR_ERROR_HANDLER_H
 #define CSPYDR_ERROR_HANDLER_H
 
-#include "../list.h"
 #include <stdbool.h>
 
-#include "../lexer/token.h"
+#include "list.h"
+#include "lexer/token.h"
 
 #define unreachable() \
     LOG_ERROR_F("internal error at %s:%d\n", __FILE__, __LINE__)

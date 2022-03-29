@@ -1,8 +1,8 @@
 #ifndef CSPYDR_FILE_H
 #define CSPYDR_FILE_H
 
-#include "../list.h"
-#include "../util.h"
+#include "list.h"
+#include "util.h"
 
 typedef struct SRC_FILE_STRUCT 
 {

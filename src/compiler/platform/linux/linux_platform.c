@@ -1,7 +1,7 @@
 #if defined(__linux__) || defined (__linux)
 
 #include "linux_platform.h"
-#include "../../io/log.h"
+#include "io/log.h"
 
 #include <libgen.h>
 #include <string.h>

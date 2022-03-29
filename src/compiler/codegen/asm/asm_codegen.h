@@ -1,7 +1,7 @@
 #ifndef CSPYDR_ASM_CODEGEN_H
 #define CSPYDR_ASM_CODEGEN_H
 
-#include "../../ast/ast.h"
+#include "ast/ast.h"
 #include <stdio.h>
 
 typedef struct ASM_CODEGEN_DATA_STRUCT

@@ -2,7 +2,7 @@
 #define CSPYDR_PLATFORM_BINDINGS_H
 
 #include <stdbool.h>
-#include "../util.h"
+#include "util.h"
 
 extern char* get_absolute_path(char* relative_path);
 extern char* get_path_from_file(char* file_path);

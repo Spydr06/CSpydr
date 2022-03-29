@@ -1,6 +1,6 @@
 #include "ast_json.h"
 #include "ast.h"
-#include "../io/io.h"
+#include "io/io.h"
 #include "ast/ast_iterator.h"
 #include "list.h"
 

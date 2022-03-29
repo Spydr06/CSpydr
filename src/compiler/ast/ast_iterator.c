@@ -1,5 +1,5 @@
 #include "ast_iterator.h"
-#include "../io/log.h"
+#include "io/log.h"
 #include "ast.h"
 
 #include <stdarg.h>

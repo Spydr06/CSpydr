@@ -1,7 +1,7 @@
 #ifndef CSPYDR_INPUT_H
 #define CSPYDR_INPUT_H
 
-#include "../list.h"
+#include "list.h"
 #include "file.h"
 
 #include <stdbool.h>

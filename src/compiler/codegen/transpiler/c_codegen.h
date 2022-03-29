@@ -1,9 +1,7 @@
 #ifndef CSPYDR_C_CODEGEN_H
 #define CSPYDR_C_CODEGEN_H
 
-#include "../../ast/ast.h"
-
-#include <stdio.h>
+#include "ast/ast.h"
 
 extern char* cc;
 extern char* cc_flags;

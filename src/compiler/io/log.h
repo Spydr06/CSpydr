@@ -2,7 +2,7 @@
 #define CSPYDR_LOG_H
 
 #include <stdio.h>
-#include "../config.h"
+#include "config.h"
 
 #define COLOR_RESET   "\033[0m"
 #define COLOR_BLACK   "\033[30m"     

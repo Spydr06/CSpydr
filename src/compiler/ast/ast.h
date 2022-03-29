@@ -3,9 +3,9 @@
 
 #include "stdbool.h"
 
-#include "../list.h"
-#include "../lexer/token.h"
-#include "../config.h"
+#include "list.h"
+#include "lexer/token.h"
+#include "config.h"
 
 #include <stdint.h>
 #include <stdio.h>

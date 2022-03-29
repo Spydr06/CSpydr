@@ -1,8 +1,8 @@
 #include "dbg.h"
-#include "../io/log.h"
-#include "../globals.h"
-#include "../toolchain.h"
-#include "../platform/platform_bindings.h"
+#include "io/log.h"
+#include "globals.h"
+#include "toolchain.h"
+#include "platform/platform_bindings.h"
 
 #include <stdbool.h>
 #include <stdio.h>

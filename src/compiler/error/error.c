@@ -1,5 +1,5 @@
 #include "error.h"
-#include "../io/log.h"
+#include "io/log.h"
 #include "ast/ast.h"
 #include "config.h"
 #include "globals.h"

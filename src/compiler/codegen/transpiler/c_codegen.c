@@ -1,19 +1,19 @@
 #include "c_codegen.h"
 
-#include "../../io/log.h"
-#include "../../io/io.h"
-#include "../../error/error.h"
-#include "../../globals.h"
+#include "io/log.h"
+#include "io/io.h"
+#include "error/error.h"
+#include "globals.h"
 #include "../codegen_utils.h"
-#include "../../ast/types.h"
+#include "ast/types.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 
-#include "../../platform/platform_bindings.h"
-#include "../../mem/mem.h"
+#include "platform/platform_bindings.h"
+#include "mem/mem.h"
 #include "ast/ast.h"
 
 char* cc = DEFAULT_CC;

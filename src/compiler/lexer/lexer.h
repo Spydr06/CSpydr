@@ -1,10 +1,10 @@
 #ifndef CSPYDR_LEXER_H
 #define CSPYDR_LEXER_H
 
-#include "../list.h"
+#include "list.h"
 #include "token.h"
-#include "../io/file.h"
-#include "../error/error.h"
+#include "io/file.h"
+#include "error/error.h"
 
 typedef struct LEXER_STRUCT 
 {
