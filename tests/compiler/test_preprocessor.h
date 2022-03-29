@@ -2,6 +2,10 @@
                             {"preprocessing simple macro", test_processing_simple_macro},  \
                             {"preprocessing two macros", test_preprocessing_two_macros}
 
+#include "lexer/token.h"
+#include "parser/parser.h"
+#include "preprocessor/preprocessor.h"
+
 #define PREPROCESSOR_TEST_FUNC(name, src, code) void name(void) {        \
     File_T* file = get_file(1, src);                                  \
     TEST_ASSERT(file != NULL);                                           \

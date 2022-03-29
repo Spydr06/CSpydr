@@ -4,7 +4,7 @@ fn main(): i32
 {
     using std::io;
 
-    let array = [0, 1, 2, 4, 5];
+    let array: i32[] = [0, 1, 2, 4, 5];
     let i = 0;
 
     for_each(array, len array, |val: i32| => { 

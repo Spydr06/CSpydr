@@ -1,12 +1,12 @@
 #include "validator.h"
-#include "../ast/ast_iterator.h"
-#include "../ast/types.h"
-#include "../list.h"
-#include "../error/error.h"
-#include "../io/log.h"
-#include "../optimizer/constexpr.h"
-#include "../toolchain.h"
-#include "../ast/types.h"
+#include "ast/ast_iterator.h"
+#include "ast/types.h"
+#include "list.h"
+#include "error/error.h"
+#include "io/log.h"
+#include "optimizer/constexpr.h"
+#include "toolchain.h"
+#include "ast/types.h"
 #include "ast/ast.h"
 #include "codegen/codegen_utils.h"
 #include "lexer/token.h"
@@ -932,19 +932,6 @@ static void local_start(ASTObj_T* local, va_list args)
 static void local_end(ASTObj_T* local, va_list args)
 {
     GET_VALIDATOR(args);
-
-    if(local->data_type) {
-        ASTType_T* expanded = expand_typedef(v, local->data_type);
-
-        if(expanded->is_vla && !vla_to_array_type(v, local->data_type, local->value))
-                throw_error(ERR_TYPE_ERROR, local->data_type->tok, "vla type is not allowed for variables");
-        if(expanded->is_constant)
-            local->is_constant = true;
-        if(expanded->kind == TY_VOID)
-            throw_error(ERR_TYPE_ERROR, local->tok, "`void` type is not allowed for variables");
-
-        local->data_type->size = get_type_size(v, local->data_type);
-    }
 }
 
 static void fn_arg_start(ASTObj_T* arg, va_list args)
@@ -1467,9 +1454,11 @@ static void local_initializer(Validator_T* v, ASTNode_T* assign, ASTObj_T* local
         }
         local->data_type = assign->right->data_type;
     }
-    if(local->data_type->is_vla && !vla_to_array_type(v, local->data_type, assign->right))
+    ASTType_T* expanded = expand_typedef(v, local->data_type);
+    if(expanded->is_vla && !vla_to_array_type(v, local->data_type, assign->right))
             throw_error(ERR_TYPE_ERROR, local->data_type->tok, "vla type is not allowed for local variables");
-
+    if(expanded->kind == TY_VOID)
+        throw_error(ERR_TYPE_ERROR, local->tok, "`void` type is not allowed for variables");
     if(local->data_type->is_constant)
         local->is_constant = true;
     assign->left->data_type = local->data_type;

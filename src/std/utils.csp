@@ -36,7 +36,7 @@ macro ttos(ty)
 # checks if the bit of v at position p is 1
 macro check_bit(v, p)
 {
-    ((var) & ((1: u64) << (pos)))
+    ((v) & ((1: u64) << (p)))
 }
 
 # toggles the bit of v at position v

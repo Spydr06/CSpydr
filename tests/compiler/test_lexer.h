@@ -6,6 +6,7 @@
     {"lexing keywords", test_lexer_keywords}
 
 #include "lexer/token.h"
+#include "lexer/lexer.h"
 
 #ifndef LEN
 #define LEN(arr) (sizeof(arr) / sizeof(*arr))

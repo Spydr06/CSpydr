@@ -1,6 +1,9 @@
 #define PARSER_TESTS {"parsing simple main function", test_parsing_simple_main_func},    \
                      {"parsing complex main function", test_parsing_complex_main_func}   \
 
+#include "lexer/token.h"
+#include "parser/parser.h"
+
 #define PARSER_TEST_FUNC(name, src, code) \
 void name(void) {                         \
     File_T* file = get_file(1, src);      \
