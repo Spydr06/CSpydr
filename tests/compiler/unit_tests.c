@@ -35,9 +35,9 @@ void test_file_generation(void)
     TEST_CHECK(strcmp(file->lines->items[1], "world") == 0);
 }
 
-#include "test_lexer.tt"
-#include "test_preprocessor.tt"
-#include "test_parser.tt"
+#include "test_lexer.h"
+#include "test_preprocessor.h"
+#include "test_parser.h"
 
 TEST_LIST = {
    {"file generation", test_file_generation},
