@@ -558,6 +558,14 @@ static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var, ASTNode_T* v
             val->right->int_val = -val->right->int_val;
             asm_gen_relocation(cg, var, val->right);
             return;
+        case ND_ID:
+            if(var->is_constant && val->referenced_obj)
+            {
+                asm_println(cg, "  .quad %s", asm_gen_identifier(val->id));
+                break;
+            }
+            throw_error(ERR_TYPE_ERROR, val->tok, "identifier does not reference compile-time constant");
+            break;
         default:
             throw_error(ERR_CODEGEN, val->tok, "cannot generate relocation for `%s` (%d)", val->tok->value, val->kind);
     }
@@ -883,7 +891,7 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
 
                 case OBJ_GLOBAL:
                 case OBJ_ENUM_MEMBER:
-                    asm_println(cg, "  lea %s(%%rip), %%rax", node->referenced_obj->is_extern_c ? node->id->callee : asm_gen_identifier(node->id));
+                    asm_println(cg, "  %s %s(%%rip), %%rax", node->call ? "movq" : "lea", node->referenced_obj->is_extern_c ? node->id->callee : asm_gen_identifier(node->id));
                     return;
                 
                 case OBJ_FUNCTION:

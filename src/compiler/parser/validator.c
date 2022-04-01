@@ -1121,6 +1121,9 @@ static void call(ASTNode_T* call, va_list args)
             } return;
     }
 
+    if(call->expr->kind == ND_ID)
+        call->expr->call = call;
+
     size_t expected_arg_num = call_type->arg_types->size;
     size_t received_arg_num = call->args->size;
 

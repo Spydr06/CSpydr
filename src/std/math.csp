@@ -10,6 +10,12 @@ macro min(a, b) {
 
 namespace std {
     namespace math {
+        const PI: f64 = 3.141592653589793;
+
+        namespace __static {
+
+        }
+
         fn nan(): f32 
         {
             let n = 0x7fc00000;
@@ -67,5 +73,7 @@ namespace std {
         
         fn labs(a: i64): i64
             <- if a > 0 => a else -a;
+
+        
     }
 }

@@ -187,8 +187,23 @@ void remove_dead_code(ASTProg_T* ast)
                 if(stack_top->referenced_obj && !stack_top->referenced_obj->referenced)
                 {
                     stack_top->referenced_obj->referenced = true;
-                    if(stack_top->referenced_obj->kind == OBJ_FUNCTION && !stack_top->referenced_obj->is_extern)
-                        list_push(node_stack, stack_top->referenced_obj->body);
+                    //if(stack_top->referenced_obj->kind == OBJ_FUNCTION && !stack_top->referenced_obj->is_extern)
+                    //    list_push(node_stack, stack_top->referenced_obj->body);
+                    if(!stack_top->referenced_obj->is_extern)
+                    {
+                        switch(stack_top->referenced_obj->kind)
+                        {
+                        case OBJ_FUNCTION:
+                            list_push(node_stack, stack_top->referenced_obj->body);
+                            break;
+                        case OBJ_GLOBAL:
+                            if(stack_top->referenced_obj->value)
+                                list_push(node_stack, stack_top->referenced_obj->value);
+                            break;
+                        default:
+                            break;
+                        }
+                    }
                 }
                 break;
 

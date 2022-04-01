@@ -1,4 +1,6 @@
-import "io.csp";
+import "std.csp";
+
+const f: fn(i32[], i32, fn(i32)) = for_each;
 
 fn main(): i32 
 {
@@ -7,7 +9,7 @@ fn main(): i32
     let array: i32[] = [0, 1, 2, 4, 5];
     let i = 0;
 
-    for_each(array, len array, |val: i32| => { 
+    f(array, len array, |val: i32| => { 
         printf("array[%i] = %i\n", i++, val);
     });
 
