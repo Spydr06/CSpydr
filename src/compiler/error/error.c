@@ -44,7 +44,7 @@ void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
                           COLOR_RESET ": ";                        // before the error message
     const char* err_tmp2 = COLOR_RESET "\n"                        // after the error message
                           " %*d | %s %s"                           // the line number and source code line
-                          "%*s | " COLOR_BOLD_BLUE "%*s^~here"     // the pointer to the error in the source
+                          "%*s | " COLOR_BOLD_BLUE "%*s^%.*s-here" // the pointer to the error in the source
                           "\n" COLOR_RESET;                        // end of the message
 
     char* src_line = get_line(tok->source, tok->line);
@@ -54,6 +54,7 @@ void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
 
     u32 line = tok->line + 1;
     u32 character = tok->pos + 1;
+    u32 length = tok->type == TOKEN_STRING ? strlen(tok->heap_value) + 2 : strlen(tok->value);
 
     va_list arg_list;
     va_start(arg_list, format);
@@ -67,7 +68,9 @@ void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
 
     fprintf(ERR_OUTPUT_STREAM, err_tmp1, source_file_path, line, character, error_types[ty].is_error ? COLOR_BOLD_RED : COLOR_BOLD_YELLOW, err_ty_str);
     vfprintf(ERR_OUTPUT_STREAM, format, arg_list);
-    fprintf(ERR_OUTPUT_STREAM, err_tmp2, ERR_LINE_NUMBER_SPACES, line, src_line, src_line[strlen(src_line) - 1] == '\n' ? "" : "\n ", ERR_LINE_NUMBER_SPACES, "", character - strlen(tok->value), "");
+    fprintf(ERR_OUTPUT_STREAM, err_tmp2, ERR_LINE_NUMBER_SPACES, line, src_line, src_line[strlen(src_line) - 1] == '\n' ? "" : "\n ", 
+            ERR_LINE_NUMBER_SPACES, "", character - strlen(tok->value), "", strlen(tok->value) - 1,
+            "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
     va_end(arg_list);
 

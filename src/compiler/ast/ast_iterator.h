@@ -29,7 +29,7 @@ typedef struct AST_ITERATOR_LIST_STRUCT
     bool iterate_only_objs;
 } ASTIteratorList_T;
 
-void ast_iterate(ASTIteratorList_T* list, ASTProg_T* ast, ...);
-void ast_iterate_stmt(ASTIteratorList_T* list, ASTNode_T* stmt, ...);
+void ast_iterate(const ASTIteratorList_T* list, ASTProg_T* ast, ...);
+void ast_iterate_stmt(const ASTIteratorList_T* list, ASTNode_T* stmt, ...);
 
 #endif

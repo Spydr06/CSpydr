@@ -1,19 +1,17 @@
 import "std.csp";
 
-const f: fn(i32[], i32, fn(i32)) = for_each;
-
 fn main(): i32 
 {
     using std::io;
 
-    let array: i32[] = [0, 1, 2, 4, 5];
+    let array: i32[] = [1, 2, 3, 4, 5];
     let i = 0;
 
-    f(array, len array, |val: i32| => { 
+    for_each(array, len array, |val: i32| => { 
         printf("array[%i] = %i\n", i++, val);
     });
 
-    printf("%s\n", type::to_str(typeof array));
+    printf("%s\n", "Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Helheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valuelo Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello");
 
     <- 0;
 }

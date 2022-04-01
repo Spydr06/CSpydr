@@ -140,7 +140,7 @@ static void type_end(ASTType_T* type, va_list args);
 static i32 get_type_size(Validator_T* v, ASTType_T* type);
 
 // iterator configuration
-static ASTIteratorList_T main_iterator_list = 
+static const ASTIteratorList_T main_iterator_list = 
 {
     .node_start_fns = 
     {

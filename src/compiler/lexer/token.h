@@ -127,7 +127,12 @@ typedef enum TOKEN_TYPE {
 } TokenType_T;
 
 typedef struct TOKEN_STRUCT {
-    char value[__CSP_MAX_TOKEN_SIZE];
+
+    union {
+        char value[__CSP_MAX_TOKEN_SIZE]; // regular tokens
+        char* heap_value;                 // strings
+    };
+
     u32 line;
     u32 pos;
     TokenType_T type;

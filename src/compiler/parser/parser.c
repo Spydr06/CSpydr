@@ -50,7 +50,7 @@ typedef enum
     LOWEST = 0,
 
     ASSIGN, // x = y
-    PIPE, // x |> y |> z
+    PIPE, // x |> y
     LOGIC_OR,  // x || y
     LOGIC_AND,  // x && y
     INFIX_CALL,  // x `y` z
@@ -593,7 +593,7 @@ static void parse_compiler_directives(Parser_T* p, List_T* obj_list)
             parser_advance(p);
         Token_T* tok = p->tok;
         parser_consume(p, TOKEN_STRING, "expect value as string");
-        eval_compiler_directive(p, field_token, tok->value, obj_list);
+        eval_compiler_directive(p, field_token, tok->heap_value, obj_list);
     } while(tok_is(p, TOKEN_COMMA));
 
     parser_consume(p, TOKEN_RPAREN, "expect `)` after value");
@@ -919,11 +919,11 @@ static void parse_extern(Parser_T* p, List_T* objs)
 {
     parser_advance(p);
 
-    bool extern_c = tok_is(p, TOKEN_STRING) && (streq(p->tok->value, "C") || streq(p->tok->value, "c"));
+    bool extern_c = tok_is(p, TOKEN_STRING) && (streq(p->tok->heap_value, "C") || streq(p->tok->heap_value, "c"));
     if(extern_c)
         parser_advance(p);
     else if(tok_is(p, TOKEN_STRING))
-        throw_error(ERR_SYNTAX_ERROR, p->tok, "invalid `extern` parameter `\"%s\"`, expect `\"C\"` or `{`", p->tok->value);
+        throw_error(ERR_SYNTAX_ERROR, p->tok, "invalid `extern` parameter `\"%s\"`, expect `\"C\"` or `{`", p->tok->heap_value);
 
     if(tok_is(p, TOKEN_LBRACE)) {
         parser_advance(p);
@@ -1756,12 +1756,12 @@ static ASTNode_T* parse_str_lit(Parser_T* p, bool keep_inline)
     Token_T* tok = p->tok;
     parser_consume(p, TOKEN_STRING, "expect string literal (\"abc\", \"wxyz\", ...)");
 
-    char* str = strdup(tok->value);
+    char* str = strdup(tok->heap_value);
 
     while(tok_is(p, TOKEN_STRING)) // expressions like `"h" "e" "l" "l" "o"` get grouped together to `"hello"`
     {
-        str = realloc(str, (strlen(str) + strlen(p->tok->value) + 1) * sizeof(char));
-        strcat(str, p->tok->value);
+        str = realloc(str, (strlen(str) + strlen(p->tok->heap_value) + 1) * sizeof(char));
+        strcat(str, p->tok->heap_value);
         parser_advance(p);
     }
 

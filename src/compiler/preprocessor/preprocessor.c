@@ -148,8 +148,8 @@ static char* get_full_import_path(char* origin, Token_T* import_file)
 
     // construct the imported file onto it
     const char* template = "%s" DIRECTORY_DELIMS "%s";
-    char* full_import_path = calloc(strlen(template) + strlen(full_path) + strlen(import_file->value) + 1, sizeof(char));
-    sprintf(full_import_path, template, full_path, import_file->value);
+    char* full_import_path = calloc(strlen(template) + strlen(full_path) + strlen(import_file->heap_value) + 1, sizeof(char));
+    sprintf(full_import_path, template, full_path, import_file->heap_value);
 
     free(abs_path);
 
@@ -159,11 +159,11 @@ static char* get_full_import_path(char* origin, Token_T* import_file)
         // if the file does not exist locally, search for it in the STD path
 
         const char* std_tmp = STD_DIR DIRECTORY_DELIMS "%s";
-        char* std_path = calloc(strlen(std_tmp) + strlen(import_file->value) + 1, sizeof(char));
-        sprintf(std_path, std_tmp, import_file->value);
+        char* std_path = calloc(strlen(std_tmp) + strlen(import_file->heap_value) + 1, sizeof(char));
+        sprintf(std_path, std_tmp, import_file->heap_value);
         
         if(!file_exists(std_path))
-            throw_error(ERR_SYNTAX_ERROR, import_file, "Error reading imported file \"%s\", no such file or directory", import_file->value);
+            throw_error(ERR_SYNTAX_ERROR, import_file, "Error reading imported file \"%s\", no such file or directory", import_file->heap_value);
         return std_path;
     }
 
@@ -209,14 +209,14 @@ static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
 
     // get the tokens from the file
     File_T* import_file = read_file(imp->import_path);
-    import_file->short_path = strdup(imp->tok->value);
+    import_file->short_path = strdup(imp->tok->heap_value);
     import_file->file_no = ++file_no;
 
     Lexer_T import_lexer;
     init_lexer(&import_lexer, import_file);
     
     if(!pp->is_silent) {
-        LOG_OK_F("\33[2K\r" COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s", imp->tok->value);
+        LOG_OK_F("\33[2K\r" COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s", imp->tok->heap_value);
         fflush(OUTPUT_STREAM);
     }
 

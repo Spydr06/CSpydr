@@ -15,12 +15,12 @@
         }                               \
     } while(0)
                           
-static void ast_obj(ASTIteratorList_T* list, ASTObj_T* obj, va_list custom_args);
-static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_args);
-static void ast_type(ASTIteratorList_T* list, ASTType_T* type, va_list custom_args);
-static void ast_id(ASTIteratorList_T* list, bool is_definition, ASTIdentifier_T* id, va_list custom_args);
+static void ast_obj(const ASTIteratorList_T* list, ASTObj_T* obj, va_list custom_args);
+static void ast_node(const ASTIteratorList_T* list, ASTNode_T* node, va_list custom_args);
+static void ast_type(const ASTIteratorList_T* list, ASTType_T* type, va_list custom_args);
+static void ast_id(const ASTIteratorList_T* list, bool is_definition, ASTIdentifier_T* id, va_list custom_args);
 
-void ast_iterate(ASTIteratorList_T* list, ASTProg_T* ast, ...)
+void ast_iterate(const ASTIteratorList_T* list, ASTProg_T* ast, ...)
 {
     va_list custom_args;
     va_start(custom_args, ast);
@@ -32,7 +32,7 @@ void ast_iterate(ASTIteratorList_T* list, ASTProg_T* ast, ...)
     va_end(custom_args);
 }
 
-void ast_iterate_stmt(ASTIteratorList_T* list, ASTNode_T* stmt, ...)
+void ast_iterate_stmt(const ASTIteratorList_T* list, ASTNode_T* stmt, ...)
 {
     va_list custom_args;
     va_start(custom_args, stmt);
@@ -40,7 +40,7 @@ void ast_iterate_stmt(ASTIteratorList_T* list, ASTNode_T* stmt, ...)
     va_end(custom_args);
 }
 
-static void ast_obj(ASTIteratorList_T* list, ASTObj_T* obj, va_list custom_args)
+static void ast_obj(const ASTIteratorList_T* list, ASTObj_T* obj, va_list custom_args)
 {
     if(!obj)
         return;
@@ -93,7 +93,7 @@ static void ast_obj(ASTIteratorList_T* list, ASTObj_T* obj, va_list custom_args)
     list_fn(list->obj_end_fns[obj->kind], obj, custom_args);
 }
 
-static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_args)
+static void ast_node(const ASTIteratorList_T* list, ASTNode_T* node, va_list custom_args)
 {
     if(!node)
         return;
@@ -351,7 +351,7 @@ static void ast_node(ASTIteratorList_T* list, ASTNode_T* node, va_list custom_ar
     list_fn(list->node_end_fns[node->kind], node, custom_args);
 }
 
-static void ast_type(ASTIteratorList_T* list, ASTType_T* type, va_list custom_args)
+static void ast_type(const ASTIteratorList_T* list, ASTType_T* type, va_list custom_args)
 {
     if(!type)
         return;
@@ -423,14 +423,10 @@ static void ast_type(ASTIteratorList_T* list, ASTType_T* type, va_list custom_ar
     list_fn(list->type_end, type, custom_args);
 }
 
-static void ast_id(ASTIteratorList_T* list, bool is_definition, ASTIdentifier_T* id, va_list custom_args)
+static void ast_id(const ASTIteratorList_T* list, bool is_definition, ASTIdentifier_T* id, va_list custom_args)
 {
     if(is_definition) 
-    {
         list_fn(list->id_def_fn, id, custom_args);
-    }
     else
-    {
         list_fn(list->id_use_fn, id, custom_args);
-    }
 }

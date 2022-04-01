@@ -1,4 +1,6 @@
 #include "lexer.h"
+#include "config.h"
+#include "mem/mem.h"
 #include "token.h"
 
 #include "io/log.h"
@@ -353,26 +355,28 @@ static Token_T* lexer_get_str(Lexer_T* lexer)
 {
     lexer_advance(lexer);
 
-    char buffer[__CSP_MAX_TOKEN_SIZE];
-    memset(buffer, '\0', sizeof buffer);
+    u64 length = __CSP_MAX_TOKEN_SIZE;
+    char* buffer = calloc(length, sizeof(char));
 
     size_t start_line = lexer->line;
     size_t start_pos = lexer->pos;
 
     while(lexer->c != '"')
     {
+        if(strlen(buffer) - 3 >= length)
+            buffer = realloc(buffer, length *= 2);
+
         strcat(buffer, (char[2]){lexer->c, '\0'});
         lexer_advance(lexer);
 
         if(lexer->c == '\0')
-        {
-            throw_error(ERR_SYNTAX_ERROR,  &(Token_T){.line = start_line, .pos = start_pos, .source = lexer->file}, "unterminated string literal");
-            return init_token("EOF", start_line, lexer->pos, TOKEN_EOF, lexer->file);
-        }
+            throw_error(ERR_SYNTAX_ERROR,  &(Token_T){.line = start_line, .pos = start_pos, .source = lexer->file}, "unterminated string literal");        
     }
     lexer_advance(lexer);
 
-    Token_T* token = init_token(buffer, lexer->line, lexer->pos, TOKEN_STRING, lexer->file);
+    Token_T* token = init_token((char[]){}, lexer->line, lexer->pos, TOKEN_STRING, lexer->file);
+    token->heap_value = buffer;
+    mem_add_ptr(buffer);
     return token;
 }
 
@@ -421,14 +425,14 @@ static Token_T* lexer_get_symbol(Lexer_T* lexer)
         if(strlen(s) == 2 && lexer->c == s[0] && lexer_peek(lexer, 1) == s[1])
             return lexer_consume(lexer, 
                 lexer_consume(lexer, 
-                    init_token((char*) s, lexer->line, lexer->pos, symbols[i].type, lexer->file)
+                    init_token((char*) s, lexer->line, lexer->pos + 1, symbols[i].type, lexer->file)
                 )
             );
         if(strlen(s) == 3 && lexer->c == s[0] && lexer_peek(lexer, 1) == s[1] && lexer_peek(lexer, 2) == s[2])
             return lexer_consume(lexer, 
                 lexer_consume(lexer, 
                     lexer_consume(lexer, 
-                        init_token((char*) s, lexer->line, lexer->pos, symbols[i].type, lexer->file)
+                        init_token((char*) s, lexer->line, lexer->pos + 2, symbols[i].type, lexer->file)
                     )
                 )
             );
