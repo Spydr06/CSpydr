@@ -197,7 +197,7 @@ static void lexer_skip_multiline_comment(Lexer_T* lexer)
     {
         if(lexer->c == '\0')
         {    //end of file
-            throw_error(ERR_SYNTAX_ERROR,  &(Token_T){.line = start_line, .pos = start_pos, .source = lexer->file}, "unterminated multiline comment");
+            throw_error(ERR_SYNTAX_ERROR,  &(Token_T){.value = "#[", .line = start_line, .pos = start_pos, .source = lexer->file}, "unterminated multiline comment");
             return;
         }
         lexer_advance(lexer);
@@ -353,13 +353,13 @@ static Token_T* lexer_get_number(Lexer_T* lexer)
 
 static Token_T* lexer_get_str(Lexer_T* lexer)
 {
-    lexer_advance(lexer);
-
     u64 length = __CSP_MAX_TOKEN_SIZE;
     char* buffer = calloc(length, sizeof(char));
 
     size_t start_line = lexer->line;
     size_t start_pos = lexer->pos;
+
+    lexer_advance(lexer);
 
     while(lexer->c != '"')
     {
@@ -370,7 +370,7 @@ static Token_T* lexer_get_str(Lexer_T* lexer)
         lexer_advance(lexer);
 
         if(lexer->c == '\0')
-            throw_error(ERR_SYNTAX_ERROR,  &(Token_T){.line = start_line, .pos = start_pos, .source = lexer->file}, "unterminated string literal");        
+            throw_error(ERR_SYNTAX_ERROR,  &(Token_T){.value = "\"", .line = start_line, .pos = start_pos, .source = lexer->file}, "unterminated string literal, expect `\"`");        
     }
     lexer_advance(lexer);
 
@@ -405,7 +405,7 @@ static Token_T* lexer_get_char(Lexer_T* lexer)
 
     if(lexer->c != '\'')
     {
-        throw_error(ERR_SYNTAX_ERROR,  &(Token_T){.line = lexer->line, .pos = lexer->pos, .source = lexer->file}, "unterminated char literal, expect `'`");
+        throw_error(ERR_SYNTAX_ERROR,  &(Token_T){.value = "'", .line = lexer->line, .pos = lexer->pos, .source = lexer->file}, "unterminated char literal, expect `'`");
         return init_token("EOF", lexer->line, lexer->pos, TOKEN_EOF, lexer->file); 
     }
     lexer_advance(lexer);

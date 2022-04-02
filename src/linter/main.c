@@ -74,6 +74,7 @@ i32 main(i32 argc, char* argv[]) {
     }
 
     init_globals();
+    atexit(globals_exit_hook);
     global.exec_name = argv[0]; // save the execution name for later use
 
     char* src_path = NULL;

@@ -39,13 +39,13 @@ __attribute((format(printf, 3, 4)))
 #endif
 void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
 {
-    const char* err_tmp1 = COLOR_BOLD_WHITE "%s:%ld:%ld"           // file, line and character
-                          COLOR_RESET " => %s[%s]"                 // type of the error
-                          COLOR_RESET ": ";                        // before the error message
-    const char* err_tmp2 = COLOR_RESET "\n"                        // after the error message
-                          " %*d | %s %s"                           // the line number and source code line
-                          "%*s | " COLOR_BOLD_BLUE "%*s^%.*s-here" // the pointer to the error in the source
-                          "\n" COLOR_RESET;                        // end of the message
+    const char err_tmp1[] = COLOR_BOLD_WHITE "%s:%ld:%ld"    // file, line and character
+                            COLOR_RESET " => %s[%s]"         // type of the error
+                            COLOR_RESET ": ";                // before the error message
+    const char err_tmp2[] = COLOR_RESET "\n"                 // after the error message
+                            " %*d | %s %s"                   // the line number and source code line
+                            "%*s | " COLOR_BOLD_BLUE "%*s^"; // the pointer to the error in the source
+    const char err_tmp3[] = "-here" COLOR_RESET "\n";        // the end of the error message
 
     char* src_line = get_line(tok->source, tok->line);
     const char* err_ty_str = error_types[ty].as_str; 
@@ -66,11 +66,14 @@ void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
         fprintf(ERR_OUTPUT_STREAM, COLOR_MAGENTA "In function " COLOR_BOLD_MAGENTA "%s:\n" COLOR_RESET, ast_id_to_str(buf, (*global.current_fn)->id, LEN(buf)));
     }
 
-    fprintf(ERR_OUTPUT_STREAM, err_tmp1, source_file_path, line, character, error_types[ty].is_error ? COLOR_BOLD_RED : COLOR_BOLD_YELLOW, err_ty_str);
+    fprintf(ERR_OUTPUT_STREAM, err_tmp1, source_file_path, (long) line, (long) character, error_types[ty].is_error ? COLOR_BOLD_RED : COLOR_BOLD_YELLOW, err_ty_str);
     vfprintf(ERR_OUTPUT_STREAM, format, arg_list);
     fprintf(ERR_OUTPUT_STREAM, err_tmp2, ERR_LINE_NUMBER_SPACES, line, src_line, src_line[strlen(src_line) - 1] == '\n' ? "" : "\n ", 
-            ERR_LINE_NUMBER_SPACES, "", character - strlen(tok->value), "", strlen(tok->value) - 1,
-            "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+            ERR_LINE_NUMBER_SPACES, "", character - strlen(tok->value), "");
+
+    for(u32 i = 0; i < strlen(tok->value) - 1; i++)
+        fprintf(ERR_OUTPUT_STREAM, "~");
+    fprintf(ERR_OUTPUT_STREAM, err_tmp3);
 
     va_end(arg_list);
 
