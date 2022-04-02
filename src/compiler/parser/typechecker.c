@@ -94,6 +94,35 @@ ASTNode_T* typecheck_arg_pass(Validator_T* v, ASTType_T* expected, ASTNode_T* re
         ast_type_to_str(buf1, received->data_type, LEN(buf1)),
         ast_type_to_str(buf2, expected, LEN(buf2))    
     );
+
+    return received;
+}
+
+void typecheck_explicit_cast(Validator_T* v, ASTNode_T* cast)
+{
+    // Buffer for warnings and errors
+    char buf1[BUFSIZ] = {};
+
+    if(types_equal(cast->left->data_type, cast->data_type))
+    {
+        throw_error(ERR_TYPE_CAST_WARN, cast->tok, "unnecessary type cast: expression is already of type `%s`",
+            ast_type_to_str(buf1, cast->data_type, LEN(buf1))
+        );
+        return;
+    }
+
+    ASTType_T* from = expand_typedef(v, cast->left->data_type);
+    ASTType_T* to = expand_typedef(v, cast->data_type);
+
+    if(from->kind == TY_VOID)
+        throw_error(ERR_TYPE_ERROR_UNCR, cast->tok, "cannot cast from `void` to `%s`", 
+            ast_type_to_str(buf1, cast->data_type, LEN(buf1))
+        );
+    
+    if(to->kind == TY_VOID)
+        throw_error(ERR_TYPE_ERROR_UNCR, cast->tok, "cannot cast from `%s` to `void`", 
+            ast_type_to_str(buf1, cast->left->data_type, LEN(buf1))
+        );
 }
 
 bool implicitly_castable(Validator_T* v, Token_T* tok, ASTType_T* from, ASTType_T* to)
@@ -138,7 +167,6 @@ ASTNode_T* implicit_cast(Token_T* tok, ASTNode_T* expr, ASTType_T* to)
 {
     ASTNode_T* cast = init_ast_node(ND_CAST, tok);
     cast->data_type = to;
-    cast->the_type = expr->data_type;
     cast->left = expr;
     return cast;
 }

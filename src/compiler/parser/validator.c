@@ -1388,7 +1388,8 @@ static void index_(ASTNode_T* index, va_list args)
 
 static void cast(ASTNode_T* cast, va_list args)
 {
-    //todo: check, if type conversion is valid and safe
+    GET_VALIDATOR(args);
+    typecheck_explicit_cast(v, cast);
 }
 
 static void local_initializer(Validator_T* v, ASTNode_T* assign, ASTObj_T* local)
