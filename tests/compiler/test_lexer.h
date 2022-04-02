@@ -5,6 +5,8 @@
     {"lexing ids", test_lexer_ids},             \
     {"lexing keywords", test_lexer_keywords}
 
+#include <string.h>
+
 #include "lexer/token.h"
 #include "lexer/lexer.h"
 
@@ -12,7 +14,7 @@
 #define LEN(arr) (sizeof(arr) / sizeof(*arr))
 #endif
 
-void check_tokens_str(char** expected_tokens, File_T* file, int num_tokens)
+void check_tokens_str(char** expected_tokens, File_T* file, int num_tokens, bool heap_value)
 {
     Lexer_T lexer;
     init_lexer(&lexer, file);
@@ -20,10 +22,16 @@ void check_tokens_str(char** expected_tokens, File_T* file, int num_tokens)
     for(int i = 0; i < num_tokens; i++)
     {
         Token_T* token =  lexer_next_token(&lexer);
-        TEST_ASSERT(token != NULL);
 
-        TEST_ASSERT(token->value != NULL);
-        TEST_CHECK(strcmp(token->value, expected_tokens[i]) == 0);
+        if(heap_value)
+        {
+            TEST_CHECK(token->heap_value != NULL);
+            TEST_CHECK(strcmp(token->heap_value, expected_tokens[i]) == 0);
+        }
+        else
+        {
+            TEST_CHECK(strcmp(token->value, expected_tokens[i]) == 0);
+        }
     }
 }
 
@@ -115,7 +123,7 @@ void test_lexer_strings(void)
         "hello", "\nworld\n"
     };
 
-    check_tokens_str(expected_tokens, file, LEN(expected_tokens));
+    check_tokens_str(expected_tokens, file, LEN(expected_tokens), true);
 }
 
 void test_lexer_numbers(void)
@@ -127,7 +135,7 @@ void test_lexer_numbers(void)
         "23", "2.5", "5", "255", "8", "100000000"
     };
 
-    check_tokens_str(expected_tokens, file, LEN(expected_tokens));
+    check_tokens_str(expected_tokens, file, LEN(expected_tokens), false);
 }
 
 void test_lexer_ids(void)
@@ -139,7 +147,7 @@ void test_lexer_ids(void)
         "hello", "wor", "ld"
     };
 
-    check_tokens_str(expected_tokens, file, LEN(expected_tokens));
+    check_tokens_str(expected_tokens, file, LEN(expected_tokens), false);
 }
 
 void test_lexer_keywords(void)
