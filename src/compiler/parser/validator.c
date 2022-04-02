@@ -14,34 +14,13 @@
 #include "parser/parser.h"
 #include "parser/utils.h"
 #include "globals.h"
+#include "typechecker.h"
 
 #include <stdarg.h>
 #include <string.h>
 #include <math.h>
 
 #define GET_VALIDATOR(va) Validator_T* v = va_arg(va, Validator_T*)
-
-// validator structs
-typedef struct VALIDATOR_SCOPE_STRUCT VScope_T;
-struct VALIDATOR_SCOPE_STRUCT
-{
-    VScope_T* prev;
-    List_T* objs;
-    ASTIdentifier_T* id;
-} __attribute__((packed));
-
-typedef struct VALIDATOR_STRUCT 
-{
-    ASTProg_T* ast;
-
-    VScope_T* current_scope;
-    VScope_T* global_scope;
-    ASTObj_T* current_function;
-    ASTNode_T* current_pipe;
-    bool main_function_found;
-
-    u32 scope_depth;  // depth of the current scope
-} Validator_T;
 
 // validator struct functions
 static void init_validator(Validator_T* v)
@@ -53,8 +32,6 @@ static void begin_obj_scope(Validator_T* v, ASTIdentifier_T* id, List_T* objs);
 static void scope_add_obj(Validator_T* v, ASTObj_T* obj);
 static inline void begin_scope(Validator_T* v, ASTIdentifier_T* id);
 static inline void end_scope(Validator_T* v);
-
-static ASTType_T* expand_typedef(Validator_T* v, ASTType_T* type);
 
 static void check_exit_fns(Validator_T* v);
 
@@ -435,7 +412,7 @@ static void scope_add_node(Validator_T* v, ASTNode_T* node)
     list_push(v->current_scope->objs, node); // use the default obj list
 }
 
-static ASTType_T* expand_typedef(Validator_T* v, ASTType_T* type)
+ASTType_T* expand_typedef(Validator_T* v, ASTType_T* type)
 {
     if(!type || type->kind != TY_UNDEF)
         return type;
@@ -600,25 +577,6 @@ static bool is_arr(Validator_T* v, ASTType_T* type)
         return false;
     
     return type->kind == TY_ARR;
-}
-
-static bool types_equal(ASTType_T* t1, ASTType_T* t2)
-{
-    if(t1->kind != t2->kind)
-        return false;
-    
-    switch(t1->kind)
-    {
-        case TY_ARR:
-        case TY_PTR:
-            return types_equal(t1->base, t2->base);
-        
-        case TY_UNDEF:
-            return strcmp(t1->id->callee, t2->id->callee) == 0;
-
-        default:
-            return true;
-    }
 }
 
 static i32 align_type(ASTType_T* ty)
@@ -1139,20 +1097,7 @@ static void call(ASTNode_T* call, va_list args)
     }
 
     for(size_t i = 0; i < expected_arg_num; i++)
-    {
-        ASTType_T* expected_arg = call_type->arg_types->items[i];
-        ASTType_T* received_arg = ((ASTNode_T*) call->args->items[i])->data_type;
-
-        if(!compatible(v, expected_arg, received_arg))
-        {
-            char expected_buf[BUFSIZ] = {};
-            char received_buf[BUFSIZ] = {};
-            throw_error(ERR_CALL_ERROR, ((ASTNode_T*) call->args->items[i])->tok, "call argument %ld expects type `%s`, got `%s`", i + 1, 
-                ast_type_to_str(expected_buf, expected_arg, LEN(expected_buf)),
-                ast_type_to_str(received_buf, received_arg, LEN(received_buf))
-            );
-        }
-    }
+        call->args->items[i] = typecheck_arg_pass(v, call_type->arg_types->items[i], call->args->items[i]);
     
     // if we compile using the assembly compiler, a buffer for the return value is needed when handling big structs
     if(global.ct == CT_ASM && call->data_type && expand_typedef(v, call->data_type)->kind == TY_STRUCT)
@@ -1521,6 +1466,7 @@ static void assignment_end(ASTNode_T* assign, va_list args)
             throw_error(ERR_MISC, assign->left->tok, "cannot assign value to `%s`", assign->left->tok->value);
     }
 
+    typecheck_assignment(v, assign);
     assign->data_type = assign->left->data_type;
 
     if(expand_typedef(v, assign->data_type)->kind == TY_VOID)

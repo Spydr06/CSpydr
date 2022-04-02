@@ -11,8 +11,6 @@ fn main(): i32
         printf("array[%i] = %i\n", i++, val);
     });
 
-    printf("%s\n", "Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Helheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valueheap_valuelo Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello");
-
     <- 0;
 }
 

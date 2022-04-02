@@ -39,6 +39,7 @@ namespace std {
         # POPULATE
         # STACK
         # UNINITIALIZED
+        MAYMOVE = 0x01
     };
 
     # TODO: implement correct values
@@ -71,19 +72,34 @@ namespace std {
             unfreed_allocs++;
 
             let length = size + sizeof usize;
-            let plen: &usize = syscall::mmap(0, length, Prot::READ | Prot::WRITE, MMap::PRIVATE | MMap::ANONYMOUS, 0, 0);
+            let plen: &usize = syscall::mmap(nil, length, Prot::READ | Prot::WRITE, MMap::PRIVATE | MMap::ANONYMOUS, 0, 0);
             if plen == MMAP_FAILED ret nil;
             
             *plen = length;
             <- (&plen[1]): &void;
         }
 
-        fn realloc(src: &void, size: usize): &void
+        fn calloc(nmemb: usize, size: usize): &void
+        {
+            let ptr = alloc(nmemb * size);
+            zero(ptr, nmemb * size);
+            <- ptr;
+        }
+
+        fn realloc(ptr: &void, size: usize): &void
         {
             let new = alloc(size);
-            move(new, src, size);
-            free(src);
+            move(new, ptr, size);
+            free(ptr);
             <- new;
+            #let plen = &(ptr: &usize)[-1];
+            #let length = *plen;
+            #let new_length = size + sizeof usize;
+            #plen = syscall::mremap(plen: &void, length, new_length, MMap::MAYMOVE);
+            #if plen == MMAP_FAILED ret nil;
+
+            #*plen = new_length;
+            #<- (&plen[1]): &void;
         }
 
         fn free(ptr: &void)

@@ -325,8 +325,8 @@ namespace std {
         fn shed_yield(): i32
             syscall!(Syscall::SCHED_YIELD);
         
-        fn mremap(old_addr: &void, old_size: usize, new_size: usize, flags: i32, new_addr: &void): &void
-            syscall!(Syscall::MREMAP, old_addr, old_size, new_size, flags, new_addr);
+        fn mremap(old_addr: &void, old_size: usize, new_size: usize, flags: i32): &void
+            syscall!(Syscall::MREMAP, old_addr, old_size, new_size, flags);
         
         fn msync(addr: &void, length: usize, flags: i32): i32
             syscall!(Syscall::MSYNC, addr, length, flags);

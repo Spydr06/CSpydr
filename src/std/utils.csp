@@ -84,9 +84,9 @@ namespace std {
         {
             let p: &void = ap.overflow_arg_area;
             if align > 8
-                p = ((p + 15) / 16 * 16);
+                p = (((p + 15) / 16 * 16): &void);
             
-            ap.overflow_arg_area = (((p + size + 7): u64) / 8 * 8);
+            ap.overflow_arg_area = ((((p + size + 7): u64) / 8 * 8): &void);
             <- p;
         }
 

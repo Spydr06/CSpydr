@@ -1,5 +1,6 @@
 #include "codegen_utils.h"
 
+#include "ast/ast.h"
 #include "list.h"
 #include "mem/mem.h"
 #include "io/log.h"
@@ -65,7 +66,7 @@ char* gen_identifier(ASTIdentifier_T* id, const char* prefix, bool prefix_at_sta
     return new_c;
 }
 
-bool is_integer(ASTType_T *ty) 
+bool is_integer(ASTType_T* ty) 
 {
     ASTTypeKind_T k = ty->kind;
     return k == TY_BOOL || k == TY_CHAR || k == TY_I8 || k == TY_U8 || k == TY_I16 || k == TY_U16 ||
@@ -149,7 +150,7 @@ bool vla_type(ASTType_T* ty)
 
 ASTType_T* unpack(ASTType_T* ty)
 {
-    return ty && ty->kind == TY_UNDEF ? ty->base : ty;
+    return ty && ty->kind == TY_UNDEF ? unpack(ty->base) : ty;
 }
 
 bool is_variadic(ASTType_T* ty)

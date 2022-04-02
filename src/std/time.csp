@@ -25,7 +25,7 @@ namespace std {
             if t <= 0 ret; # negative values are not supported for now
 
             buf.unix_secs = t;
-            buf.second = t % 60;
+            buf.second = ((t % 60): u8);
             t /= 60;
             buf.minute = t % 60;
             t /= 60;

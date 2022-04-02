@@ -38,7 +38,7 @@ namespace std {
         const CLONE_IO: i32             = 0x80000000;
 
         namespace __static {
-            let __at_exit_fns: fn(i32)[MAX_EXIT_HANDLERS!];
+            let __at_exit_fns: fn(ExitCode)[MAX_EXIT_HANDLERS!];
             let __at_exit_cnt: u32;
         }
         

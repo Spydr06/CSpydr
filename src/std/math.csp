@@ -60,7 +60,7 @@ namespace std {
 
         fn sqrt(n: f64): f64 
         {
-            let r: f64 = 0;
+            let r: f64 = 0.0;
             asm "fldl " n ";" 
                 "fsqrt;"
                 "fstpl " r;

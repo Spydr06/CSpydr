@@ -75,7 +75,7 @@ namespace std {
             <- &(str_data.buff[0]);
         }
 
-        fn free(str: String) 
+        fn free(str: std::String) 
         {
             mem::free(get_data(str));
         } 
@@ -86,16 +86,23 @@ namespace std {
             <- &(str: &StringData)[-1];
         }
 
+        fn has_space(str_data: &StringData): bool
+        {
+            <- str_data.alloc > str_data.size + 1;
+        }
+
         fn concat(dest: &String, src: String) 
         {
             let str_data = get_data(*dest);
             let str_len = size(*dest);
-            str_data.alloc = str_data.alloc + c_str::strlen(src);
-            str_data.size = str_data.size + c_str::strlen(src);
+            let src_len = c_str::strlen(src);
+
+            str_data.alloc = str_data.alloc + src_len;
+            str_data.size = str_data.size + src_len;
             str_data = mem::realloc(str_data, sizeof StringData + str_data.alloc + 1);
             c_str::copy(&(str_data.buff[str_len]), src);
 
-            str_data.buff[str_len + c_str::strlen(src)] = '\0';
+            str_data.buff[str_len + src_len] = '\0';
             *dest = &(str_data.buff[0]);
         }
 
@@ -104,7 +111,9 @@ namespace std {
             let str_data = get_data(*dest);
             str_data.alloc++;
             str_data.size++;
-            str_data = mem::realloc(str_data, sizeof StringData + str_data.alloc + 1);
+
+            if(!has_space(str_data))
+                str_data = mem::realloc(str_data, sizeof StringData + (str_data.alloc *= 2) + 1);
             str_data.buff[str_data.size - 1] = c;
             str_data.buff[str_data.size] = '\0';
             *dest = &(str_data.buff[0]);

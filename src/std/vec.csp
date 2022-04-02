@@ -112,7 +112,7 @@ namespace std {
 
             if !has_space(v_data) {
                 v_data = reallocate(v_data, type_size);
-                *addr = v_data.buff;
+                *addr = (v_data.buff: &void);
             }
 
             <- &(v_data.buff[type_size * (v_data.size++)]);
@@ -125,7 +125,7 @@ namespace std {
 
             if !has_space(v_data) {
                 v_data = reallocate(v_data, type_size);
-                *addr = v_data.buff;
+                *addr = (v_data.buff: &void);
             }
 
             mem::move(&(v_data.buff[(pos + 1) * type_size]),
