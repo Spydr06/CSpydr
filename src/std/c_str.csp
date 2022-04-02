@@ -195,7 +195,7 @@ namespace std {
         fn strpbrk(s: &char, accept: const &char): &char
         {
             s += strcspn(s, accept);
-            <- if (*s) != '\0' => s: &char else nil: &char;
+            <- if (*s) != '\0' => s else nil: &char;
         }
 
         #[ 

@@ -15,6 +15,8 @@ add_subdirectory(src/compiler)
 add_subdirectory(tests/compiler)
 # cspydr standard library
 add_subdirectory(src/std)
+# linter soruce
+add_subdirectory(src/linter)
 
 # emit all warnings
 if (MSVC)
