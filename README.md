@@ -20,16 +20,14 @@ A list of all the features, that are/will be implemented.
 - [x] Assembly code generator for `x86_64 linux`
 - [ ] LLVM codegen target (maybe even WASM?)
 - [ ] move to an intermediate bytecode compiler
+- [ ] AST to JSON converter (in progress)
 - [x] C transpiler (deprecated)
 - [x] lexing tokens
 - [x] `macro` and `import` preprocessor
-- [x] parsing an AST
-- [x] validating the code
-- [x] type evaluator
-- [ ] type checking (1/2 done)
-- [ ] implicit type casts
+- [x] parsing an AST, validation of syntax and semantics
+- [x] type evaluator & checking
+- [x] implicit type casts
 - [ ] "projects" - prebuild libraries such as the `stdlib`
-- [x] scope validation
 - [x] CLI and error handling
 - [x] memory management
 
@@ -47,7 +45,7 @@ A list of all the features, that are/will be implemented.
 - [x] default macros `__version__` `__system__` `__architecture__` `__time__` `__compile_type__` `__main_file__` `__file__` `__line__` `__func__` 
 - [x] namespaces, functions, globals, typedefs
 - [x] inline `asm` code blocks
-- [x] lambda expressions (not asynchronous)
+- [x] lambda expressions
 - [ ] templates in fuctions and structs
 - [x] va lists
 - [ ] functions as struct members
@@ -56,8 +54,7 @@ A list of all the features, that are/will be implemented.
 - [x] basic `c17` `libc`-header implementation
 - [x] `glfw` and `OpenGL`/`GLU` header files 
 - [x] `cURL` header implementation 
-- [ ] from-the-ground custom written `stdlib` based on linux syscalls (in progress)
-- [ ] control- and safety-structs and -functions (like in Rust) (in progress)
+- [x] from-the-ground custom written `stdlib` based on linux syscalls (in progress)
 
 ## Building | Installation
 

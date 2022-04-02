@@ -54,7 +54,6 @@ void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
 
     u32 line = tok->line + 1;
     u32 character = tok->pos + 1;
-    u32 length = tok->type == TOKEN_STRING ? strlen(tok->heap_value) + 2 : strlen(tok->value);
 
     va_list arg_list;
     va_start(arg_list, format);
