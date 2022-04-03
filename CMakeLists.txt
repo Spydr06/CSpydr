@@ -11,12 +11,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 add_subdirectory(lib)
 # compiler source
 add_subdirectory(src/compiler)
+# linter soruce
+add_subdirectory(src/linter)
 # compiler tests
 add_subdirectory(tests/compiler)
 # cspydr standard library
 add_subdirectory(src/std)
-# linter soruce
-add_subdirectory(src/linter)
 
 # emit all warnings
 if (MSVC)

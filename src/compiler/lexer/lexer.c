@@ -196,7 +196,8 @@ static void lexer_skip_multiline_comment(Lexer_T* lexer)
     while(lexer->c != ']' || lexer_peek(lexer, 1) != '#')
     {
         if(lexer->c == '\0')
-        {    //end of file
+        {   
+            //end of file
             throw_error(ERR_SYNTAX_ERROR,  &(Token_T){.value = "#[", .line = start_line, .pos = start_pos, .source = lexer->file}, "unterminated multiline comment");
             return;
         }
@@ -328,7 +329,7 @@ static Token_T* lexer_get_decimal(Lexer_T* lexer)
         lexer_advance(lexer);
     }
 
-    Token_T* token = init_token(buffer, lexer->line, lexer->pos, type, lexer->file);
+    Token_T* token = init_token(buffer, lexer->line, lexer->pos - 1, type, lexer->file);
     return token;
 }
 

@@ -87,7 +87,6 @@ static void generate_ast(ASTProg_T* ast, char* path, char* target, bool silent)
     list_push(files, read_file(path));
 
     parse(ast, files, silent);
-    //optimize(ast);
     
     ast->imports = files;
     mem_add_list(files);

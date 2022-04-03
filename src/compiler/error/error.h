@@ -1,6 +1,7 @@
 #ifndef CSPYDR_ERROR_HANDLER_H
 #define CSPYDR_ERROR_HANDLER_H
 
+#include <stdarg.h>
 #include <stdbool.h>
 
 #include "list.h"
@@ -39,9 +40,16 @@ typedef enum ERROR_TYPE
     ERR_INTERNAL, // internal error, user should never see this...
 } ErrorType_T;
 
+typedef void (*ErrorHandlerFn_T)(ErrorType_T, Token_T*, const char*, va_list, bool, const char*);
+
 #ifdef __GNUC__
 __attribute((format(printf, 3, 4)))
 #endif
 void throw_error(ErrorType_T ty, Token_T* tok, const char* msg, ...);
+
+void set_error_handler(ErrorHandlerFn_T fn);
+ErrorHandlerFn_T get_error_handler();
+
+void default_error_handler(ErrorType_T ty, Token_T* tok, const char* format, va_list args, bool is_error, const char* error_str);
 
 #endif

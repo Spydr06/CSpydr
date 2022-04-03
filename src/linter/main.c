@@ -12,6 +12,7 @@
 
 // std includes
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 // compiler includes
@@ -20,7 +21,10 @@
 #include <version.h>
 
 // linter includes
+#include "error/error.h"
+#include "io/io.h"
 #include "linter.h"
+#include "error.h"
 
 #define streq(a, b) (strcmp(a, b) == 0)
 
@@ -55,8 +59,11 @@ const char info_text[] = COLOR_BOLD_MAGENTA "** csp-lint - The CSpydr Programmin
 const char help_text[] = "%s"
                          COLOR_BOLD_WHITE "Options:\n" COLOR_RESET
                          "  -h, --help             | Displays this help text and quits\n"
-                         "  -v, --version          | Displays the version of CSpydr and quits\n"
-                         "  -i, --info             | Displays information text and quits\n";
+                         "  -i, --info             | Displays information text and quits\n"
+                         "      --version          | Displays the version of CSpydr and quits\n"
+                         "  -v, --verbose          | Sets verbose error messages, used for programs\n"
+                         "                         | communicating with the linter\n"
+                         "  -o, --output           | Sets an output file for the error log\n";
 
 // this text gets shown if -v or --version is used
 const char version_text[] = COLOR_BOLD_MAGENTA "** csp-lint - The CSpydr Programming Language Linter **\n" COLOR_RESET
@@ -73,6 +80,8 @@ i32 main(i32 argc, char* argv[]) {
         exit(1);
     }
 
+    set_error_output_file(stderr);
+
     init_globals();
     atexit(globals_exit_hook);
     global.exec_name = argv[0]; // save the execution name for later use
@@ -88,7 +97,7 @@ i32 main(i32 argc, char* argv[]) {
             printf(help_text, usage_text);
             exit(0);
         }
-        else if(streq(arg, "-v") || streq(arg, "--version"))
+        else if(streq(arg, "--version"))
         {
             char buf[BUFSIZ] = {};
             get_cspydr_build(buf);
@@ -101,6 +110,23 @@ i32 main(i32 argc, char* argv[]) {
             get_cspydr_build(buf);
             printf(info_text, get_cspydr_version(), buf);
             exit(0);
+        }
+        else if(streq(arg, "-v") || streq(arg, "--verbose"))
+            set_error_handler(linter_error_handler);
+        else if(streq(arg, "-o") || streq(arg, "--output"))
+        {
+            char* path = argv[++i];
+            if(!path)
+            {
+                LOG_ERROR_F("expect file name after `%s`\n", arg);
+                exit(1);
+            }
+                
+            FILE* output_file = open_file(path);
+            set_error_output_file(output_file);
+            atexit(close_output_file);
+
+            set_error_handler(linter_error_handler); // switch to the linter error handler since text files don't support color
         }
         else if(arg[0] == '-')
         {
@@ -123,6 +149,8 @@ i32 main(i32 argc, char* argv[]) {
         LOG_ERROR("[Error] No file path given\n");
         exit(1);
     }
+
+    atexit(summary);
 
     return lint(src_path);
 }
