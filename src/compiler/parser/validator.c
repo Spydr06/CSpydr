@@ -1241,16 +1241,10 @@ static void modulo(ASTNode_T* mod, va_list args)
     GET_VALIDATOR(args);
 
     if(!v_is_integer(v, mod->left->data_type))
-    {
-        throw_error(ERR_TYPE_ERROR, mod->tok, "left: expect integer type for modulo operation");
-        return;
-    }
+        throw_error(ERR_TYPE_ERROR_UNCR, mod->tok, "left: expect integer type for modulo operation");
 
     if(!v_is_integer(v, mod->right->data_type))
-    {
-        throw_error(ERR_TYPE_ERROR, mod->tok, "right: expect integer type for modulo operation");
-        return;
-    }
+        throw_error(ERR_TYPE_ERROR_UNCR, mod->tok, "right: expect integer type for modulo operation");
 
     mod->data_type = mod->left->data_type;
 }
@@ -1260,10 +1254,7 @@ static void negate(ASTNode_T* neg, va_list args)
     GET_VALIDATOR(args);
 
     if(!is_number(v, neg->right->data_type))
-    {
-        throw_error(ERR_TYPE_ERROR, neg->tok, "can only do bitwise operations on integer types");
-        return;
-    }
+        throw_error(ERR_TYPE_ERROR_UNCR, neg->tok, "can only do bitwise operations on integer types");
 
     // todo: change type of unsigned integers
     neg->data_type = neg->right->data_type;
@@ -1274,10 +1265,7 @@ static void bitwise_negate(ASTNode_T* neg, va_list args)
     GET_VALIDATOR(args);
 
     if(!v_is_integer(v, neg->right->data_type))
-    {
-        throw_error(ERR_TYPE_ERROR, neg->tok, "expect integer type for bitwise negation");
-        return;
-    }
+        throw_error(ERR_TYPE_ERROR_UNCR, neg->tok, "expect integer type for bitwise negation");
 
     neg->data_type = neg->right->data_type;
 }

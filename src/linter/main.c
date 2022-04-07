@@ -17,12 +17,11 @@
 
 // compiler includes
 #include <io/log.h>
+#include <io/io.h>
 #include <globals.h>
 #include <version.h>
 
 // linter includes
-#include "error/error.h"
-#include "io/io.h"
 #include "linter.h"
 #include "error.h"
 
@@ -73,7 +72,8 @@ const char version_text[] = COLOR_BOLD_MAGENTA "** csp-lint - The CSpydr Program
                             "For more information type -i; for help type -h.\n";
 
 
-i32 main(i32 argc, char* argv[]) {
+i32 main(i32 argc, char* argv[]) 
+{
     if(argc == 1)
     {
         LOG_ERROR_F("[Error] Too few arguments given.\n" COLOR_RESET "%s", usage_text);

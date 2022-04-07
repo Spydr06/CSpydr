@@ -1,4 +1,5 @@
 # CMake file for the CSpydr Compiler source
+include(GNUInstallDirs)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -6,13 +7,13 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 file(GLOB_RECURSE compiler_source *.c *.cpp *.cc *.c++)
 list(REMOVE_ITEM compiler_source "main.c")
 
-add_library(libcsp ${compiler_source})
-target_link_libraries(libcsp LINK_PUBLIC m json-c bsd)
-set_target_properties(libcsp PROPERTIES LINKER_LANGUAGE C)
+add_library(libcspc ${compiler_source})
+target_link_libraries(libcspc LINK_PUBLIC m json-c bsd)
+set_target_properties(libcspc PROPERTIES LINKER_LANGUAGE C)
 
 # build the main executable
 add_executable(cspc main.c)
-target_link_libraries(cspc libcsp)
+target_link_libraries(cspc libcspc)
 
 install(PROGRAMS ${PROJECT_SOURCE_DIR}/bin/cspc 
         DESTINATION bin

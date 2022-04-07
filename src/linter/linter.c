@@ -1,11 +1,11 @@
 #include "linter.h"
-#include "mem/mem.h"
 
 #include <ast/ast.h>
 #include <list.h>
 #include <io/io.h>
 #include <parser/parser.h>
 #include <globals.h>
+#include <mem/mem.h>
 
 i32 lint(char* src_file)
 {

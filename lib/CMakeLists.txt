@@ -6,4 +6,5 @@
     set_target_properties(acutest PROPERTIES LINKER_LANGUAGE C)
 
 # json-c
-    find_package(json-c CONFIG)
+    find_library(json-c NAMES libjson-c json-c REQUIRED)
+    find_library(bsd NAMES libbsd bsd REQUIRED)
