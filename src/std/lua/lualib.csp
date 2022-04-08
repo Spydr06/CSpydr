@@ -1,0 +1,24 @@
+import "lua.csp";
+
+#[
+** Lua standard libraries
+** See Copyright Notice in lua.csp
+]#
+
+namespace lua {
+    LUA_API!() {
+        fn luaopen_base(l: &State): i32;
+        fn luaopen_coroutine(l: &State): i32;
+        fn luaopen_table(l: &State): i32;
+        fn luaopen_io(l: &State): i32;
+        fn luaopen_os(l: &State): i32;
+        fn luaopen_string(l: &State): i32;
+        fn luaopen_bit32(l: &State): i32;
+        fn luaopen_math(l: &State): i32;
+        fn luaopen_debug(l: &State): i32;
+        fn luaopen_package(l: &State): i32;
+
+        # open all previous libraries
+        fn luaL_openlibs(l: &State);
+    }
+}

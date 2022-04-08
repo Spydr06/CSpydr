@@ -1,0 +1,76 @@
+#[
+** Configuration file for Lua
+** See Copyright Notice in lua.csp
+]#
+
+import "libc/stdio.csp";
+
+macro LUA_VDIR { LUA_VERSION_MAJOR! "." LUA_VERSION_MINOR! "/" }
+macro LUA_ROOT { "/usr/" }
+macro LUA_LDIR { LUA_ROOT! "share/lua/" LUA_VDIR! }
+macro LUA_CDIR { LUA_ROOT! "lib/lua/" LUA_VDIR! }
+macro LUA_PATH_DEFAULT {
+    LUA_LDIR! "?.lua;" LUA_LDIR! "?/init.lua;"
+    LUA_CDIR! "?.lua;" LUA_CDIR! "?/init.lua;" 
+    "./?.lua"
+}
+macro LUA_CPATH_DEFAULT {
+    LUA_CDIR! "?.so;" LUA_CDIR! "loadall.so;" "./?.so"
+}
+
+macro LUA_DIRSEP { "/" }
+
+macro LUA_ENV { "_ENV" }
+
+macro LUA_API { extern "C" }
+
+macro LUALIB_API { LUA_API! }
+macro LUAMOD_API { LUALIB_API! }
+
+macro LUAI_FUNC { extern "C" }
+macro LUAI_DDEC { LUAI_FUNC! }
+macro LUAI_DDEF {}
+
+macro LUA_QL(x) {
+    "'" x "'"
+}
+macro LUA_QS { LUA_QL("%s") }
+
+macro LUA_IDSIZE { 60 }
+
+macro LUAI_MAXSHORTLEN { 40 }
+macro LUAI_BITSINT { 32 }
+macro LUA_INT32 { i32 }
+macro LUAI_UMEM { u64 }
+macro LUAI_MEM { i64 }
+
+macro LUA_MAXSTACK { 1000000 }
+macro LUAI_FIRSTPSEUDOIDX { (-LUA_MAXSTACK! - 1000) }
+macro LUAL_BUFFERSIZE { 8192 }
+
+macro LUA_NUMBER_DOUBLE {}
+macro LUA_NUMBER { f64 }
+macro LUAI_UACNUMBER { f64 }
+macro LUA_NUMBER_SCAN { "%lf" }
+macro LUA_NUMBER_FMT { "%.14g" }
+macro lua_number2str(s,n) {
+    (::libc::sprintf((s), LUA_NUMBER_FMT!, (n)))
+}
+macro LUA_MAXNUMBER2STR { 32 }
+
+macro l_mathop(x) {(x)}
+
+macro lua_str2number(s,p) {
+    (::libc::strtod((s), (p)))
+}
+
+macro LUA_INTEGER { i64 }
+macro LUA_UNSIGNED { u64 }
+
+macro LUA_IEEE754TRICK {}
+macro LUA_IEEEENDIAN { 0 }
+
+#[
+** Local configuration. You can use this space to add your redefinitions
+** without modifying the main part of the file.
+]#

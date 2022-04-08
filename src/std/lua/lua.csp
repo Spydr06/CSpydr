@@ -1,0 +1,431 @@
+#[
+** Lua - A Scripting Language
+** Lua.org, PUC-Rio, Brazil (http://www.lua.org)
+** See Copyright Notice at the end of this file
+]#
+
+[link("lua")]
+
+import "luaconf.csp";
+import "lauxlib.csp";
+import "lualib.csp";
+
+import "utils.csp";
+import "libc/string.csp";
+
+macro LUA_VERSION_MAJOR { "5" }
+macro LUA_VERSION_MINOR { "2" }
+macro LUA_VERSION_NUM { 502 }
+macro LUA_VERSION_RELEASE { "4" }
+
+macro LUA_VERSION {
+    "Lua " LUA_VERSION_MAJOR! "." LUA_VERSION_MINOR!
+}
+
+macro LUA_RELEASE {
+    LUA_VERSION! "." LUA_VERSION_RELEASE!
+}
+
+macro LUA_COPYRIGHT {
+    LUA_RELEASE! "  Copyright (C) 1994-2015 Lua.org, PUC-Rio"
+}
+
+macro LUA_AUTHORS {
+    "R. Ierusalimschy, L. H. de Figueiredo, W. Celes"
+}
+
+# mark for precompiled code ('<esc>Lua')
+macro LUA_SIGNATURE { "Lua" }
+
+# option for multiple returns in 'lua_pcall' and 'lua_call'
+macro LUA_MULTRET { (-1) }
+
+# pseudo-indices
+macro LUA_REGISTRYINDEX { LUAI_FIRSTPSEUDOIDX! }
+macro lua_upvalueindex(i) {
+    (LUA_REGISTRYINDEX! - (i))
+}
+
+# thread status
+macro LUA_OK { 0 }
+macro LUA_YIELD { 1 }
+macro LUA_ERRRUN { 2 }
+macro LUA_ERRSYNTAX { 3 }
+macro LUA_ERRMEM { 4 }
+macro LUA_ERRGCMM { 5 }
+macro LUA_ERRERR { 6 }
+
+namespace lua {
+    type State: void;
+    type CFunction: fn<i32>(&State);
+
+    # functions that read/write blocks when loading/dumping Lua chunks
+    type Reader: fn<const &char>(&State, &void, u64);
+    type Writer: fn<i32>(&State, const &void, u64, &void);
+
+    # prototype for memory-allocation functions
+    type Alloc: fn<&void>(&void, &void, u64, u64);
+}
+
+# basic types
+macro LUA_TNONE { (-1) }
+
+macro LUA_TNIL { 0 }
+macro LUA_TBOOLEAN { 1 }
+macro LUA_TLIGHTUSERDATA { 2 }
+macro LUA_TNUMBER { 3 }
+macro LUA_TSTRING { 4 }
+macro LUA_TTABLE { 5 }
+macro LUA_TFUNCTION { 6 }
+macro LUA_TUSERDATA { 7 }
+macro LUA_TTHREAD { 8 }
+
+macro LUA_NUMTAGS { 9 }
+
+# minimum Lua stack available to a C function
+macro LUA_RIDX_MAINTHREAD { 1 }
+macro LUA_RIDX_GLOBALS { 2 }
+macro LUA_RIDX_LAST { LUA_RIDX_GLOBALS! }
+
+namespace lua {
+    # type of numbers in Lua
+    type Number: LUA_NUMBER!;
+    
+    # type for integer functions
+    type Integer: LUA_INTEGER!;
+
+    # unsigned integer type
+    type Unsigned: LUA_UNSIGNED!;
+
+    LUA_API!() {
+        const lua_ident: &char;
+
+        # state manipulation
+        fn lua_newstate(f: Alloc, ud: &void): &State;
+        fn lua_close(l: &State);
+        fn lua_newthread(l: &State): &State;
+        fn lua_atpanic(l: &State, panicf: CFunction): CFunction;
+        fn lua_version(l: &State): Number;
+
+        # basic stack manipulation
+        fn lua_absindex(l: &State, idx: i32): i32;
+        fn lua_gettop(l: &State): i32;
+        fn lua_settop(l: &State, idx: i32);
+        fn lua_pushvalue(l: &State, idx: i32);
+        fn lua_remove(l: &State, idx: i32);
+        fn lua_insert(l: &State, idx: i32);
+        fn lua_replace(l: &State, idx: i32);
+        fn lua_copy(l: &State, fromidx: i32, toidx: i32);
+        fn lua_checkstack(l: &State, sz: i32): i32;
+
+        fn lua_xmove(from: &State, to: &State, n: i32);
+
+        # access functions (stack -> CSpydr)
+        fn lua_isnumber(l: &State, idx: i32): i32;
+        fn lua_isstring(l: &State, idx: i32): i32;
+        fn lua_iscfunction(l: &State, idx: i32): i32;
+        fn lua_isuserdata(l: &State, idx: i32): i32;
+        fn lua_type(l: &State, idx: i32): i32;
+        fn lua_typename(l: &State, tp: i32): const &char;
+        
+        fn lua_tonumberx(l: &State, idx: i32, isnum: &i32): Number;
+        fn lua_tointegerx(l: &State, idx: i32, isnum: &i32): Integer;
+        fn lua_tounsignedx(l: &State, idx: i32, isnum: &i32): Unsigned;
+        fn lua_toboolean(l: &State, idx: i32): i32;
+        fn lua_tolstring(l: &State, idx: i32, length: &u64): const &char;
+        fn lua_rawlen(l: &State, idx: i32): u64;
+        fn lua_tocfunction(l: &State, idx: i32): CFunction;
+        fn lua_touserdata(l: &State, idx: i32): &void;
+        fn lua_tothread(l: &State, idx: i32): &State;
+        fn lua_topointer(l: &State, idx: i32): const &void;
+
+        # Comparison and arithmetic functions
+
+macro LUA_OPADD { 0 }
+macro LUA_OPSUB { 1 }
+macro LUA_OPMUL { 2 }
+macro LUA_OPDIV { 3 }
+macro LUA_OPMOD { 4 }
+macro LUA_OPPOW { 5 }
+macro LUA_OPUNM { 6 }
+
+        fn lua_arith(l: &State, op: i32);
+
+macro LUA_OPEQ { 0 }
+macro LUA_OPLT { 1 }
+macro LUA_OPLE { 2 }
+
+        fn lua_rawequal(l: &State, idx1: i32, idx2: i32): i32;
+        fn lua_compare(l: &State, idx1: i32, idx2: i32, op: i32): i32;
+
+        # push functions (CSpydr -> stack)
+        fn lua_pushnil(l: &State);
+        fn lua_pushnumber(l: &State, n: Number);
+        fn lua_pushinteger(l: &State, n: Integer);
+        fn lua_pushunsigned(l: &State, n: Unsigned);
+        fn lua_pushlstring(l: &State, s: const &char, length: u64): const &char;
+        fn lua_pushstring(l: &State, s: const &char): const &char;
+        fn lua_pushvfstring(l: &State, fmt: const &char, argp: ::std::VAList): const &char;
+        fn lua_pushfstring(l: &State, fmt: const &char, args: ...): const &char;
+        fn lua_pushcclosure(l: &State, func: CFunction, n: i32);
+        fn lua_pushboolean(l: &State, b: i32);
+        fn lua_pushlightuserdata(l: &State, p: &void);
+        fn lua_pushthread(l: &State): i32;
+
+        # get functios (Lua -> stack)
+        fn lua_getglobal(l: &State, var: const &char);
+        fn lua_gettable(l: &State, idx: i32);
+        fn lua_getfield(l: &State, idx: i32, k: const &char);
+        fn lua_rawget(l: &State, idx: i32);
+        fn lua_rawgeti(l: &State, idx: i32, i: i32);
+        fn lua_rawgetp(l: &State, idx: i32, p: const &void);
+        fn lua_createtable(l: &State, narr: i32, nrec: i32);
+        fn lua_newuserdata(l: &State, sz: u64): &void;
+        fn lua_getmetatable(l: &State, objindex: i32): i32;
+        fn lua_getuservalue(l: &State, idx: i32);
+
+        # set functions (stack -> Lua)
+        fn lua_setglobal(l: &State, var: const &char);
+        fn lua_settable(l: &State, idx: i32);
+        fn lua_setfield(l: &State, idx: i32, k: const &char);
+        fn lua_rawset(l: &State, idx: i32);
+        fn lua_rawseti(l: &State, idx: i32, i: i32);
+        fn lua_rawsetp(l: &State, idx: i32, p: &void);
+        fn lua_setmetatable(l: &State, objindex: i32): i32;
+        fn lua_setuservalue(l: &State, idx: i32);
+
+        # 'load' and 'call' functions (load and run Lua code)
+        fn lua_callk(l: &State, nargs: i32, nresults: i32, ctx: i32, k: CFunction);
+    }
+    fn lua_call(l: &State, nargs: i32, nresults: i32)
+    {
+        lua_callk(l, nargs, nresults, 0, nil: CFunction);
+    }
+    
+    LUA_API!() {
+        fn lua_getctx(l: &State, ctx: &i32): i32;
+        fn lua_pcallk(l: &State, nargs: i32, nresults: i32, errfunc: i32, ctx: i32, k: CFunction): i32;
+    }
+    fn lua_pcall(l: &State, nargs: i32, nresults: i32, errfunc: i32): i32
+    {
+        <- lua_pcallk(l, nargs, nresults, errfunc, 0, nil: CFunction);
+    }
+
+    LUA_API!() {
+        fn lua_load(l: &State, reader: Reader, dt: &void, chunkname: const &char, mode: const &char): i32;
+        fn lua_dump(l: &State, writer: Writer, data: &void): i32;
+        fn lua_yieldk(l: &State, nresults: i32, ctx: i32, k: CFunction): i32;
+    }
+    fn lua_yield(l: &State, nresults: i32): i32
+    {
+        <- lua_yieldk(l, nresults, 0, nil: CFunction);
+    }
+
+    LUA_API!() {
+        fn lua_resume(l: &State, from: &State, narg: i32): i32;
+        fn lua_status(l: &State): i32;
+
+        # garbage-collection function and options
+
+macro LUA_GCSTOP	    { 0 }
+macro LUA_GCRESTART	    { 1 }
+macro LUA_GCCOLLECT	    { 2 }
+macro LUA_GCCOUNT	    { 3 }
+macro LUA_GCCOUNTB	    { 4 }
+macro LUA_GCSTEP	    { 5 }
+macro LUA_GCSETPAUSE    { 6 }
+macro LUA_GCSETSTEPMUL  { 7 }
+macro LUA_GCSETMAJORINC { 8 }
+macro LUA_GCISRUNNING   { 9 }
+macro LUA_GCGEN		    { 10 }
+macro LUA_GCINC		    { 11 }
+
+        fn lua_error(l: &State): i32;
+        fn lua_next(l: &State, idx: i32): i32;
+        fn lua_concat(l: &State, n: i32);
+        fn lua_len(l: &State, idx: i32);
+        fn lua_getallocf(l: &State, ud: &&void): Alloc;
+        fn lua_setallocf(l: &State, f: Alloc, ud: &void);
+    }
+
+    #[
+    ** ===============================================================
+    ** some useful functions (originally macros in C)
+    ** ===============================================================
+    ]#
+
+    fn lua_tonumber(l: &State, idx: i32): Number
+    {
+        <- lua_tonumberx(l, idx, nil);
+    }
+
+    fn lua_tointeger(l: &State, idx: i32): Integer
+    {
+        <- lua_tointegerx(l, idx, nil);
+    }
+
+    # FIXME: linker fails at lua_tounsignedx
+    #fn lua_tounsigned(l: &State, idx: i32): Unsigned
+    #{
+    #    <- lua_tounsignedx(l, idx, nil);
+    #}
+
+    fn lua_pop(l: &State, n: i32)
+    {
+        lua_settop(l, -(n) - 1);
+    }
+
+    fn lua_newtable(l: &State)
+    {
+        lua_createtable(l, 0, 0);
+    }
+
+    fn lua_register(l: &State, n: const &char, f: CFunction)
+    {
+        lua_pushcfunction(l, f);
+        lua_setglobal(l, n);
+    }
+
+    fn lua_pushcfunction(l: &State, f: lua::CFunction)
+    {
+        lua_pushcclosure(l, f, 0);
+    }
+
+    fn lua_isfunction(l: &State, idx: i32): i32
+    {
+        <- lua_type(l, idx) == LUA_TFUNCTION!;
+    }
+
+    fn lua_istable(l: &State, idx: i32): i32
+    {
+        <- lua_type(l, idx) == LUA_TTABLE!;
+    }
+
+    fn lua_islightuserdata(l: &State, idx: i32): i32
+    {
+        <- lua_type(l, idx) == LUA_TLIGHTUSERDATA!;
+    }
+
+    fn lua_isnil(l: &State, idx: i32): i32
+    {
+        <- lua_type(l, idx) == LUA_TNIL!;
+    }
+
+    fn lua_isboolean(l: &State, idx: i32): i32
+    {
+        <- lua_type(l, idx) == LUA_TBOOLEAN!;
+    }
+
+    fn lua_isthread(l: &State, idx: i32): i32
+    {
+        <- lua_type(l, idx) == LUA_TTHREAD!;
+    }
+
+    fn lua_isnone(l: &State, idx: i32): i32
+    {
+        <- lua_type(l, idx) == LUA_TNONE!;
+    }
+
+    fn lua_isnoneornil(l: &State, idx: i32): i32
+    {
+        <- lua_type(l, idx) <= 0;
+    }
+
+    fn lua_pushliteral(l: &State, s: const &char): const &char
+    {
+        <- lua_pushlstring(l, s, libc::strlen(s));
+    }
+
+    fn lua_pushglobaltable(l: &State)
+    {
+        lua_rawgeti(l, LUA_REGISTRYINDEX!, LUA_RIDX_GLOBALS!);
+    }
+
+    fn lua_tostring(l: &State, idx: i32): const &char
+    {
+        <- lua_tolstring(l, idx, nil);
+    }
+}
+
+#[
+** {======================================================================
+** Debug API
+** =======================================================================
+]#
+
+# Event codes
+macro LUA_HOOKCALL     { 0 }
+macro LUA_HOOKRET      { 1 }
+macro LUA_HOOKLINE     { 2 }
+macro LUA_HOOKCOUNT    { 3 }
+macro LUA_HOOKTAILCALL { 4 }
+
+# Event masts
+macro LUA_MASKCALL  { (1 << LUA_HOOKCALL!) }
+macro LUA_MASKRET   { (1 << LUA_HOOKRET!) }
+macro LUA_MASKLINE  { (1 << LUA_HOOKLINE!) }
+macro LUA_MASKCOUNT { (1 << LUA_HOOKCOUNT!) }
+
+namespace lua {
+    type Debug: struct {
+        event: i32,
+        name: const &char,
+        namewhat: const &char,
+        what: const &char,
+        source: const &char,
+        currentline: i32,
+        linedefined: i32,
+        lastlinedefined: i32,
+        nups: u8,
+        nparams: u8,
+        isvararg: i8,
+        istailcall: i8,
+        short_src: char[LUA_IDSIZE!],
+        # private part
+        i_ci: &CallInfo
+    };
+
+    type CallInfo: void;
+    type Hook: fn(&State, &Debug);
+
+    LUA_API!() {
+        fn lua_getstack(l: &State, level: i32, ar: &Debug): i32;
+        fn lua_getinfo(l: &State, what: const &char, ar: &Debug): i32;
+        fn lua_getlocal(l: &State, ar: const &Debug, n: i32): const &char;
+        fn lua_setlocal(l: &State, ar: const &Debug, n: i32): const &char;
+        fn lua_getupvalue(l: &State, funcindex: i32, n: i32): const &char;
+        fn lua_setupvalue(l: &State, funcindex: i32, n: i32): const &char;
+        
+        fn lua_upvalueid(l: &State, fidx: i32, n: i32): &void;
+        fn lua_upvaluejoin(l: &State, fidx1: i32, n1: i32, fidx2: i32, n2: i32);
+
+        fn lua_sethook(l: &State, func: Hook, mask: i32, count: i32): i32;
+        fn lua_gethook(l: &State): Hook;
+        fn lua_gethookcount(l: &State): i32;
+    }
+}
+# }======================================================================
+
+
+#[*****************************************************************************
+* Copyright (C) 1994-2015 Lua.org, PUC-Rio.
+*
+* Permission is hereby granted, free of charge, to any person obtaining
+* a copy of this software and associated documentation files (the
+* "Software"), to deal in the Software without restriction, including
+* without limitation the rights to use, copy, modify, merge, publish,
+* distribute, sublicense, and/or sell copies of the Software, and to
+* permit persons to whom the Software is furnished to do so, subject to
+* the following conditions:
+*
+* The above copyright notice and this permission notice shall be
+* included in all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*****************************************************************************]#

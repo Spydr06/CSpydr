@@ -1,0 +1,12 @@
+import "lua/lua.csp";
+import "libc/stdio.csp";
+
+fn main(): i32 {
+    using lua, libc;
+
+    let l: &lua::State = luaL_newstate();
+    printf("%lf\n", lua_version(l));
+    lua_close(l);
+
+    <- 0;
+}

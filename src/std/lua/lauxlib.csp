@@ -1,0 +1,224 @@
+#[
+** Auxiliary functions for building Lua libraries
+** See Copyright Notice in lua.csp
+]#
+
+import "lua.csp";
+import "luaconf.csp";
+
+import "libc/stdio.csp";
+
+# extra error code for `lua::luaL_load`
+macro LUA_ERRFILE { (LUA_ERRERR! + 1) }
+
+namespace lua {
+    type L_Reg: struct {
+        name: const &char,
+        func: lua::CFunction
+    };
+
+    LUALIB_API! fn luaL_checkversion_(l: &State, ver: Number)
+    fn luaL_checkversion(l: &State) 
+    {
+        luaL_checkversion_(l, LUA_VERSION_NUM!);
+    }
+
+    LUALIB_API!() {
+        fn luaL_getmetafield(l: &State, obj: i32, e: const &char): i32;
+        fn luaL_callmeta(l: &State, obj: i32, e: const &char): i32;
+        fn luaL_tolstring(l: &State, idx: i32, length: u64): const &char;
+        fn luaL_argerror(l: &State, numarg: i32, extramsg: const &char);
+
+        fn luaL_checklstring(l: &State, numarg: i32, length: u64): const &char;
+        fn luaL_optlstring(l: &State, numarg: i32, def: const &char, length: &u64): const &char;
+        fn luaL_checknumber(l: &State, numarg: i32): Number;
+        fn luaL_optnumber(l: &State, numarg: i32, def: Number): Number;
+        fn luaL_checkinteger(l: &State, numarg: i32): Integer;
+        fn luaL_optinteger(l: &State, numarg: i32, def: Integer): Integer;
+        fn luaL_checkunsigned(l: &State, numarg: i32): Unsigned;
+        fn luaL_optunsigned(l: &State, numarg: i32, def: Unsigned): Unsigned;
+
+        fn luaL_checkstack(l: &State, sz: i32, msg: const &char);
+        fn luaL_checktype(l: &State, narg: i32, t: i32);
+        fn luaL_checkany(l: &State, narg: i32);
+
+        fn luaL_newmetatable(l: &State, tname: const &char): i32;
+        fn luaL_setmetatable(l: &State, tname: const &char);
+        fn luaL_testudata(l: &State, ud: i32, tname: const &char): &void;
+        fn luaL_checkudata(l: &State, ud: i32, tname: const &char): &void;
+
+        fn luaL_where(l: &State, lvl: i32);
+        fn luaL_error(l: &State, fmt: const &char, args: ...);
+        
+        fn luaL_checkoption(l: &State, narg: i32, def: const &char, lst: const &const char[]): i32;
+        
+        fn luaL_fileresult(l: &State, stat: i32, fname: const &char): i32;
+        fn luaL_execresult(l: &State, stat: i32): i32;
+    
+# pre-defined references
+macro LUA_NOREF  { (-2) }
+macro LUA_REFNIL { (-1) }
+
+        fn luaL_ref(l: &State, t: i32): i32;
+        fn luaL_unref(l: &State, t: i32, ref: i32);
+
+        fn luaL_loadfilex(l: &State, filename: const &char, mode: const &char): i32;
+    }
+    fn luaL_loadfile(l: &State, filename: const &char): i32
+    {
+        <- luaL_loadfilex(l, filename, nil);
+    }
+
+    LUALIB_API!() {
+        fn luaL_loadbufferx(l: &State, buff: const &char, sz: u64, name: const &char, mode: const &char): i32;
+        fn luaL_loadstring(l: &State, s: const &char): i32;
+
+        fn luaL_newstate(): &State;
+        
+        fn luaL_len(l: &State, idx: i32): i32;
+        fn luaL_gsub(l: &State, s: const &char, p: const &char, r: const &char): const &char;
+        fn luaL_setfuncs(L: &State, l: const &L_Reg, nup: i32);
+        fn luaL_getsubtable(l: &State, idx: i32, fname: const &char): i32;
+        fn luaL_traceback(l: &State, l1: &State, msg: const &char, level: i32);
+        fn luaL_requiref(l: &State, modname: const &char, openf: CFunction, glb: i32);
+    }
+
+    #[
+    /*
+    ** ===============================================================
+    ** some useful functions/macros
+    ** ===============================================================
+    ]#
+
+    fn luaL_newlibtable(l: &State, length: i32)
+    {
+        lua_createtable(l, 0, length);
+    }
+
+    fn luaL_newlib(L: &State, l: const &L_Reg, length: i32)
+    {
+        luaL_newlibtable(L, length);
+        luaL_setfuncs(L, l, 0);
+    }
+
+    # TODO: lua_argcheck
+
+    fn luaL_checkstring(l: &State, n: i32): const &char
+    {
+        <- luaL_checklstring(l, n, 0);
+    }
+
+    fn luaL_optstring(l: &State, n: i32, d: const &char): const &char
+    {
+        <- luaL_optlstring(l, n, d, nil);
+    }
+
+    fn luaL_checkint(l: &State, n: i32): i32
+    {
+        <- luaL_checkinteger(l, n): i32;
+    }
+
+    fn luaL_optint(l: &State, n: i32, d: Integer): i32
+    {
+        <- luaL_optinteger(l, n, d): i32;
+    }
+
+    fn luaL_checklong(l: &State, n: i32): i64
+    {
+        <- luaL_checkinteger(l, n): i64;
+    }
+
+    fn luaL_optlong(l: &State, n: i32, d: Integer): i64
+    {
+        <- luaL_optinteger(l, n, d): i64;
+    }
+
+    fn luaL_typename(l: &State, i: i32): const &char
+    {
+        <- lua_typename(l, lua_type(l, i));
+    }
+
+    fn luaL_dofile(l: &State, filename: const &char): i32
+    {
+        <- luaL_loadfile(l, filename) || lua_pcall(l, 0, LUA_MULTRET!, 0);
+    }
+
+    fn luaL_dostring(l: &State, s: const &char): i32
+    {
+        <- luaL_loadstring(l, s) || lua_pcall(l, 0, LUA_MULTRET!, 0);
+    }
+
+    fn luaL_getmetatable(l: &State, n: const &char)
+    {
+        lua_getfield(l, LUA_REGISTRYINDEX!, n);
+    }
+
+    # TODO: luaL_opt
+    # TODO: luaL_loadbuffer
+
+    #[
+    ** {======================================================
+    ** Generic Buffer manipulation
+    ** =======================================================
+    ]#
+
+    type L_Buffer: struct {
+        b: &char,
+        size: u64,
+        n: u64,
+        l: &State,
+        initb: char[LUAL_BUFFERSIZE!]
+    };
+
+    fn luaL_addchar(b: &L_Buffer, c: char): char
+    {
+        if(b.n >= b.size)
+            luaL_prepbuffsize(b, 1);
+        <- b.b[b.n++] = c;
+    }
+
+    fn luaL_addsize(b: &L_Buffer, s: u64): u64
+    {
+        <- b.n += s;
+    }
+
+    LUALIB_API!() {
+        fn luaL_buffinit(l: &State, b: &L_Buffer);
+        fn luaL_prepbuffsize(b: &L_Buffer, sz: u64): &char;
+        fn luaL_addlstring(b: &L_Buffer, s: const &char, l: u64);
+        fn luaL_addstirng(b: &L_Buffer, s: const &char);
+        fn luaL_addvalue(b: &L_Buffer);
+        fn luaL_pushresult(b: &L_Buffer);
+        fn luaL_pushresultsize(b: &L_Buffer, sz: u64);
+        fn luaL_buffinitsize(l: &State, b: &L_Buffer, sz: u64): &char;
+    }
+
+    fn luaL_prepbuffer(b: &L_Buffer): &char
+    {
+        <- luaL_prepbuffsize(b, LUAL_BUFFERSIZE!);
+    }
+}
+
+#[
+** {======================================================
+** File handles for IO library
+** =======================================================
+]#
+
+#[
+** A file handle is a userdata with metatable 'LUA_FILEHANDLE' and
+** initial structure 'luaL_Stream' (it may contain other fields
+** after that initial structure).
+]#
+
+
+macro LUA_FILEHANDLE { "FILE*" }
+
+namespace lua {
+    type L_Stream: struct {
+        f: &libc::FILE,
+        closef: CFunction
+    };
+}
+
+# }======================================================

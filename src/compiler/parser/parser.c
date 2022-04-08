@@ -850,6 +850,7 @@ static ASTObj_T* parse_extern_def(Parser_T *p, bool is_extern_c)
 {
     switch(p->tok->type)
     {
+        case TOKEN_CONST:
         case TOKEN_LET:
         {
             ASTObj_T* ext_var = parse_global(p);
