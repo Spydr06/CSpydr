@@ -36,19 +36,19 @@ type curl_blob: struct {
     flags: u32
 };
 
-extern  {
+extern "C" {
 
     fn curl_easy_init(): &CURL;
-    fn curl_easy_setopt(curl: &CURL, option: curl::CURLoption, args: ...): CURLcode;
-    fn curl_easy_perform(curl: &CURL): CURLcode;
-    fn curl_easy_cleanup(curl: &CURL);
+    fn curl_easy_setopt(handle: &CURL, option: CURLoption, args: ...): CURLcode;
+    fn curl_easy_perform(handle: &CURL): CURLcode;
+    fn curl_easy_cleanup(handle: &CURL);
 
-    fn curl_easy_getinfo(curl: &CURL, info: CURLINFO, args: ...): CURLcode;
-    fn curl_easy_duphandle(curl: &CURL): &CURL;
-    fn curl_easy_reset(curl: &CURL);
-    fn curl_easy_recv(curl: &CURL, buffer: &void, buflen: u64, n: &u64): CURLcode;
-    fn curl_easy_send(curl: &CURL, buffer: const &void, buflen: u64, n: &u64): CURLcode;
-    fn curl_easy_upkeep(curl: &CURL): CURLcode;
+    fn curl_easy_getinfo(handle: &CURL, info: CURLINFO, args: ...): CURLcode;
+    fn curl_easy_duphandle(handle: &CURL): &CURL;
+    fn curl_easy_reset(handle: &CURL);
+    fn curl_easy_recv(handle: &CURL, buffer: &void, buflen: u64, n: &u64): CURLcode;
+    fn curl_easy_send(handle: &CURL, buffer: const &void, buflen: u64, n: &u64): CURLcode;
+    fn curl_easy_upkeep(handle: &CURL): CURLcode;
 }
 
 }

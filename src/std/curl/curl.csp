@@ -25,11 +25,12 @@
 import "curl_system.csp";
 import "curlver.csp";
 import "types.csp";
-import "system.csp";
+import "net.csp";
 import "multi.csp";
 import "easy.csp";
 import "urlapi.csp";
 import "options.csp";
+
 
 namespace curl {
 
