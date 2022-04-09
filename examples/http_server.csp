@@ -3,7 +3,7 @@
 import "std.csp";
 
 # Define a port for the server
-const PORT: i32 = 8001;
+macro PORT { 8001 }
 
 # entry point
 fn main(): i32
@@ -19,24 +19,23 @@ fn main(): i32
     );
 
     # Construct local address structure
-    let address = std::SockAddrIn :: {
+    let address = SockAddrIn :: {
         system::AF_INET,
-        net::htons(PORT),
-        std::Address :: { 
+        net::htons(PORT!),
+        Address :: { 
             net::htonl(net::INADDR_LOOPBACK)
         }
     };
 
     # Bind socket to local address
-    syscall::bind(socket, (&address): &std::SockAddr, sizeof std::SockAddrIn);
+    syscall::bind(socket, (&address): &SockAddr, sizeof SockAddrIn);
 
     # Mark socket to listen for incoming connections
-    let listening = syscall::listen(socket, 10);
-    if listening < 0 {
+    if syscall::listen(socket, 10) < 0 {
         io::printf("Error: The server is not listening.\n");
         <- 1;
     }
-    io::printf("HTTP Server is listening on port '%i'\n", PORT);
+    io::printf("HTTP Server is listening on port '%i'\n", PORT!);
 
     let http: &char = "HTTP/1.1 200 OK\r\n\n";
 

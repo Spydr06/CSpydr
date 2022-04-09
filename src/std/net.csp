@@ -1,12 +1,38 @@
 import "syscall.csp";
+import "types.csp";
+
+macro INET_ADDRSTRLEN { 16 }
+macro INET6_ADDRSTRLEN { 46 }
 
 namespace std {
+    type SockAddr: struct {
+        family: sa_family_t,
+        data: u8[14]
+    };
+
+    type Address: struct {
+        addr: u32
+    };
+
+    type SockAddrIn: struct {
+        family: sa_family_t,
+        port: in_port_t,
+        addr: Address,
+        zero: u8[8]
+    };
+
     namespace net {
-        const INADDR_ANY: u32 = 0;
+        const INADDR_ANY: u32       = 0x00000000;
         const INADDR_BROADCAST: u32 = 0xffffffff;
-        const INADDR_NONE: u32 = 0xffffffff;
-        const INADDR_LOOPBACK: u32 = 0x7f000001;
-        const INADDR_DUMMY: u32 = 0xc0000008;
+        const INADDR_NONE: u32      = 0xffffffff;
+        const INADDR_LOOPBACK: u32  = 0x7f000001;
+        const INADDR_DUMMY: u32     = 0xc0000008;
+
+        const INADDR_UNSPEC_GROUP: u32      = 0xe0000000;
+        const INADDR_ALLHOSTS_GROUP: u32    = 0xe0000001;
+        const INADDR_ALLRTRS_GROUP: u32     = 0xe0000002;
+        const INADDR_ALLSNOOPERS_GROUP: u32 = 0xe000006a;
+        const INADDR_MAX_LOCAL_GROUP: u32   = 0xe00000ff;
 
         fn send(fd: i32, buf: const &void, length: usize, flags: i32): i64
         {
@@ -21,6 +47,20 @@ namespace std {
         }
 
         fn htonl(n: u32): u32
+        {
+            let u: union {i: i32, c: i8};
+            u.i = 1;
+            <- if u.c != 0 => bswap_32(n) else n;
+        }
+
+        fn ntohs(n: u16): u16 
+        {
+            let u: union {i: i32, c: i8};
+            u.i = 1;
+            <- if u.c != 0 => bswap_16(n) else n;
+        }
+
+        fn ntohl(n: u32): u32
         {
             let u: union {i: i32, c: i8};
             u.i = 1;

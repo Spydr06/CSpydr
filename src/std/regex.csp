@@ -1,0 +1,70 @@
+import "types.csp";
+import "mem.csp";
+
+namespace std {
+    type Regex: struct {
+
+    };
+
+    type RegexMatch: struct {
+        begin: usize,
+        end: usize
+    };
+
+    type RegexError: enum {
+        OK = 0,
+	    FAILED_ALLOC,
+	    INVALID_PARAMS,
+	    EARLY_QUANTIFIER,
+	    INVALID_COMPLEX_QUANT,
+	    UNEXPECTED_EOL,
+	    INVALID_COMPLEX_CLASS,
+	    UNCLOSED_SUBEXPRESSION,
+    };
+
+    namespace regex {
+        namespace __static {
+            let err: RegexError = RegexError::OK;
+        }
+
+        fn compile(re: const &char): &Regex
+        {
+            <- nil;
+        }
+
+        fn error(): RegexError
+        {
+            <- __static::err;
+        }
+
+        fn errorstr(error: RegexError): const &char
+        {
+            match error {
+                RegexError::OK => ret "ok";
+                RegexError::FAILED_ALLOC           => ret "failed allocation";
+                RegexError::INVALID_PARAMS         => ret "invalid parameters";
+                RegexError::EARLY_QUANTIFIER       => ret "early quantifier";
+                RegexError::INVALID_COMPLEX_QUANT  => ret "invalid complex quantifier";
+                RegexError::UNEXPECTED_EOL         => ret "unexpected end of line";
+                RegexError::INVALID_COMPLEX_CLASS  => ret "invalid complex class";
+                RegexError::UNCLOSED_SUBEXPRESSION => ret "unclosed subexpresion";
+                _ => ret "unrecognized regex error";
+            }
+        }
+
+        fn matches(re: &Regex, s: const &char, m: &RegexMatch): bool
+        {
+            <- true;
+        }
+
+        fn free(re: &Regex)
+        {
+            if !re {
+                __static::err = RegexError::INVALID_PARAMS;
+                ret;
+            }
+
+            mem::free(re);
+        }
+    }
+}
