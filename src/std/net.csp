@@ -1,0 +1,45 @@
+import "syscall.csp";
+
+namespace std {
+    namespace net {
+        const INADDR_ANY: u32 = 0;
+        const INADDR_BROADCAST: u32 = 0xffffffff;
+        const INADDR_NONE: u32 = 0xffffffff;
+        const INADDR_LOOPBACK: u32 = 0x7f000001;
+        const INADDR_DUMMY: u32 = 0xc0000008;
+
+        fn send(fd: i32, buf: const &void, length: usize, flags: i32): i64
+        {
+            <- syscall::sendto(fd, buf, length, flags);
+        }
+
+        fn htons(n: u16): u16 
+        {
+            let u: union {i: i32, c: i8};
+            u.i = 1;
+            <- if u.c != 0 => bswap_16(n) else n;
+        }
+
+        fn htonl(n: u32): u32
+        {
+            let u: union {i: i32, c: i8};
+            u.i = 1;
+            <- if u.c != 0 => bswap_32(n) else n;
+        }
+
+        fn bswap_16(x: u16): u16
+        {
+            <- x << 8 | x >> 8;
+        }
+
+        fn bswap_32(x: u32): u32
+        {
+            <- x >> 24 | x >> 8 & 0xff00 | x << 8 & 0xff0000 | x << 24;
+        }
+
+        fn bswap_64(x: u64): u64
+        {
+            <- bswap_32(x) << 32 | bswap_32(x >> 32);
+        }
+    }
+}

@@ -49,6 +49,7 @@ namespace std {
         rem: i64
     };
     type sa_family_t: u16;
+    type in_port_t: u16;
     type socklen_t: u32;
     type sembuf: struct {
         sem_num: u16,

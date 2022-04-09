@@ -1,0 +1,52 @@
+# A basic http server using linux syscalls
+# Import the standard library
+import "std.csp";
+
+# Define a port for the server
+const PORT: i32 = 8001;
+
+# entry point
+fn main(): i32
+{
+    # Pull the standard library contents into the current scope
+    using std;
+
+    # Socket setup: creates an endpoint for communication, returns a descriptor
+    let socket = syscall::socket(
+        system::AF_INET,     # Domain: specifies protocol family
+        system::SOCK_STREAM, # Type: specifies communication semantics
+        0                    # Protocol: 0 because there is a single protocol for the specified family
+    );
+
+    # Construct local address structure
+    let address = std::SockAddrIn :: {
+        system::AF_INET,
+        net::htons(PORT),
+        std::Address :: { 
+            net::htonl(net::INADDR_LOOPBACK)
+        }
+    };
+
+    # Bind socket to local address
+    syscall::bind(socket, (&address): &std::SockAddr, sizeof std::SockAddrIn);
+
+    # Mark socket to listen for incoming connections
+    let listening = syscall::listen(socket, 10);
+    if listening < 0 {
+        io::printf("Error: The server is not listening.\n");
+        <- 1;
+    }
+    io::printf("HTTP Server is listening on port '%i'\n", PORT);
+
+    let http: &char = "HTTP/1.1 200 OK\r\n\n";
+
+    # Wait for a connection, create a connected socket if a connection is pending
+    loop {
+        let client = syscall::accept(socket, nil, nil);
+        net::send(client, http, c_str::strlen(http), 0);   
+        syscall::close(client);
+    }
+
+    # Exit the program (never reached)
+    <- 0;
+}

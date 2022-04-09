@@ -5,8 +5,19 @@ macro UTSLEN { 65 }
 
 namespace std { 
     type SockAddr: struct {
-        sa_family: ::std::sa_family_t,
-        sa_data: u8[14]
+        family: sa_family_t,
+        data: u8[14]
+    };
+
+    type Address: struct {
+        addr: u32
+    };
+
+    type SockAddrIn: struct {
+        family: sa_family_t,
+        port: in_port_t,
+        addr: Address,
+        zero: u8[8]
     };
 
     type UTSName: struct {
