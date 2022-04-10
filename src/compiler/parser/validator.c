@@ -227,31 +227,34 @@ static const ASTIteratorList_T main_iterator_list =
 
 void validate_ast(ASTProg_T* ast)
 {
+    // initialize the validator
     Validator_T v;
     init_validator(&v);
-
-    global.current_fn = &v.current_function;
-
     v.ast = ast;
-
     begin_obj_scope(&v, NULL, ast->objs);
     v.global_scope = v.current_scope;
+    global.current_fn = &v.current_function;
 
+    // iterate over the AST, resolve types and check semantics
     ast_iterate(&main_iterator_list, ast, &v);
 
+    // end the validator
     end_scope(&v);
     v.global_scope = NULL;
-
-    check_exit_fns(&v);
-
     global.current_fn = NULL;
-    
+
+    // check for the main function
+    check_exit_fns(&v);
     if(!v.main_function_found)
     {
         LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " mssing entrypoint; no `main` function declared.\n");
         global.emitted_errors++;
     }
 
+    // check all data types and create implicit casts when needed
+    run_typechecker(ast);
+
+    // Emit an error summary
     if(!global.silent)
     {
         if(global.emitted_errors && global.emitted_warnings)
@@ -419,6 +422,8 @@ ASTType_T* expand_typedef(Validator_T* v, ASTType_T* type)
 {
     if(!type || type->kind != TY_UNDEF)
         return type;
+    if(type->base)
+        return type->base;
 
     ASTObj_T* ty_def = search_identifier(v, v->current_scope, type->id);
     if(!ty_def)
@@ -1021,7 +1026,6 @@ static void using_end(ASTNode_T* using, va_list args)
             throw_error(ERR_REDEFINITION_UNCR, using->tok, "namespace `%s` is trying to implement a %s `%s`, \nwhich is already defined in this scope", found->id->callee, obj_kind_to_str(obj->kind), obj->id->callee);
             continue;
         }
-
         list_push(v->current_scope->objs, obj);
     }
 }
@@ -1098,9 +1102,6 @@ static void call(ASTNode_T* call, va_list args)
         char buf[BUFSIZ] = {};
         throw_error(ERR_CALL_ERROR, call->tok, "type `%s` expects %lu call arguments, got %lu", ast_type_to_str(buf, call_type, LEN(buf)), expected_arg_num, received_arg_num);
     }
-
-    for(size_t i = 0; i < expected_arg_num; i++)
-        call->args->items[i] = typecheck_arg_pass(v, call_type->arg_types->items[i], call->args->items[i]);
     
     // if we compile using the assembly compiler, a buffer for the return value is needed when handling big structs
     if(global.ct == CT_ASM && call->data_type && expand_typedef(v, call->data_type)->kind == TY_STRUCT)
@@ -1380,7 +1381,6 @@ static void index_(ASTNode_T* index, va_list args)
 static void cast(ASTNode_T* cast, va_list args)
 {
     GET_VALIDATOR(args);
-    typecheck_explicit_cast(v, cast);
 }
 
 static void local_initializer(Validator_T* v, ASTNode_T* assign, ASTObj_T* local)
@@ -1458,7 +1458,6 @@ static void assignment_end(ASTNode_T* assign, va_list args)
             throw_error(ERR_MISC, assign->left->tok, "cannot assign value to `%s`", assign->left->tok->value);
     }
 
-    typecheck_assignment(v, assign);
     assign->data_type = assign->left->data_type;
 
     if(expand_typedef(v, assign->data_type)->kind == TY_VOID)

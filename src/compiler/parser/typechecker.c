@@ -1,5 +1,6 @@
 #include "typechecker.h"
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -9,6 +10,97 @@
 #include "parser/validator.h"
 #include "utils.h"
 #include "codegen/codegen_utils.h"
+#include "ast/ast_iterator.h"
+
+static ASTNode_T* typecheck_arg_pass(ASTType_T* expected, ASTNode_T* received);
+static void typecheck_call(ASTNode_T* call, va_list args);
+static void typecheck_explicit_cast(ASTNode_T* cast, va_list args);
+static void typecheck_assignment(ASTNode_T* assignment, va_list args);
+
+static const ASTIteratorList_T iterator = {
+    .node_end_fns = {
+        [ND_CALL] = typecheck_call,
+        [ND_CAST] = typecheck_explicit_cast,
+        [ND_ASSIGN] = typecheck_assignment
+    }
+};
+
+void run_typechecker(ASTProg_T* ast)
+{
+    ast_iterate(&iterator, ast);
+}
+
+static void typecheck_call(ASTNode_T* call, va_list args)
+{
+    ASTType_T* call_type = unpack(call->expr->data_type);
+    size_t expected_arg_num = call_type->arg_types->size;
+    for(size_t i = 0; i < expected_arg_num; i++)
+        call->args->items[i] = typecheck_arg_pass(call_type->arg_types->items[i], call->args->items[i]);
+}
+
+static void typecheck_assignment(ASTNode_T* assignment, va_list args)
+{
+    if(types_equal(assignment->left->data_type, assignment->right->data_type))
+        return;
+
+    if(implicitly_castable(assignment->tok, assignment->right->data_type, assignment->left->data_type))
+    {
+        assignment->right = implicit_cast(assignment->tok, assignment->right, assignment->left->data_type);
+        return;
+    }
+
+    char buf1[BUFSIZ] = {};
+    char buf2[BUFSIZ] = {};
+    throw_error(ERR_TYPE_ERROR_UNCR, assignment->tok, "assignment type missmatch: cannot assign `%s` to `%s`", 
+        ast_type_to_str(buf1, assignment->right->data_type, LEN(buf1)),
+        ast_type_to_str(buf2, assignment->left->data_type, LEN(buf2))    
+    );
+}
+
+static ASTNode_T* typecheck_arg_pass(ASTType_T* expected, ASTNode_T* received)
+{
+    if(types_equal(expected, received->data_type))
+        return received;
+    
+    if(implicitly_castable(received->tok, received->data_type, expected))
+        return implicit_cast(received->tok, received, expected);
+    
+    char buf1[BUFSIZ] = {};
+    char buf2[BUFSIZ] = {};
+    throw_error(ERR_TYPE_ERROR_UNCR, received->tok, "cannot implicitly cast from `%s` to `%s`", 
+        ast_type_to_str(buf1, received->data_type, LEN(buf1)),
+        ast_type_to_str(buf2, expected, LEN(buf2))    
+    );
+
+    return received;
+}
+
+static void typecheck_explicit_cast(ASTNode_T* cast, va_list args)
+{
+    // Buffer for warnings and errors
+    char buf1[BUFSIZ] = {};
+
+    if(types_equal(cast->left->data_type, cast->data_type))
+    {
+        throw_error(ERR_TYPE_CAST_WARN, cast->tok, "unnecessary type cast: expression is already of type `%s`",
+            ast_type_to_str(buf1, cast->data_type, LEN(buf1))
+        );
+        return;
+    }
+
+    ASTType_T* from = unpack(cast->left->data_type);
+    ASTType_T* to = unpack(cast->data_type);
+
+    if(from->kind == TY_VOID)
+        throw_error(ERR_TYPE_ERROR_UNCR, cast->tok, "cannot cast from `void` to `%s`", 
+            ast_type_to_str(buf1, cast->data_type, LEN(buf1))
+        );
+    
+    if(to->kind == TY_VOID)
+        throw_error(ERR_TYPE_ERROR_UNCR, cast->tok, "cannot cast from `%s` to `void`", 
+            ast_type_to_str(buf1, cast->left->data_type, LEN(buf1))
+        );
+}
 
 bool types_equal(ASTType_T* a, ASTType_T* b)
 {
@@ -61,74 +153,10 @@ bool types_equal(ASTType_T* a, ASTType_T* b)
     }
 }
 
-void typecheck_assignment(Validator_T* v, ASTNode_T* assignment)
+bool implicitly_castable(Token_T* tok, ASTType_T* from, ASTType_T* to)
 {
-    if(types_equal(assignment->left->data_type, assignment->right->data_type))
-        return;
-
-    if(implicitly_castable(v, assignment->tok, assignment->right->data_type, assignment->left->data_type))
-    {
-        assignment->right = implicit_cast(assignment->tok, assignment->right, assignment->left->data_type);
-        return;
-    }
-
-    char buf1[BUFSIZ] = {};
-    char buf2[BUFSIZ] = {};
-    throw_error(ERR_TYPE_ERROR_UNCR, assignment->tok, "assignment type missmatch: cannot assign `%s` to `%s`", 
-        ast_type_to_str(buf1, assignment->right->data_type, LEN(buf1)),
-        ast_type_to_str(buf2, assignment->left->data_type, LEN(buf2))    
-    );
-}
-
-ASTNode_T* typecheck_arg_pass(Validator_T* v, ASTType_T* expected, ASTNode_T* received)
-{
-    if(types_equal(expected, received->data_type))
-        return received;
-    
-    if(implicitly_castable(v, received->tok, received->data_type, expected))
-        return implicit_cast(received->tok, received, expected);
-    
-    char buf1[BUFSIZ] = {};
-    char buf2[BUFSIZ] = {};
-    throw_error(ERR_TYPE_ERROR_UNCR, received->tok, "cannot implicitly cast from `%s` to `%s`", 
-        ast_type_to_str(buf1, received->data_type, LEN(buf1)),
-        ast_type_to_str(buf2, expected, LEN(buf2))    
-    );
-
-    return received;
-}
-
-void typecheck_explicit_cast(Validator_T* v, ASTNode_T* cast)
-{
-    // Buffer for warnings and errors
-    char buf1[BUFSIZ] = {};
-
-    if(types_equal(cast->left->data_type, cast->data_type))
-    {
-        throw_error(ERR_TYPE_CAST_WARN, cast->tok, "unnecessary type cast: expression is already of type `%s`",
-            ast_type_to_str(buf1, cast->data_type, LEN(buf1))
-        );
-        return;
-    }
-
-    ASTType_T* from = expand_typedef(v, cast->left->data_type);
-    ASTType_T* to = expand_typedef(v, cast->data_type);
-
-    if(from->kind == TY_VOID)
-        throw_error(ERR_TYPE_ERROR_UNCR, cast->tok, "cannot cast from `void` to `%s`", 
-            ast_type_to_str(buf1, cast->data_type, LEN(buf1))
-        );
-    
-    if(to->kind == TY_VOID)
-        throw_error(ERR_TYPE_ERROR_UNCR, cast->tok, "cannot cast from `%s` to `void`", 
-            ast_type_to_str(buf1, cast->left->data_type, LEN(buf1))
-        );
-}
-
-bool implicitly_castable(Validator_T* v, Token_T* tok, ASTType_T* from, ASTType_T* to)
-{
-    from = expand_typedef(v, from);
-    to = expand_typedef(v, to);
+    from = unpack(from);
+    to = unpack(to);
 
     if(!from || !to)
         return false;
