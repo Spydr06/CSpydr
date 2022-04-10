@@ -61,5 +61,25 @@ namespace std {
             free!(file);
         }
         [exit_fn("close": &std::File)]
+
+        fn size(file: &File): i64
+        {
+            let stat: Stat;
+            if !file
+                <- -1;
+            if syscall::fstat(file.desc, &stat)
+                <- -1;
+
+            <- stat.size;
+        }
+
+        fn read_all(file: &File): String
+        {
+            let file_size = size(file);
+            let str = string::init_sized(file_size);
+            read(file, str, file_size);
+
+            <- str;
+        }
     }
 }

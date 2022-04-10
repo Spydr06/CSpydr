@@ -75,6 +75,13 @@ namespace std {
             <- &(str_data.buff[0]);
         }
 
+        fn init_sized(size: u64): ::std::String
+        {
+            let str_data: &StringData = mem::alloc(sizeof StringData + size + 1);
+            str_data.alloc = size + 1;
+            <- &(str_data.buff[0]);
+        }
+
         fn free(str: std::String) 
         {
             mem::free(get_data(str));

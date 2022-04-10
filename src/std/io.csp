@@ -29,19 +29,23 @@ macro write(fd, v) {
 
 namespace std {
     type Stat: struct {
-        st_dev: dev_t,
-        st_ino: ino_t,
-        st_mode: mode_t,
-        st_nlink: nlink_t,
-        st_uid: uid_t,
-        st_gid: gid_t,
-        st_rdev: dev_t,
-        st_size: off_t,
-        st_blksize: blksize_t,
-        st_blocks: blkcnt_t,
-        st_atime: time_t,
-        st_mtime: time_t,
-        st_ctime: time_t
+        dev: dev_t,         # Device
+        ino: ino_t,         # File serial number
+        mode: mode_t,       # File mode
+        nlink: nlink_t,     # Link count
+        uid: uid_t,         # User ID of the file's owner
+        gid: gid_t,         # Group ID of the file's owner
+        rdev: dev_t,        # Device number, if device
+        size: off_t,        # Sote of the file (in bytes)
+        blksize: blksize_t, # Optimal blocksize for IO
+        blocks: blkcnt_t,   # Number 512-byte blocks allocated
+        atime: time_t,
+        atimensec: u64,
+        mtime: time_t,
+        mtimensec: u64,
+        ctime: time_t,
+        ctimensec: u64,
+        __glibc_reserved: u64[3]
     };
 
     type PollFd: struct {

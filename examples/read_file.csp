@@ -9,12 +9,12 @@ fn main(): i32 {
     using std;
 
     with f = file::open(PATH!, file::READ) {
-        let buffer: char[30];        
-        file::read(f, buffer, len buffer);
-        io::printf("%s\n", buffer);
+        let buffer = file::read_all(f);
+        io::puts(buffer);
+        string::free(buffer);
     }
     else
         io::eputs("Error opening " PATH!);
-        
+     
     <- 0;
 }
