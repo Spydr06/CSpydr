@@ -2,6 +2,7 @@ import "types.csp";
 import "io.csp";
 import "time.csp";
 import "system.csp";
+import "net.csp";
 
 macro syscall(id)
 {
