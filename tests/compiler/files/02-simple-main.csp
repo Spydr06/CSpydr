@@ -1,0 +1,5 @@
+# success
+fn main(args: &&char): i32 
+{
+    ret 0;
+}

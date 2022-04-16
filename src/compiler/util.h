@@ -47,6 +47,7 @@ char *strsep(char **stringp, const char *delim);
 
 bool is_http_url(const char* url);
 bool str_starts_with(const char *a, const char *b);
+bool str_ends_with(const char *s, const char *suffix);
 i64 align_to(i64 n, i64 align);
 
 #if !defined(CSPYDR_PACKED_STRUCTS) || !defined(CSPYDR_GNU_LIBC)

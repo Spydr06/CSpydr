@@ -39,7 +39,7 @@ void optimize(ASTProg_T *ast)
         passes[i].fn(ast);
     }
 
-    if(count)
+    if(count && !global.silent)
         fprintf(OUTPUT_STREAM, "\n");
 }
 

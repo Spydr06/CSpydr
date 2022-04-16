@@ -27,6 +27,13 @@ bool str_starts_with(const char *a, const char *b)
     return !strncmp(a, b, strlen(b));
 }
 
+bool str_ends_with(const char *s, const char *suffix) {
+    size_t slen = strlen(s);
+    size_t suffix_len = strlen(suffix);
+
+    return suffix_len <= slen && !strcmp(s + slen - suffix_len, suffix);
+}
+
 // Round up `n` to the nearest multiple of `align`.
 i64 align_to(i64 n, i64 align) 
 {
@@ -34,3 +41,4 @@ i64 align_to(i64 n, i64 align)
         align = 1;
     return (n + align - 1) / align * align;
 }
+

@@ -38,11 +38,13 @@ void test_file_generation(void)
 #include "test_lexer.h"
 #include "test_preprocessor.h"
 #include "test_parser.h"
+#include "test_compiler.h"
 
 TEST_LIST = {
    {"file generation", test_file_generation},
-   LEXER_TESTS,         // all lexer tests included from "test_lexer.tt"
-   PREPROCESSOR_TESTS,   // all preprocessor tests included from "test_preprocessor.tt"
-   PARSER_TESTS,        // all parser tests included from "test_parser.tt"
-   {NULL, NULL}         // end of the tests
+   LEXER_TESTS,        // all lexer tests included from "test_lexer.tt"
+   PREPROCESSOR_TESTS, // all preprocessor tests included from "test_preprocessor.tt"
+   PARSER_TESTS,       // all parser tests included from "test_parser.tt"
+   COMPILER_TESTS,     // all compiler tests
+   {NULL, NULL}        // end of the tests
 };

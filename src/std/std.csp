@@ -4,7 +4,6 @@ import "c_str.csp";
 import "error.csp";
 import "file.csp";
 import "io.csp";
-import "map.csp";
 import "math.csp";
 import "mem.csp";
 import "net.csp";
