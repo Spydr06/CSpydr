@@ -651,6 +651,7 @@ static ASTType_T* parse_enum_type(Parser_T* p)
         member->data_type = (ASTType_T*) primitives[TY_I32];
         member->id = parse_simple_identifier(p);
         list_push(enum_type->members, member);
+        member->is_constant = true;
 
         if(tok_is(p, TOKEN_ASSIGN))
         {

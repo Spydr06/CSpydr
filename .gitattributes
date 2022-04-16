@@ -8,3 +8,6 @@
 *.hh linguist-language=C++
 
 *.csp linguist-language=CSpydr
+*.md linguist-language=Markdown
+CMakeLists.txt linguist-language=CMake
+.gitignore linguist-language=gitignore

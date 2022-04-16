@@ -16,9 +16,9 @@ void linter_error_handler(ErrorType_T ty, Token_T* tok, const char* format, va_l
     if(global.current_fn && *global.current_fn) 
     {
         char buf[BUFSIZ] = {};
-        fprintf(OUTPUT_FILE, "function: %s", ast_id_to_str(buf, (*global.current_fn)->id, LEN(buf)));
+        fprintf(OUTPUT_FILE, "function: %s\n", ast_id_to_str(buf, (*global.current_fn)->id, LEN(buf)));
     }
-    fprintf(OUTPUT_FILE, "\ndesc: ");
+    fprintf(OUTPUT_FILE, "desc: ");
 
     vfprintf(OUTPUT_FILE, format, args);
     fprintf(OUTPUT_FILE, "\n\n");

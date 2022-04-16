@@ -1413,6 +1413,11 @@ static void assignment_start(ASTNode_T* assign, va_list args)
         assign->right->is_assigning = true;
 }
 
+static ASTNode_T* expand_closure(ASTNode_T* cl)
+{
+    return cl->kind == ND_CLOSURE ? cl->expr : cl;
+}
+
 static void assignment_end(ASTNode_T* assign, va_list args)
 {
     GET_VALIDATOR(args);
@@ -1421,7 +1426,7 @@ static void assignment_end(ASTNode_T* assign, va_list args)
     if(assign->is_initializing && assign->referenced_obj)
         local_initializer(v, assign, assign->referenced_obj);
 
-    switch(assign->left->kind)
+    switch(expand_closure(assign->left)->kind)
     {
         case ND_MEMBER:
         case ND_INDEX:
@@ -2015,8 +2020,10 @@ static i32 get_type_size(Validator_T* v, ASTType_T* type)
             if(type->num_indices)
             {
                 i64 len = const_i64(type->num_indices);
-                if(len < 1)
+                if(len < 0)
                     throw_error(ERR_TYPE_ERROR, type->num_indices->tok, "cannot get array type with negative index size (%ld)", len);
+                if(len == 0)
+                    return 0;
                 return get_type_size(v, type->base) * len;
             }
             else

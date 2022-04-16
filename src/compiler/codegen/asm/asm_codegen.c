@@ -292,71 +292,72 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         fprintf(OUTPUT_STREAM, "%s", cg->buf);
     }
 
-    if(global.do_assemble)
+    if(!global.do_assemble)
+        return;
+    char asm_source_file[BUFSIZ] = {'\0'};
+    sprintf(asm_source_file, "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.s", get_home_directory(), target);
+
+    char obj_file[BUFSIZ] = {'\n'};
+    if(global.do_link)
+        sprintf(obj_file, "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.o", get_home_directory(), target);
+    else
+        sprintf(obj_file, "%s.o", target);
+
+    // run the assembler
     {
-        char asm_source_file[BUFSIZ] = {'\0'};
-        sprintf(asm_source_file, "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.s", get_home_directory(), target);
+        const char* args[] = {
+            DEFAULT_ASSEMBLER,
+            "-c",
+            asm_source_file,
+            "-o",
+            obj_file,
+            NULL
+        };
+        i32 exit_code = subprocess(args[0], (char* const*) args, false);
 
-        char obj_file[BUFSIZ] = {'\n'};
-        if(global.do_link)
-            sprintf(obj_file, "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.o", get_home_directory(), target);
-        else
-            sprintf(obj_file, "%s.o", target);
-
-        // run the assembler
+        if(exit_code != 0)
         {
-            const char* args[] = {
-                DEFAULT_ASSEMBLER,
-                "-c",
-                asm_source_file,
-                "-o",
-                obj_file,
-                NULL
-            };
-            i32 exit_code = subprocess(args[0], (char* const*) args, false);
-
-            if(exit_code != 0)
-            {
-                LOG_ERROR_F("error assembling code. (exit code %d)\n", exit_code);
-                exit(1);
-            }
+            LOG_ERROR_F("error assembling code. (exit code %d)\n", exit_code);
+            exit(1);
         }
+    }
 
-        // run the linker
-        if(global.do_link) 
+    if(!global.do_link) 
+        return;
+    
+    // run the linker
+    if(!cg->silent)
+        LOG_OK_F(COLOR_BOLD_BLUE "  Linking    " COLOR_RESET "%s\n", target);
+
+    {
+        List_T* args = init_list();
+        list_push(args, DEFAULT_LINKER);
+        list_push(args, "-o");
+        list_push(args, (void*) target);
+        list_push(args, "-m");
+        list_push(args, "elf_x86_64");
+        list_push(args, "-L/usr/lib64");
+        list_push(args, "-L/lib64");
+        list_push(args, "-L/usr/lib");
+        list_push(args, "-L/lib");
+    
+        for(size_t i = 0; i < global.linker_flags->size; i++)
+            list_push(args, global.linker_flags->items[i]);
+    
+        list_push(args, "-dynamic-linker");
+        list_push(args, "/lib64/ld-linux-x86-64.so.2");
+        list_push(args, obj_file);
+        list_push(args, NULL);
+    
+    
+        i32 exit_code = subprocess((char*) args->items[0], (char* const*) args->items, false);
+        if(exit_code != 0)
         {
-            if(!cg->silent)
-                LOG_OK_F(COLOR_BOLD_BLUE "  Linking    " COLOR_RESET "%s\n", target);
-
-            List_T* args = init_list();
-            list_push(args, DEFAULT_LINKER);
-            list_push(args, "-o");
-            list_push(args, (void*) target);
-            list_push(args, "-m");
-            list_push(args, "elf_x86_64");
-            list_push(args, "-L/usr/lib64");
-            list_push(args, "-L/lib64");
-            list_push(args, "-L/usr/lib");
-            list_push(args, "-L/lib");
-
-            for(size_t i = 0; i < global.linker_flags->size; i++)
-                list_push(args, global.linker_flags->items[i]);
-
-            list_push(args, "-dynamic-linker");
-            list_push(args, "/lib64/ld-linux-x86-64.so.2");
-            list_push(args, obj_file);
-            list_push(args, NULL);
-
-
-            i32 exit_code = subprocess((char*) args->items[0], (char* const*) args->items, false);
-            if(exit_code != 0)
-            {
-                LOG_ERROR_F("error linking code. (exit code %d)\n", exit_code);
-                exit(1);
-            }
-
-            free_list(args);
+            LOG_ERROR_F("error linking code. (exit code %d)\n", exit_code);
+            exit(1);
         }
+    
+        free_list(args);
     }
 }
 
@@ -560,11 +561,11 @@ static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var, ASTNode_T* v
             return;
         case ND_ID:
             if(var->is_constant && val->referenced_obj)
-            {
                 asm_println(cg, "  .quad %s", asm_gen_identifier(val->id));
-                break;
-            }
-            throw_error(ERR_TYPE_ERROR, val->tok, "identifier does not reference compile-time constant");
+            else if(val->referenced_obj->kind == OBJ_ENUM_MEMBER)
+                asm_gen_relocation(cg, val->referenced_obj, NULL);
+            else
+                throw_error(ERR_TYPE_ERROR, val->tok, "identifier does not reference compile-time constant");
             break;
         default:
             throw_error(ERR_CODEGEN, val->tok, "cannot generate relocation for `%s` (%d)", val->tok->value, val->kind);

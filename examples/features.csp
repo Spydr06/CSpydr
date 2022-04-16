@@ -3,6 +3,6 @@ import "std.csp";
 fn main(): i32 
 {
     #using std;
-    std::io::puts(std::regex::errorstr(std::RegexError::FAILED_ALLOC));
+
     <- 0;
 }
