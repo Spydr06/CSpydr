@@ -1,0 +1,7 @@
+# failure
+error!
+
+macro error2(a) {}
+
+error2!
+error2!(1, 2, 3)

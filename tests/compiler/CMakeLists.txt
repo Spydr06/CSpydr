@@ -1,5 +1,7 @@
 # CMake file for CSpydr Compiler tests
 
+add_compile_definitions(COMPILER_TEST_DIR="${PROJECT_SOURCE_DIR}/tests/compiler/files")
+add_compile_definitions(COMPILER_EXECUTABLE="${PROJECT_SOURCE_DIR}/bin/cspc")
 include_directories(${PROJECT_SOURCE_DIR}/src/compiler)
 
 # include the compiler as a library
