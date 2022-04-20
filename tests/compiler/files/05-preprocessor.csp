@@ -6,9 +6,9 @@ macro return { <- }
 macro zero { 0 }
 macro return_zero { return! zero! }
 macro is { : }
-macro returns { is! }
+macro returns(t) { is! t }
 
-function! main(argc is! integer!, argv is! str_array!) returns! integer!{}
+function! main(argc is! integer!, argv is! str_array!) returns!{integer!}
 {
     return_zero!;
 }

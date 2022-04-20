@@ -80,3 +80,4 @@ install_manifest.txt
 CMakeFiles/
 bin/
 compile_commands.json
+*#
