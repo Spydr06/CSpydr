@@ -58,6 +58,15 @@ namespace std {
                 num % den
             };
 
+        # mathematically correct modulo; the % operator only works properly with positive integers.
+        fn mod(num: i64, den: i64): i64
+        {
+            let result = num % den;
+            while result < 0
+                result += den;
+            <- result;
+        }
+
         fn sqrt(n: f64): f64 
         {
             let r: f64 = 0.0;

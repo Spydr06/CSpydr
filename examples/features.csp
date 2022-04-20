@@ -2,7 +2,9 @@ import "std.csp";
 
 fn main(): i32 
 {
-    #using std;
+    using std;
+
+	io::printf("%i\n", (-100) `math::mod` 100);
 
     <- 0;
 }
