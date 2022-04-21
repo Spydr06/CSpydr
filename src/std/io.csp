@@ -137,6 +137,8 @@ namespace std {
         fn eputs(str: const &char) fputs(str, stderr!);
         fn eputc(c: char)          fputc(c, stderr!);
 
+        fn getc(): char ret fgetc(stdin!);
+
         fn fputs(str: const &char, fd: i32)
         {
             write(fd, str);
@@ -146,6 +148,13 @@ namespace std {
         fn fputc(c: char, fd: i32)
         {
             syscall::write(fd, &c, 1);
+        }
+
+        fn fgetc(fd: i32): char
+        {
+            let c = '\0';
+            syscall::read(fd, &c, 1);
+            <- c;
         }
 
         fn close(fd: i32)

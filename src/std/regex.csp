@@ -66,5 +66,7 @@ namespace std {
 
             mem::free(re);
         }
+
+        [ignore_unused("*")] # temporary
     }
 }

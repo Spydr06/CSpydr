@@ -9,6 +9,7 @@ namespace std {
         desc: i32,
         mode: u8,
         path: &char,
+        offset: u64
     };
 
     namespace file {
@@ -21,6 +22,7 @@ namespace std {
         {
             let file: &File = mem::alloc(sizeof File);
             file.mode = mode;
+            file.offset = 0;
             
             let sys_flags = 0;
 
@@ -53,6 +55,17 @@ namespace std {
         fn read(file: &File, buffer: &void, count: usize)
         {
             syscall::read(file.desc, buffer, count);
+        }
+
+        fn readc(file: &File): char 
+        {
+            if file == nil 
+                ret -1;
+
+            let c = '\0';
+            syscall::pread64(file.desc, &c, 1, file.offset);
+            file.offset++;
+            <- c;
         }
 
         fn close(file: &File)

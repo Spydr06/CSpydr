@@ -1,4 +1,4 @@
-import "libc/libc.csp";
+import "std.csp";
 
 type Op: enum {
     END,
@@ -13,8 +13,8 @@ type Op: enum {
 };
 
 type Status: enum {
-    SUCCESS,
-    FAILURE
+    OK,
+    ERR
 };
 
 type Instruction: struct {
@@ -30,13 +30,13 @@ let program: Instruction[PROG_SIZE];
 let stack: u16[STACK_SIZE];
 let sp: u32;
 
-fn compile(fp: &libc::FILE): Status
+fn compile(f: &std::File): Status
 {
     let pc: u16 = 0;
     let jmp_pc: u16;
     let c: i32;
 
-    while (c = libc::getc(fp)) != EOF! && pc < PROG_SIZE
+    while (c = std::file::readc(f)) != '\0' && pc < PROG_SIZE
     {
         match c 
         {
@@ -48,11 +48,11 @@ fn compile(fp: &libc::FILE): Status
             ',' => program[pc].operator = Op::IN;
             '[' => {
                 program[pc].operator = Op::JMP_FWD;
-                if sp == STACK_SIZE ret Status::FAILURE;
+                if sp == STACK_SIZE ret Status::ERR;
                 stack[sp++] = pc;
             }
             ']' => {
-                if sp == 0 ret Status::FAILURE;
+                if sp == 0 ret Status::ERR;
                 jmp_pc = stack[sp -= 1];
                 program[pc].operator = Op::JMP_BCK;
                 program[pc].operand = jmp_pc;
@@ -63,19 +63,19 @@ fn compile(fp: &libc::FILE): Status
         pc++;
     }
 
-    if sp != 0 || pc == PROG_SIZE ret Status::FAILURE;
+    if sp != 0 || pc == PROG_SIZE ret Status::ERR;
 
     program[pc].operator = Op::END;
 
-    <- Status::SUCCESS;
+    <- Status::OK;
 }
 
 fn execute(): Status
 {
-    using libc;
+    using std;
 
     let data: u16[DATA_SIZE];
-    memset(data, 0, DATA_SIZE * sizeof u16);
+    mem::set(data, 0, DATA_SIZE * sizeof u16);
 
     let pc: u16 = 0;
     let ptr = 0;
@@ -88,36 +88,39 @@ fn execute(): Status
             Op::DEC_DP  => ptr--;
             Op::INC_VAL => data[ptr]++;
             Op::DEC_VAL => data[ptr]--;
-            Op::OUT     => putchar(data[ptr]);
-            Op::IN      => data[ptr] = getchar(): u16;
+            Op::OUT     => io::putc(data[ptr]);
+            Op::IN      => data[ptr] = io::getc(): u16;
             Op::JMP_FWD => if !data[ptr] pc = program[pc].operand;
             Op::JMP_BCK => if data[ptr] pc = program[pc].operand;
-            _ => ret Status::FAILURE;
+            _ => ret Status::ERR;
         }
         pc++;
     }
 
-    <- Status::SUCCESS;
+    <- Status::OK;
 }
 
 fn main(argc: i32, argv: &&char): i32
 {
-    using libc;
+    using std;
 
-    let fp: &libc::FILE = nil;
-
-    if argc != 2 || (fp = fopen(argv[1], "r")) == nil
-    {
-        fprintf(stderr, "Usage: %s filename\n", argv[0]);
-        <- Status::FAILURE;
+    if argc != 2 {
+        io::eprintf("Usage: %s filename\n", argv[0]);
+        <- Status::ERR;
     }
 
-    let status = compile(fp);
-    fclose(fp);
+    let status = Status::OK;
+    with f = file::open(argv[1], file::READ) {
+        status = compile(f);
 
-    match status {
-        Status::SUCCESS => status = execute();
-        Status::FAILURE => fprintf(stderr, "Error Compiling!\n");
+        match status {
+            Status::OK => status = execute();
+            Status::ERR => io::eputs("Error Compiling!\n");
+        }
+    }
+    else {
+        io::eprintf("Could not read file `%s'\n", argv[1]);
+        status = Status::ERR;
     }
 
     <- status;
