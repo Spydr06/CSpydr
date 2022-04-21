@@ -11,6 +11,7 @@
 #include "config.h"
 #include "globals.h"
 #include "list.h"
+#include "../relocation.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -494,81 +495,24 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
     }
 }
 
-static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var, ASTNode_T* val)
+static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var)
 {
-    if(var && !val)
-        val = var->value;
-
-    switch(val->kind)
+    ASTNode_T* value = var->value;
+    
+    
+    if(value->kind == ND_STR) 
+    {   
+        asm_println(cg, "  .ascii \"%s\\0\"", value->str_val);
+    }
+    else
     {
-        case ND_NIL:
-            asm_println(cg, "  .zero %d", (var ? var->data_type : val->data_type)->size);
-            return;
-        case ND_STR:
-            asm_println(cg,"  .ascii \"%s\\0\"", val->str_val);
-            return;
-        case ND_CHAR:
-            asm_println(cg, "  .byte %d", val->str_val[0]);
-            return;
-        case ND_BOOL:
-            asm_println(cg, "  .byte %d", val->bool_val);
-            return;
-        case ND_INT:
-            {
-                u8* bytes = (u8*)&val->int_val;
-                for(i32 i = 0; i < I32_S; i++)
-                    asm_println(cg, "  .byte %d", bytes[i]);
-            } return;
-        case ND_LONG:
-            {
-                u8* bytes = (u8*)&val->long_val;
-                for(i32 i = 0; i < I64_S; i++)
-                    asm_println(cg, "  .byte %d", bytes[i]);
-            } return;
-        case ND_ULONG:
-            {
-                u8* bytes = (u8*)&val->ulong_val;
-                for(i32 i = 0; i < U64_S; i++)
-                    asm_println(cg, "  .byte %d", bytes[i]);
-            } return;
-        case ND_FLOAT:
-            {
-                union { f32 f32; u8 bytes[sizeof(f32)]; } u = { .f32 = val->float_val };
-                for(i32 i = 0; i < F32_S; i++)
-                    asm_println(cg, "  .byte %d", u.bytes[i]);
-            } return;
-        case ND_DOUBLE:
-            {
-                union { f64 f64; u8 bytes[sizeof(f64)]; } u = { .f64 = val->double_val };
-                for(i32 i = 0; i < F64_S; i++)
-                    asm_println(cg, "  .byte %d", u.bytes[i]);
-            } return;
-        case ND_ARRAY:
-            {
-                for(size_t i = 0; i < val->args->size; i++)
-                    asm_gen_relocation(cg, NULL, val->args->items[i]);
-            } return;
-        case ND_STRUCT:
-            {
-                LOG_ERROR("not implemented\n");
-            } return;
-        case ND_CLOSURE:
-            asm_gen_relocation(cg, var, val->expr);
-            return;
-        case ND_NEG:
-            val->right->int_val = -val->right->int_val;
-            asm_gen_relocation(cg, var, val->right);
-            return;
-        case ND_ID:
-            if(var->is_constant && val->referenced_obj)
-                asm_println(cg, "  .quad %s", asm_gen_identifier(val->id));
-            else if(val->referenced_obj->kind == OBJ_ENUM_MEMBER)
-                asm_gen_relocation(cg, val->referenced_obj, NULL);
-            else
-                throw_error(ERR_TYPE_ERROR, val->tok, "identifier does not reference compile-time constant");
-            break;
-        default:
-            throw_error(ERR_CODEGEN, val->tok, "cannot generate relocation for `%s` (%d)", val->tok->value, val->kind);
+        size_t target_size = var->data_type->size;
+        u8* buffer = calloc(target_size, sizeof(u8));
+
+        gen_relocation(value, target_size, buffer);
+
+        for(size_t i = 0; i < target_size; i++) 
+            asm_println(cg, "  .byte %d", (int) buffer[i]);
     }
 }
 
@@ -602,7 +546,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
                         asm_println(cg, "  .align 4");
                         asm_println(cg, "%s:", id);
 
-                        asm_gen_relocation(cg, member, NULL); 
+                        asm_gen_relocation(cg, member); 
                     }
             } break;
 
@@ -623,7 +567,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
                         asm_println(cg, "  .align %d", align);
                         asm_println(cg, "%s:", id);
 
-                        asm_gen_relocation(cg, obj, NULL);
+                        asm_gen_relocation(cg, obj);
 
                         continue;
                     }

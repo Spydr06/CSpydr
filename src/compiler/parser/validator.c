@@ -854,6 +854,9 @@ static bool vla_to_array_type(Validator_T* v, ASTType_T* ty, ASTNode_T* value)
     {
         ty->num_indices = arr_ty->num_indices;
         ty->is_vla = false;
+
+        ty->size = get_type_size(v, ty);
+
         return true;
     }
     return false;
@@ -861,6 +864,9 @@ static bool vla_to_array_type(Validator_T* v, ASTType_T* ty, ASTNode_T* value)
 
 static void global_start(ASTObj_T* global, va_list args)
 {
+    if(global->value) {
+        global->value->is_assigning = true;
+    }
 }
 
 static void global_end(ASTObj_T* global, va_list args)
@@ -1558,6 +1564,7 @@ static void array_lit(ASTNode_T* a_lit, va_list args)
     // and then assigning the array literal to it
     // [0, 1, 2] gets converted to:
     // let <anonymous>: i32[3] = [0, 1, 2];
+
     if(v->scope_depth > 1 && global.ct == CT_ASM && !a_lit->is_assigning)
     {
         static u64 count = 0;

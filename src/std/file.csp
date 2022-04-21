@@ -59,7 +59,7 @@ namespace std {
 
         fn readc(file: &File): char 
         {
-            if file == nil 
+            if file == nil
                 ret -1;
 
             let c = '\0';
