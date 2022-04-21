@@ -18,23 +18,11 @@ typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
 
-#ifdef __GNUC__
-typedef signed __int128 i128;
-#else
-typedef signed long long i128; // not quite 128 bits, but should do the job in most cases
-#endif
-
 // unsigned integers
 typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
 typedef uint64_t u64; 
-
-#ifdef __GNUC__
-typedef unsigned __int128 u128;
-#else
-typedef unsigned long long u128; // not quite 128 bits, but should do the job in most cases
-#endif
 
 // floats
 typedef float f32;

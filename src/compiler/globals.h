@@ -15,7 +15,7 @@
 #include "config.h"
 
 // all global variables, that the compiler needs
-struct {
+__CSP_GLOBAL struct {
     i32 ct;
     i32 fs;
 
@@ -47,7 +47,7 @@ struct {
 
     List_T* compiler_flags;
     List_T* linker_flags;
-} __CSP_GLOBAL global;
+} global;
 
 __CSP_GLOBAL void globals_exit_hook(void);
 __CSP_GLOBAL void init_globals(void);

@@ -1628,7 +1628,7 @@ static ASTNode_T* parse_int_lit(Parser_T* p)
 {
     ASTNode_T* lit = init_ast_node(ND_INT, p->tok);
     parser_consume(p, TOKEN_INT, "expect integer literal (0, 1, 2, ...)");
-    i128 num = atoll(lit->tok->value);
+    i64 num = atoll(lit->tok->value);
     if(num <= INT_MAX)
     {
         lit->kind = ND_INT;
