@@ -55,7 +55,7 @@ namespace std {
         type VecData: struct {
             alloc: u64,
             size: u64,
-            buff: u8[]
+            buff: &u8
         };
 
         fn init(): &void 

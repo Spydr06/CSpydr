@@ -73,7 +73,7 @@ const int type_byte_size_map[NUM_TYPES] = { // a array to find the size in bytes
     [TY_VOID] = VOID_S,
 
     [TY_PTR] = PTR_S,
-    [TY_ARR] = 0,    // TODO: evaluate further
+    [TY_C_ARRAY] = 0,
     [TY_ENUM]   = ENUM_S,
     [TY_STRUCT] = 0
 };

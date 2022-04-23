@@ -45,7 +45,7 @@ namespace std {
         mtimensec: u64,
         ctime: time_t,
         ctimensec: u64,
-        __glibc_reserved: u64[3]
+        __glibc_reserved: struct {_0: u64, _1: u64, _2: u64}
     };
 
     type PollFd: struct {
@@ -132,19 +132,6 @@ namespace std {
         
         const EOF: char = '\0';
 
-        namespace color {
-            const RESET: char[] = [27: char, '[', '0', 'm', '\0'];
-            const BOLD:  char[] = [27: char, '[', '1', 'm', '\0'];
-            const BLACK:   char[] = [27: char, '[', '3', '0', 'm', '\0'];
-            const RED:     char[] = [27: char, '[', '3', '1', 'm', '\0'];
-            const GREEN:   char[] = [27: char, '[', '3', '2', 'm', '\0'];
-            const YELLOW:  char[] = [27: char, '[', '3', '3', 'm', '\0'];
-            const BLUE:    char[] = [27: char, '[', '3', '4', 'm', '\0'];
-            const MAGENTA: char[] = [27: char, '[', '3', '5', 'm', '\0'];
-            const CYAN:    char[] = [27: char, '[', '3', '6', 'm', '\0'];
-            const WHITE:   char[] = [27: char, '[', '3', '7', 'm', '\0'];
-        }
-
         fn puts(str: const &char)  fputs(str, stdout!);
         fn putc(c: char)           fputc(c, stdout!);
         fn eputs(str: const &char) fputs(str, stderr!);
@@ -220,11 +207,12 @@ namespace std {
 
         fn write_int(fd: i32, int: i64)
         {
-            let buf: char[32];
-            mem::zero(buf, sizeof char * len buf);
+            let buf: &char = mem::alloc(32);
+            mem::zero(buf, sizeof char * 32);
 
             c_str::from_int(int, buf, 10);
             write(fd, buf);
+            mem::free(buf);
         }
 
         fn write_uint(fd: i32, uint: u64)

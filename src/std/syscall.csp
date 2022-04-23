@@ -317,7 +317,7 @@ namespace std {
         fn access(pathname: const &char, mode: i32): i32
             syscall!(Syscall::ACCESS, pathname, mode);
         
-        fn pipe(pipefd: i32[2]): i32
+        fn pipe(pipefd: &i32): i32
             syscall!(Syscall::PIPE, pipefd);
 
         fn time(time: &time_t): std::time_t
@@ -395,7 +395,7 @@ namespace std {
         fn getpeername(sockfd: i32, addr: &SockAddr, addrlen: &socklen_t): i32
             syscall!(Syscall::GETPEERNAME, sockfd, addr, addrlen);
         
-        fn socketpair(domain: i32, _type: i32, protocol: i32, sv: i32[2]): i32
+        fn socketpair(domain: i32, _type: i32, protocol: i32, sv: &i32): i32
             syscall!(Syscall::SOCKETPAIR, domain, _type, protocol, sv);
 
         fn setsockopt(sockfd: i32, level: i32, optname: i32, optval: const &void, optlen: socklen_t): i32
@@ -413,7 +413,7 @@ namespace std {
         fn vfork(): pid_t
             syscall!(Syscall::VFORK);
         
-        fn execve(pathname: const &char, argv: &const char[], envp: &const char[]): i32
+        fn execve(pathname: const &char, argv: &const &char, envp: &const &char): i32
             syscall!(Syscall::EXECVE, pathname, argv, envp);
 
         fn exit(status: i32)

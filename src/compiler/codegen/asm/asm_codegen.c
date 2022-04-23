@@ -469,7 +469,7 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
 			    // 16-byte boundaries. See p.14 of
 			    // https://github.com/hjl-tools/x86-psABI/wiki/x86-64-psABI-draft.pdf.
 			    
-                i32 align = ty->kind == TY_ARR && ty->size >= 16 ? MAX(16, ty->align) : ty->align;
+                i32 align = ty->kind == TY_C_ARRAY && ty->size >= 16 ? MAX(16, ty->align) : ty->align;
                 bottom += ty->size;
                 bottom = align_to(bottom, align);
                 var->offset = -bottom;
@@ -480,7 +480,7 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
                 for(size_t j = 0; j < obj->objs->size; j++)
                 {
                     ASTObj_T* var = obj->objs->items[j];
-                    i32 align = var->data_type->kind == TY_ARR && var->data_type->size >= 16 ? MAX(16, var->data_type->align) : var->data_type->align;
+                    i32 align = var->data_type->kind == TY_C_ARRAY && var->data_type->size >= 16 ? MAX(16, var->data_type->align) : var->data_type->align;
                     bottom += var->data_type->size;
                     bottom = align_to(bottom, align);
                     var->offset = -bottom;
@@ -557,7 +557,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
                     char* id = asm_gen_identifier(obj->id);
                     asm_println(cg, "  .globl %s", id);
 
-                    i32 align = obj->data_type->kind == TY_ARR && obj->data_type->size >= 16 ? MAX(16, obj->data_type->align) : obj->data_type->align;
+                    i32 align = obj->data_type->kind == TY_C_ARRAY && obj->data_type->size >= 16 ? MAX(16, obj->data_type->align) : obj->data_type->align;
 
                     if(obj->value)
                     {
@@ -919,7 +919,7 @@ static bool asm_has_flonum(ASTType_T* ty, i32 lo, i32 hi, i32 offset)
         }
         return true;
     }
-    else if(ty->kind == TY_ARR)
+    else if(ty->kind == TY_C_ARRAY)
     {
         for(size_t i = 0; i < ty->size / ty->base->size; i++)
             if(!asm_has_flonum(ty->base, lo, hi, offset + ty->base->size * i))
@@ -1150,7 +1150,7 @@ static void asm_store(ASMCodegenData_T* cg, ASTType_T *ty) {
 static void asm_load(ASMCodegenData_T* cg, ASTType_T *ty) {
     ty = unpack(ty);
     switch (ty->kind) {
-        case TY_ARR:
+        case TY_C_ARRAY:
         case TY_STRUCT:
         case TY_FN:
             return;
@@ -1618,10 +1618,6 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_STRUCT:
             throw_error(ERR_CODEGEN, node->tok, "cannot have struct literal at this place");
             return;
-        
-        case ND_ARRAY:
-            throw_error(ERR_CODEGEN, node->tok, "cannot have array literal at this place");
-            return;
 
         case ND_REF:
             asm_gen_addr(cg, node->right);
@@ -1635,7 +1631,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_ASSIGN:
             switch(node->right->kind)
             {
-            case ND_ARRAY:
+            case TY_C_ARRAY:
                 asm_gen_array_lit(cg, node);
                 return;
             case ND_STRUCT:

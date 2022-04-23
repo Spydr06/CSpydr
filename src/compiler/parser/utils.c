@@ -95,7 +95,7 @@ ASTNode_T* build_str_lit(Token_T* tok, char* str, bool allocate_global, List_T* 
         ASTObj_T* globl = init_ast_obj(OBJ_GLOBAL, str_lit->tok);
         globl->id = ast_id;
         globl->value = str_lit;
-        globl->data_type = init_ast_type(TY_ARR, str_lit->tok);
+        globl->data_type = init_ast_type(TY_C_ARRAY, str_lit->tok);
         globl->data_type->num_indices = init_ast_node(ND_LONG, str_lit->tok);
         globl->data_type->num_indices->long_val = strlen(str_lit->str_val) + 1;
         globl->data_type->base = (ASTType_T*) primitives[TY_CHAR];

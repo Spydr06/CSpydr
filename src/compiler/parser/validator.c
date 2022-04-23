@@ -174,7 +174,6 @@ static const ASTIteratorList_T main_iterator_list =
         [ND_CAST]    = cast,
         [ND_ASSIGN]  = assignment_end,
         [ND_STRUCT]  = struct_lit,
-        [ND_ARRAY]   = array_lit,
         [ND_TERNARY] = ternary,
         [ND_ELSE_EXPR] = else_expr,
         [ND_CLOSURE] = closure,
@@ -584,14 +583,14 @@ static bool is_arr(Validator_T* v, ASTType_T* type)
     if(!type)
         return false;
     
-    return type->kind == TY_ARR;
+    return type->kind == TY_C_ARRAY;
 }
 
 static i32 align_type(ASTType_T* ty)
 {
     switch(ty->kind)
     {
-        case TY_ARR:
+        case TY_C_ARRAY:
         case TY_PTR:
             return MAX(pow(2, floor(log(ty->base->size)/log(2))), 8);
         default:
@@ -785,9 +784,7 @@ static void fn_end(ASTObj_T* fn, va_list args)
     }
 
     ASTType_T* return_type = expand_typedef(v, fn->return_type);
-    if(return_type->kind == TY_ARR) 
-        throw_error(ERR_TYPE_ERROR_UNCR, fn->return_type->tok ? fn->return_type->tok : fn->tok, "cannot return an array type from a function");
-    else if(global.ct == CT_ASM && return_type->kind == TY_STRUCT && return_type->size > 16)
+    if(global.ct == CT_ASM && return_type->kind == TY_STRUCT && return_type->size > 16)
     {
         fn->return_ptr = init_ast_obj(OBJ_LOCAL, fn->return_type->tok);
         fn->return_ptr->data_type = init_ast_type(TY_PTR, fn->return_type->tok);
@@ -847,21 +844,6 @@ static void typedef_end(ASTObj_T* tydef, va_list args)
     gen_id_path(v->current_scope, tydef->id);
 }
 
-static bool vla_to_array_type(Validator_T* v, ASTType_T* ty, ASTNode_T* value)
-{
-    ASTType_T* arr_ty = expand_typedef(v, value->data_type);
-    if(arr_ty->kind == TY_ARR && !arr_ty->is_vla && arr_ty->num_indices)
-    {
-        ty->num_indices = arr_ty->num_indices;
-        ty->is_vla = false;
-
-        ty->size = get_type_size(v, ty);
-
-        return true;
-    }
-    return false;
-}
-
 static void global_start(ASTObj_T* global, va_list args)
 {
     if(global->value) {
@@ -886,9 +868,6 @@ static void global_end(ASTObj_T* global, va_list args)
     gen_id_path(v->current_scope, global->id);
 
     ASTType_T* expanded = expand_typedef(v, global->data_type);
-
-    if(expanded->is_vla && !vla_to_array_type(v, global->data_type, global->value))
-        throw_error(ERR_TYPE_ERROR, global->data_type->tok, "vla type is not allowed for variables");
     
     if(expanded->is_constant)
         global->is_constant = true;
@@ -903,14 +882,13 @@ static void local_start(ASTObj_T* local, va_list args)
 
 static void local_end(ASTObj_T* local, va_list args)
 {
-    GET_VALIDATOR(args);
 }
 
 static void fn_arg_start(ASTObj_T* arg, va_list args)
 {
     GET_VALIDATOR(args);
 
-    if(arg->data_type->kind == TY_ARR)
+    if(arg->data_type->kind == TY_C_ARRAY) // C arrays decay into pointers
         arg->data_type->kind = TY_PTR;
 
     scope_add_obj(v, arg);
@@ -1178,7 +1156,7 @@ static void dereference(ASTNode_T* deref, va_list args)
     GET_VALIDATOR(args);
 
     ASTType_T* right_dt = expand_typedef(v, deref->right->data_type);
-    if(right_dt->kind != TY_PTR && right_dt->kind != TY_ARR)
+    if(right_dt->kind != TY_PTR && right_dt->kind != TY_C_ARRAY)
     {
         throw_error(ERR_TYPE_ERROR, deref->tok, "can only dereference variables with pointer type");
         return;
@@ -1354,7 +1332,7 @@ static void index_(ASTNode_T* index, va_list args)
     if(!left_type)
         return;
 
-    if(left_type->kind != TY_ARR && left_type->kind != TY_PTR)
+    if(left_type->kind != TY_C_ARRAY && left_type->kind != TY_PTR)
     {
         throw_error(ERR_TYPE_ERROR, index->tok, "left: cannot get an index value; wrong type");
         return;
@@ -1369,24 +1347,12 @@ static void index_(ASTNode_T* index, va_list args)
 
     if(index->from_back)
     {
-        if(left_type->kind != TY_ARR || vla_type(left_type))
-        {
-            char buf[BUFSIZ] = {};
-            throw_error(ERR_TYPE_ERROR, index->tok, "cannot get reverse index of type `%s`, need fixed-size array", ast_type_to_str(buf, index->left->data_type, LEN(buf)));
-        }
-
-        ASTNode_T* idx = init_ast_node(ND_SUB, index->tok);
-        idx->left = left_type->num_indices;
-        idx->right = index->expr;
-        idx->data_type = idx->right->data_type;
-        idx->left->data_type = (ASTType_T*) primitives[TY_U64];
-        index->expr = idx;
+        throw_error(ERR_INTERNAL, index->tok, "revese indices are not supported currently");
     }
 }   
 
 static void cast(ASTNode_T* cast, va_list args)
 {
-    GET_VALIDATOR(args);
 }
 
 static void local_initializer(Validator_T* v, ASTNode_T* assign, ASTObj_T* local)
@@ -1401,8 +1367,6 @@ static void local_initializer(Validator_T* v, ASTNode_T* assign, ASTObj_T* local
         local->data_type = assign->right->data_type;
     }
     ASTType_T* expanded = expand_typedef(v, local->data_type);
-    if(expanded->is_vla && !vla_to_array_type(v, local->data_type, assign->right))
-            throw_error(ERR_TYPE_ERROR, local->data_type->tok, "vla type is not allowed for local variables");
     if(expanded->kind == TY_VOID)
         throw_error(ERR_TYPE_ERROR, local->tok, "`void` type is not allowed for variables");
     if(local->data_type->is_constant)
@@ -1414,9 +1378,6 @@ static void local_initializer(Validator_T* v, ASTNode_T* assign, ASTObj_T* local
 
 static void assignment_start(ASTNode_T* assign, va_list args)
 {
-    GET_VALIDATOR(args);
-    if(assign->right->kind == ND_ARRAY)
-        assign->right->is_assigning = true;
 }
 
 static ASTNode_T* expand_closure(ASTNode_T* cl)
@@ -1533,7 +1494,7 @@ static void struct_lit(ASTNode_T* s_lit, va_list args)
             .data_type = s_lit->data_type,
         };
 
-        assignment.right = init_ast_node(ND_ARRAY, s_lit->tok);
+        assignment.right = init_ast_node(ND_STR, s_lit->tok);
         *assignment.right = *s_lit;
         
         assignment.left = init_ast_node(ND_ID, s_lit->tok);
@@ -1547,53 +1508,7 @@ static void struct_lit(ASTNode_T* s_lit, va_list args)
 
 static void array_lit(ASTNode_T* a_lit, va_list args)
 {
-    GET_VALIDATOR(args);
-
-    a_lit->data_type = init_ast_type(TY_ARR, a_lit->tok);
-    a_lit->data_type->num_indices = init_ast_node(ND_LONG, a_lit->tok);
-    a_lit->data_type->num_indices->long_val = a_lit->args->size;
-    a_lit->data_type->base = a_lit->args->size ?
-        ((ASTNode_T*) a_lit->args->items[0])->data_type
-        : ({
-            throw_error(ERR_TYPE_ERROR, a_lit->tok, "cannot get base data type of empty array literal");
-            (ASTType_T*) primitives[TY_VOID];
-        });
-
-    // When compiling to assembly, we have to allocate the memory on the stack.
-    // this is done by creating an "anonymous" local variable of the array type
-    // and then assigning the array literal to it
-    // [0, 1, 2] gets converted to:
-    // let <anonymous>: i32[3] = [0, 1, 2];
-
-    if(v->scope_depth > 1 && global.ct == CT_ASM && !a_lit->is_assigning)
-    {
-        static u64 count = 0;
-        ASTObj_T* local = init_ast_obj(OBJ_LOCAL, a_lit->tok);
-        local->data_type = a_lit->data_type;
-        local->referenced = true;
-        local->id = init_ast_identifier(a_lit->tok, "");
-        sprintf(local->id->callee, "__csp_arrlit_%ld__", count++);
-        list_push(v->current_function->objs, local);
-        list_push(v->current_scope->objs, local);
-
-        ASTNode_T assignment = {
-            .kind = ND_ASSIGN,
-            .tok = a_lit->tok,
-            .id = local->id,
-            .data_type = a_lit->data_type,
-        };
-
-        assignment.right = init_ast_node(ND_ARRAY, a_lit->tok);
-        *assignment.right = *a_lit;
-        assignment.right->is_assigning = true;
-        
-        assignment.left = init_ast_node(ND_ID, a_lit->tok);
-        assignment.left->id = local->id;
-        assignment.left->data_type = local->data_type;
-        assignment.left->referenced_obj = local;
-
-        *a_lit = assignment;
-    }
+    throw_error(ERR_INTERNAL, a_lit->tok, "array literals are currently not supported");
 }
 
 static void ternary(ASTNode_T* ternary, va_list args)
@@ -1611,8 +1526,6 @@ static void ternary(ASTNode_T* ternary, va_list args)
 
 static void else_expr(ASTNode_T* else_expr, va_list args)
 {
-    GET_VALIDATOR(args);
-
     else_expr->data_type = else_expr->left->data_type;
 
     if(!types_equal(else_expr->left->data_type, else_expr->right->data_type))
@@ -1621,11 +1534,7 @@ static void else_expr(ASTNode_T* else_expr, va_list args)
 
 static void len(ASTNode_T* len, va_list args)
 {
-    GET_VALIDATOR(args);
-
-    ASTType_T* ty = expand_typedef(v, len->expr->data_type);
-    if(ty->kind != TY_ARR || ty->is_vla)
-        throw_error(ERR_TYPE_ERROR, len->tok, "cannot get length of given expression");
+    throw_error(ERR_INTERNAL, len->tok, "`len` expressions are currently not implemented");
 }
 
 static void pipe_start(ASTNode_T* pipe, va_list args)
@@ -1687,9 +1596,7 @@ static void lambda_end(ASTNode_T* lambda, va_list args)
         lambda->stack_ptr = lambda_stack_ptr;
 
         ASTType_T* return_type = expand_typedef(v, lambda->data_type->base);
-        if(return_type->kind == TY_ARR) 
-            throw_error(ERR_TYPE_ERROR_UNCR, return_type->tok ? return_type->tok : lambda->tok, "cannot return an array type from a function");
-        else if(return_type->kind == TY_STRUCT && return_type->size > 16)
+        if(return_type->kind == TY_STRUCT && return_type->size > 16)
         {
             lambda->return_ptr = init_ast_obj(OBJ_LOCAL, lambda->data_type->base->tok);
             lambda->return_ptr->data_type = init_ast_type(TY_PTR, lambda->data_type->base->tok);
@@ -1839,7 +1746,7 @@ static void type_expr(ASTNode_T* cmp, va_list args)
                         cmp->bool_val = expanded->kind == TY_PTR;
                         break;
                     case TOKEN_BUILTIN_IS_ARRAY:
-                        cmp->bool_val = expanded->kind == TY_ARR;
+                        cmp->bool_val = false; // fixme: when arrays are implemented again
                         break;
                     case TOKEN_BUILTIN_IS_STRUCT:
                         cmp->bool_val = expanded->kind == TY_STRUCT && !expanded->is_union;
@@ -1935,7 +1842,6 @@ static void typeof_type(ASTType_T* typeof_type, va_list args)
 
 static void type_begin(ASTType_T* type, va_list args)
 {
-    GET_VALIDATOR(args);
 }
 
 static void type_end(ASTType_T* type, va_list args)
@@ -1943,12 +1849,6 @@ static void type_end(ASTType_T* type, va_list args)
     GET_VALIDATOR(args);
 
     ASTType_T* exp = expand_typedef(v, type);
-
-    if(exp->kind == TY_ARR && !exp->num_indices)
-    {
-        exp->is_vla = true;
-        type->is_vla = true;
-    }
 
     type->size = get_type_size(v, expand_typedef(v, type));
     type->align = align_type(exp);
@@ -2023,7 +1923,7 @@ static i32 get_type_size(Validator_T* v, ASTType_T* type)
             return get_type_size(v, expand_typedef(v, type->num_indices->data_type));
         case TY_UNDEF:
             return get_type_size(v, expand_typedef(v, type));
-        case TY_ARR:
+        case TY_C_ARRAY:
             if(type->num_indices)
             {
                 i64 len = const_i64(type->num_indices);

@@ -319,7 +319,6 @@ static void ast_node(const ASTIteratorList_T* list, ASTNode_T* node, va_list cus
             ast_node(list, node->expr, custom_args);
             break;
 
-        case ND_ARRAY:
         case ND_STRUCT:
             for(size_t i = 0; i < node->args->size; i++)
                 ast_node(list, node->args->items[i], custom_args);
@@ -383,13 +382,13 @@ static void ast_type(const ASTIteratorList_T* list, ASTType_T* type, va_list cus
             list_fn(list->type_fns[TY_PTR], type, custom_args);
             break;
 
-        case TY_ARR:
+        /*case TY_ARR:
             ast_type(list, type->base, custom_args);
             if(type->num_indices)
                 ast_node(list, type->num_indices, custom_args);
             
             list_fn(list->type_fns[TY_ARR], type, custom_args);
-            break;
+            break;*/
 
         case TY_ENUM:
             for(size_t i = 0; i < type->members->size; i++)

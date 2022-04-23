@@ -70,7 +70,7 @@ macro va_copy(dest, src)
 }
 
 namespace std {
-    type VAList: std::va::Element[1];
+    type VAList: std::va::Element;
 
     namespace va {
         type Element: struct {

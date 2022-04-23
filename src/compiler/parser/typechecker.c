@@ -109,7 +109,6 @@ bool types_equal(ASTType_T* a, ASTType_T* b)
     
     switch(a->kind)
     {
-        case TY_ARR:
         case TY_PTR:
             return types_equal(a->base, b->base);
         
@@ -186,7 +185,7 @@ bool implicitly_castable(Token_T* tok, ASTType_T* from, ASTType_T* to)
         );
         return true;
     }
-    if((from->kind == TY_PTR || from->kind == TY_ARR) && to->kind == TY_PTR)
+    if((from->kind == TY_PTR || from->kind == TY_C_ARRAY) && to->kind == TY_PTR)
         return true;
     return false;
 }

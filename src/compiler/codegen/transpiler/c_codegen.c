@@ -275,7 +275,7 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
                 c_gen_type(cg, ty->base, struct_name);
                 print(cg, "*");
                 break;
-            case TY_ARR:
+            case TY_C_ARRAY:
                 c_gen_type(cg, ty->base, struct_name);
                 /*if(ty->num_indices)
                 {
@@ -312,7 +312,7 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* ty, char* struct_name)
                     ASTNode_T* member = ty->members->items[i];
                     c_gen_type(cg, member->data_type, "");
                     print(cg, " %s", c_gen_identifier(cg, member->id)); 
-                    if(member->data_type->kind == TY_ARR)
+                    if(member->data_type->kind == TY_C_ARRAY)
                         c_gen_array_brackets(cg, member->data_type);
                     println(cg, ";");
                 }
@@ -343,14 +343,14 @@ static void c_gen_tuple_struct(CCodegenData_T* cg, ASTType_T* tuple)
 
 static void c_gen_array_brackets(CCodegenData_T* cg, ASTType_T* ty)
 {
-    if(unpack(ty)->kind == TY_ARR)
+    if(unpack(ty)->kind == TY_C_ARRAY)
     {
         print(cg, "[");
         if(ty->num_indices)
             c_gen_expr(cg, ty->num_indices);
         print(cg, "]");
 
-        if(ty->base && ty->base->kind == TY_ARR)
+        if(ty->base && ty->base->kind == TY_C_ARRAY)
             c_gen_array_brackets(cg, ty->base);
     }
 }
@@ -370,7 +370,7 @@ static void c_gen_typedefs(CCodegenData_T* cg, ASTObj_T* obj)
             if(obj->data_type->kind != TY_FN) {
                 print(cg, " %s", callee);
             }
-            if(obj->data_type->kind == TY_ARR) {
+            if(obj->data_type->kind == TY_C_ARRAY) {
                 c_gen_array_brackets(cg, obj->data_type);
             }
             println(cg, ";");
@@ -404,7 +404,7 @@ static bool c_gen_fn_arg_list(CCodegenData_T* cg, List_T* args)
             c_gen_type(cg, arg->data_type, "");
             print(cg, " %s", callee);
         }
-        if(arg->data_type->kind == TY_ARR)
+        if(arg->data_type->kind == TY_C_ARRAY)
             c_gen_array_brackets(cg, arg->data_type);
         print(cg, "%s", i < args->size - 1 ? "," : "");
     }
@@ -429,7 +429,7 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
 
             c_gen_type(cg, obj->data_type, "");
             print(cg, " %s", obj_callee);
-            if(obj->data_type->kind == TY_ARR)
+            if(obj->data_type->kind == TY_C_ARRAY)
                 c_gen_array_brackets(cg, obj->data_type);
             if(obj->value)
             {
@@ -455,7 +455,7 @@ static void c_gen_obj_decl(CCodegenData_T* cg, ASTObj_T* obj)
             if(obj->data_type->kind != TY_STRUCT)
                 break;
             c_gen_type(cg, obj->data_type, obj_callee);
-            if(obj->data_type->kind == TY_ARR)
+            if(obj->data_type->kind == TY_C_ARRAY)
                 c_gen_array_brackets(cg, obj->data_type);
             println(cg, ";");
             break;
@@ -639,7 +639,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
         case ND_ASSIGN:
             switch(node->right->kind)
             {
-                case ND_ARRAY:
+                case TY_C_ARRAY:
                     print(cg, "({");
                     for(size_t i = 0; i < node->right->args->size; i++)
                     {
@@ -813,25 +813,6 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             c_gen_expr(cg, node->expr);
             print(cg, "]");
             break;
-        case ND_ARRAY:
-            if(node->data_type && cg->current_fn)
-            {
-                print(cg, "(");
-                c_gen_type(cg, node->data_type, "");
-                c_gen_array_brackets(cg, node->data_type);
-                print(cg, ")");
-            }
-            print(cg, "{");
-
-            for(size_t i = 0; i < node->args->size; i++)
-            {
-                c_gen_expr(cg, node->args->items[i]);
-                if(i < node->args->size -1)
-                    print(cg, ",");
-            }
-
-            print(cg, "}");
-            break;
         case ND_STRUCT:
             print(cg, "(");
             c_gen_type(cg, node->data_type, "");
@@ -849,7 +830,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
         case ND_CAST:
             print(cg, "(");
             c_gen_type(cg, node->data_type, "");
-            if(node->data_type->kind == TY_ARR)
+            if(node->data_type->kind == TY_C_ARRAY)
                 c_gen_array_brackets(cg, node->data_type);
             print(cg, ")");
             c_gen_expr(cg, node->left);
@@ -890,7 +871,7 @@ static void c_gen_local(CCodegenData_T* cg, ASTObj_T* obj)
 {
     c_gen_type(cg, obj->data_type, "");
     print(cg, " %s", c_gen_identifier(cg, obj->id));
-    if(obj->data_type->kind == TY_ARR)
+    if(obj->data_type->kind == TY_C_ARRAY)
                 c_gen_array_brackets(cg, obj->data_type);
     println(cg, ";"); 
 }

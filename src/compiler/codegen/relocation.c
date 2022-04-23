@@ -53,12 +53,12 @@ void gen_relocation(ASTNode_T* node, size_t target_size, u8* buffer)
             memcpy(buffer, &node->double_val, MIN(F64_S, target_size));
             break;
 
-        case ND_ARRAY:
+        /*case ND_ARRAY:
         {
             size_t index_size = node->data_type->base->size;
             for(size_t i = 0; i < node->args->size; i++)
                 gen_relocation(node->args->items[i], index_size, buffer);
-        } break;
+        } break;*/
 
         case ND_STRUCT:
             LOG_ERROR("Not implemented\n");

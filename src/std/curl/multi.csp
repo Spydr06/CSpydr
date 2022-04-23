@@ -95,8 +95,8 @@ extern "C" {
     fn curl_multi_add_handle(multi_handle: &CURLM, curl_handle: &CURL): CURLMcode;
     fn curl_multi_remove_handle(multi_handle: &CURLM, curl_handle: &CURL): CURLMcode;
     fn curl_multi_fdset(multi_handle: &CURLM, read_fd_set: &std::fd_set, write_fd_set: &std::fd_set, exc_fd_set: &std::fd_set, max_fd: &i32): CURLMcode;
-    fn curl_multi_wait(multi_handle: &CURLM, extra_fds: curl_waitfd[], extra_nfds: u32, timeout_ms: i32, return: &i32): CURLMcode;
-    fn curl_multi_poll(multi_handle: &CURLM, extra_fds: curl_waitfd[], extra_nfds: u32, timeout_ms: i32, return: &i32): CURLMcode;
+    fn curl_multi_wait(multi_handle: &CURLM, extra_fds: &curl_waitfd, extra_nfds: u32, timeout_ms: i32, return: &i32): CURLMcode;
+    fn curl_multi_poll(multi_handle: &CURLM, extra_fds: &curl_waitfd, extra_nfds: u32, timeout_ms: i32, return: &i32): CURLMcode;
     fn curl_multi_wakeup(multi_handle: &CURLM): CURLMcode;
     fn curl_multi_perform(multi_handle: &CURLM, running_handles: &i32): CURLMcode;
     fn curl_multi_cleanup(multi_handle: &CURLM): CURLMcode;

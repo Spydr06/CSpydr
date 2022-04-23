@@ -5,12 +5,12 @@ macro UTSLEN { 65 }
 
 namespace std { 
     type UTSName: struct {
-        sysname: char[UTSLEN!],  # OS name (i.e. "Linux")
-        nodename: char[UTSLEN!], # node name
-        release: char[UTSLEN!],  # OS release (i.e. "4.1.0")
-        version: char[UTSLEN!],  # OS version
-        machine: char[UTSLEN!],  # hardware identifier
-        domainname: char[UTSLEN!], # NIS or YP domain name
+    #    sysname: char[UTSLEN!],  # OS name (i.e. "Linux")
+    #    nodename: char[UTSLEN!], # node name
+    #    release: char[UTSLEN!],  # OS release (i.e. "4.1.0")
+    #    version: char[UTSLEN!],  # OS version
+    #    machine: char[UTSLEN!],  # hardware identifier
+    #    domainname: char[UTSLEN!], # NIS or YP domain name
     };
 
     namespace system {

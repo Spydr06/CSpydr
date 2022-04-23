@@ -149,8 +149,6 @@ const char* type_kind_to_str(ASTTypeKind_T kind)
             return "char";
         case TY_PTR:
             return "&";
-        case TY_ARR:
-            return "[]";
         case TY_STRUCT:
             return "struct";
         case TY_ENUM:
@@ -177,9 +175,6 @@ char* ast_type_to_str(char* dest, ASTType_T* ty, size_t size)
             strcat(dest, "&");
             ast_type_to_str(dest, ty->base, size);
             break;
-        case TY_ARR:
-            ast_type_to_str(dest, ty->base, size);
-            strcat(dest, "[");
             if(ty->num_indices)
                 sprintf(dest, "%s%ld", dest, const_i64(ty->num_indices));
             strcat(dest, "]");

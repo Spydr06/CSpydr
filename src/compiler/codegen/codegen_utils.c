@@ -145,7 +145,7 @@ bool vla_type(ASTType_T* ty)
     if(ty->kind == TY_UNDEF)
         return vla_type(ty->base);
     
-    return ty->kind == TY_ARR && !ty->num_indices;
+    return false; // fixme: implement again when new array types are there
 }
 
 ASTType_T* unpack(ASTType_T* ty)
