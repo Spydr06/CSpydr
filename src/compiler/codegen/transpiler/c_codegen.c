@@ -639,7 +639,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
         case ND_ASSIGN:
             switch(node->right->kind)
             {
-                case TY_C_ARRAY:
+                case ND_ARRAY:
                     print(cg, "({");
                     for(size_t i = 0; i < node->right->args->size; i++)
                     {
@@ -812,6 +812,25 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, "[");
             c_gen_expr(cg, node->expr);
             print(cg, "]");
+            break;
+        case ND_ARRAY:
+            if(node->data_type && cg->current_fn)
+            {
+                print(cg, "(");
+                c_gen_type(cg, node->data_type, "");
+                c_gen_array_brackets(cg, node->data_type);
+                print(cg, ")");
+            }
+            print(cg, "{");
+
+            for(size_t i = 0; i < node->args->size; i++)
+            {
+                c_gen_expr(cg, node->args->items[i]);
+                if(i < node->args->size -1)
+                    print(cg, ",");
+            }
+
+            print(cg, "}");
             break;
         case ND_STRUCT:
             print(cg, "(");

@@ -167,7 +167,7 @@ macro LUA_REFNIL { (-1) }
         size: u64,
         n: u64,
         l: &State,
-       #fixme: initb: char[LUAL_BUFFERSIZE!]
+        initb: char 'c[LUAL_BUFFERSIZE!]
     };
 
     fn luaL_addchar(b: &L_Buffer, c: char): char

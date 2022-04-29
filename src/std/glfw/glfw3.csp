@@ -521,8 +521,8 @@ type GLFWimage: struct
 # this describes the input state of a gamepad
 type GLFWgamepadstate: struct
 {
-    buttons: #[u8[15],]#struct{_0: u8, _1: u8, _2: u8, _3: u8, _4: u8, _5: u8, _6: u8, _7: u8, _8: u8, _9: u8, _10: u8, _11: u8, _12: u8, _13: u8, _14: u8, _15: u8},
-    axes: struct{_0: f32, _1: f32, _2: f32, _3: f32, _4: f32, _5: f32}
+    buttons: u8 'c[15],
+    axes: f32 'c[6]
 };
 
 # glfw allocator type

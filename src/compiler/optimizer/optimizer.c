@@ -161,6 +161,7 @@ void remove_dead_code(ASTProg_T* ast)
                     list_push(node_stack, stack_top->default_case);
                 break;
 
+            case ND_ARRAY:
             case ND_STRUCT:
                 for(size_t i = 0; i < stack_top->args->size; i++)
                     list_push(node_stack, stack_top->args->items[i]);

@@ -32,6 +32,7 @@ typedef enum {
     ND_STR,     // "..."
     ND_NIL,     // nil
 
+    ND_ARRAY,   // [2, 4, ...]
     ND_STRUCT,  // {3, 4, ...}
 
     // operators

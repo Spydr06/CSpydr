@@ -138,16 +138,6 @@ bool unsigned_type(ASTType_T *ty)
     return ty->kind == TY_U8 || ty->kind == TY_U16 || ty->kind == TY_U32 || ty->kind == TY_U64;
 }
 
-bool vla_type(ASTType_T* ty)
-{
-    if(!ty)
-        return false;
-    if(ty->kind == TY_UNDEF)
-        return vla_type(ty->base);
-    
-    return false; // fixme: implement again when new array types are there
-}
-
 ASTType_T* unpack(ASTType_T* ty)
 {
     return ty && ty->kind == TY_UNDEF ? unpack(ty->base) : ty;

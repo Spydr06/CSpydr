@@ -4,7 +4,5 @@ fn main(): i32
 {
     using std;
 
-	io::printf("%i\n", (-100) `math::mod` 100);
-
-    <- 0;
+    ret 0;
 }

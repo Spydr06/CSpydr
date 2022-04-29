@@ -57,13 +57,13 @@ namespace std {
         fn format(fmt: const &char, time: &Time): std::String
         {
             let buf = str!(nil);
-            let c = mem::alloc(32);
 
             for let i: usize = 0; fmt[i] != 0; i++;
             {
                 if(fmt[i] == '{' && fmt[i + 1] != 0 && fmt[i + 2] == '}')
                 {
-                   mem::zero(c, sizeof char * 32);
+                   let c: char 'c[32];
+                   mem::zero(c, sizeof char * len c);
                    match fmt[(i += 2) - 1]
                    {
                         'Y' => { # Year
@@ -94,13 +94,10 @@ namespace std {
                 }
                 else
                 {
-                    let c: u16;
-                    ((&c): &char)[0] = fmt[i];
-                    ((&c): &char)[1] = '\0';
+                    let c: u16 = fmt[i] << 8 | '\0';
                     concat!(buf, &c: &char);
                 }
             }
-            mem::free(c);
             <- buf;
         }
 

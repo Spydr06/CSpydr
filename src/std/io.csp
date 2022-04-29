@@ -45,7 +45,7 @@ namespace std {
         mtimensec: u64,
         ctime: time_t,
         ctimensec: u64,
-        __glibc_reserved: struct {_0: u64, _1: u64, _2: u64}
+        __glibc_reserved: u64 'c[3]
     };
 
     type PollFd: struct {
@@ -207,12 +207,11 @@ namespace std {
 
         fn write_int(fd: i32, int: i64)
         {
-            let buf: &char = mem::alloc(32);
-            mem::zero(buf, sizeof char * 32);
+            let buf: char 'c[32];
+            mem::zero(buf, sizeof char * len buf);
 
             c_str::from_int(int, buf, 10);
             write(fd, buf);
-            mem::free(buf);
         }
 
         fn write_uint(fd: i32, uint: u64)

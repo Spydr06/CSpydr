@@ -614,8 +614,7 @@ type curl_hstsentry: struct {
     name: &char,
     namelen: u64,
     include_subdomains: u8, # FIXME: should be bit-fielded to :1
-    expire: #[char[18]]#
-            struct {_0: u64, _1: u64, _2: u16}
+    expire: char 'c[18]
 };
 
 type curl_index: struct {

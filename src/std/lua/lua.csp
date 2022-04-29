@@ -380,7 +380,7 @@ namespace lua {
         nparams: u8,
         isvararg: i8,
         istailcall: i8,
-        #fixme: short_src: char[LUA_IDSIZE!],
+        short_src: char 'c[LUA_IDSIZE!],
         # private part
         i_ci: &CallInfo
     };

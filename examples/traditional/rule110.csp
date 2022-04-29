@@ -2,7 +2,7 @@
 import "io.csp";
 
 macro board_cap { 40 }
-let board: i32[board_cap!];
+let board: i32 'c[board_cap!];
 
 fn main(): i32
 {

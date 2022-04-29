@@ -3,7 +3,12 @@ import "std.csp";
 fn main(): i32 {
     using std::io;
 
-    let array = [1, 2, 3, 4, 5];
+    let array: i32 'c[5];
+    array[0] = 1;
+    array[1] = 2;
+    array[2] = 3;
+    array[3] = 4;
+    array[4] = 5;
     let i = 0;
 
     for_each(array, len array, |val: i32| => { 
@@ -13,7 +18,7 @@ fn main(): i32 {
     <- 0;
 }
 
-fn for_each(array: i32[], size: i32, func: fn(i32)) {
+fn for_each(array: &i32, size: i32, func: fn(i32)) {
     for let i = 0; i < size; i++;
         func(array[i]);   
 }

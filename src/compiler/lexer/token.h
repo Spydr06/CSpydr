@@ -80,6 +80,8 @@ typedef enum TOKEN_TYPE {
     TOKEN_POW_2,        // ²
     TOKEN_POW_3,        // ³
 
+    TOKEN_C_ARRAY,      // 'c or 'C
+
     TOKEN_IF,           // if
     TOKEN_ELSE,         // else
     TOKEN_LOOP,         // loop

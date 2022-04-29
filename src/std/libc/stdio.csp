@@ -34,7 +34,7 @@ type off_t: i64;
 # originally from libc/wchar.csp
 type mbstate_t: struct {
     count: i32,
-    wchb: struct{_0: u64, _1: u64}
+    wchb: i32 'c[4]
 };
 
 type fpos_t: struct {

@@ -88,6 +88,7 @@ static ASTNode_T* parse_str_lit(Parser_T* p, bool keep_inline);
 static ASTNode_T* parse_nil_lit(Parser_T* p);
 static ASTNode_T* parse_closure(Parser_T* p);
 
+static ASTNode_T* parse_array_lit(Parser_T* p);
 static ASTNode_T* parse_struct_lit(Parser_T* p, ASTNode_T* id);
 static ASTNode_T* parse_anonymous_struct_lit(Parser_T* p);
 
@@ -98,7 +99,6 @@ static ASTNode_T* parse_else_expr(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_sizeof(Parser_T* p);
 static ASTNode_T* parse_alignof(Parser_T* p);
 static ASTNode_T* parse_len(Parser_T* p);
-static ASTNode_T* parse_va_arg(Parser_T* p);
 
 static ASTNode_T* parse_unary(Parser_T* p);
 static ASTNode_T* parse_num_op(Parser_T* p, ASTNode_T* left);
@@ -143,7 +143,7 @@ static struct {
     [TOKEN_BANG]     = {parse_unary, NULL, LOWEST},
     [TOKEN_MINUS]    = {parse_unary, parse_num_op, MINUS},
     [TOKEN_LPAREN]   = {parse_closure, parse_call, CALL}, 
-    [TOKEN_LBRACKET] = {NULL /*todo: implement*/, parse_index, ARRAY},   
+    [TOKEN_LBRACKET] = {parse_array_lit, parse_index, ARRAY},   
     [TOKEN_LBRACE]   = {parse_anonymous_struct_lit, NULL, LOWEST}, 
     [TOKEN_STAR]     = {parse_unary, parse_num_op, MULT},
     [TOKEN_PERCENT]  = {NULL, parse_num_op, DIV},
@@ -808,9 +808,15 @@ static ASTType_T* parse_type(Parser_T* p)
     }
 
 parse_array_ty:
-    if(tok_is(p, TOKEN_LBRACKET))
+    if(tok_is(p, TOKEN_C_ARRAY))
     {
-        throw_error(ERR_INTERNAL, p->tok, "Arrays are currently not supported");
+        ASTType_T* arr_type = init_ast_type(TY_C_ARRAY, p->tok);
+        parser_advance(p);
+        parser_consume(p, TOKEN_LBRACKET, "expect `[` after `'c`");
+        arr_type->num_indices = parse_expr(p, LOWEST, TOKEN_RBRACKET);
+        parser_consume(p, TOKEN_RBRACKET, "expect `]` after array type");
+        arr_type->base = type;
+        type = arr_type;
 
         // repeat for arrays of arrays
         goto parse_array_ty;
@@ -1215,7 +1221,6 @@ static ASTNode_T* parse_for(Parser_T* p, bool needs_semicolon)
     ASTNode_T* prev_block = p->cur_block;
     p->cur_block = loop;
 
-    size_t num_locals = p->cur_block->locals->size;
     if(!tok_is(p, TOKEN_SEMICOLON))
     {
         ASTNode_T* init_stmt = parse_stmt(p, true);
@@ -1728,6 +1733,17 @@ static ASTNode_T* parse_str_lit(Parser_T* p, bool keep_inline)
     return node;
 }
 
+static ASTNode_T* parse_array_lit(Parser_T* p)
+{
+    ASTNode_T* arr_lit = init_ast_node(ND_ARRAY, p->tok);
+    parser_consume(p, TOKEN_LBRACKET, "expect `[` for array literal");
+    arr_lit->is_constant = true;
+    arr_lit->args = parse_expr_list(p, TOKEN_RBRACKET);
+    parser_consume(p, TOKEN_RBRACKET, "expect `]` after array literal");
+
+    return arr_lit;
+}
+
 static ASTNode_T* parse_struct_lit(Parser_T* p, ASTNode_T* id)
 {
     parser_consume(p, TOKEN_STATIC_MEMBER, "expect `::` before `{`");
@@ -1943,6 +1959,7 @@ static ASTNode_T* parse_assignment(Parser_T* p, ASTNode_T* left)
         case TOKEN_ASSIGN:
             parser_advance(p);
             assign->right = parse_expr(p, expr_parse_fns[p->tok->type].prec, TOKEN_EOF);
+            assign->right->is_assigning = assign->right->kind == ND_ARRAY || assign->right->kind == ND_STRUCT;
             break;
         default:   
             assign->right = generate_assignment_op_rval(p, left, assign_to_op[p->tok->type]);

@@ -1618,6 +1618,10 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_STRUCT:
             throw_error(ERR_CODEGEN, node->tok, "cannot have struct literal at this place");
             return;
+        
+        case ND_ARRAY:
+            throw_error(ERR_CODEGEN, node->tok, "cannot have array literal at this place");
+            return;
 
         case ND_REF:
             asm_gen_addr(cg, node->right);
@@ -1631,7 +1635,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_ASSIGN:
             switch(node->right->kind)
             {
-            case TY_C_ARRAY:
+            case ND_ARRAY:
                 asm_gen_array_lit(cg, node);
                 return;
             case ND_STRUCT:

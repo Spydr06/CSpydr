@@ -109,6 +109,7 @@ bool types_equal(ASTType_T* a, ASTType_T* b)
     
     switch(a->kind)
     {
+        case TY_C_ARRAY:
         case TY_PTR:
             return types_equal(a->base, b->base);
         

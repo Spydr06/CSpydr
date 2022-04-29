@@ -393,14 +393,29 @@ static Token_T* lexer_get_char(Lexer_T* lexer)
 
     char data[3] = {lexer->c, '\0', '\0'};
 
-    if(lexer->c == '\\')
+    switch(lexer->c)
     {
+    case 'c':
+    case 'C':
+        if(lexer_peek(lexer, 1) != '\'') 
+        {
+            Token_T* tok = init_token((char[]){'\'', lexer->c, '\0'}, lexer->line, lexer->pos, TOKEN_C_ARRAY, lexer->file);
+            lexer_advance(lexer);
+            return tok;
+        }
+        break;
+
+    case '\\':
         lexer_advance(lexer);
         data[0] = '\\';
         data[1] = lexer->c;
         data[2] = '\0';
-    }
+        break;
 
+    default:
+        break;
+    }
+    
     Token_T* token = init_token(data, lexer->line, lexer->pos, TOKEN_CHAR, lexer->file);
     lexer_advance(lexer);
 
