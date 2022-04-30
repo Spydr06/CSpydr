@@ -815,7 +815,7 @@ static void asm_gen_index(ASMCodegenData_T* cg, ASTNode_T* index, bool gen_addre
                             .right = &(ASTNode_T) {
                                 .kind = ND_LONG,
                                 .data_type = (ASTType_T*) primitives[TY_I64],
-                                .long_val = PTR_S
+                                .long_val = 2
                             }
                         }                                    
                     }                                                    
@@ -845,7 +845,6 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
             if(!node->data_type)
                 node->data_type = node->referenced_obj->data_type;
 
-            // fixme:
             if(unpack(node->data_type)->kind == TY_VLA)
             {
                 asm_println(cg, "  mov %d(%%rbp), %%rax", node->referenced_obj->offset);
@@ -920,7 +919,9 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_LAMBDA:
             asm_gen_expr(cg, node);
             return;
-
+        case ND_ARRAY:
+            asm_gen_expr(cg, node);
+            return;
         default:
             throw_error(ERR_CODEGEN, node->tok, "cannot generate address from node of kind %d", node->kind);
             break;
@@ -1139,10 +1140,18 @@ static void asm_store(ASMCodegenData_T* cg, ASTType_T *ty) {
 
     switch (ty->kind) {
         case TY_STRUCT:
-            for (i32 i = 0; i < ty->size; i++) {
-                asm_println(cg, "  mov %d(%%rax), %%r8b", i);
-                asm_println(cg, "  mov %%r8b, %d(%%rdi)", i);
-            }
+        case TY_ARRAY:
+        case TY_C_ARRAY:
+            if(ty->size % 8 == 0)
+                for(size_t i = 0; i < ty->size; i += 8) {
+                    asm_println(cg, "  mov %lu(%%rax), %%r8", i);
+                    asm_println(cg, "  mov %%r8, %lu(%%rdi)", i);
+                }
+            else
+                for(size_t i = 0; i < ty->size; i++) {
+                    asm_println(cg, "  mov %lu(%%rax), %%r8b", i);
+                    asm_println(cg, "  mov %%r8b, %lu(%%rdi)", i);
+                }
             return;
         case TY_F32:
             asm_println(cg, "  movss %%xmm0, (%%rdi)");
@@ -1366,36 +1375,6 @@ static void asm_gen_id_ptr(ASMCodegenData_T* cg, ASTNode_T* id)
         default:
             unreachable();
     }
-}
-
-static void asm_gen_array_lit(ASMCodegenData_T* cg, ASTNode_T* node)
-{
-    // x = [1, 2, 3] gets converted to x[0] = 1; x[1] = 2; x[2] = 3;
-    for(size_t i = 0; i < node->right->args->size; i++)
-    {
-        ASTNode_T* item = node->right->args->items[i];
-        ASTNode_T converted = {
-            .kind = ND_ASSIGN,
-            .tok = node->tok,
-            .data_type = unpack(node->left->data_type)->base,
-            .left = &(ASTNode_T) {
-                .kind = ND_INDEX,
-                .tok = node->left->tok,
-                .data_type = unpack(node->left->data_type)->base,
-                .left = node->left,
-                .expr = &(ASTNode_T) {
-                    .kind = ND_LONG,
-                    .data_type = (ASTType_T*) primitives[TY_I64],
-                    .long_val = i
-                }
-            },
-            .right = item
-        };
-        asm_gen_expr(cg, &converted);
-    }
-                
-    if(!node->result_ignored) 
-        asm_gen_expr(cg, node->left);
 }
 
 static void asm_gen_struct_lit(ASMCodegenData_T* cg, ASTNode_T* node)
@@ -1655,7 +1634,17 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         
         case ND_ARRAY:
-            throw_error(ERR_CODEGEN, node->tok, "cannot have array literal at this place");
+            for(size_t i = 0; i < node->args->size; i++)
+            {
+                asm_println(cg, "  lea %ld(%%rbp), %%rax", node->buffer->offset + 8 + i * node->data_type->base->size);
+                asm_push(cg);
+                asm_gen_expr(cg, node->args->items[i]);
+                asm_store(cg, node->data_type->base);
+            }
+            
+            // add the size of the array at the beginning
+            asm_println(cg, "  movq $%lu, %d(%%rbp)", node->data_type->num_indices, node->buffer->offset);
+            asm_println(cg, "  lea %d(%%rbp), %%rax", node->buffer->offset);
             return;
 
         case ND_REF:
@@ -1670,29 +1659,15 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_ASSIGN:
             switch(node->right->kind)
             {
-            case ND_ARRAY:
-                asm_gen_array_lit(cg, node);
-                return;
             case ND_STRUCT:
                 asm_gen_struct_lit(cg, node);
                 return;
             default:
-            {
-                /*ASTType_T* left_ty = unpack(node->left->data_type);
-                ASTType_T* right_ty = unpack(node->right->data_type);
-
-                if(left_ty->kind == TY_ARRAY && right_ty->kind == TY_ARRAY)
-                    for(size_t i = 0; MIN(left_ty->size, right_ty->size); i++) {
-
-                    }
-                else*/
-                {
-                    asm_gen_addr(cg, node->left);
-                    asm_push(cg);
-                    asm_gen_expr(cg, node->right);
-                    asm_store(cg, node->left->data_type);
-                } return;
-            }
+                asm_gen_addr(cg, node->left);
+                asm_push(cg);
+                asm_gen_expr(cg, node->right);
+                asm_store(cg, node->left->data_type);
+                return;
             }
 
         case ND_LAMBDA:

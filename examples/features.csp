@@ -4,20 +4,10 @@ fn main(): i32
 {
     using std;
 
-    let x: i32[2];
-    x[0] = 1;
-    test(x);
-
-    let y: i32[10];
-    y[0] = 69;
-    test(y);
-
-   # let z = y;
-   # test(z);
-
-    ret 0;
+    test([11, 22, 33, 44]);
+    <- 0;
 }
 
-fn test(x: i32[]) {
-    std::io::printf("%i %i\n", len x, x[0]);
+fn test(array: i32[]) {
+    std::io::printf("%i %i\n", len array, array[0]);
 }

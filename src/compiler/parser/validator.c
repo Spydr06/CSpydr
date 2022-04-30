@@ -1521,54 +1521,22 @@ static void struct_lit(ASTNode_T* s_lit, va_list args)
 
 static void array_lit(ASTNode_T* a_lit, va_list args)
 {
-    /*GET_VALIDATOR(args);
+    GET_VALIDATOR(args);
 
-    a_lit->data_type = init_ast_type(TY_C_ARRAY, a_lit->tok);
-    a_lit->data_type->num_indices = init_ast_node(ND_LONG, a_lit->tok);
-    a_lit->data_type->num_indices->long_val = a_lit->args->size;
-    a_lit->data_type->base = a_lit->args->size ?
-        ((ASTNode_T*) a_lit->args->items[0])->data_type
-        : ({
-            throw_error(ERR_TYPE_ERROR, a_lit->tok, "cannot get base data type of empty array literal");
-            (ASTType_T*) primitives[TY_VOID];
-        });
+    a_lit->data_type = init_ast_type(TY_ARRAY, a_lit->tok);
+    
+    if(a_lit->args->size == 0)
+        throw_error(ERR_UNDEFINED, a_lit->tok, "empty array literals are not allowed");
+    
+    a_lit->data_type->base = ((ASTNode_T*) a_lit->args->items[0])->data_type;
+    a_lit->data_type->num_indices = a_lit->args->size;
 
-    // When compiling to assembly, we have to allocate the memory on the stack.
-    // this is done by creating an "anonymous" local variable of the array type
-    // and then assigning the array literal to it
-    // [0, 1, 2] gets converted to:
-    // let <anonymous>: i32[3] = [0, 1, 2];
-
-    if(v->scope_depth > 1 && global.ct == CT_ASM && !a_lit->is_assigning)
+    if(global.ct == CT_ASM)
     {
-        static u64 count = 0;
-        ASTObj_T* local = init_ast_obj(OBJ_LOCAL, a_lit->tok);
-        local->data_type = a_lit->data_type;
-        local->referenced = true;
-        local->id = init_ast_identifier(a_lit->tok, "");
-        sprintf(local->id->callee, "__csp_arrlit_%ld__", count++);
-        list_push(v->current_function->objs, local);
-        list_push(v->current_scope->objs, local);
-
-        ASTNode_T assignment = {
-            .kind = ND_ASSIGN,
-            .tok = a_lit->tok,
-            .id = local->id,
-            .data_type = a_lit->data_type,
-        };
-
-        assignment.right = init_ast_node(ND_ARRAY, a_lit->tok);
-        *assignment.right = *a_lit;
-        assignment.right->is_assigning = true;
-        
-        assignment.left = init_ast_node(ND_ID, a_lit->tok);
-        assignment.left->id = local->id;
-        assignment.left->data_type = local->data_type;
-        assignment.left->referenced_obj = local;
-
-        *a_lit = assignment;
-    }*/
-    throw_error(ERR_INTERNAL, a_lit->tok, "array literals are currently not supported");
+        a_lit->buffer->data_type = a_lit->data_type;
+        a_lit->buffer->data_type->num_indices = a_lit->args->size;
+        a_lit->buffer->data_type->size = get_type_size(v, a_lit->buffer->data_type);
+    }
 }
 
 static void ternary(ASTNode_T* ternary, va_list args)

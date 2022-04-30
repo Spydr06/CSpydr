@@ -16,12 +16,14 @@ static ASTNode_T* typecheck_arg_pass(ASTType_T* expected, ASTNode_T* received);
 static void typecheck_call(ASTNode_T* call, va_list args);
 static void typecheck_explicit_cast(ASTNode_T* cast, va_list args);
 static void typecheck_assignment(ASTNode_T* assignment, va_list args);
+static void typecheck_array_lit(ASTNode_T* a_lit, va_list args);
 
 static const ASTIteratorList_T iterator = {
     .node_end_fns = {
         [ND_CALL] = typecheck_call,
         [ND_CAST] = typecheck_explicit_cast,
-        [ND_ASSIGN] = typecheck_assignment
+        [ND_ASSIGN] = typecheck_assignment,
+        [ND_ARRAY] = typecheck_array_lit
     }
 };
 
@@ -106,6 +108,26 @@ static void typecheck_explicit_cast(ASTNode_T* cast, va_list args)
         throw_error(ERR_TYPE_ERROR_UNCR, cast->tok, "cannot cast from `%s` to `void`", 
             ast_type_to_str(buf1, cast->left->data_type, LEN(buf1))
         );
+}
+
+static void typecheck_array_lit(ASTNode_T* a_lit, va_list args)
+{
+    ASTType_T* base_ty = unpack(a_lit->data_type->base);
+    
+    char buf1[BUFSIZ] = {'\0'};
+    char buf2[BUFSIZ] = {'\0'};
+
+    for(size_t i = 0; i < a_lit->args->size; i++)
+    {
+        ASTNode_T* arg = a_lit->args->items[i];
+        if(implicitly_castable(arg->tok, arg->data_type, base_ty))
+            a_lit->args->items[i] = implicit_cast(arg->tok, arg, base_ty);
+        else
+            throw_error(ERR_TYPE_ERROR_UNCR, arg->tok, "cannot implicitly cast from `%s` to `%s`",
+                ast_type_to_str(buf1, arg->data_type, BUFSIZ),
+                buf2[0] == '\0' ? buf2 : ast_type_to_str(buf2, base_ty, BUFSIZ)
+            );
+    }
 }
 
 bool types_equal(ASTType_T* a, ASTType_T* b)

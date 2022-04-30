@@ -1754,13 +1754,15 @@ static ASTNode_T* parse_str_lit(Parser_T* p, bool keep_inline)
 
 static ASTNode_T* parse_array_lit(Parser_T* p)
 {
-    ASTNode_T* arr_lit = init_ast_node(ND_ARRAY, p->tok);
+    ASTNode_T* a_lit = init_ast_node(ND_ARRAY, p->tok);
     parser_consume(p, TOKEN_LBRACKET, "expect `[` for array literal");
-    arr_lit->is_constant = true;
-    arr_lit->args = parse_expr_list(p, TOKEN_RBRACKET);
+    a_lit->args = parse_expr_list(p, TOKEN_RBRACKET);
     parser_consume(p, TOKEN_RBRACKET, "expect `]` after array literal");
 
-    return arr_lit;
+    if(global.ct == CT_ASM)
+        a_lit->buffer = init_ast_obj(OBJ_LOCAL, a_lit->tok);
+
+    return a_lit;
 }
 
 static ASTNode_T* parse_struct_lit(Parser_T* p, ASTNode_T* id)

@@ -111,7 +111,7 @@ static void evaluate_info_flags(char* argv)
         printf(version_text, get_cspydr_version(), csp_build);
     else
     {
-        LOG_ERROR_F("unknown or wrong used flag \"%s\", type \"cspydr --help\" to get help.", argv);
+        LOG_ERROR_F("unknown or wrong used flag \"%s\", type \"cspydr --help\" to get help.\n", argv);
         exit(1);
     }
 

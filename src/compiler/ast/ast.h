@@ -235,7 +235,7 @@ struct AST_NODE_STRUCT
         List_T* args;   // list of ASTNode_Ts
 
         // match statement
-        List_T* cases;           // list of ASTNode_Ts
+        List_T* cases; // list of ASTNode_Ts
 
         // with statement, single object
         ASTObj_T* obj;
@@ -250,6 +250,9 @@ struct AST_NODE_STRUCT
 
         // lambda
         ASTObj_T* return_ptr;
+        
+        // array literal
+        ASTObj_T* buffer;
     };
 
     union {
