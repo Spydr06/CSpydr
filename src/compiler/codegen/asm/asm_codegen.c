@@ -553,11 +553,27 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
 
                         continue;
                     }
-                    
-                    asm_println(cg, "  .bss");    
-                    asm_println(cg, "  .align %d", align);
-                    asm_println(cg, "%s:", id);
-                    asm_println(cg, "  .zero %d", obj->data_type->size);
+                    else if(unpack(obj->data_type)->kind == TY_ARRAY)
+                    {
+                        asm_println(cg, "  .data");
+                        asm_println(cg, "  .type %s, @object", id);
+                        asm_println(cg, "  .size %s, %d", id, obj->data_type->size);
+                        asm_println(cg, "  .align %d", align);
+                        asm_println(cg, "%s:", id);
+
+                        union {u64 num; u8 bytes[8];} length;
+                        length.num = unpack(obj->data_type)->num_indices;
+
+                        for(i8 i = 0; i < 8; i++)
+                            asm_println(cg, "  .byte %d", length.bytes[i]);
+                    }
+                    else
+                    {
+                        asm_println(cg, "  .bss");    
+                        asm_println(cg, "  .align %d", align);
+                        asm_println(cg, "%s:", id);
+                        asm_println(cg, "  .zero %d", obj->data_type->size);
+                    }
                 } break;
 
             default:

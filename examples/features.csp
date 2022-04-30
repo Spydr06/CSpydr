@@ -1,11 +1,13 @@
 import "std.csp";
 
+let x: i32[2];
+
 fn main(): i32 
 {
     print_array([1, 2, 3, 4, 5]);    
     print_array([11, 22, 33]);
 
-    <- 0;
+    <- len x;
 }
 
 fn print_array(array: i32[])
