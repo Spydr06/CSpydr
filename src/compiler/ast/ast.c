@@ -150,7 +150,11 @@ const char* type_kind_to_str(ASTTypeKind_T kind)
         case TY_PTR:
             return "&";
         case TY_C_ARRAY:
+            return "'c[...]";
+        case TY_VLA:
             return "[]";
+        case TY_ARRAY:
+            return "[...]";
         case TY_STRUCT:
             return "struct";
         case TY_ENUM:
@@ -179,10 +183,31 @@ char* ast_type_to_str(char* dest, ASTType_T* ty, size_t size)
             break;
         case TY_C_ARRAY:
             ast_type_to_str(dest, ty->base, size);
-            strcat(dest, "[");
-            if(ty->num_indices)
-                sprintf(dest, "%s%ld", dest, const_i64(ty->num_indices));
+            strcat(dest, " 'c[");
+            
+            {
+                char buf[128] = {'\0'};
+                sprintf(buf, "%lu", const_u64(ty->num_indices_node));
+                strcat(dest, buf);
+            }            
+            
             strcat(dest, "]");
+            break;
+        case TY_ARRAY:
+            ast_type_to_str(dest, ty->base, size);
+            strcat(dest, "[");
+            
+            {
+                char buf[128] = {'\0'};
+                sprintf(buf, "%lu", const_u64(ty->num_indices_node));
+                strcat(dest, buf);
+            }
+            
+            strcat(dest, "]");
+            break;
+        case TY_VLA:
+            ast_type_to_str(dest, ty->base, size);
+            strcat(dest, "[]");
             break;
         case TY_STRUCT:
             strcat(dest, ty->is_union ? "union {" : "struct {");

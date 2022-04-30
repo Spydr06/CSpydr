@@ -385,10 +385,22 @@ static void ast_type(const ASTIteratorList_T* list, ASTType_T* type, va_list cus
 
         case TY_C_ARRAY:
             ast_type(list, type->base, custom_args);
-            if(type->num_indices)
-                ast_node(list, type->num_indices, custom_args);
+            if(type->num_indices_node)
+                ast_node(list, type->num_indices_node, custom_args);
             
             list_fn(list->type_fns[TY_C_ARRAY], type, custom_args);
+            break;
+
+        case TY_ARRAY:
+            ast_type(list, type->base, custom_args);
+            if(type->num_indices_node)
+                ast_node(list, type->num_indices_node, custom_args);
+            
+            list_fn(list->type_fns[TY_ARRAY], type, custom_args);
+            break;
+        
+        case TY_VLA:
+            list_fn(list->type_fns[TY_VLA], type, custom_args);
             break;
 
         case TY_ENUM:
@@ -411,7 +423,7 @@ static void ast_type(const ASTIteratorList_T* list, ASTType_T* type, va_list cus
             break;
         
         case TY_TYPEOF:
-            ast_node(list, type->num_indices, custom_args);
+            ast_node(list, type->num_indices_node, custom_args);
             list_fn(list->type_fns[TY_TYPEOF], type, custom_args);
             break;
         

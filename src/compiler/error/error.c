@@ -94,7 +94,7 @@ void default_error_handler(ErrorType_T ty, Token_T* tok, const char* format, va_
     fprintf(ERR_OUTPUT_STREAM, err_tmp1, source_file_path, (long) line, (long) character, is_error ? COLOR_BOLD_RED : COLOR_BOLD_YELLOW, error_str);
     vfprintf(ERR_OUTPUT_STREAM, format, args);
     fprintf(ERR_OUTPUT_STREAM, err_tmp2, ERR_LINE_NUMBER_SPACES, line, src_line, src_line[strlen(src_line) - 1] == '\n' ? "" : "\n ", 
-            ERR_LINE_NUMBER_SPACES, "", character - strlen(tok->value), "");
+            ERR_LINE_NUMBER_SPACES, "", (int) (character - strlen(tok->value)), "");
 
     for(u32 i = 0; i < strlen(tok->value) - 1; i++)
         fprintf(ERR_OUTPUT_STREAM, "~");

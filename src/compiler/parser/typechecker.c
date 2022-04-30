@@ -49,6 +49,12 @@ static void typecheck_assignment(ASTNode_T* assignment, va_list args)
         return;
     }
 
+    if(unpack(assignment->right->data_type)->kind == TY_ARRAY &&
+        unpack(assignment->left->data_type)->kind == TY_VLA)
+    {
+        
+    }
+
     char buf1[BUFSIZ] = {};
     char buf2[BUFSIZ] = {};
     throw_error(ERR_TYPE_ERROR_UNCR, assignment->tok, "assignment type missmatch: cannot assign `%s` to `%s`", 
@@ -188,11 +194,23 @@ bool implicitly_castable(Token_T* tok, ASTType_T* from, ASTType_T* to)
     }
     if((from->kind == TY_PTR || from->kind == TY_C_ARRAY) && to->kind == TY_PTR)
         return true;
+    if(from->kind == TY_ARRAY && to->kind == TY_VLA)
+        return true;
+    if(from->kind == TY_PTR && unpack(from->base)->kind == TY_ARRAY && to->kind == TY_VLA)
+        return types_equal(unpack(from->base)->base, to->base);
     return false;
 }
 
 ASTNode_T* implicit_cast(Token_T* tok, ASTNode_T* expr, ASTType_T* to)
 {
+    if(unpack(expr->data_type)->kind == TY_ARRAY && to->kind == TY_VLA)
+    {
+        ASTNode_T* ref = init_ast_node(ND_REF, tok);
+        ref->data_type = to;
+        ref->right = expr;
+        return ref;
+    }
+
     ASTNode_T* cast = init_ast_node(ND_CAST, tok);
     cast->data_type = to;
     cast->left = expr;

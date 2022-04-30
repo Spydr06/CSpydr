@@ -57,9 +57,9 @@ macros[] = {
 
     {"__file__", .value = "__file__", ID}, // returns the current file
     {"__line__", .value = "__line__", ID}, // returns the current line
-    {"__func__", NULL, CURRENT_FN},        // returns the current function
+    {"__func__", {NULL}, CURRENT_FN},        // returns the current function
     
-    {NULL, NULL, 0}
+    {NULL, {NULL}, 0}
 };
 
 void define_std_macros(List_T *macro_list)

@@ -345,7 +345,6 @@ static void parse_macro_call(Preprocessor_T* pp, MacroCall_T* call, List_T* toke
                 if((*i) + 1 >= token_list->size)
                     throw_error(ERR_SYNTAX_ERROR, next, "unexpected end of macro body, expect `)`");
 
-                TokenType_T opening_paren = next->type;
                 TokenType_T closing_paren = next->type + 1;
                 int64_t depth = 0, arg_start = (*i) + 1, arg_end = (*i) + 1;
                 bool has_arg = false;

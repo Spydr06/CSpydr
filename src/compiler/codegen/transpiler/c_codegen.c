@@ -345,10 +345,7 @@ static void c_gen_array_brackets(CCodegenData_T* cg, ASTType_T* ty)
 {
     if(unpack(ty)->kind == TY_C_ARRAY)
     {
-        print(cg, "[");
-        if(ty->num_indices)
-            c_gen_expr(cg, ty->num_indices);
-        print(cg, "]");
+        print(cg, "[%lu]", ty->num_indices);
 
         if(ty->base && ty->base->kind == TY_C_ARRAY)
             c_gen_array_brackets(cg, ty->base);
@@ -868,9 +865,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             print(cg, ")");
             break;
         case ND_LEN:
-            print(cg, "(");
-            c_gen_expr(cg, unpack(node->expr->data_type)->num_indices);
-            print(cg, ")");
+            print(cg, "(%lu)", unpack(node->expr->data_type)->num_indices);
             break;
         case ND_TERNARY:
             print(cg, "(");

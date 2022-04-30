@@ -2,6 +2,7 @@
 #include "io/log.h"
 #include "io/io.h"
 #include "ast/ast_iterator.h"
+#include "optimizer/constexpr.h"
 #include "platform/platform_bindings.h"
 #include "../codegen_utils.h"
 #include "error/error.h"
@@ -64,7 +65,6 @@ static char* argreg32[] = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d"};
 static char* argreg64[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
 static char call_reg[] = "%r10";
 static char pipe_reg[] = "%r15";
-static char lambda_reg[] = "%r14";
 
 // The table for type casts
 static char i32i8[]  = "movsbl %al, %eax";
@@ -150,30 +150,10 @@ static char *cast_table[LAST][LAST] = {
   {f80i8, f80i16, f80i32, f80i64, f80u8, f80u16, f80u32, f80u64, f80f32, f80f64, NULL},   // f80
 };
 
-#define CONVERT_INDEX_NODE(node)                                  \
-    (ASTNode_T) {                                                 \
-        .kind = ND_DEREF,                                         \
-        .data_type = node->data_type,                             \
-        .right = &(ASTNode_T) {                                   \
-            .kind = ND_CAST,                                      \
-            .data_type = (ASTType_T*) primitives[TY_I64],         \
-            .left = &(ASTNode_T) {                                \
-                .kind = ND_ADD,                                   \
-                .data_type = (ASTType_T*) primitives[TY_I64],     \
-                .left = node->left,                               \
-                .right = &(ASTNode_T) {                           \
-                    .kind = ND_CAST,                              \
-                    .data_type = (ASTType_T*) primitives[TY_I64], \
-                    .left = node->expr                            \
-                }                                                 \
-            }                                                     \
-        }                                                         \
-    }
-
-static void generate_files(ASMCodegenData_T* cg);
 static void asm_gen_file_descriptors(ASMCodegenData_T* cg);
 static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs);
 static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs);
+static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node);
 static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs);
 static bool asm_has_flonum(ASTType_T* ty, i32 lo, i32 hi, i32 offset);
 static bool asm_has_flonum_1(ASTType_T* ty);
@@ -469,7 +449,7 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
 			    // 16-byte boundaries. See p.14 of
 			    // https://github.com/hjl-tools/x86-psABI/wiki/x86-64-psABI-draft.pdf.
 			    
-                i32 align = ty->kind == TY_C_ARRAY && ty->size >= 16 ? MAX(16, ty->align) : ty->align;
+                i32 align = (ty->kind == TY_C_ARRAY || ty->kind == TY_ARRAY) && ty->size >= 16 ? MAX(16, ty->align) : ty->align;
                 bottom += ty->size;
                 bottom = align_to(bottom, align);
                 var->offset = -bottom;
@@ -480,7 +460,7 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
                 for(size_t j = 0; j < obj->objs->size; j++)
                 {
                     ASTObj_T* var = obj->objs->items[j];
-                    i32 align = var->data_type->kind == TY_C_ARRAY && var->data_type->size >= 16 ? MAX(16, var->data_type->align) : var->data_type->align;
+                    i32 align = (var->data_type->kind == TY_C_ARRAY || var->data_type->kind == TY_ARRAY) && var->data_type->size >= 16 ? MAX(16, var->data_type->align) : var->data_type->align;
                     bottom += var->data_type->size;
                     bottom = align_to(bottom, align);
                     var->offset = -bottom;
@@ -557,7 +537,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
                     char* id = asm_gen_identifier(obj->id);
                     asm_println(cg, "  .globl %s", id);
 
-                    i32 align = obj->data_type->kind == TY_C_ARRAY && obj->data_type->size >= 16 ? MAX(16, obj->data_type->align) : obj->data_type->align;
+                    i32 align = (obj->data_type->kind == TY_C_ARRAY || obj->data_type->kind == TY_ARRAY) && obj->data_type->size >= 16 ? MAX(16, obj->data_type->align) : obj->data_type->align;
 
                     if(obj->value)
                     {
@@ -782,31 +762,75 @@ static void asm_popf(ASMCodegenData_T* cg, i32 reg)
     cg->depth--;
 }
 
-
-static char* asm_reg_dx(i32 sz) 
+static void asm_gen_index(ASMCodegenData_T* cg, ASTNode_T* index, bool gen_address)
 {
-    switch (sz) 
-    {
-        case 1: return "%dl";
-        case 2: return "%dx";
-        case 4: return "%edx";
-        case 8: return "%rdx";
-    }
-    unreachable();
-    return 0;
-}
+    ASTNode_T converted;
 
-static char* asm_reg_ax(i32 sz) 
-{
-    switch (sz) 
+    switch(unpack(index->left->data_type)->kind)
     {
-        case 1: return "%al";
-        case 2: return "%ax";
-        case 4: return "%eax";
-        case 8: return "%rax";
+        case TY_PTR:
+        case TY_C_ARRAY:
+        {
+            converted = (ASTNode_T) {                                                
+                .kind = ND_DEREF,                                        
+                .data_type = index->data_type,                            
+                .right = &(ASTNode_T) {                                  
+                    .kind = ND_CAST,                                     
+                    .data_type = (ASTType_T*) primitives[TY_I64],        
+                    .left = &(ASTNode_T) {                               
+                        .kind = ND_ADD,                                  
+                        .data_type = (ASTType_T*) primitives[TY_I64],    
+                        .left = index->left,                              
+                        .right = &(ASTNode_T) {                          
+                            .kind = ND_CAST,                             
+                            .data_type = (ASTType_T*) primitives[TY_I64],
+                            .left = index->expr                           
+                        }                                                
+                    }                                                    
+                }                                                        
+            };
+        } break;
+
+        case TY_VLA:
+        case TY_ARRAY:
+        {
+            converted = (ASTNode_T) {                                                
+                .kind = ND_DEREF,                                        
+                .data_type = index->data_type,                            
+                .right = &(ASTNode_T) {                                  
+                    .kind = ND_CAST,                                     
+                    .data_type = (ASTType_T*) primitives[TY_I64],        
+                    .left = &(ASTNode_T) {                               
+                        .kind = ND_ADD,                                  
+                        .data_type = (ASTType_T*) primitives[TY_I64],    
+                        .left = index->left,                              
+                        .right = &(ASTNode_T) {
+                            .kind = ND_ADD,
+                            .data_type = (ASTType_T*) primitives[TY_I64],
+                            .left = &(ASTNode_T) {                          
+                                .kind = ND_CAST,                             
+                                .data_type = (ASTType_T*) primitives[TY_I64],
+                                .left = index->expr                           
+                            },
+                            .right = &(ASTNode_T) {
+                                .kind = ND_LONG,
+                                .data_type = (ASTType_T*) primitives[TY_I64],
+                                .long_val = PTR_S
+                            }
+                        }                                    
+                    }                                                    
+                }                                                        
+            };
+        } break;
+
+        default:
+            throw_error(ERR_CODEGEN, index->tok, "wrong index type");
     }
-    unreachable();
-    return 0;
+
+    if(gen_address)
+        asm_gen_addr(cg, &converted);
+    else
+        asm_gen_expr(cg, &converted);
 }
 
 static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
@@ -821,7 +845,8 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
             if(!node->data_type)
                 node->data_type = node->referenced_obj->data_type;
 
-            if(unpack(node->data_type)->is_vla)
+            // fixme:
+            if(unpack(node->data_type)->kind == TY_VLA)
             {
                 asm_println(cg, "  mov %d(%%rbp), %%rax", node->referenced_obj->offset);
                 return;
@@ -880,11 +905,7 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_println(cg, "  add $%ld, %%rax", node->body->offset);
             return;
         case ND_INDEX:
-            {
-                // x[y] gets converted to *(x + y * sizeof *x)
-                ASTNode_T converted = CONVERT_INDEX_NODE(node);
-                asm_gen_addr(cg, &converted);
-            }
+            asm_gen_index(cg, node, true);
             return;
         case ND_HOLE:
             asm_println(cg, "  mov %s, %%rax", pipe_reg);
@@ -919,7 +940,7 @@ static bool asm_has_flonum(ASTType_T* ty, i32 lo, i32 hi, i32 offset)
         }
         return true;
     }
-    else if(ty->kind == TY_C_ARRAY)
+    else if(ty->kind == TY_C_ARRAY || ty->kind == TY_ARRAY)
     {
         for(size_t i = 0; i < ty->size / ty->base->size; i++)
             if(!asm_has_flonum(ty->base, lo, hi, offset + ty->base->size * i))
@@ -1153,6 +1174,8 @@ static void asm_load(ASMCodegenData_T* cg, ASTType_T *ty) {
         case TY_C_ARRAY:
         case TY_STRUCT:
         case TY_FN:
+        case TY_ARRAY:
+        case TY_VLA:
             return;
         case TY_F32:
             asm_println(cg, "  movss (%%rax), %%xmm0");
@@ -1486,8 +1509,26 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         
         case ND_LEN:
-            asm_gen_expr(cg, unpack(node->expr->data_type)->num_indices);
-            return;
+            {
+                ASTType_T* array_type = unpack(node->expr->data_type);
+
+                switch(array_type->kind)
+                {
+                    case TY_C_ARRAY:
+                        printf("%lu\n", array_type->num_indices);
+                        asm_println(cg, "  mov $%lu, %%rax", array_type->num_indices);
+                        break;
+                    
+                    case TY_ARRAY:
+                    case TY_VLA:
+                        asm_gen_addr(cg, node->expr);
+                        asm_println(cg, "  mov (%%rax), %%rax");
+                        break;
+
+                    default:
+                        throw_error(ERR_CODEGEN, node->tok, "`len` operator not implemented for this data type");
+                }
+            } return;
         
         case ND_PIPE:
             asm_gen_expr(cg, node->left);
@@ -1525,14 +1566,8 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         
         case ND_INDEX:
-            {            
-                node->left->data_type = unpack(node->left->data_type);
-                if(!node->left->data_type || !node->left->data_type->base)
-                    throw_error(ERR_TYPE_ERROR, node->tok, "Cannot get index of data type `%d`", node->data_type->kind);
-                // x[y] gets converted to *(x + y * sizeof *x)
-                ASTNode_T converted = CONVERT_INDEX_NODE(node);
-                asm_gen_expr(cg, &converted);
-            } return;
+            asm_gen_index(cg, node, false);
+            return;
         
         case ND_INC:
         case ND_DEC:
@@ -1642,11 +1677,22 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                 asm_gen_struct_lit(cg, node);
                 return;
             default:
-                asm_gen_addr(cg, node->left);
-                asm_push(cg);
-                asm_gen_expr(cg, node->right);
-                asm_store(cg, node->left->data_type);
-                return;
+            {
+                /*ASTType_T* left_ty = unpack(node->left->data_type);
+                ASTType_T* right_ty = unpack(node->right->data_type);
+
+                if(left_ty->kind == TY_ARRAY && right_ty->kind == TY_ARRAY)
+                    for(size_t i = 0; MIN(left_ty->size, right_ty->size); i++) {
+
+                    }
+                else*/
+                {
+                    asm_gen_addr(cg, node->left);
+                    asm_push(cg);
+                    asm_gen_expr(cg, node->right);
+                    asm_store(cg, node->left->data_type);
+                } return;
+            }
             }
 
         case ND_LAMBDA:
@@ -2270,7 +2316,12 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
         
         case ND_BLOCK:
             for(size_t i = 0; i < node->locals->size; i++) {
-                asm_init_zero(cg, node->locals->items[i]);
+                ASTObj_T* local = node->locals->items[i];
+                asm_init_zero(cg, local);
+
+                // load all of the known array sizes into the first 8 bytes of the local variable
+                if(unpack(local->data_type)->kind == TY_ARRAY)
+                    asm_println(cg, "  movq $%lu, %d(%%rbp)", local->data_type->num_indices, local->offset);
             }
 
             for(size_t i = 0; i < node->stmts->size; i++)

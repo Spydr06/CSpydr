@@ -79,7 +79,7 @@ typedef enum {
     ND_ALIGNOF, // alignof x
 
     ND_PIPE,    // x |> y
-    ND_HOLE,    // _
+    ND_HOLE,    // $
     ND_LAMBDA,  // |x: i32| => {}
 
     ND_ELSE_EXPR, // x else y
@@ -112,47 +112,50 @@ typedef enum {
 } ASTNodeKind_T;
 
 typedef enum {
-    TY_I8,
-    TY_I16,
-    TY_I32,
-    TY_I64,
+    TY_I8,      // i8
+    TY_I16,     // i16
+    TY_I32,     // i32
+    TY_I64,     // i64
 
-    TY_U8,
-    TY_U16,
-    TY_U32,
-    TY_U64,
+    TY_U8,      // u8
+    TY_U16,     // u16
+    TY_U32,     // u32
+    TY_U64,     // u64
 
-    TY_F32,
-    TY_F64,
-    TY_F80,
+    TY_F32,     // f32
+    TY_F64,     // f64
+    TY_F80,     // f80
 
-    TY_BOOL,
-    TY_VOID,
-    TY_CHAR,
+    TY_BOOL,    // bool
+    TY_VOID,    // void
+    TY_CHAR,    // char
 
-    TY_PTR,
-    TY_C_ARRAY,
-    TY_STRUCT,
-    TY_ENUM,
+    TY_PTR,     // &x
+    TY_ARRAY,   // x[y]
+    TY_VLA,     // x[]
+    TY_C_ARRAY, // x'c[y]
+    TY_STRUCT,  // struct {}
+    TY_ENUM,    // enum {}
 
-    TY_FN,
+    TY_FN,      // fn(x): y
 
-    TY_UNDEF,
-    TY_TYPEOF,
+    TY_UNDEF,   // <identifier>
+    TY_TYPEOF,  // typeof x
     
     TY_KIND_LEN
 } ASTTypeKind_T;
 
 typedef enum {
-    OBJ_GLOBAL,
-    OBJ_LOCAL,
-    OBJ_FUNCTION,
-    OBJ_FN_ARG,
-    OBJ_TYPEDEF,
-    OBJ_NAMESPACE,
-    OBJ_ENUM_MEMBER,
+    OBJ_GLOBAL,      // global variable
+    OBJ_LOCAL,       // local variable
+    OBJ_FUNCTION,    // function
+    OBJ_FN_ARG,      // function argument
+    OBJ_TYPEDEF,     // datatype definition
+    OBJ_NAMESPACE,   // namespace
+    OBJ_ENUM_MEMBER, // member of an `enum` data type
 
-    OBJ_LAMBDA, // lambda implementation used internally
+    //! internal:
+    OBJ_LAMBDA,      // lambda implementation used internally
 
     OBJ_KIND_LEN
 } ASTObjKind_T;
@@ -305,7 +308,6 @@ struct AST_TYPE_STRUCT
             bool is_constant  : 1;
             bool is_fn        : 1;
             bool is_union     : 1;
-            bool is_vla       : 1;
             bool is_variadic  : 1;
         };
         u8 flags;
@@ -315,11 +317,13 @@ struct AST_TYPE_STRUCT
         // functions
         List_T* arg_types;  // list of ASTType_Ts
         // arrays
-        ASTNode_T* num_indices;
+        ASTNode_T* num_indices_node;
 
         // enums, structs
         List_T* members;    // list of ASTNode_Ts
     };
+
+    u64 num_indices;
 } __attribute__((packed));
 
 struct AST_OBJ_STRUCT 

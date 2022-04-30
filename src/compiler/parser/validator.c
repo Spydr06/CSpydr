@@ -17,6 +17,7 @@
 #include "typechecker.h"
 
 #include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
 #include <math.h>
 
@@ -111,6 +112,8 @@ static void struct_type(ASTType_T* s_type, va_list args);
 static void enum_type(ASTType_T* e_type, va_list args);
 static void undef_type(ASTType_T* u_type, va_list args);
 static void typeof_type(ASTType_T* typeof_type, va_list args);
+static void array_type(ASTType_T* a_type, va_list args);
+static void c_array_type(ASTType_T* ca_type, va_list args);
 static void type_begin(ASTType_T* type, va_list args);
 static void type_end(ASTType_T* type, va_list args);
 static i32 get_type_size(Validator_T* v, ASTType_T* type);
@@ -192,6 +195,8 @@ static const ASTIteratorList_T main_iterator_list =
         [TY_ENUM]   = enum_type,
         [TY_UNDEF]  = undef_type,
         [TY_TYPEOF] = typeof_type,
+        [TY_ARRAY] = array_type,
+        [TY_C_ARRAY] = c_array_type,
     },
 
     .obj_start_fns = 
@@ -752,15 +757,29 @@ static void fn_end(ASTObj_T* fn, va_list args)
     }
 
     ASTType_T* return_type = expand_typedef(v, fn->return_type);
-    if(return_type->kind == TY_C_ARRAY) 
-        throw_error(ERR_TYPE_ERROR_UNCR, fn->return_type->tok ? fn->return_type->tok : fn->tok, "cannot return an array type from a function");
-    else if(global.ct == CT_ASM && return_type->kind == TY_STRUCT && return_type->size > 16)
+    Token_T* return_tok = fn->return_type->tok ? fn->return_type->tok : fn->tok;
+    char buf[BUFSIZ];
+
+    switch(return_type->kind)
     {
-        fn->return_ptr = init_ast_obj(OBJ_LOCAL, fn->return_type->tok);
-        fn->return_ptr->data_type = init_ast_type(TY_PTR, fn->return_type->tok);
-        fn->return_ptr->data_type->base = fn->return_type;
-        fn->return_ptr->data_type->size = get_type_size(v, fn->return_ptr->data_type);
-        fn->return_ptr->data_type->align = 8;
+        case TY_C_ARRAY:
+        case TY_ARRAY:
+            throw_error(ERR_TYPE_ERROR_UNCR, return_tok, "cannot return type `%s` from function", ast_type_to_str(buf, return_type, BUFSIZ));
+            break;
+
+        case TY_STRUCT:
+            if(global.ct == CT_ASM && return_type->size > 16)
+            {
+                fn->return_ptr = init_ast_obj(OBJ_LOCAL, fn->return_type->tok);
+                fn->return_ptr->data_type = init_ast_type(TY_PTR, fn->return_type->tok);
+                fn->return_ptr->data_type->base = fn->return_type;
+                fn->return_ptr->data_type->size = get_type_size(v, fn->return_ptr->data_type);
+                fn->return_ptr->data_type->align = 8;
+            }
+            break;
+
+        default:
+            break;
     }
 
     end_scope(v);
@@ -775,8 +794,6 @@ static void fn_end(ASTObj_T* fn, va_list args)
     for(size_t i = 0; i < fn->args->size; i++)
     {
         ASTObj_T* arg = fn->args->items[i];
-        if(arg->data_type->is_vla && fn->args->size - i > 1)
-            throw_error(ERR_TYPE_ERROR_UNCR, arg->tok, "argument of type `vla` has to be the last");
         if(!arg->referenced && !fn->is_extern && !fn->ignore_unused)
             throw_error(ERR_UNUSED, arg->tok, "unused function argument `%s`", arg->id->callee);
     }
@@ -872,8 +889,24 @@ static void fn_arg_end(ASTObj_T* arg, va_list args)
 
     if(expanded->is_constant)
         arg->is_constant = true;
-    if(expanded->kind == TY_VOID)
-        throw_error(ERR_TYPE_ERROR, arg->tok, "`void` type is not allowed for function arguments");
+
+    switch(expanded->kind)
+    {
+        case TY_VOID:
+            throw_error(ERR_TYPE_ERROR, arg->tok, "`void` type is not allowed for function arguments");
+            break;
+        
+        case TY_ARRAY:
+            throw_error(ERR_TYPE_ERROR, arg->tok, "array type is not allowed for function arguments, use VLA `[]`");
+            break;
+        
+        case TY_C_ARRAY:
+            throw_error(ERR_TYPE_ERROR, arg->tok, "c-array type is not allowed for function arguments, use pointer `&`");
+            break;
+        
+        default:
+            break;
+    }
 }
 
 static void enum_member_end(ASTObj_T* e_member, va_list args)
@@ -1282,6 +1315,11 @@ static void inc_dec(ASTNode_T* op, va_list args)
     op->data_type = op->left->data_type;
 }
 
+static bool indexable(ASTTypeKind_T tk)
+{
+    return tk == TY_VLA || tk == TY_ARRAY || tk == TY_C_ARRAY || tk == TY_PTR;
+}
+
 // "index" was taken by string.h
 static void index_(ASTNode_T* index, va_list args)
 {
@@ -1291,15 +1329,16 @@ static void index_(ASTNode_T* index, va_list args)
     if(!left_type)
         return;
 
-    if(left_type->kind != TY_C_ARRAY && left_type->kind != TY_PTR)
+    if(!indexable(left_type->kind))
     {
-        throw_error(ERR_TYPE_ERROR, index->tok, "left: cannot get an index value; wrong type");
+        char buf[BUFSIZ];
+        throw_error(ERR_TYPE_ERROR, index->tok, "cannot get an index value from type `%s`", ast_type_to_str(buf, left_type, BUFSIZ));
         return;
     }
 
     if(!v_is_integer(v, index->expr->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, index->tok, "index: expect an integer type");
+        throw_error(ERR_TYPE_ERROR, index->tok, "expect an integer type for the index operator");
         return;
     }
     index->data_type = left_type->base;
@@ -1313,7 +1352,7 @@ static void index_(ASTNode_T* index, va_list args)
         }
 
         ASTNode_T* idx = init_ast_node(ND_SUB, index->tok);
-        idx->left = left_type->num_indices;
+        idx->left = left_type->num_indices_node;
         idx->right = index->expr;
         idx->data_type = idx->right->data_type;
         idx->left->data_type = (ASTType_T*) primitives[TY_U64];
@@ -1558,7 +1597,7 @@ static void len(ASTNode_T* len, va_list args)
     GET_VALIDATOR(args);
 
     ASTType_T* ty = expand_typedef(v, len->expr->data_type);
-    if(ty->kind != TY_C_ARRAY || ty->is_vla)
+    if(ty->kind != TY_C_ARRAY && ty->kind != TY_ARRAY && ty->kind != TY_VLA)
         throw_error(ERR_TYPE_ERROR, len->tok, "cannot get length of given expression");
 }
 
@@ -1810,10 +1849,7 @@ static void struct_type(ASTType_T* s_type, va_list args)
     {
         ASTNode_T* member = s_type->members->items[i];
         ASTType_T* expanded = expand_typedef(v, member->data_type);
-        
-        if(expanded->is_vla && s_type->members->size - i > 1 && !s_type->is_union)
-            throw_error(ERR_TYPE_ERROR, member->data_type->tok, "member of type `vla` has to be the last struct member");
-        
+
         if(expanded->kind == TY_VOID)
             throw_error(ERR_TYPE_ERROR, member->data_type->tok, "struct member cannot be of type `void`");
 
@@ -1858,11 +1894,23 @@ static void undef_type(ASTType_T* u_type, va_list args)
 
 static void typeof_type(ASTType_T* typeof_type, va_list args)
 {
-    ASTType_T* found = typeof_type->num_indices->data_type;
+    ASTType_T* found = typeof_type->num_indices_node->data_type;
     if(!found)
-        throw_error(ERR_TYPE_ERROR, typeof_type->num_indices->tok, "could not resolve data type");
+        throw_error(ERR_TYPE_ERROR, typeof_type->num_indices_node->tok, "could not resolve data type");
     
     *typeof_type = *found;
+}
+
+static void array_type(ASTType_T* a_type, va_list args)
+{
+    if(a_type->num_indices_node)
+        a_type->num_indices = const_u64(a_type->num_indices_node);
+}
+
+static void c_array_type(ASTType_T* ca_type, va_list args)
+{
+    if(ca_type->num_indices_node)
+        ca_type->num_indices = const_u64(ca_type->num_indices_node);
 }
 
 static void type_begin(ASTType_T* type, va_list args)
@@ -1874,12 +1922,6 @@ static void type_end(ASTType_T* type, va_list args)
     GET_VALIDATOR(args);
 
     ASTType_T* exp = expand_typedef(v, type);
-
-    if(exp->kind == TY_C_ARRAY && !exp->num_indices)
-    {
-        exp->is_vla = true;
-        type->is_vla = true;
-    }
 
     type->size = get_type_size(v, expand_typedef(v, type));
     type->align = align_type(exp);
@@ -1951,21 +1993,27 @@ static i32 get_type_size(Validator_T* v, ASTType_T* type)
         case TY_FN:
             return PTR_S;
         case TY_TYPEOF:
-            return get_type_size(v, expand_typedef(v, type->num_indices->data_type));
+            return get_type_size(v, expand_typedef(v, type->num_indices_node->data_type));
         case TY_UNDEF:
             return get_type_size(v, expand_typedef(v, type));
         case TY_C_ARRAY:
-            if(type->num_indices)
             {
-                i64 len = const_i64(type->num_indices);
+                u64 len = type->num_indices;
                 if(len < 0)
-                    throw_error(ERR_TYPE_ERROR, type->num_indices->tok, "cannot get array type with negative index size (%ld)", len);
+                    throw_error(ERR_TYPE_ERROR, type->num_indices_node->tok, "cannot get array type with negative index size (%ld)", len);
                 if(len == 0)
                     return 0;
                 return get_type_size(v, type->base) * len;
             }
-            else
-                return 0;
+        case TY_VLA:
+            return PTR_S;
+        case TY_ARRAY:
+            {
+                u64 len = type->num_indices;
+                if(len < 0)
+                    throw_error(ERR_TYPE_ERROR, type->num_indices_node->tok, "cannot get array type with negative index as size (%ld)", len);
+                return get_type_size(v, type->base) * len + PTR_S;
+            }
         case TY_STRUCT:
             if(type->is_union)
                 return get_union_size(v, type);

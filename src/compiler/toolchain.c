@@ -20,7 +20,6 @@
 static void generate_ast(ASTProg_T* ast, char* path, char* target, bool silent);
 
 // generate the output code (c, llvm, xml)
-static void generate_llvm(ASTProg_T*, char* target, Action_T action, bool print_llvm, bool silent);
 static void transpile_c(ASTProg_T*, char* target, Action_T action, bool print_c, bool silent);
 static void generate_asm(ASTProg_T* ast, char* target, Action_T action, bool print_asm, bool silent);
 static void generate_json(ASTProg_T* ast, char* target, bool print_json, bool silent);

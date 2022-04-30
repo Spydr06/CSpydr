@@ -18,6 +18,7 @@
 #include "codegen/codegen_utils.h"
 #include "utils.h"
 #include "globals.h"
+#include "optimizer/constexpr.h"
 
 #include <limits.h>
 #include <string.h>
@@ -798,7 +799,7 @@ static ASTType_T* parse_type(Parser_T* p)
             case TOKEN_TYPEOF:
                 type = init_ast_type(TY_TYPEOF, p->tok);
                 parser_advance(p);
-                type->num_indices = parse_expr(p, X_OF, TOKEN_SEMICOLON);
+                type->num_indices_node = parse_expr(p, X_OF, TOKEN_SEMICOLON);
                 break;
             default:
                 type = init_ast_type(TY_UNDEF, p->tok);
@@ -808,21 +809,40 @@ static ASTType_T* parse_type(Parser_T* p)
     }
 
 parse_array_ty:
-    if(tok_is(p, TOKEN_C_ARRAY))
+    switch(p->tok->type)
     {
-        ASTType_T* arr_type = init_ast_type(TY_C_ARRAY, p->tok);
-        parser_advance(p);
-        parser_consume(p, TOKEN_LBRACKET, "expect `[` after `'c`");
-        arr_type->num_indices = parse_expr(p, LOWEST, TOKEN_RBRACKET);
-        parser_consume(p, TOKEN_RBRACKET, "expect `]` after array type");
-        arr_type->base = type;
-        type = arr_type;
-
+    case TOKEN_LBRACKET: // normal arrays and variable length arrays (VLAs)
+        {
+            ASTType_T* arr_type = init_ast_type(TY_VLA, p->tok);
+            parser_advance(p);
+            if(!tok_is(p, TOKEN_RBRACKET))
+            {
+                arr_type->kind = TY_ARRAY;
+                arr_type->num_indices_node = parse_expr(p, LOWEST, TOKEN_RBRACKET);
+            }
+            parser_consume(p, TOKEN_RBRACKET, "expect `]` after array type");
+            arr_type->base = type;
+            type = arr_type;
+        }
         // repeat for arrays of arrays
         goto parse_array_ty;
-    }
 
-    return type;
+    case TOKEN_C_ARRAY: // legacy C-like arrays for compatibility
+        {   
+            ASTType_T* arr_type = init_ast_type(TY_C_ARRAY, p->tok);
+            parser_advance(p);
+            parser_consume(p, TOKEN_LBRACKET, "expect `[` after `'c`");
+            arr_type->num_indices_node = parse_expr(p, LOWEST, TOKEN_RBRACKET);
+            parser_consume(p, TOKEN_RBRACKET, "expect `]` after array length");
+            arr_type->base = type;
+            type = arr_type;
+        }
+        // repeat for arrays of arrays
+        goto parse_array_ty;
+    
+    default:
+        return type;
+    }
 }
 
 /////////////////////////////////
@@ -958,8 +978,7 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
         fn->va_area = init_ast_obj(OBJ_LOCAL, fn->tok);
         fn->va_area->id = va_id;
         fn->va_area->data_type = init_ast_type(TY_C_ARRAY, fn->tok);
-        fn->va_area->data_type->num_indices = init_ast_node(ND_LONG, fn->tok);
-        fn->va_area->data_type->num_indices->long_val = 136;
+        fn->va_area->data_type->num_indices = 136;
         fn->va_area->data_type->base = (ASTType_T*) primitives[TY_U8];
     }
 
