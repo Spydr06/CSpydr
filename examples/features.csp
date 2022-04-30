@@ -1,11 +1,20 @@
 import "std.csp";
 
-let x: i32[] = [1, 2, 3, 4, 5];
-
 fn main(): i32 
 {
-    using std;
+    print_array([1, 2, 3, 4, 5]);    
+    print_array([11, 22, 33]);
 
-    std::io::printf("%i\n", x |> $[0] + $[1]);
-    <- x[0];
+    <- 0;
+}
+
+fn print_array(array: i32[])
+{
+    using std::io;
+
+    putc('[');
+    for let i = 0; i < len array; i++; {
+        printf("%i, ", array[i]);
+    }
+    puts("]");
 }
