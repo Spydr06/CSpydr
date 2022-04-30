@@ -40,7 +40,6 @@ static void check_exit_fns(Validator_T* v);
 
 // id
 static void id_use(ASTIdentifier_T* id, va_list args);
-static void id_def(ASTIdentifier_T* id, va_list args);
 
 // obj
 static void fn_start(ASTObj_T* fn, va_list args);
@@ -51,8 +50,6 @@ static void typedef_start(ASTObj_T* tydef, va_list args);
 static void typedef_end(ASTObj_T* tydef, va_list args);
 static void global_start(ASTObj_T* global, va_list args);
 static void global_end(ASTObj_T* global, va_list args);
-static void local_start(ASTObj_T* local, va_list args);
-static void local_end(ASTObj_T* local, va_list args);
 static void fn_arg_start(ASTObj_T* arg, va_list args);
 static void fn_arg_end(ASTObj_T* arg, va_list args);
 static void enum_member_end(ASTObj_T* en, va_list args);
@@ -64,7 +61,6 @@ static void block_end(ASTNode_T* block, va_list args);
 static void return_end(ASTNode_T* ret, va_list args);
 static void for_start(ASTNode_T* _for, va_list args);
 static void for_end(ASTNode_T* _for, va_list args);
-static void case_end(ASTNode_T* _case, va_list args);
 static void match_type_end(ASTNode_T* match, va_list args);
 static void using_end(ASTNode_T* using, va_list args);
 static void with_start(ASTNode_T* with, va_list args);
@@ -89,7 +85,6 @@ static void and_or(ASTNode_T* and_or, va_list args);
 static void bitwise_op(ASTNode_T* op, va_list args);
 static void inc_dec(ASTNode_T* op, va_list args);
 static void index_(ASTNode_T* index, va_list args); // "index" was taken by string.h
-static void cast(ASTNode_T* cast, va_list args);
 static void assignment_start(ASTNode_T* assign, va_list args);
 static void assignment_end(ASTNode_T* assign, va_list args);
 static void struct_lit(ASTNode_T* s_lit, va_list args);
@@ -114,7 +109,6 @@ static void undef_type(ASTType_T* u_type, va_list args);
 static void typeof_type(ASTType_T* typeof_type, va_list args);
 static void array_type(ASTType_T* a_type, va_list args);
 static void c_array_type(ASTType_T* ca_type, va_list args);
-static void type_begin(ASTType_T* type, va_list args);
 static void type_end(ASTType_T* type, va_list args);
 static i32 get_type_size(Validator_T* v, ASTType_T* type);
 
@@ -137,7 +131,6 @@ static const ASTIteratorList_T main_iterator_list =
         [ND_BLOCK] = block_end,
         [ND_RETURN] = return_end,
         [ND_FOR] = for_end,
-        [ND_CASE] = case_end,
         [ND_MATCH_TYPE] = match_type_end,
         [ND_USING] = using_end,
         [ND_WITH] = with_end,
@@ -173,7 +166,6 @@ static const ASTIteratorList_T main_iterator_list =
         [ND_INC]     = inc_dec,
         [ND_DEC]     = inc_dec,
         [ND_INDEX]   = index_,
-        [ND_CAST]    = cast,
         [ND_ASSIGN]  = assignment_end,
         [ND_STRUCT]  = struct_lit,
         [ND_ARRAY]   = array_lit,
@@ -205,7 +197,6 @@ static const ASTIteratorList_T main_iterator_list =
         [OBJ_NAMESPACE] = namespace_start,
         [OBJ_TYPEDEF]   = typedef_start,
         [OBJ_GLOBAL]    = global_start,
-        [OBJ_LOCAL]     = local_start,
         [OBJ_FN_ARG]    = fn_arg_start,
     },
 
@@ -215,15 +206,12 @@ static const ASTIteratorList_T main_iterator_list =
         [OBJ_NAMESPACE] = namespace_end,
         [OBJ_TYPEDEF]   = typedef_end,
         [OBJ_GLOBAL]    = global_end,
-        [OBJ_LOCAL]     = local_end,
         [OBJ_FN_ARG]    = fn_arg_end,
         [OBJ_ENUM_MEMBER] = enum_member_end,
     },
 
-    .id_def_fn = id_def,
     .id_use_fn = id_use,
 
-    .type_begin = type_begin,
     .type_end = type_end,
 
     .iterate_over_right_members = false
@@ -621,10 +609,6 @@ static void check_exit_fns(Validator_T* v)
 
 // id
 
-static void id_def(ASTIdentifier_T* id, va_list args)
-{
-}
-
 static void id_use(ASTIdentifier_T* id, va_list args)
 {
     GET_VALIDATOR(args);
@@ -863,14 +847,6 @@ static void global_end(ASTObj_T* global, va_list args)
         throw_error(ERR_TYPE_ERROR, global->tok, "`void` type is not allowed for variables"); 
 }
 
-static void local_start(ASTObj_T* local, va_list args)
-{
-}
-
-static void local_end(ASTObj_T* local, va_list args)
-{
-}
-
 static void fn_arg_start(ASTObj_T* arg, va_list args)
 {
     GET_VALIDATOR(args);
@@ -947,10 +923,6 @@ static void return_end(ASTNode_T* ret, va_list args)
     }
 
     // type checking
-}
-
-static void case_end(ASTNode_T* _case, va_list args)
-{
 }
 
 static void for_start(ASTNode_T* _for, va_list args)
@@ -1358,10 +1330,6 @@ static void index_(ASTNode_T* index, va_list args)
         idx->left->data_type = (ASTType_T*) primitives[TY_U64];
         index->expr = idx;
     }
-}   
-
-static void cast(ASTNode_T* cast, va_list args)
-{
 }
 
 static void local_initializer(Validator_T* v, ASTNode_T* assign, ASTObj_T* local)
@@ -1449,7 +1417,7 @@ static void assignment_end(ASTNode_T* assign, va_list args)
         throw_error(ERR_TYPE_ERROR, assign->tok, "cannot assign type `void`");
 }
 
-static void anonymous_struct_lit(ASTNode_T* s_lit, Validator_T* v)
+static void anonymous_struct_lit(ASTNode_T* s_lit)
 {
     if(!s_lit->args->size)
     {
@@ -1483,7 +1451,7 @@ static void struct_lit(ASTNode_T* s_lit, va_list args)
     GET_VALIDATOR(args);
 
     if(!s_lit->data_type)
-        anonymous_struct_lit(s_lit, v);
+        anonymous_struct_lit(s_lit);
 
     // When compiling to assembly, we have to allocate the memory on the stack.
     // this is done by creating an "anonymous" local variable of the struct type
@@ -1787,6 +1755,7 @@ static void type_expr(ASTNode_T* cmp, va_list args)
                         break;
                     case TOKEN_BUILTIN_IS_STRUCT:
                         cmp->bool_val = expanded->kind == TY_STRUCT && !expanded->is_union;
+                        break;
                     case TOKEN_BUILTIN_IS_UNION:
                         cmp->bool_val = expanded->kind == TY_STRUCT && expanded->is_union;
                         break;
@@ -1884,10 +1853,6 @@ static void c_array_type(ASTType_T* ca_type, va_list args)
         ca_type->num_indices = const_u64(ca_type->num_indices_node);
 }
 
-static void type_begin(ASTType_T* type, va_list args)
-{
-}
-
 static void type_end(ASTType_T* type, va_list args)
 {
     GET_VALIDATOR(args);
@@ -1899,7 +1864,7 @@ static void type_end(ASTType_T* type, va_list args)
     exp->align = type->align;
 }
 
-static i32 get_union_size(Validator_T* v, ASTType_T* u_type)
+static i32 get_union_size(ASTType_T* u_type)
 {
     i32 biggest = 0;
     for(size_t i = 0; i < u_type->members->size; i++)
@@ -1968,26 +1933,16 @@ static i32 get_type_size(Validator_T* v, ASTType_T* type)
         case TY_UNDEF:
             return get_type_size(v, expand_typedef(v, type));
         case TY_C_ARRAY:
-            {
-                u64 len = type->num_indices;
-                if(len < 0)
-                    throw_error(ERR_TYPE_ERROR, type->num_indices_node->tok, "cannot get array type with negative index size (%ld)", len);
-                if(len == 0)
-                    return 0;
-                return get_type_size(v, type->base) * len;
-            }
+            if(type->num_indices == 0)
+                return 0;
+            return get_type_size(v, type->base) * type->num_indices;
         case TY_VLA:
             return PTR_S;
         case TY_ARRAY:
-            {
-                u64 len = type->num_indices;
-                if(len < 0)
-                    throw_error(ERR_TYPE_ERROR, type->num_indices_node->tok, "cannot get array type with negative index as size (%ld)", len);
-                return get_type_size(v, type->base) * len + PTR_S;
-            }
+                return get_type_size(v, type->base) * type->num_indices + PTR_S;
         case TY_STRUCT:
             if(type->is_union)
-                return get_union_size(v, type);
+                return get_union_size(type);
             else
                 return get_struct_size(v, type);
         default:

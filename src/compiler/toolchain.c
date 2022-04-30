@@ -17,11 +17,11 @@
 #include "globals.h"
 
 // generate the ast from the source file (lexing, preprocessing, parsing)
-static void generate_ast(ASTProg_T* ast, char* path, char* target, bool silent);
+static void generate_ast(ASTProg_T* ast, char* path, bool silent);
 
 // generate the output code (c, llvm, xml)
-static void transpile_c(ASTProg_T*, char* target, Action_T action, bool print_c, bool silent);
-static void generate_asm(ASTProg_T* ast, char* target, Action_T action, bool print_asm, bool silent);
+static void transpile_c(ASTProg_T* ast, char* target, bool print_c, bool silent);
+static void generate_asm(ASTProg_T* ast, char* target, bool print_asm, bool silent);
 static void generate_json(ASTProg_T* ast, char* target, bool print_json, bool silent);
 
 static void run(char* file);
@@ -35,7 +35,7 @@ void compile(char* input_file, char* output_file, Action_T action)
     if(global.from_json)
         ast_from_json(&ast, input_file);
     else
-        generate_ast(&ast, input_file, output_file, global.silent);
+        generate_ast(&ast, input_file, global.silent);
 
     if(global.optimize)
         optimize(&ast);
@@ -43,10 +43,10 @@ void compile(char* input_file, char* output_file, Action_T action)
     switch(global.ct)
     {
         case CT_TRANSPILE:
-            transpile_c(&ast, output_file, action, global.print_code, global.silent);
+            transpile_c(&ast, output_file, global.print_code, global.silent);
             break;
         case CT_ASM:
-            generate_asm(&ast, output_file, action, global.print_code, global.silent);
+            generate_asm(&ast, output_file, global.print_code, global.silent);
             break;
         case CT_TO_JSON:
             generate_json(&ast, output_file, global.print_code, global.silent);
@@ -80,7 +80,7 @@ void compile(char* input_file, char* output_file, Action_T action)
     }
 }
 
-static void generate_ast(ASTProg_T* ast, char* path, char* target, bool silent)
+static void generate_ast(ASTProg_T* ast, char* path, bool silent)
 {
     List_T* files = init_list();
     list_push(files, read_file(path));
@@ -91,7 +91,7 @@ static void generate_ast(ASTProg_T* ast, char* path, char* target, bool silent)
     mem_add_list(files);
 }
 
-static void transpile_c(ASTProg_T* ast, char* target, Action_T action, bool print_c, bool silent)
+static void transpile_c(ASTProg_T* ast, char* target, bool print_c, bool silent)
 {
     CCodegenData_T cg;
     init_c_cg(&cg, ast);
@@ -102,7 +102,7 @@ static void transpile_c(ASTProg_T* ast, char* target, Action_T action, bool prin
     free(cg.buf);
 }
 
-static void generate_asm(ASTProg_T* ast, char* target, Action_T action, bool print_asm, bool silent)
+static void generate_asm(ASTProg_T* ast, char* target, bool print_asm, bool silent)
 {
     ASMCodegenData_T cg;
     init_asm_cg(&cg, ast);

@@ -10,6 +10,7 @@ typedef enum COMPILE_TYPE_ENUM
 
 typedef enum ACTION_ENUM
 {
+    AC_NULL = -1,
     AC_BUILD,
     AC_RUN,
     AC_DEBUG

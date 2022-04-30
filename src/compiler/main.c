@@ -136,12 +136,12 @@ i32 main(i32 argc, char* argv[])
         evaluate_info_flags(argv[1]);
 
     // get the action to perform
-    Action_T action = -1;
+    Action_T action = AC_NULL;
     global.ct = DEFAULT_COMPILE_TYPE;
     for(i32 i = 0; action_table[i].as_str; i++)
         if(streq(argv[1], action_table[i].as_str))
             action = action_table[i].ac;
-    if(action == -1)
+    if(action == AC_NULL)
     {
         LOG_ERROR_F("[Error] Unknown action \"%s\", expect [build, run, debug, repl]\n", argv[1]);
         exit(1);

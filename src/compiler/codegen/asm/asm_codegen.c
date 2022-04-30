@@ -493,6 +493,8 @@ static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var)
 
         for(size_t i = 0; i < target_size; i++) 
             asm_println(cg, "  .byte %d", (int) buffer[i]);
+        
+        free(buffer);
     }
 }
 

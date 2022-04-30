@@ -70,7 +70,7 @@ Macro_T* init_macro(Token_T* tok)
 
 static Macro_T* find_macro(Preprocessor_T* pp, char* callee, u8 argc);
 
-static void init_macro_call(Preprocessor_T* pp, MacroCall_T* call, Token_T* tok)
+static void init_macro_call(MacroCall_T* call, Token_T* tok)
 {
     call->tok = tok;
 
@@ -328,7 +328,7 @@ static int find_macro_arg(Macro_T* mac, char* callee)
 
 static void parse_macro_call(Preprocessor_T* pp, MacroCall_T* call, List_T* token_list, size_t* i, size_t max)
 {
-    init_macro_call(pp, call, token_list->items[*i]);
+    init_macro_call(call, token_list->items[*i]);
 
     if((*i) + 1 >= max)
         goto finalize;
