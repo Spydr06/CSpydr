@@ -843,8 +843,25 @@ static void global_end(ASTObj_T* global, va_list args)
     if(expanded->is_constant)
         global->is_constant = true;
     
-    if(expanded->kind == TY_VOID)
+    switch(expanded->kind)
+    {
+    case TY_VOID:
         throw_error(ERR_TYPE_ERROR, global->tok, "`void` type is not allowed for variables"); 
+        break;
+    
+    case TY_VLA:
+        if(global->value && unpack(global->value->data_type)->kind == TY_ARRAY)
+        {
+            global->data_type->kind = TY_ARRAY;
+            global->data_type->num_indices = unpack(global->value->data_type)->num_indices;
+        }
+        break;
+    
+    default:
+        break;
+    }
+
+    global->data_type->size = get_type_size(v, global->data_type);
 }
 
 static void fn_arg_start(ASTObj_T* arg, va_list args)

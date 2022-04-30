@@ -56,8 +56,9 @@ void gen_relocation(ASTNode_T* node, size_t target_size, u8* buffer)
         case ND_ARRAY:
         {
             size_t index_size = node->data_type->base->size;
+            memcpy(buffer, &node->data_type->num_indices, PTR_S);
             for(size_t i = 0; i < node->args->size; i++)
-                gen_relocation(node->args->items[i], index_size, buffer);
+                gen_relocation(node->args->items[i], index_size, buffer + index_size * i + PTR_S);
         } break;
 
         case ND_STRUCT:
