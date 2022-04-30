@@ -51,13 +51,6 @@ void collect_locals_lambda(ASTNode_T* lambda, va_list args)
         list_push(l, lambda->args->items[i]);
 }
 
-void collect_locals_array_lit(ASTNode_T* a_lit, va_list args)
-{
-    GET_LIST(args);
-    if(global.ct == CT_ASM)
-        list_push(l, a_lit->buffer);
-}
-
 void collect_locals(ASTNode_T* stmt, List_T* locals)
 {
     static ASTIteratorList_T iterator = {
@@ -66,7 +59,6 @@ void collect_locals(ASTNode_T* stmt, List_T* locals)
             [ND_WITH] = collect_locals_with,
             [ND_FOR] = collect_locals_for,
             [ND_LAMBDA] = collect_locals_lambda,
-            [ND_ARRAY] = collect_locals_array_lit,
         }
     };
 

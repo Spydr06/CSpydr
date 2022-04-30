@@ -1759,9 +1759,6 @@ static ASTNode_T* parse_array_lit(Parser_T* p)
     a_lit->args = parse_expr_list(p, TOKEN_RBRACKET);
     parser_consume(p, TOKEN_RBRACKET, "expect `]` after array literal");
 
-    if(global.ct == CT_ASM)
-        a_lit->buffer = init_ast_obj(OBJ_LOCAL, a_lit->tok);
-
     return a_lit;
 }
 

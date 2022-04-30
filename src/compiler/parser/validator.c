@@ -1389,7 +1389,7 @@ static void local_initializer(Validator_T* v, ASTNode_T* assign, ASTObj_T* local
 
 static void assignment_start(ASTNode_T* assign, va_list args)
 {
-    if(assign->right->kind == ND_ARRAY)
+    if(assign->right->kind == ND_ARRAY || assign->right->kind == ND_STRUCT)
         assign->right->is_assigning = true;
 }
 
@@ -1531,11 +1531,14 @@ static void array_lit(ASTNode_T* a_lit, va_list args)
     a_lit->data_type->base = ((ASTNode_T*) a_lit->args->items[0])->data_type;
     a_lit->data_type->num_indices = a_lit->args->size;
 
-    if(global.ct == CT_ASM)
+    if(global.ct == CT_ASM && !a_lit->is_assigning)
     {
+        a_lit->buffer = init_ast_obj(OBJ_LOCAL, a_lit->tok);
         a_lit->buffer->data_type = a_lit->data_type;
         a_lit->buffer->data_type->num_indices = a_lit->args->size;
         a_lit->buffer->data_type->size = get_type_size(v, a_lit->buffer->data_type);
+    
+        list_push(v->current_function->objs, a_lit->buffer);
     }
 }
 
