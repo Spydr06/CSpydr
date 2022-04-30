@@ -12,9 +12,8 @@ fn print_array(array: i32[])
 {
     using std::io;
 
-    putc('[');
     for let i = 0; i < len array; i++; {
         printf("%i, ", array[i]);
     }
-    puts("]");
+    putc('\n');
 }
