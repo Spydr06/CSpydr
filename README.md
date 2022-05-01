@@ -33,7 +33,7 @@ A list of all the features, that are/will be implemented.
 
 ##### CSpydr Language features:
 - [x] primitive data types `i8` `i16` `i32` `i64` `u8` `u16` `u32` `u64` `f32` `f64` `f80` `bool` `char` `void`
-- [x] pointers and arrays `&` `[]`
+- [x] pointers, arrays and c-like arrays `&` `[]` `'c[]`
 - [x] custom data types `struct` `union` `enum` `{}` (tuples)
 - [x] control statements `if` `match` `for` `while` `loop` `ret` `break` `continue` `noop` `with`
 - [x] different loop types: `for`, `while` and `loop`
@@ -102,7 +102,7 @@ cspc --help
 
 A simple [hello-world](https://github.com/Spydr06/CSpydr/blob/main/doc/src/helloworld.csp) program:
 
-```cspydr
+```rust
 import "io.csp";
 
 fn main(): i32
