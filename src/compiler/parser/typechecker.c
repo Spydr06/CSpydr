@@ -17,13 +17,15 @@ static void typecheck_call(ASTNode_T* call, va_list args);
 static void typecheck_explicit_cast(ASTNode_T* cast, va_list args);
 static void typecheck_assignment(ASTNode_T* assignment, va_list args);
 static void typecheck_array_lit(ASTNode_T* a_lit, va_list args);
+static void typecheck_struct_lit(ASTNode_T* a_lit, va_list args);
 
 static const ASTIteratorList_T iterator = {
     .node_end_fns = {
         [ND_CALL] = typecheck_call,
         [ND_CAST] = typecheck_explicit_cast,
         [ND_ASSIGN] = typecheck_assignment,
-        [ND_ARRAY] = typecheck_array_lit
+        [ND_ARRAY] = typecheck_array_lit,
+        [ND_STRUCT] = typecheck_struct_lit,
     }
 };
 
@@ -120,12 +122,48 @@ static void typecheck_array_lit(ASTNode_T* a_lit, va_list args)
     for(size_t i = 0; i < a_lit->args->size; i++)
     {
         ASTNode_T* arg = a_lit->args->items[i];
+
+        if(types_equal(arg->data_type, base_ty))
+            continue;
+
         if(implicitly_castable(arg->tok, arg->data_type, base_ty))
             a_lit->args->items[i] = implicit_cast(arg->tok, arg, base_ty);
         else
             throw_error(ERR_TYPE_ERROR_UNCR, arg->tok, "cannot implicitly cast from `%s` to `%s`",
                 ast_type_to_str(buf1, arg->data_type, BUFSIZ),
                 buf2[0] == '\0' ? buf2 : ast_type_to_str(buf2, base_ty, BUFSIZ)
+            );
+    }
+}
+
+static void typecheck_struct_lit(ASTNode_T* s_lit, va_list args)
+{
+    size_t expected_len = unpack(s_lit->data_type)->members->size;
+    size_t got_len = s_lit->args->size;
+
+    char buf1[BUFSIZ] = {'\0'};
+    char buf2[BUFSIZ] = {'\0'};
+
+    if(got_len > expected_len) 
+    {
+        throw_error(ERR_TYPE_ERROR_UNCR, s_lit->tok, "too many struct members for specified type `%s`", ast_type_to_str(buf1, s_lit->data_type, BUFSIZ));
+        memset(buf1, '\0', BUFSIZ * sizeof(char));
+    }
+
+    for(size_t i = 0; i < MIN(expected_len, got_len); i++)
+    {
+        ASTNode_T* arg = s_lit->args->items[i];
+        ASTType_T* expected_ty = ((ASTNode_T*) unpack(s_lit->data_type)->members->items[i])->data_type;
+
+        if(types_equal(arg->data_type, expected_ty))
+            continue;
+
+        if(implicitly_castable(arg->tok, arg->data_type, expected_ty))
+            s_lit->args->items[i] = implicit_cast(arg->tok, arg, expected_ty);
+        else
+            throw_error(ERR_TYPE_ERROR_UNCR, arg->tok, "cannot implicitly cast from `%s` to `%s`",
+                ast_type_to_str(buf1, arg->data_type, BUFSIZ),
+                buf2[0] == '\0' ? buf2 : ast_type_to_str(buf2, expected_ty, BUFSIZ)
             );
     }
 }

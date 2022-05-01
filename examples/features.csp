@@ -1,21 +1,15 @@
 import "std.csp";
 
-let x: i32[2];
+type Test: struct {a: i32, b: i32};
 
 fn main(): i32 
 {
-    print_array([1, 2, 3, 4, 5]);    
-    print_array([11, 22, 33]);
-
-    <- len x;
+    let t = Test::{1, 2};
+    test(t);
+    <- 0;
 }
 
-fn print_array(array: i32[])
+fn test(t: Test)
 {
-    using std::io;
-
-    for let i = 0; i < len array; i++; {
-        printf("%i, ", array[i]);
-    }
-    putc('\n');
+    std::io::printf("%i, %i\n", t.a, t.b);
 }

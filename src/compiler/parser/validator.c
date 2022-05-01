@@ -1470,37 +1470,13 @@ static void struct_lit(ASTNode_T* s_lit, va_list args)
     if(!s_lit->data_type)
         anonymous_struct_lit(s_lit);
 
-    // When compiling to assembly, we have to allocate the memory on the stack.
-    // this is done by creating an "anonymous" local variable of the struct type
-    // and then assigning the struct literal to it
-    // foo :: {0, 1} gets converted to:
-    // let <anonymous>: foo = foo :: {0, 1};
-    if(v->scope_depth > 1 && global.ct == CT_ASM && !s_lit->is_assigning)
+    if(global.ct == CT_ASM && !s_lit->is_assigning)
     {
-        static u64 count = 0;
-        ASTObj_T* local = init_ast_obj(OBJ_LOCAL, s_lit->tok);
-        local->data_type = s_lit->data_type;
-        local->referenced = true;
-        local->id = init_ast_identifier(s_lit->tok, "");
-        sprintf(local->id->callee, "__csp_structlit_%ld__", count++);
-        list_push(v->current_function->objs, local);
-
-        ASTNode_T assignment = {
-            .kind = ND_ASSIGN,
-            .tok = s_lit->tok,
-            .id = local->id,
-            .data_type = s_lit->data_type,
-        };
-
-        assignment.right = init_ast_node(ND_ARRAY, s_lit->tok);
-        *assignment.right = *s_lit;
+        s_lit->buffer = init_ast_obj(OBJ_LOCAL, s_lit->tok);
+        s_lit->buffer->data_type = s_lit->data_type;
+        s_lit->buffer->data_type->size = get_type_size(v, s_lit->buffer->data_type);
         
-        assignment.left = init_ast_node(ND_ID, s_lit->tok);
-        assignment.left->id = local->id;
-        assignment.left->data_type = local->data_type;
-        assignment.left->referenced_obj = local;
-
-        *s_lit = assignment;
+        list_push(v->current_function->objs, s_lit->buffer);
     }
 }
 

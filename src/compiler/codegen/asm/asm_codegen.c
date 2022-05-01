@@ -935,9 +935,8 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
                 return;
             }
         case ND_LAMBDA:
-            asm_gen_expr(cg, node);
-            return;
         case ND_ARRAY:
+        case ND_STRUCT:
             asm_gen_expr(cg, node);
             return;
         default:
@@ -1397,34 +1396,15 @@ static void asm_gen_id_ptr(ASMCodegenData_T* cg, ASTNode_T* id)
 
 static void asm_gen_struct_lit(ASMCodegenData_T* cg, ASTNode_T* node)
 {
-    // x = y :: {1, 2, 3} gets converted to x.z = 1, x.w = 2, x.u = 3
-    ASTType_T* struct_type = unpack(node->left->data_type);
-
-    if(struct_type->members->size > unpack(node->left->data_type)->members->size)
-        throw_error(ERR_TYPE_ERROR, node->right->tok, "too many struct arguments, maximum allowed is %ld", unpack(node->left->data_type)->members->size);
-    if(node->right->args->size > struct_type->members->size)
-        throw_error(ERR_TYPE_ERROR, node->right->tok, "too many struct arguments, maximum allowed is %ld", struct_type->members->size);
-    for(size_t i = 0; i < node->right->args->size; i++)
+    for(size_t i = 0; i < node->args->size; i++)
     {
-        ASTNode_T* item = node->right->args->items[i];
-        ASTNode_T* struct_member = struct_type->members->items[i];
-        ASTNode_T converted = {
-            .kind = ND_ASSIGN,
-            .tok = node->tok,
-            .data_type = struct_member->data_type,
-            .left = &(ASTNode_T) {
-                .kind = ND_MEMBER,
-                .tok = node->left->tok,
-                .data_type = struct_member->data_type,
-                .left = node->left,
-                .body = struct_member,
-            },
-            .right = item
-        };
-
-        asm_gen_expr(cg, &converted);
+        ASTNode_T* arg = node->args->items[i];
+        asm_push(cg);
+        asm_gen_expr(cg, arg);
+        asm_store(cg, arg->data_type);
+        asm_println(cg, "  mov %%rdi, %%rax");
+        asm_println(cg, "  add $%d, %%rax", arg->data_type->size);
     }
-    asm_gen_expr(cg, node->left);
 }
 
 static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
@@ -1647,10 +1627,6 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_load(cg, node->data_type);
             return;
         
-        case ND_STRUCT:
-            throw_error(ERR_CODEGEN, node->tok, "cannot have struct literal at this place");
-            return;
-        
         case ND_ARRAY:
             for(size_t i = 0; i < node->args->size; i++)
             {
@@ -1663,6 +1639,13 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             // add the size of the array at the beginning
             asm_println(cg, "  movq $%lu, %d(%%rbp)", node->data_type->num_indices, node->buffer->offset);
             asm_println(cg, "  lea %d(%%rbp), %%rax", node->buffer->offset);
+            return;
+        
+        case ND_STRUCT:
+            asm_println(cg, "  lea %d(%%rbp), %%rax", node->buffer->offset);
+            asm_push(cg);
+            asm_gen_struct_lit(cg, node);
+            asm_pop(cg, "%rax");
             return;
 
         case ND_REF:
@@ -1693,7 +1676,10 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                 asm_pop(cg, "%rax");
                 return;
             case ND_STRUCT:
-                asm_gen_struct_lit(cg, node);
+                asm_gen_addr(cg, node->left);
+                asm_push(cg);
+                asm_gen_struct_lit(cg, node->right);
+                asm_pop(cg, "%rax");
                 return;
             default:
                 asm_gen_addr(cg, node->left);
