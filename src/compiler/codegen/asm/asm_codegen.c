@@ -1663,14 +1663,14 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             case ND_ARRAY:
                 asm_gen_addr(cg, node->left);
                 asm_push(cg);
-                asm_println(cg, "  add $4, %%rax");
+                asm_println(cg, "  add $8, %%rax");
                 for(size_t i = 0; i < node->right->args->size; i++)
                 {
-                    asm_println(cg, "  add $%d, %%rax", node->right->data_type->base->size);
                     asm_push(cg);
                     asm_gen_expr(cg, node->right->args->items[i]);
                     asm_store(cg, node->right->data_type->base);
                     asm_println(cg, "  mov %%rdi, %%rax");
+                    asm_println(cg, "  add $%d, %%rax", node->right->data_type->base->size);
                 }
                 
                 asm_pop(cg, "%rax");
