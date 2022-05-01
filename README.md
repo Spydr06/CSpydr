@@ -62,40 +62,40 @@ Currently, CSpydr is only available for Linux. Once a first major release is in 
 <br/>
 To build CSpydr on your computer enter these following commands in a terminal
 
-```bash
-git clone https://github.com/spydr06/cspydr.git
-cd ./cspydr
+```console
+$ git clone https://github.com/spydr06/cspydr.git
+$ cd ./cspydr
 ```
-```bash
-cmake .
-make
+```console
+$ cmake .
+$ make
 ```
 
 To install CSpydr with all of its components (cspc - The CSpydr Compiler and the CSpydr Standard Library), enter this command (needs root privileges):
-```bash
-make install
+```console
+# make install
 ```
 
 ## Usage
 
 To compile a CSpydr program use the following command:
-```bash
-cspc build <your file>
+```console
+$ cspc build <your file>
 ```
 To directly run a program use this command:
-```bash
-cspc run <your file>
+```console
+$ cspc run <your file>
 ```
 To launch a special debug shell, start your program using the `debug` action:
 <br/>
 *(not finished yet!)*
-```bash
-cspc debug <your file>
+```console
+$ cspc debug <your file>
 ```
 
 Get help using this command:
-```bash
-cspc --help
+```console
+$ cspc --help
 ```
 
 ## The CSpydr Syntax
@@ -113,8 +113,8 @@ fn main(): i32
 ```
 
 Running this program is as easy as entering the following command:
-```bash
-cspc run hello-world.csp
+```console
+$ cspc run hello-world.csp
 ```
 
 ### Examples
