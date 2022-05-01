@@ -100,7 +100,7 @@ cspc --help
 
 ## The CSpydr Syntax
 
-A simple [hello-world](https://github.com/Spydr06/CSpydr/blob/main/doc/src/helloworld.csp) program:
+A simple [hello-world](https://github.com/Spydr06/CSpydr/blob/main/examples/traditional/helloworld.csp) program:
 
 ```rust
 import "io.csp";
