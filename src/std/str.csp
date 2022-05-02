@@ -206,7 +206,7 @@ namespace std {
         fn from_char(c: char): ::std::String
         {
             let buf: u16 = c << 8 | '\0';
-            <- str!{&buf: &char};
+            <- str!{(&buf): &char};
         }
 
         fn format(fmt: const &char, args: ...): &void

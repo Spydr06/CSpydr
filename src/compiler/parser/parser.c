@@ -55,6 +55,7 @@ typedef enum
     LOGIC_OR,     // x || y
     LOGIC_AND,    // x && y
     INFIX_CALL,   // x `y` z
+    CAST,         // x: y
     BIT_OR,       // x | y
     BIT_XOR,      // x ^ y
     BIT_AND,      // x & y
@@ -71,7 +72,6 @@ typedef enum
     INC,          // x--
     DEC = INC,    // x++
     X_OF,         // alignof x, sizeof x, typeof x
-    CAST,         // x: y
     CALL,         // x(y)
     ARRAY,        // x[y]
     MEMBER,       // x.y
@@ -1924,7 +1924,7 @@ static ASTNode_T* parse_unary(Parser_T* p)
     ASTNode_T* unary = init_ast_node(unary_ops[p->tok->type], p->tok);
     parser_advance(p);
 
-    unary->right = parse_expr(p, LOWEST, TOKEN_ASSIGN);
+    unary->right = parse_expr(p, expr_parse_fns[unary->tok->type].prec, TOKEN_ASSIGN);
     return unary;
 }
 

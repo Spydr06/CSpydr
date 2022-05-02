@@ -8,17 +8,17 @@ macro WEBLINK {
 
 # entry point
 fn main(): i32 {
-    using curl;
+    using curl, std::io;
 
     let version_data = curl_version_info(CURLVERSION_NOW!);
-    std::io::puts(version_data.version); # print the cURL version
+    puts(version_data.version); # print the cURL version
 
     let handle = curl_easy_init(); # initialize the cURL handle
     if handle {
         curl_easy_setopt(handle, curl::CURLoption::URL, WEBLINK!);
         curl_easy_setopt(handle, curl::CURLoption::WRITEFUNCTION, 
             |ptr: &char, size: u64, nmemb: u64, stream: &void| u64 => {
-                std::io::puts(ptr);
+                puts(ptr);
                 <- 0;
             });
 
