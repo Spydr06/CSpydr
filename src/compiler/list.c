@@ -17,7 +17,7 @@ List_T* init_list(void)
     List_T* list = malloc(sizeof(struct LIST_STRUCT));
     list->size = 0;
     list->allocated = LIST_INIT_SIZE;
-    list->items = malloc(list->allocated * sizeof(void*));
+    list->items = calloc(list->allocated, sizeof(void*));
 
     return list;
 }

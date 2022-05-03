@@ -13,3 +13,18 @@ fn test(t: Test)
 {
     std::io::printf("%i, %i\n", t.a, t.b);
 }
+
+#[
+plan for templates
+
+macro integer_type {
+    i8 | i16 | i16 | i32 | i64 |
+    u8 | u16 | u16 | u32 | u64
+}
+
+fn template_test(x: T, y: X)
+  where T: integer_type!, X: &void | &char
+{
+    # do smth
+};
+]#
