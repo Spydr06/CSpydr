@@ -1,20 +1,9 @@
 import "std.csp";
 
-type Test: struct {a: i32, b: i32};
-
 fn main(): i32 
 {
-    let t = Test::{1, 2};
-    test(t);
-
-   # let x = template_test(4);
 
     <- 0;
-}
-
-fn test(t: Test)
-{
-    std::io::printf("%i, %i\n", t.a, t.b);
 }
 
 #[

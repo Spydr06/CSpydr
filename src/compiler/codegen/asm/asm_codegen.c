@@ -1492,7 +1492,6 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                 switch(array_type->kind)
                 {
                     case TY_C_ARRAY:
-                        printf("%lu\n", array_type->num_indices);
                         asm_println(cg, "  mov $%lu, %%rax", array_type->num_indices);
                         break;
                     
