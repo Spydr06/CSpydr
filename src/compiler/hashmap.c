@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <assert.h>
+#include <math.h>
 
 #ifndef HASHMAP_INIT_SIZE
     #define HASHMAP_INIT_SIZE 128
@@ -26,18 +27,25 @@ struct HASHMAP_STRUCT
     HashPair_T* pairs;
 };
 
-static size_t hashmap_calc_size(HashMap_T* map);
-static void hashmap_rehash(HashMap_T* map, size_t size);
-static HashPair_T* hashmap_find_pair(HashMap_T* map, char* key, bool find_empty);
-static size_t hashmap_default_hash(char* data);
+static inline size_t hashmap_calc_size(HashMap_T* map);
+static inline void hashmap_rehash(HashMap_T* map, size_t size);
+static inline HashPair_T* hashmap_find_pair(HashMap_T* map, char* key, bool find_empty);
+static inline size_t hashmap_default_hash(char* data);
 
 static size_t (*HASHMAP_HASH_FUNCTION)(char*) = hashmap_default_hash;
 
 HashMap_T* hashmap_init()
 {
+    return hashmap_init_sized(HASHMAP_INIT_SIZE);
+}
+
+HashMap_T* hashmap_init_sized(size_t size)
+{
+    size_t actual_size = 1 << ((sizeof(u64) << 3) - __builtin_clzl(size - 1)); // round up to the next power of two
+
     HashMap_T* map = malloc(sizeof(struct HASHMAP_STRUCT));
     map->size = 0;
-    map->alloc = HASHMAP_INIT_SIZE;
+    map->alloc = actual_size;
     map->pairs = calloc(map->alloc, sizeof(HashPair_T));
 
     return map;
@@ -85,7 +93,7 @@ void* hashmap_get(HashMap_T* map, char* key)
     return pair ? pair->value : NULL;
 }
 
-static size_t hashmap_calc_size(HashMap_T* map)
+static inline size_t hashmap_calc_size(HashMap_T* map)
 {
     size_t map_size = map->size + (map->size / 3);
     if(map_size < map->alloc)
@@ -94,7 +102,7 @@ static size_t hashmap_calc_size(HashMap_T* map)
         return 1 << ((sizeof(u64) << 3) - __builtin_clzl(map_size - 1));
 }
 
-static void hashmap_rehash(HashMap_T* map, size_t size)
+static inline void hashmap_rehash(HashMap_T* map, size_t size)
 {
     if(!map || size < map->size)
         return;
@@ -122,7 +130,7 @@ static void hashmap_rehash(HashMap_T* map, size_t size)
  * This is an implementation of the well-documented Jenkins one-at-a-time
  * hash function. See https://en.wikipedia.org/wiki/Jenkins_hash_function
  */
-static size_t hashmap_default_hash(char* data)
+static inline size_t hashmap_default_hash(char* data)
 {
     size_t len = strlen(data);
     const u8* byte = (const u8*) data;
@@ -143,13 +151,13 @@ static size_t hashmap_default_hash(char* data)
     return hash;
 }
 
-static size_t hashmap_calc_index(HashMap_T* map, char* key)
+static inline size_t hashmap_calc_index(HashMap_T* map, char* key)
 {
     size_t index = HASHMAP_HASH_FUNCTION(key);
     return HASHMAP_SIZE_MOD(map, index);
 }
 
-static HashPair_T* hashmap_find_pair(HashMap_T* map, char* key, bool find_empty)
+static inline HashPair_T* hashmap_find_pair(HashMap_T* map, char* key, bool find_empty)
 {
     size_t index = hashmap_calc_index(map, key);
 

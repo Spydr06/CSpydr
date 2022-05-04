@@ -4,6 +4,7 @@
 #include "stdbool.h"
 
 #include "list.h"
+#include "hashmap.h"
 #include "lexer/token.h"
 #include "config.h"
 
@@ -356,6 +357,7 @@ struct AST_OBJ_STRUCT
     ASTNode_T* value;
     List_T* args;
     List_T* objs;
+    HashMap_T* templates;
 
     // functions
     ASTType_T* return_type;
