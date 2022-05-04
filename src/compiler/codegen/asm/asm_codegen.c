@@ -2410,7 +2410,7 @@ static void asm_store_gp(ASMCodegenData_T* cg, i32 r, i32 offset, i32 sz)
 static void asm_gen_lambda(ASMCodegenData_T* cg, ASTNode_T* lambda)
 {
     char* prev_fn_name = cg->current_fn_name;
-    char lambda_name[__CSP_MAX_TOKEN_SIZE] = {};
+    char lambda_name[BUFSIZ] = {};
     sprintf(lambda_name, "lambda.%ld", lambda->long_val);
     cg->current_fn_name = &(lambda_name[0]);
 

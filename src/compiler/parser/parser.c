@@ -1,6 +1,7 @@
 #include "parser.h"
 
 #include "ast/ast.h"
+#include "hashmap.h"
 #include "util.h"
 #include "config.h"
 #include "error/error.h"
@@ -20,9 +21,11 @@
 #include "globals.h"
 #include "optimizer/constexpr.h"
 
+#include <asm-generic/errno-base.h>
 #include <limits.h>
 #include <string.h>
 #include <float.h>
+#include <errno.h>
 
 typedef struct PARSER_STRUCT
 {
@@ -557,7 +560,7 @@ static void parse_compiler_directives(Parser_T* p, List_T* obj_list)
             parser_advance(p);
         Token_T* tok = p->tok;
         parser_consume(p, TOKEN_STRING, "expect value as string");
-        eval_compiler_directive(p, field_token, tok->heap_value, obj_list);
+        eval_compiler_directive(p, field_token, tok->value, obj_list);
     } while(tok_is(p, TOKEN_COMMA));
 
     parser_consume(p, TOKEN_RPAREN, "expect `)` after value");
@@ -588,7 +591,6 @@ static ASTIdentifier_T* __parse_identifier(Parser_T* p, ASTIdentifier_T* outer, 
            return id; // :: followed by < would be a generic in a functon or -call 
         
         parser_advance(p);
-        id->kind = OBJ_NAMESPACE;  // only namespaces can have static members
         return __parse_identifier(p, id, false);
     }
     return id;
@@ -725,8 +727,13 @@ static ASTObj_T* parser_generate_tuple_type(Parser_T* p, ASTType_T* tuple)
         ASTObj_T* tydef = init_ast_obj(OBJ_TYPEDEF, tuple->tok);
         tydef->data_type = mem_malloc(sizeof(struct AST_TYPE_STRUCT));
         *tydef->data_type = *tuple;
-        tydef->id = init_ast_identifier(tuple->tok, "");
-        sprintf(tydef->id->callee, "__csp_tuple_%lu__", p->cur_tuple_id++);
+
+        char* id = calloc(35, sizeof(char));
+        sprintf(id, "__csp_tuple_%lu__", p->cur_tuple_id++);
+        mem_add_ptr(id);
+
+        tydef->id = init_ast_identifier(tuple->tok, id);
+
         list_push(p->root_ref->objs, tydef);
         tuple->kind = TY_UNDEF;
         tuple->id = tydef->id;
@@ -786,8 +793,12 @@ static ASTType_T* parse_type(Parser_T* p)
                 {
                     ASTNode_T* member = init_ast_node(ND_STRUCT_MEMBER, p->tok);
                     member->data_type = parse_type(p);
-                    member->id = init_ast_identifier(p->tok, "");
-                    sprintf(member->id->callee, "_%lu", i);
+
+                    char* id = calloc(22, sizeof(char));
+                    mem_add_ptr(id);
+                    sprintf(id, "_%lu", i);
+
+                    member->id = init_ast_identifier(p->tok, id);
 
                     list_push(type->members, member);
                     if(!tok_is(p, TOKEN_RBRACE))
@@ -904,11 +915,11 @@ static void parse_extern(Parser_T* p, List_T* objs)
 {
     parser_advance(p);
 
-    bool extern_c = tok_is(p, TOKEN_STRING) && (streq(p->tok->heap_value, "C") || streq(p->tok->heap_value, "c"));
+    bool extern_c = tok_is(p, TOKEN_STRING) && (streq(p->tok->value, "C") || streq(p->tok->value, "c"));
     if(extern_c)
         parser_advance(p);
     else if(tok_is(p, TOKEN_STRING))
-        throw_error(ERR_SYNTAX_ERROR, p->tok, "invalid `extern` parameter `\"%s\"`, expect `\"C\"` or `{`", p->tok->heap_value);
+        throw_error(ERR_SYNTAX_ERROR, p->tok, "invalid `extern` parameter `\"%s\"`, expect `\"C\"` or `{`", p->tok->value);
 
     if(tok_is(p, TOKEN_LBRACE)) {
         parser_advance(p);
@@ -1739,12 +1750,12 @@ static ASTNode_T* parse_str_lit(Parser_T* p, bool keep_inline)
     Token_T* tok = p->tok;
     parser_consume(p, TOKEN_STRING, "expect string literal (\"abc\", \"wxyz\", ...)");
 
-    char* str = strdup(tok->heap_value);
+    char* str = strdup(tok->value);
 
     while(tok_is(p, TOKEN_STRING)) // expressions like `"h" "e" "l" "l" "o"` get grouped together to `"hello"`
     {
-        str = realloc(str, (strlen(str) + strlen(p->tok->heap_value) + 1) * sizeof(char));
-        strcat(str, p->tok->heap_value);
+        str = realloc(str, (strlen(str) + strlen(p->tok->value) + 1) * sizeof(char));
+        strcat(str, p->tok->value);
         parser_advance(p);
     }
 
@@ -1838,17 +1849,27 @@ static ASTNode_T* parse_const_lambda(Parser_T* p)
     lambda_fn->data_type = init_ast_type(TY_FN, p->tok);
     lambda_fn->data_type->arg_types = init_list();
     lambda_fn->data_type->is_constant = true;
-    lambda_fn->id = init_ast_identifier(p->tok, "");
     lambda_fn->objs = init_list();
 
     mem_add_list(lambda_fn->args);
     mem_add_list(lambda_fn->data_type->arg_types);
     mem_add_list(lambda_fn->objs);
 
+    char* id;
+
     if(global.ct == CT_ASM)
-        sprintf(lambda_fn->id->callee, "const.lambda.%ld", count++);
+    {
+        id = calloc(34, sizeof(char));
+        sprintf(id, "const.lambda.%ld", count++);
+    }
     else
-        sprintf(lambda_fn->id->callee, "__csp_const_lambda_%ld__", count++);
+    {
+        id = calloc(42, sizeof(char));
+        sprintf(id, "__csp_const_lambda_%ld__", count++);
+    }
+
+    mem_add_ptr(id);
+    lambda_fn->id = init_ast_identifier(p->tok, id);
 
     if(tok_is(p, TOKEN_OR))
         parser_advance(p);

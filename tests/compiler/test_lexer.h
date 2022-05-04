@@ -25,8 +25,8 @@ void check_tokens_str(char** expected_tokens, File_T* file, int num_tokens, bool
 
         if(heap_value)
         {
-            TEST_CHECK(token->heap_value != NULL);
-            TEST_CHECK(strcmp(token->heap_value, expected_tokens[i]) == 0);
+            TEST_CHECK(token->value != NULL);
+            TEST_CHECK(strcmp(token->value, expected_tokens[i]) == 0);
         }
         else
         {

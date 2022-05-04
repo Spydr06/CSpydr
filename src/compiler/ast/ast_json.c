@@ -91,7 +91,6 @@ json_object* gen_ast_identifier(ASTIdentifier_T* id)
         return json_object_new_null();
     json_object* obj = json_object_new_object();
 
-    json_object_object_add(obj, "kind", gen_i32(id->kind));
     if(id->tok) json_object_object_add(obj, "tok", gen_tok(id->tok));
     if(strlen(id->callee)) json_object_object_add(obj, "callee", gen_str(id->callee));
     if(id->outer) json_object_object_add(obj, "outer", gen_ast_identifier(id->outer));

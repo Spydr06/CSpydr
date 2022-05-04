@@ -13,6 +13,7 @@ typedef struct LIST_STRUCT
 } List_T;
 
 List_T* init_list(void);
+List_T* init_list_sized(size_t size);
 void free_list(List_T* list);
 
 bool list_has_space(List_T* list);

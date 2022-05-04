@@ -89,8 +89,12 @@ ASTNode_T* build_str_lit(Token_T* tok, char* str, bool allocate_global, List_T* 
     if(global.ct == CT_ASM && allocate_global)
     {
         static u64 i = 0;
-        ASTIdentifier_T* ast_id = init_ast_identifier(str_lit->tok, (char[]){'\0'});
-        sprintf(ast_id->callee, "L.str.%ld", i++);
+        char* id = calloc(27, sizeof(char));
+        sprintf(id, "L.str.%lu", i++);
+        mem_add_ptr(id);
+        
+        ASTIdentifier_T* ast_id = init_ast_identifier(str_lit->tok, id);
+        
 
         ASTObj_T* globl = init_ast_obj(OBJ_GLOBAL, str_lit->tok);
         globl->id = ast_id;

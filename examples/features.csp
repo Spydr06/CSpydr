@@ -6,6 +6,9 @@ fn main(): i32
 {
     let t = Test::{1, 2};
     test(t);
+
+   # let x = template_test(4);
+
     <- 0;
 }
 
@@ -15,16 +18,10 @@ fn test(t: Test)
 }
 
 #[
-plan for templates
-
-macro integer_type {
-    i8 | i16 | i16 | i32 | i64 |
-    u8 | u16 | u16 | u32 | u64
-}
-
-fn template_test(x: T, y: X)
-  where T: integer_type!, X: &void | &char
+fn template_test(x: T): T
+  where T
 {
     # do smth
-};
+    <- x;
+}
 ]#

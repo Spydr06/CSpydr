@@ -25,9 +25,8 @@ ASTIdentifier_T* init_ast_identifier(Token_T* tok, char* callee)
     memset(id, 0, sizeof(struct AST_IDENTIFIER_STRUCT));
 
     id->tok = tok;
-    id->kind = -1;
     id->global_scope = true;
-    strcpy(id->callee, callee);
+    id->callee = callee;
 
     return id;
 }

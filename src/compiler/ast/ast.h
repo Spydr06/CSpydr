@@ -142,6 +142,7 @@ typedef enum {
 
     TY_UNDEF,   // <identifier>
     TY_TYPEOF,  // typeof x
+    TY_TEMPLATE, // template types temporarily used during parsing
     
     TY_KIND_LEN
 } ASTTypeKind_T;
@@ -285,14 +286,10 @@ struct AST_NODE_STRUCT
 
 struct AST_IDENTIFIER_STRUCT
 {
-    ASTObjKind_T kind; // kind of the object, which the name is referring to
     Token_T* tok;
-
-    char callee[__CSP_MAX_TOKEN_SIZE];
-    
     ASTIdentifier_T* outer;
-
-    bool global_scope : 1;
+    char* callee;
+    bool global_scope;
 } __attribute__((packed));
 
 struct AST_TYPE_STRUCT 
@@ -357,7 +354,6 @@ struct AST_OBJ_STRUCT
     ASTNode_T* value;
     List_T* args;
     List_T* objs;
-    HashMap_T* templates;
 
     // functions
     ASTType_T* return_type;

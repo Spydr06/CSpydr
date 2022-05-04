@@ -12,14 +12,19 @@
     #define LIST_MULTIPLIER 2
 #endif
 
-List_T* init_list(void)
+List_T* init_list_sized(size_t size)
 {
     List_T* list = malloc(sizeof(struct LIST_STRUCT));
     list->size = 0;
-    list->allocated = LIST_INIT_SIZE;
+    list->allocated = size;
     list->items = calloc(list->allocated, sizeof(void*));
 
     return list;
+}
+
+List_T* init_list(void)
+{
+    return init_list_sized(LIST_INIT_SIZE);
 }
 
 void list_push(List_T* list, void* item)

@@ -1,6 +1,7 @@
 #include "validator.h"
 #include "ast/ast_iterator.h"
 #include "ast/types.h"
+#include "hashmap.h"
 #include "list.h"
 #include "error/error.h"
 #include "io/log.h"
@@ -655,7 +656,7 @@ static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
                 ASTType_T* arg1_type = expand_typedef(v, ((ASTObj_T*) main_fn->args->items[1])->data_type);
                 if(arg1_type->kind != TY_PTR || arg1_type->base->kind != TY_PTR || arg1_type->base->base->kind != TY_CHAR)
                 {
-                    throw_error(ERR_TYPE_ERROR_UNCR, ((ASTObj_T*) main_fn->args->items[1])->tok, "expect first argument of function `main` to be `&&char`");
+                    throw_error(ERR_TYPE_ERROR_UNCR, ((ASTObj_T*) main_fn->args->items[1])->tok, "expect second argument of function `main` to be `&&char`");
                     return;
                 }
             } break;
@@ -1571,8 +1572,12 @@ static void lambda_end(ASTNode_T* lambda, va_list args)
     {
         ASTObj_T* lambda_stack_ptr = init_ast_obj(OBJ_GLOBAL, lambda->tok);
         lambda_stack_ptr->data_type = (ASTType_T*) void_ptr_type;
-        lambda_stack_ptr->id = init_ast_identifier(lambda->tok, "");
-        sprintf(lambda_stack_ptr->id->callee, "lambda.stackptr.%ld", lambda->long_val);
+
+        char* id = calloc(64, sizeof(char));
+        mem_add_ptr(id);
+        sprintf(id, "lambda.stackptr.%ld", lambda->long_val);
+
+        lambda_stack_ptr->id = init_ast_identifier(lambda->tok, id);
 
         list_push(v->ast->objs, lambda_stack_ptr);
         lambda->stack_ptr = lambda_stack_ptr;

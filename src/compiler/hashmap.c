@@ -1,4 +1,5 @@
 #include "hashmap.h"
+#include "list.h"
 #include "util.h"
 
 #include <string.h>
@@ -91,6 +92,30 @@ void* hashmap_get(HashMap_T* map, char* key)
 {
     HashPair_T* pair = hashmap_find_pair(map, key, false);
     return pair ? pair->value : NULL;
+}
+
+List_T* hashmap_values(HashMap_T* map)
+{
+    List_T* list = init_list_sized(map->size);
+    for(HashPair_T* pair = map->pairs; pair < &map->pairs[map->alloc]; pair++)
+    {
+        if(pair->key)
+            list_push(list, pair->value);
+    }
+
+    return list;
+}
+
+List_T* hashmap_keys(HashMap_T* map)
+{
+    List_T* list = init_list();
+    for(HashPair_T* pair = map->pairs; pair < &map->pairs[map->alloc]; pair++)
+    {
+        if(pair->key)
+            list_push(list, pair->key);
+    }
+
+    return list;
 }
 
 static inline size_t hashmap_calc_size(HashMap_T* map)
