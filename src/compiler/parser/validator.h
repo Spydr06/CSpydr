@@ -2,13 +2,14 @@
 #define CSPYDR_VALIDATOR_H
 
 #include "ast/ast.h"
+#include "hashmap.h"
 
 // validator structs
 typedef struct VALIDATOR_SCOPE_STRUCT VScope_T;
 struct VALIDATOR_SCOPE_STRUCT
 {
     VScope_T* prev;
-    List_T* objs;
+    HashMap_T* objs;
     ASTIdentifier_T* id;
 } __attribute__((packed));
 

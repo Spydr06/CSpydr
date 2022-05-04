@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
+#include <assert.h>
 
 #ifndef HASHMAP_INIT_SIZE
     #define HASHMAP_INIT_SIZE 128
@@ -26,7 +27,7 @@ struct HASHMAP_STRUCT
 };
 
 static size_t hashmap_calc_size(HashMap_T* map);
-static void hashmap_grow(HashMap_T* map, size_t size);
+static void hashmap_rehash(HashMap_T* map, size_t size);
 static HashPair_T* hashmap_find_pair(HashMap_T* map, char* key, bool find_empty);
 static size_t hashmap_default_hash(char* data);
 
@@ -50,13 +51,13 @@ void hashmap_free(HashMap_T* map)
 
 int hashmap_put(HashMap_T* map, char* key, void* value)
 {
-    if(!key)
+    if(!key || !map)
         return EINVAL;
 
     size_t map_size = hashmap_calc_size(map);
     
     if(map_size > map->size)
-        hashmap_grow(map, map_size);
+        hashmap_rehash(map, map_size);
 
     HashPair_T* pair = hashmap_find_pair(map, key, true);
     if(!pair)
@@ -93,13 +94,28 @@ static size_t hashmap_calc_size(HashMap_T* map)
         return 1 << ((sizeof(u64) << 3) - __builtin_clzl(map_size - 1));
 }
 
-static void hashmap_grow(HashMap_T* map, size_t size)
+static void hashmap_rehash(HashMap_T* map, size_t size)
 {
     if(!map || size < map->size)
         return;
 
-    map->pairs = realloc(map->pairs, size * sizeof(HashPair_T));
+    size_t old_alloc = map->alloc;
+    HashPair_T* old_pairs = map->pairs;
     map->alloc = size;
+    map->pairs = calloc(size, sizeof(HashPair_T));
+
+    // rehash
+    for(HashPair_T* pair = old_pairs; pair < &old_pairs[old_alloc]; pair++)
+    {
+        if(!pair->key)
+            continue;
+        
+        HashPair_T* new_pair = hashmap_find_pair(map, pair->key, true);
+        assert(new_pair != 0);
+        *new_pair = *pair;
+    }
+
+    free(old_pairs);
 }
 
 /*

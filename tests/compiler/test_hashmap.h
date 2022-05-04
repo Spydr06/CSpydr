@@ -66,13 +66,17 @@ void test_hashmap_grow(void)
     HashMap_T* map = hashmap_init();
     TEST_ASSERT(map != NULL);
 
-    for(int i = 0; i < 513; i++)
+    for(int i = 0; i < 514; i++)
     {
         char* str = calloc(10, sizeof(char));
         sprintf(str, "%d", i);
         int err = hashmap_put(map, str, "hi");
         TEST_ASSERT(err == 0);
     }
+
+    char* val = hashmap_get(map, "51");
+    TEST_ASSERT(val != NULL);
+    TEST_ASSERT(strcmp(val, "hi") == 0);
 
     hashmap_free(map);
 }

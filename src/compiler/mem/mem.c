@@ -3,9 +3,11 @@
 #include "config.h"
 #include "io/log.h"
 #include "list.h"
+#include "hashmap.h"
 
 static List_T* allocs = NULL;
 static List_T* lists = NULL;
+static List_T* hashmaps = NULL;
 
 void mem_free(void)
 {
@@ -24,6 +26,14 @@ void mem_free(void)
 
         free_list(lists);
         lists = NULL;
+    }
+    if(hashmaps)
+    {
+        for(size_t i = 0; i < hashmaps->size; i++)
+            hashmap_free(hashmaps->items[i]);
+        
+        free_list(hashmaps);
+        hashmaps = NULL;
     }
 }
 
@@ -63,4 +73,12 @@ void mem_add_list(List_T* list)
         lists = init_list();
 
     list_push(lists, list);
+}
+
+void mem_add_hashmap(HashMap_T* map)
+{
+    if(!hashmaps)
+        hashmaps = init_list();
+    
+    list_push(hashmaps, map);
 }

@@ -16,6 +16,7 @@
 #include "globals.h"
 #include "typechecker.h"
 
+#include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -266,24 +267,12 @@ void validate_ast(ASTProg_T* ast)
 
 static ASTObj_T* search_in_current_scope(VScope_T* scope, char* id)
 {
-    for(size_t i = 0; i < scope->objs->size; i++)
-    {
-        ASTObj_T* obj = scope->objs->items[i];
-        if(obj->id && strcmp(obj->id->callee, id) == 0)
-            return obj;
-    }
-    return NULL;
+    return hashmap_get(scope->objs, id);
 }
 
 static ASTNode_T* search_node_in_current_scope(VScope_T* scope, char* id)
 {
-    for(size_t i = 0; i < scope->objs->size; i++)
-    {
-        ASTNode_T* node = scope->objs->items[i];
-        if(strcmp(node->id->callee, id) == 0)
-            return node;
-    }
-    return NULL;
+    return hashmap_get(scope->objs, id);
 }
 
 static ASTObj_T* search_in_scope(VScope_T* scope, char* id)
@@ -362,7 +351,7 @@ static void begin_obj_scope(Validator_T* v, ASTIdentifier_T* id, List_T* objs)
 static inline void begin_scope(Validator_T* v, ASTIdentifier_T* id)
 {
     VScope_T* scope = malloc(sizeof(VScope_T));
-    scope->objs = init_list();
+    scope->objs = hashmap_init();
     scope->prev = v->current_scope;
     scope->id = id;
     v->current_scope = scope;
@@ -373,15 +362,16 @@ static inline void end_scope(Validator_T* v)
 {
     VScope_T* scope = v->current_scope;
     v->current_scope = scope->prev;
-    free_list(scope->objs);
+    hashmap_free(scope->objs);
     free(scope);
     v->scope_depth--;
 }
 
 static void scope_add_obj(Validator_T* v, ASTObj_T* obj)
 {
-    ASTObj_T* found = search_in_current_scope(v->current_scope, obj->id->callee);
-    if(found)
+    if(hashmap_put(v->current_scope->objs, obj->id->callee, obj) == EEXIST)
+    {
+        ASTObj_T* found = hashmap_get(v->current_scope->objs, obj->id->callee);
         throw_error(ERR_REDEFINITION, obj->id->tok, 
             "redefinition of %s `%s`.\nfirst defined in " COLOR_BOLD_WHITE "%s " COLOR_RESET "at line " COLOR_BOLD_WHITE "%u" COLOR_RESET " as %s.", 
             obj_kind_to_str(obj->kind), obj->id->callee, 
@@ -389,25 +379,22 @@ static void scope_add_obj(Validator_T* v, ASTObj_T* obj)
             found->tok->line + 1,
             obj_kind_to_str(found->kind)
         );
-
-    list_push(v->current_scope->objs, obj);
+    }
 }
 
 // only used for enum/struct members
 static void scope_add_node(Validator_T* v, ASTNode_T* node)
 {
-    ASTNode_T* found = search_node_in_current_scope(v->current_scope, node->id->callee);
-    if(found)
+    if(hashmap_put(v->current_scope->objs, node->id->callee, node) == EEXIST)
     {
+        ASTNode_T* found = hashmap_get(v->current_scope->objs, node->id->callee);
         throw_error(ERR_REDEFINITION, node->id->tok, 
             "redefinition of member `%s`.\nfirst defined in " COLOR_BOLD_WHITE "%s " COLOR_RESET "at line " COLOR_BOLD_WHITE "%u" COLOR_RESET, 
             node->id->callee, 
             found->tok->source->short_path ? found->tok->source->short_path : found->tok->source->path, 
             found->tok->line + 1
         );
-        exit(1);
     }
-    list_push(v->current_scope->objs, node); // use the default obj list
 }
 
 ASTType_T* expand_typedef(Validator_T* v, ASTType_T* type)
@@ -992,12 +979,11 @@ static void using_end(ASTNode_T* using, va_list args)
     for(size_t i = 0; i < found->objs->size; i++)
     {
         ASTObj_T* obj = found->objs->items[i];
-        if(search_in_current_scope(v->current_scope, obj->id->callee))
+        if(hashmap_put(v->current_scope->objs, obj->id->callee, obj) == EEXIST)
         {
             throw_error(ERR_REDEFINITION_UNCR, using->tok, "namespace `%s` is trying to implement a %s `%s`, \nwhich is already defined in this scope", found->id->callee, obj_kind_to_str(obj->kind), obj->id->callee);
             continue;
         }
-        list_push(v->current_scope->objs, obj);
     }
 }
 
