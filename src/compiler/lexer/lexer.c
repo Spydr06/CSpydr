@@ -246,8 +246,7 @@ static TokenType_T lexer_get_id_type(char* id)
 
 static Token_T* lexer_get_id(Lexer_T* lexer)
 {
-    char buffer[BUFSIZ];
-    strcpy(buffer, "");
+    char buffer[BUFSIZ] = {'\0'};
 
     while(isalnum(lexer->c) || lexer->c == '_')
     {
@@ -275,8 +274,7 @@ static Token_T* lexer_get_int(Lexer_T* lexer, const char* digits, i32 base)
     lexer_advance(lexer);    // cut the '0x'
     lexer_advance(lexer);
 
-    char buffer[BUFSIZ];
-    strcpy(buffer, "");
+    char buffer[BUFSIZ] = {'\0'};
 
     while(strchr(digits, lexer->c))
     {
@@ -299,8 +297,8 @@ static Token_T* lexer_get_int(Lexer_T* lexer, const char* digits, i32 base)
 
 static Token_T* lexer_get_decimal(Lexer_T* lexer)
 {
-    char buffer[BUFSIZ];
-    strcpy(buffer, "");
+    char buffer[BUFSIZ] = {'\0'};
+
     TokenType_T type = TOKEN_INT;
 
     while(isdigit(lexer->c) || lexer->c == '.' || lexer->c == '_')
@@ -354,7 +352,7 @@ static Token_T* lexer_get_number(Lexer_T* lexer)
 
 static Token_T* lexer_get_str(Lexer_T* lexer)
 {
-    u64 length = BUFSIZ;
+    u64 length = DEFAULT_STRING_TOKEN_SIZE;
     char* buffer = calloc(length, sizeof(char));
 
     size_t start_line = lexer->line;
