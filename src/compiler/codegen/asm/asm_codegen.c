@@ -163,6 +163,7 @@ static void asm_store_gp(ASMCodegenData_T* cg, i32 r, i32 offset, i32 sz);
 static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node);
 static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node);
 static void asm_gen_lambda(ASMCodegenData_T* cg, ASTNode_T* lambda);
+static void asm_load(ASMCodegenData_T* cg, ASTType_T *ty);
 
 void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast)
 {
@@ -782,73 +783,30 @@ static void asm_popf(ASMCodegenData_T* cg, i32 reg)
 
 static void asm_gen_index(ASMCodegenData_T* cg, ASTNode_T* index, bool gen_address)
 {
-    ASTNode_T converted;
+    asm_gen_expr(cg, index->left);
+    asm_push(cg);
+    asm_gen_expr(cg, index->expr);
+    asm_pop(cg, "%rdi");
+    asm_println(cg, "  imul $%d, %%rax", index->data_type->size);
+    asm_println(cg, "  add %%rdi, %%rax");
 
     switch(unpack(index->left->data_type)->kind)
     {
         case TY_PTR:
         case TY_C_ARRAY:
-        {
-            converted = (ASTNode_T) {                                                
-                .kind = ND_DEREF,                                        
-                .data_type = index->data_type,                            
-                .right = &(ASTNode_T) {                                  
-                    .kind = ND_CAST,                                     
-                    .data_type = (ASTType_T*) primitives[TY_I64],        
-                    .left = &(ASTNode_T) {                               
-                        .kind = ND_ADD,                                  
-                        .data_type = (ASTType_T*) primitives[TY_I64],    
-                        .left = index->left,                              
-                        .right = &(ASTNode_T) {                          
-                            .kind = ND_CAST,                             
-                            .data_type = (ASTType_T*) primitives[TY_I64],
-                            .left = index->expr                           
-                        }                                                
-                    }                                                    
-                }                                                        
-            };
-        } break;
+            break;
 
         case TY_VLA:
         case TY_ARRAY:
-        {
-            converted = (ASTNode_T) {                                                
-                .kind = ND_DEREF,                                        
-                .data_type = index->data_type,                            
-                .right = &(ASTNode_T) {                                  
-                    .kind = ND_CAST,                                     
-                    .data_type = (ASTType_T*) primitives[TY_I64],        
-                    .left = &(ASTNode_T) {                               
-                        .kind = ND_ADD,                                  
-                        .data_type = (ASTType_T*) primitives[TY_I64],    
-                        .left = index->left,                              
-                        .right = &(ASTNode_T) {
-                            .kind = ND_ADD,
-                            .data_type = (ASTType_T*) primitives[TY_I64],
-                            .left = &(ASTNode_T) {                          
-                                .kind = ND_CAST,                             
-                                .data_type = (ASTType_T*) primitives[TY_I64],
-                                .left = index->expr                           
-                            },
-                            .right = &(ASTNode_T) {
-                                .kind = ND_LONG,
-                                .data_type = (ASTType_T*) primitives[TY_I64],
-                                .long_val = 2
-                            }
-                        }                                    
-                    }                                                    
-                }                                                        
-            };
-        } break;
+            asm_println(cg, "  add $8, %%rax");
+            break;
 
         default:
             throw_error(ERR_CODEGEN, index->tok, "wrong index type");
     }
 
-    if(gen_address)
-        asm_gen_addr(cg, &converted);
-    else
-        asm_gen_expr(cg, &converted);
+    if(!gen_address)
+        asm_load(cg, index->data_type);
 }
 
 static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)

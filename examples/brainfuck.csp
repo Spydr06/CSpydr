@@ -26,8 +26,8 @@ const PROG_SIZE: i32 = 4096;
 const STACK_SIZE: i32 = 512;
 const DATA_SIZE: i32 = 65535;
 
-let program: Instruction 'c[PROG_SIZE];
-let stack: u16 'c[STACK_SIZE];
+let program: Instruction[PROG_SIZE];
+let stack: u16[STACK_SIZE];
 let sp: u32;
 
 fn compile(f: &std::File): Status
@@ -74,8 +74,7 @@ fn execute(): Status
 {
     using std;
 
-    let data: u16 'c[DATA_SIZE];
-    mem::set(data, 0, DATA_SIZE * sizeof u16);
+    let data: u16[DATA_SIZE];
 
     let pc: u16 = 0;
     let ptr = 0;

@@ -2,7 +2,7 @@
 import "io.csp";
 
 macro board_cap { 40 }
-let board: i32 'c[board_cap!];
+let board: i32[board_cap!];
 
 fn main(): i32
 {
@@ -13,7 +13,7 @@ fn main(): i32
     {
         for let j = 0; j < board_cap!; j++;
         {
-            let c = " *"[board[j]];
+            let c = if board[j] == 0 => ' ' else '*';
             putc(c);
         }
         putc('\n');
