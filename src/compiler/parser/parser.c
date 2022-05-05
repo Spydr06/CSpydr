@@ -71,6 +71,7 @@ typedef enum
     MULT,         // x * y
     DIV = MULT,   // x / y
     MOD,          // x % y
+    UNARY,        // -x, ~x, &x, *x
     POWER,        // x²
     INC,          // x--
     DEC = INC,    // x++
@@ -1945,7 +1946,7 @@ static ASTNode_T* parse_unary(Parser_T* p)
     ASTNode_T* unary = init_ast_node(unary_ops[p->tok->type], p->tok);
     parser_advance(p);
 
-    unary->right = parse_expr(p, expr_parse_fns[unary->tok->type].prec, TOKEN_ASSIGN);
+    unary->right = parse_expr(p, UNARY, TOKEN_ASSIGN);
     return unary;
 }
 
