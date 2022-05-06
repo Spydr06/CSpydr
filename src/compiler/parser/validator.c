@@ -1321,18 +1321,11 @@ static void index_(ASTNode_T* index, va_list args)
 
     if(index->from_back)
     {
-        if(left_type->kind != TY_C_ARRAY)
+        if(left_type->kind != TY_C_ARRAY && left_type->kind != TY_ARRAY && left_type->kind != TY_VLA)
         {
-            char buf[BUFSIZ] = {};
+            char buf[BUFSIZ] = {'\0'};
             throw_error(ERR_TYPE_ERROR, index->tok, "cannot get reverse index of type `%s`, need fixed-size array", ast_type_to_str(buf, index->left->data_type, LEN(buf)));
         }
-
-        ASTNode_T* idx = init_ast_node(ND_SUB, index->tok);
-        idx->left = left_type->num_indices_node;
-        idx->right = index->expr;
-        idx->data_type = idx->right->data_type;
-        idx->left->data_type = (ASTType_T*) primitives[TY_U64];
-        index->expr = idx;
     }
 }
 

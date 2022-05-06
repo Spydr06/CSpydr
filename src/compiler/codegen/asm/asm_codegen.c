@@ -785,25 +785,51 @@ static void asm_gen_index(ASMCodegenData_T* cg, ASTNode_T* index, bool gen_addre
 {
     asm_gen_expr(cg, index->left);
     asm_push(cg);
-    asm_gen_expr(cg, index->expr);
-    asm_pop(cg, "%rdi");
-    asm_println(cg, "  imul $%d, %%rax", index->data_type->size);
-    asm_println(cg, "  add %%rdi, %%rax");
 
     switch(unpack(index->left->data_type)->kind)
     {
         case TY_PTR:
         case TY_C_ARRAY:
+            asm_gen_expr(cg, index->expr);
+            asm_pop(cg, "%rdi");
+            if(index->from_back)
+            {
+                asm_println(cg, "  imul $%d, %%rax", -index->data_type->size);
+                asm_println(cg, "  add $%d, %%rax", index->left->data_type->size + index->data_type->size);
+            }
+            else
+                asm_println(cg, "  imul $%d, %%rax", index->data_type->size);
             break;
 
         case TY_VLA:
         case TY_ARRAY:
+            if(index->from_back)
+            {                
+                asm_load(cg, (ASTType_T*) primitives[TY_U64]);
+                asm_push(cg);
+                asm_gen_expr(cg, index->expr);
+                asm_pop(cg, "%rcx"); // length
+                asm_pop(cg, "%rdi"); // pointer
+
+                asm_println(cg, "  imul $%d, %%rax", -index->data_type->size);
+                asm_println(cg, "  imul $%d, %%rcx", index->data_type->size);
+                asm_println(cg, "  add %%rcx, %%rax");
+
+            }
+            else
+            {
+                asm_gen_expr(cg, index->expr);
+                asm_pop(cg, "%rdi");
+                asm_println(cg, "  imul $%d, %%rax", index->data_type->size);
+            }
             asm_println(cg, "  add $8, %%rax");
             break;
 
         default:
             throw_error(ERR_CODEGEN, index->tok, "wrong index type");
     }
+
+    asm_println(cg, "  add %%rdi, %%rax");
 
     if(!gen_address)
         asm_load(cg, index->data_type);

@@ -374,7 +374,7 @@ static Token_T* lexer_get_str(Lexer_T* lexer)
     lexer_advance(lexer);
 
     Token_T* token = init_token(buffer, lexer->line, lexer->pos, TOKEN_STRING, lexer->file);
-    mem_add_ptr(buffer);
+    free(buffer);
     return token;
 }
 

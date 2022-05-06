@@ -193,16 +193,8 @@ char* ast_type_to_str(char* dest, ASTType_T* ty, size_t size)
             strcat(dest, "]");
             break;
         case TY_ARRAY:
-            ast_type_to_str(dest, ty->base, size);
-            strcat(dest, "[");
-            
-            {
-                char buf[128] = {'\0'};
-                sprintf(buf, "%lu", const_u64(ty->num_indices_node));
-                strcat(dest, buf);
-            }
-            
-            strcat(dest, "]");
+            ast_type_to_str(dest, ty->base, size);            
+            sprintf(dest + strlen(dest), "[%lu]", ty->num_indices);
             break;
         case TY_VLA:
             ast_type_to_str(dest, ty->base, size);
