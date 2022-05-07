@@ -309,7 +309,16 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
     
     // run the linker
     if(!cg->silent)
-        LOG_OK_F(COLOR_BOLD_BLUE "  Linking    " COLOR_RESET "%s\n", target);
+    {
+        LOG_OK_F(COLOR_BOLD_BLUE "  Linking    " COLOR_RESET "%s", target);
+        if(global.linker_flags->size > 0)
+        {
+            LOG_OK(COLOR_RESET " (");
+            for(size_t i = 0; i < global.linker_flags->size; i++)
+                LOG_OK_F(COLOR_RESET "%s%s", (char*) global.linker_flags->items[i] + 2, global.linker_flags->size - i <= 1 ? ")" : ", ");
+        }
+        LOG_OK(COLOR_RESET "\n");
+    }
 
     {
         List_T* args = init_list();
@@ -479,7 +488,6 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
 static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var)
 {
     ASTNode_T* value = var->value;
-    
     
     if(value->kind == ND_STR) 
     {   
@@ -789,6 +797,11 @@ static void asm_gen_index(ASMCodegenData_T* cg, ASTNode_T* index, bool gen_addre
     switch(unpack(index->left->data_type)->kind)
     {
         case TY_PTR:
+            asm_gen_expr(cg, index->expr);
+            asm_pop(cg, "%rdi");
+            asm_println(cg, "  imul $%d, %%rax", index->data_type->size);
+            break;
+
         case TY_C_ARRAY:
             asm_gen_expr(cg, index->expr);
             asm_pop(cg, "%rdi");
@@ -814,7 +827,6 @@ static void asm_gen_index(ASMCodegenData_T* cg, ASTNode_T* index, bool gen_addre
                 asm_println(cg, "  imul $%d, %%rax", -index->data_type->size);
                 asm_println(cg, "  imul $%d, %%rcx", index->data_type->size);
                 asm_println(cg, "  add %%rcx, %%rax");
-
             }
             else
             {
