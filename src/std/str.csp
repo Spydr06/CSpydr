@@ -224,29 +224,29 @@ namespace std {
                     match *fmt {
                         '%' => append(&str, *fmt);
                         'i' => {
-                            c_str::from_int(va_arg!{*args, i32}, buf, 10);
+                            c_str::from_int(va_arg!{args, i32}, buf, 10);
                             concat(&str, buf);
                         }
                         'u' => {
-                            c_str::from_uint(va_arg!{*args, u32}, buf, 10);
+                            c_str::from_uint(va_arg!{args, u32}, buf, 10);
                             concat(&str, buf);
                         }
                         'o' => {
-                            c_str::from_int(va_arg!{*args, i64}, buf, 8);
+                            c_str::from_int(va_arg!{args, i64}, buf, 8);
                             concat(&str, buf);
                         }
                         'x' => {
-                            c_str::from_uint(va_arg!{*args, u64}, buf, 16);
+                            c_str::from_uint(va_arg!{args, u64}, buf, 16);
                             concat(&str, buf);
                         }
                         'p' => { # pointer
-                            c_str::from_uint(va_arg!{*args, &void}: u64, buf, 16);
+                            c_str::from_uint(va_arg!{args, &void}: u64, buf, 16);
 
                             concat(&str, "0x");
                             concat(&str, buf);
                         }
-                        'c' => append(&str, va_arg!{*args, char}); # char
-                        's' => concat(&str, va_arg!{*args, &char});
+                        'c' => append(&str, va_arg!{args, char}); # char
+                        's' => concat(&str, va_arg!{args, &char});
                         'n' => {
                             free(str);
                             <- str!{"\0"};

@@ -1,0 +1,66 @@
+[link("pthread")]
+
+macro PTHREAD_CREATE_JOINABLE { 0 }
+macro PTHREAD_CREATE_DETACHED { 1 }
+
+macro PTHREAD_MUTEX_NORMAL { 0 }
+macro PTHREAD_MUTEX_DEFAULT { 0 }
+macro PTHREAD_MUTEX_RECURSIVE { 1 }
+macro PTHREAD_MUTEX_ERRORCHECK { 2 }
+
+macro PTHREAD_MUTEX_STALLED { 0 }
+macro PTHREAD_MUTEX_ROBUST { 1 }
+
+macro PTHREAD_PRIO_NONE { 0 }
+macro PTHREAD_PRIO_INHERIT { 1 }
+macro PTHREAD_PRIO_PROTECT { 2 }
+
+macro PTHREAD_INHERIT_SCHED { 0 }
+macro PTHREAD_EXPLICIT_SCHED { 1 } 
+
+macro PTHREAD_SCOPE_SYSTEM { 0 }
+macro PTHREAD_SCOPE_PROCESS { 1 }
+
+macro PTHREAD_PROCESS_PRIVATE { 0 }
+macro PTHREAD_PROCESS_SHARED { 1 }
+
+macro PTHREAD_MUTEX_INITIALIZER  { {{{0}}} }
+macro PTHREAD_RWLOCK_INITIALIZER { {{{0}}} }
+macro PTHREAD_COND_INITIALIZER   { {{{0}}} }
+macro PTHREAD_ONCE_INIT { 0 }
+
+macro PTHREAD_CANCEL_ENABLE { 0 }
+macro PTHREAD_CANCEL_DISABLE { 1 }
+macro PTHREAD_CANCEL_MASKED { 2 }
+
+macro PTHREAD_CANCEL_DEFERRED { 0 }
+macro PTHREAD_CANCEL_ASYNCHRONOUS { 1 }
+
+macro PTHREAD_CANCELED { (-1: &void) }
+
+macro PTHREAD_BARRIER_SERIAL_THREAD { (-1) }
+
+macro PTHREAD_NULL { (0: &::libc::PThread) }
+
+namespace libc {
+    type PThread: &void;
+    type PThreadAttr: struct {
+        u: union {
+            i: i32[14],
+            s: u64[7]
+        }
+    };
+
+    namespace pthread {
+        extern "C" {
+            fn pthread_create(thread: &PThread, attr: &const PThreadAttr, func: const fn<&void>(&void), ptr: &void): i32;
+            fn pthread_detach(thread: &PThread): i32;
+            fn pthread_exit(ptr: &void);
+            fn pthread_join(thread: PThread, ptr: &&void);
+
+            fn pthread_self(): PThread;
+
+            fn pthread_equal(a: PThread, b: PThread): i32;
+        }
+    }
+}

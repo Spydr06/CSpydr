@@ -1,0 +1,16 @@
+import "libc/pthread.csp";
+import "std.csp";
+
+fn main(): i32 
+{
+    using libc::pthread, std::io;
+
+    let thread: libc::PThread;
+    pthread_create(&thread, nil, |args: &void| &void => {
+        std::io::puts("hello\n");
+        <- nil;
+    }, nil);
+    pthread_join(&thread, nil);
+
+    <- 0;
+}

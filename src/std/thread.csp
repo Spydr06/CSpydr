@@ -6,6 +6,29 @@ namespace std {
     };
 
     namespace thread {
+        #[fn create(thread: &Thread, func: fn): i32
+        {
 
+        }
+
+        fn detach(thread: &Thread): i32
+        {
+
+        }
+
+        fn exit(thread: &Thread) 
+        {
+
+        }
+
+        fn join(thread: &Thread) 
+        {
+
+        }
+
+        fn self(): Thread 
+        {
+
+        }]#
     }
 }

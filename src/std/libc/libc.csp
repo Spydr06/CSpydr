@@ -13,6 +13,7 @@ import "limits.csp";
 import "link.csp";
 import "locale.csp";
 import "math.csp";
+import "pthread.csp";
 import "setjmp.csp";
 import "signal.csp";
 import "stdalign.csp";
