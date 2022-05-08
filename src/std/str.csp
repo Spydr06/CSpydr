@@ -13,7 +13,7 @@ macro str() {
 }
 
 macro str(chptr) {
-    (::std::string::init((chptr): &char))
+    (::std::string::init(chptr))
 }
 
 # a macro to concatenate two strings

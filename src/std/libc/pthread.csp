@@ -1,4 +1,7 @@
-[link("pthread")]
+[link("pthread", "c")]
+
+import "time.csp";
+import "stdlib.csp";
 
 macro PTHREAD_CREATE_JOINABLE { 0 }
 macro PTHREAD_CREATE_DETACHED { 1 }
@@ -45,11 +48,67 @@ macro PTHREAD_NULL { (0: &::libc::PThread) }
 namespace libc {
     type PThread: &void;
     type PThreadAttr: struct {
-        u: union {
-            i: i32[14],
-            s: u64[7]
+        __u: union {
+            __i: i32 'c[14],
+            __s: u64 'c[7]
         }
     };
+
+    type SchedParam: struct {
+        sched_priority: i32
+    };
+
+    type PThreadMutex: struct {
+        __u: union {
+            __i: i32 'c[10],
+            __vi: i32 'c[10],
+            __p: &void 'c[5]
+        }
+    };
+
+    type PThreadMutexAttr: struct {
+        __attr: u32
+    };
+
+    type PThreadCond: struct {
+        __u: union {
+            __i: i32 'c[12],
+            __vi: i32 'c[12],
+            __p: &void 'c[12 * sizeof i32 / sizeof &void]
+        }
+    };
+
+    type PThreadCondAttr: struct {
+        __attr: u32
+    };
+
+    type PThreadRWLock: struct {
+        __u: union {
+            __i: i32 'c[14],
+            __vi: i32 'c[14],
+            __p: &void 'c[7]
+        }
+    };
+
+    type PThreadRWLockAttr: struct {
+        __attr: u32
+    };
+
+    type PThreadBarrier: struct {
+        __u: union {
+            __i: i32 'c[8],
+            __vi: i32 'c[8],
+            __p: i32 'c[4]
+        }
+    };
+
+    type PThreadBarrierAttr: struct {
+        __attr: u32
+    };
+
+    type PThreadOnce: i32;
+    type PThreadKey: u32;
+    type PThreadSpinLock: i32;
 
     namespace pthread {
         extern "C" {
@@ -61,6 +120,157 @@ namespace libc {
             fn pthread_self(): PThread;
 
             fn pthread_equal(a: PThread, b: PThread): i32;
+
+            fn pthread_setcancelstate(a: i32, b: &i32): i32;
+            fn pthread_setcanceltype(a: i32, b: &i32): i32;
+            fn pthread_testcancel();
+            fn pthread_cancel(thread: PThread): i32;
+            
+            fn pthread_getschedparam(thread: PThread, ptr: &i32, params: &SchedParam): i32;
+            fn pthread_setschedparam(thread: PThread, params: &const SchedParam): i32;
+            fn pthread_setschedprio(thread: PThread, int: i32): i32;
+            
+            fn pthread_once(once: &PThreadOnce, func: fn): i32;
+
+            fn pthread_mutex_init(mutex: &PThreadMutex, attr: &const PThreadMutexAttr): i32;
+            fn pthread_mutex_lock(mutex: &PThreadMutex): i32;
+            fn pthread_mutex_unlock(mutex: &PThreadMutex): i32;
+            fn pthread_mutex_trylock(mutex: &PThreadMutex): i32;
+            fn pthread_mutex_timedlock(mutex: &PThreadMutex, time: &const timespec): i32;
+            fn pthread_mutex_destroy(mutex: &PThreadMutex): i32;
+            fn pthread_mutex_consistent(mutex: &PThreadMutex): i32;
+
+            fn pthread_mutex_getprioceiling(mutex: &const PThreadMutex, prio: &i32): i32;
+            fn pthread_mutex_setprioceiling(mutex: &PThreadMutex, ceiling: i32, prio: &i32): i32;
+
+            fn pthread_cond_init(cond: &PThreadCond, attr: &const PThreadCondAttr): i32;
+            fn pthread_cond_destroy(cond: &PThreadCond): i32;
+            fn pthread_cond_wait(cond: &PThreadCond, mutex: &PThreadMutex): i32;
+            fn pthread_cond_timedwait(cond: &PThreadCond, mutex: &PThreadMutex, time: &const timespec): i32;
+            fn pthread_cond_broadcast(cond: &PThreadCond): i32;
+            fn pthread_cond_signal(cond: &PThreadCond): i32;
+
+            fn pthread_rwlock_init(lock: &PThreadRWLock, attr: &const PThreadRWLockAttr): i32;
+            fn pthread_rwlock_destroy(lock: &PThreadRWLock);
+            fn pthread_rwlock_rdlock(lock: &PThreadRWLock): i32;
+            fn pthread_rwlock_tryrdlock(lock: &PThreadRWLock): i32;
+            fn pthread_rwlock_timedrdlock(lock: &PThreadRWLock, time: &const timespec): i32;
+            fn pthread_rwlock_wrlock(lock: &PThreadRWLock): i32;
+            fn pthread_rwlock_trywrlock(lock: &PThreadRWLock): i32;
+            fn pthread_rwlock_timedwrlock(lock: &PThreadRWLock, time: &const timespec): i32;
+            fn pthread_rwlock_unlock(lock: &PThreadRWLock);
+
+            fn pthread_spin_init(lock: &PThreadSpinLock, attr: i32): i32;
+            fn pthread_spin_destroy(lock: &PThreadSpinLock): i32;
+            fn pthread_spin_lock(lock: &PThreadSpinLock): i32;
+            fn pthread_spin_trylock(lock: &PThreadSpinLock): i32;
+            fn pthread_spin_unlock(lock: &PThreadSpinLock): i32;
+
+            fn pthread_barrier_init(barrier: &PThreadBarrier, attr: &const PThreadBarrierAttr, unsigned: u32): i32;
+            fn pthread_barrier_destroy(barrier: &PThreadBarrier): i32;
+            fn pthread_barrier_wait(barrier: &PThreadBarrier): i32;
+
+            fn pthread_key_create(key: &PThreadKey, func: fn(&void)): i32;
+            fn pthread_key_delete(key: &PThreadKey): i32;
+            fn pthread_getspecific(key: PThreadKey): &void;
+            fn pthread_setspecific(key: PThreadKey, val: &const void): i32;
+
+            fn pthread_attr_init(attr: &PThreadAttr): i32;
+            fn pthread_attr_destroy(attr: &PThreadAttr): i32;
+
+            fn pthread_attr_getguardsize(attr: &const PThreadAttr, size: &size_t): i32;
+            fn pthread_attr_setguardsize(attr: &PThreadAttr, size: size_t): i32;
+            fn pthread_attr_getstacksize(attr: &const PThreadAttr, size: &size_t): i32;
+            fn pthread_attr_setstacksize(attr: &PThreadAttr, size: size_t): i32;
+            fn pthread_attr_getdetachstate(attr: &const PThreadAttr, state: &i32): i32;
+            fn pthread_attr_setdetachstate(attr: &PThreadAttr, state: i32): i32;
+            fn pthread_attr_getstack(attr: &const PThreadAttr, stack: &&void, size: &size_t): i32;
+            fn pthread_attr_setstack(attr: &PThreadAttr, stack: &void, size: size_t): i32;
+            fn pthread_attr_getscope(attr: &const PThreadAttr, scope: &i32): i32;
+            fn pthread_attr_setscope(attr: &PThreadAttr, scope: i32): i32;
+            fn pthread_attr_getschedpolicy(attr: &const PThreadAttr, policy: &i32): i32;
+            fn pthread_attr_setschedpolicy(attr: &PThreadAttr, policy: i32): i32;
+            fn pthread_attr_getschedparam(attr: &const PThreadAttr, param: &SchedParam): i32;
+            fn pthread_attr_setschedparam(attr: &PThreadAttr, param: &const SchedParam): i32;
+            fn pthread_attr_getinheritsched(attr: &const PThreadAttr, sched: &i32): i32;
+            fn pthread_attr_setinheritsched(attr: &PThreadAttr, sched: i32): i32;
+
+            fn pthread_mutexattr_destroy(attr: &PThreadMutexAttr): i32;
+            fn pthread_mutexattr_getprioceiling(attr: &const PThreadMutexAttr, ceil: &i32): i32;
+            fn pthread_mutexattr_getprotocol(attr: &const PThreadMutexAttr, protocol: &i32): i32;
+            fn pthread_mutexattr_getpshared(attr: &const PThreadMutexAttr, shared: &i32): i32;
+            fn pthread_mutexattr_getrobust(attr: &const PThreadMutexAttr, robust: &i32): i32;
+            fn pthread_mutexattr_gettype(attr: &const PThreadMutexAttr, _type: &i32): i32;
+            fn pthread_mutexattr_init(attr: &PThreadMutexAttr): i32;
+            fn pthread_mutexattr_setprioceiling(attr: &PThreadMutexAttr, ceil: i32): i32;
+            fn pthread_mutexattr_setprotocol(attr: &PThreadMutexAttr, protocol: i32): i32;
+            fn pthread_mutexattr_setpshared(attr: &PThreadMutexAttr, pshared: i32): i32;
+            fn pthread_mutexattr_setrobust(attr: &PThreadMutexAttr, robust: i32): i32;
+            fn pthread_mutexattr_settype(attr: &PThreadMutexAttr, _type: i32): i32;
+
+            fn pthread_condattr_init(attr: &PThreadCondAttr): i32;
+            fn pthread_condattr_destroy(attr: &PThreadCondAttr): i32;
+            fn pthread_condattr_setclock(attr: &PThreadCondAttr, clock: &clockid_t): i32;
+            fn pthread_condattr_setpshared(attr: &PThreadCondAttr, pshared: i32): i32;
+            fn pthread_condattr_getclock(attr: &const PThreadCondAttr, clock: &clockid_t): i32;
+            fn pthread_condattr_getpshared(attr: &const PThreadCondAttr, pshared: &i32): i32;
+            
+            fn pthread_rwlockattr_init(attr: &PThreadRWLockAttr): i32;
+            fn pthread_rwlockattr_destroy(attr: &PThreadRWLockAttr): i32;
+            fn pthread_rwlockattr_getpshared(attr: &const PThreadRWLockAttr, pshared: &i32): i32;
+            fn pthread_rwlockattr_setpshared(attr: &PThreadRWLockAttr, pshared: i32): i32;
+            
+            fn pthread_barrierattr_init(attr: &PThreadBarrierAttr): i32;
+            fn pthread_barrierattr_destroy(attr: &PThreadBarrierAttr): i32;
+            fn pthread_barrierattr_getpshared(attr: &const PThreadBarrierAttr, pshared: &i32): i32;
+            fn pthread_barrierattr_setpshared(attr: &PThreadBarrierAttr, pshared: i32): i32;
+
+            fn pthread_atfork(prepare: fn, paren: fn, child: fn): i32;
+
+            fn pthread_getconcurrency(): i32;
+            fn pthread_setconcurrency(c: i32): i32;
+
+            fn pthread_getcpuclockid(thread: &PThread, clockid: &clockid_t): i32;
+        }
+
+        type __ptcb: struct {
+            __f: fn(&void),
+            __x: &void,
+            __next: &__ptcb
+        };
+
+        extern "C" {
+            fn _pthread_cleanup_push(ptcb: &__ptcb, func: fn(&void), ptr: &void);
+            fn _pthread_cleanup_pop(ptcb: &__ptcb, int: i32);
+        }
+
+        macro pthread_cleanup_push(f, x) {
+            let __cb: ::libc::pthread::__ptcb;
+            ::libc::pthread::_pthread_cleanup_push(&__cb, f, x);
+        }
+
+        macro pthread_cleanup_pop(r) {
+            ::libc::pthread::_pthread_cleanup_pop(&__cb, (r));
+        }
+    }
+    
+    #
+    # The following functions require _GNU_SOURCE
+    #
+
+    type cpu_set_t: void;
+
+    namespace pthread {
+        extern "C" {
+            fn pthread_getaffinity_np(thread: PThread, size: size_t, cpu_set: &cpu_set_t): i32;
+            fn pthread_setaffinity_np(thread: PThread, size: size_t, cpu_set: &const cpu_set_t): i32;
+            fn pthread_getattr_np(thread: PThread, attr: &PThreadAttr): i32;
+            fn pthread_setname_np(thread: PThread, name: &const char): i32;
+            fn pthread_getname_np(thread: PThread, name: &char, size: size_t): i32;
+            fn pthread_getattr_default_np(thread: &PThreadAttr): i32;
+            fn pthread_setattr_default_np(thread: &const PThreadAttr): i32;
+            fn pthread_tryjoin_np(thread: PThread, data: &&void): i32;
+            fn pthread_timedjoin_np(thread: PThread, data: &&void, time: &const timespec): i32;
         }
     }
 }

@@ -34,6 +34,8 @@ type tm: struct {
     tm_isdst: i32,
 };
 
+type clockid_t: i32;
+
 extern "C" {
 
     fn clock(): clock_t;

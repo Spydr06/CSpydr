@@ -171,6 +171,10 @@ char* ast_type_to_str(char* dest, ASTType_T* ty, size_t size)
 {
     if(size - strlen(dest) < 32) // if not enough memory is left, return
         return dest;
+
+    if(ty->is_constant)
+        strcat(dest, "const ");
+
     switch(ty->kind)
     {
         case TY_I8...TY_CHAR:
