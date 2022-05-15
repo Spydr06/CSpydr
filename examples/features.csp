@@ -2,13 +2,10 @@ import "std.csp";
 
 fn main(): i32 
 {
-    last([1, 2, 3, 4, 5, 6]);
-    last([11, 22, 33, 44]);
+    using std::io;
+
+    printf("%i\n", last!([1, 2, 3, 4]));
+    printf("%i\n", first!([11, 22, 33]));
 
     <- 0;
-}
-
-fn last(arr: i32[])
-{
-    std::io::printf("%i\n", arr[^1]);
 }

@@ -1,0 +1,11 @@
+# utilities for arrays in CSpydr
+
+import "memory.csp";
+
+macro last(array) {
+    ((array)[^1])
+}
+
+macro first(array) {
+    ((array)[0])
+}

@@ -1,4 +1,4 @@
-import "mem.csp";
+import "memory.csp";
 import "types.csp";
 import "utils.csp";
 import "option.csp";

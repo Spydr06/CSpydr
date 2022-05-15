@@ -6,6 +6,8 @@ import "utils.csp";
 macro alloc(size) { (::std::mem::alloc(size)) }
 macro realloc(src, size) { (::std::mem::realloc(src, size)) }
 macro free(ptr) { (::std::mem::free(ptr)) }
+macro make(_type) { (::std::mem::alloc(sizeof(_type)): &(_type)) }
+macro make(_type, _len) { (::std::mem::alloc(sizeof(_type) * _len): &(_type)) }
 
 # actual memory allocator implementation
 namespace std {

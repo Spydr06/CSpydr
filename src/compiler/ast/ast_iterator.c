@@ -341,6 +341,7 @@ static void ast_node(const ASTIteratorList_T* list, ASTNode_T* node, va_list cus
             for(size_t i = 0; i < node->args->size; i++)
                 ast_obj(list, node->args->items[i], custom_args);
             ast_node(list, node->body, custom_args);
+            ast_type(list, node->data_type->base, custom_args);
             break;
         
         default:

@@ -1,5 +1,6 @@
 #include "io.h"
 
+#include "config.h"
 #include "file.h"
 #include "log.h"
 
@@ -86,4 +87,23 @@ bool file_is_writable(char* file)
 bool file_is_executable(char* file)
 {
     return access(file, X_OK);
+}
+
+void print_buffer(u8* buffer, size_t size)
+{
+    fprintf(OUTPUT_STREAM, COLOR_BLUE "\t");
+
+    if(size == 0 || !buffer)
+    {
+        fprintf(OUTPUT_STREAM, "00\n" COLOR_RESET);
+        return;
+    }
+
+    for(size_t i = 0; i < size; i++)
+    {
+        fprintf(OUTPUT_STREAM, "%02x ", (u8) buffer[i]);
+        if(i % 8 == 0 && i != 0)
+            fprintf(OUTPUT_STREAM, "\n\t");
+    }
+    fprintf(OUTPUT_STREAM, "\n" COLOR_RESET);
 }

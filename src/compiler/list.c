@@ -75,3 +75,15 @@ size_t list_contains(List_T* list, void* item)
             return i + 1;
     return 0;
 }
+
+void list_foreach(List_T* list, void (*func)(void*))
+{
+    for(size_t i = 0; i < list->size; i++)
+        func(list->items[i]);
+}
+
+void list_foreach_s(List_T* list, void (*func)(size_t, void*))
+{
+    for(size_t i = 0; i < list->size; i++)
+        func(i, list->items[i]);
+}

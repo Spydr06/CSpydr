@@ -1,5 +1,6 @@
 # file for quickly importing all stdlib files.
 
+import "array.csp";
 import "c_str.csp";
 import "error.csp";
 import "file.csp";

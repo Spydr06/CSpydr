@@ -1,5 +1,5 @@
 import "types.csp";
-import "mem.csp";
+import "memory.csp";
 
 namespace std {
     type Regex: struct {

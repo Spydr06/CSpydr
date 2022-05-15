@@ -1,4 +1,4 @@
-import "mem.csp";
+import "memory.csp";
 import "types.csp";
 
 # macro to quickly create a new vector
