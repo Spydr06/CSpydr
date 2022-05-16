@@ -71,6 +71,13 @@ $ cmake .
 $ make
 ```
 
+> If you don't want llvm in your build, you can disable it with 
+> (to reenable, set `NO_LLVM=0`)
+> ```console
+> $ cmake . -DNO_LLVM=1
+> $ make
+> ```
+
 To install CSpydr with all of its components (cspc - The CSpydr Compiler and the CSpydr Standard Library), enter this command (needs root privileges):
 ```console
 # make install
