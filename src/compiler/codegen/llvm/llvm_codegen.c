@@ -1,5 +1,3 @@
-#include <llvm-c/Core.h>
-#include <llvm-c/Types.h>
 #ifdef CSPYDR_USE_LLVM
 
 #include <string.h>
