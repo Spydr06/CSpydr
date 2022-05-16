@@ -1,10 +1,15 @@
 #ifndef CSPYDR_TOOLCHAIN_H
 #define CSPYDR_TOOLCHAIN_H
 
+#include "config.h"
+
 typedef enum COMPILE_TYPE_ENUM
 {
     CT_TRANSPILE,
     CT_ASM,
+#ifdef CSPYDR_USE_LLVM
+    CT_LLVM,
+#endif
     CT_TO_JSON,
 } CompileType_T;
 

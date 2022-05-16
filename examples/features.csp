@@ -2,10 +2,6 @@ import "std.csp";
 
 fn main(): i32 
 {
-    using std::io;
-
-    printf("%i\n", last!([1, 2, 3, 4]));
-    printf("%i\n", first!([11, 22, 33]));
 
     <- 0;
 }

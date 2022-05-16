@@ -6,7 +6,7 @@ import "error.csp";
 import "file.csp";
 import "io.csp";
 import "math.csp";
-import "mem.csp";
+import "memory.csp";
 import "net.csp";
 import "option.csp";
 import "process.csp";

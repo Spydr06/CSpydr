@@ -15,6 +15,7 @@
 #include "ast/ast_json.h"
 #include "debugger/dbg.h"
 #include "globals.h"
+#include "codegen/llvm/llvm_codegen.h"
 
 // generate the ast from the source file (lexing, preprocessing, parsing)
 static void generate_ast(ASTProg_T* ast, char* path, bool silent);
@@ -48,6 +49,11 @@ void compile(char* input_file, char* output_file, Action_T action)
         case CT_ASM:
             generate_asm(&ast, output_file, global.print_code, global.silent);
             break;
+#ifdef CSPYDR_USE_LLVM
+        case CT_LLVM:
+            generate_llvm(&ast, output_file, global.print_code, global.silent);
+            break;
+#endif
         case CT_TO_JSON:
             generate_json(&ast, output_file, global.print_code, global.silent);
             break;

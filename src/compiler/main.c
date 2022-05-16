@@ -68,7 +68,10 @@ const char help_text[] = "%s"
                        "  -i, --info             | Displays information text and quits\n"
                        "  -o, --output [file]    | Sets the target output file (default: `" DEFAULT_OUTPUT_FILE "`)\n"
                        "  -t, --transpile        | Instructs the compiler to compile to C source code (deprecated)\n"
-                       "  -a, --asm              | Instructs the compile to compile to x86_64 gnu assembly code\n"
+                       "  -a, --asm              | Instructs the compiler to compile to x86_64 gnu assembly code\n"
+#ifdef CSPYDR_USE_LLVM
+                       "  -l, --llvm             | Instructs the compiler to use the llvm backend\n"
+#endif
                        "      --to-json          | Emit the AST directly as a JSON file (for debugging purposes)\n"
                        "      --print-code       | Prints the generated code (C | Assembly | LLVM IR)\n"
                        "      --silent           | Disables all command line output except error messages\n"
@@ -181,6 +184,10 @@ i32 main(i32 argc, char* argv[])
             global.ct = CT_TRANSPILE;
         else if(streq(arg, "-a") || streq(arg, "--asm"))
             global.ct = CT_ASM;
+#ifdef CSPYDR_USE_LLVM
+        else if(streq(arg, "-l") || streq(arg, "--llvm"))
+                    global.ct = CT_LLVM;
+#endif
         else if(streq(arg, "--to-json"))
             global.ct = CT_TO_JSON;
         else if(streq(arg, "--from-json"))
