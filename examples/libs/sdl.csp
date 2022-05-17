@@ -1,0 +1,12 @@
+import "sdl2/sdl.csp";
+
+fn main(): i32
+{
+    using sdl;
+
+    SDL_Init(SDL_INIT_EVERYTHING!);
+
+    SDL_Quit();
+
+    <- 0;
+}

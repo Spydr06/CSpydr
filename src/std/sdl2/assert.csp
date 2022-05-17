@@ -1,0 +1,92 @@
+#[
+  Simple DirectMedia Layer
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
+]#
+
+[link("pthread", "SDL2")]
+
+macro SDL_ASSERT_LEVEL { 2 }
+
+namespace sdl {
+    fn SDL_TriggerBreakpoint() {
+        asm "int $3";
+    }
+}
+
+macro SDL_FUNCTION { __func__ }
+macro SDL_FILE { __file__ }
+macro SDL_LINE { __line__ }
+
+macro SDL_NULL_WHILE_LOOP_CONDITION { 0 }
+
+namespace sdl {
+    type SDL_AssertState: enum {
+        RETRY,
+        BREAK,
+        ABORT,
+        IGNORE,
+        ALWAYS_IGNORE
+    };
+
+    type SDL_AssertData: struct {
+        always_ignore: i32,
+        trigger_count: u32,
+        condition: &const char,
+        filename: &const char,
+        linenum: i32,
+        funciton: &const char,
+        next: &SDL_AssertData
+    };
+
+    extern "C" fn SDL_ReportAssertion(data: &SDL_AssertData, function: &const char, filename: &const char, linenum: i32);
+}
+
+macro SDL_enabled_assert(condition) {
+    while !(condition) {
+        let sdl_assert_data = ::sdl::SDL_AssertData::{
+            0, 0, "TODO", nil, 0, nil, nil
+        };
+
+        let sdl_assert_state = ::sdl::SDL_ReportAssertion(&sdl_assert_data, SDL_FUNCTION!, SDL_FILE!, SDL_LINE!);
+        match sdl_asser_state {
+            ::sdl::SDL_AssertState::RETRY => continue;
+            ::std::SDL_AssertState::BREAK => ::sdl::SDL_TriggerBreakpoint();
+            _ => break;
+        }
+    }
+}
+
+macro SDL_assert(condition) { SDL_enabled_assert!(condition) }
+macro SDL_assert_release(condition) { SDL_enabled_assert!(condition) }
+macro SDL_assert_paranoid(condition) { }
+macro SDL_assert_always(condition) { SDL_enabled_assert!(condition) }
+
+namespace sdl {
+    type SDL_AssertionHandler: fn<SDL_AssertState>(&const SDL_AssertData, &void);
+
+    extern "C" {
+        fn SDL_SetAssertionHandler(handler: SDL_AssertionHandler, userdata: &void);
+        fn SDL_GetDefaultAssertionHandler(): SDL_AssertionHandler;
+        fn SDL_GetAssertionHandler(puserdata: &&void): SDL_AssertionHandler;
+        fn SDL_GetAssertionReport(): &SDL_AssertData;
+        fn SDL_ResetAssertionReport();
+    }
+}
+
+
