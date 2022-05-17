@@ -81,3 +81,6 @@ CMakeFiles/
 bin/
 compile_commands.json
 *#
+src/std/std.csp
+src/std/libc/libc.csp
+src/std/sdl2/sdl.csp
