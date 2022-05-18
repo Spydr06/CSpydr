@@ -1,0 +1,99 @@
+#[
+  Simple DirectMedia Layer
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
+]#
+
+#[*
+ * \file SDL_atomic.h
+ *
+ * Atomic operations.
+ *
+ * IMPORTANT:
+ * If you are not an expert in concurrent lockless programming, you should
+ * only be using the atomic lock and reference counting functions in this
+ * file.  In all other cases you should be protecting your data structures
+ * with full mutexes.
+ *
+ * The list of "safe" functions to use are:
+ *  SDL_AtomicLock()
+ *  SDL_AtomicUnlock()
+ *  SDL_AtomicIncRef()
+ *  SDL_AtomicDecRef()
+ *
+ * Seriously, here be dragons!
+ * ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ *
+ * You can find out a little more about lockless programming and the
+ * subtle issues that can arise here:
+ * http://msdn.microsoft.com/en-us/library/ee418650%28v=vs.85%29.aspx
+ *
+ * There's also lots of good information here:
+ * http://www.1024cores.net/home/lock-free-algorithms
+ * http://preshing.com/
+ *
+ * These operations may or may not actually be implemented using
+ * processor specific atomic operations. When possible they are
+ * implemented as true processor specific atomic operations. When that
+ * is not possible the are implemented using locks that *do* use the
+ * available atomic operations.
+ *
+ * All of the atomic operations that modify memory are full memory barriers.
+ ]#
+
+[link("pthread", "SDL2")]
+
+import "stdinc.csp";
+
+namespace sdl {
+    type SDL_SpinLock: i32;
+
+    extern "C" {
+        fn SDL_AtomicTryLock(lock: &SDL_SpinLock): SDL_bool;
+        fn SDL_AtomicLock(lock: &SDL_SpinLock);
+        fn SDL_AtomicUnlock(lock: &SDL_SpinLock);
+
+        fn SDL_MemoryBarrierReleaseFunction();
+        fn SDL_MemoryBarrierAcquireFunction();
+    }
+
+    type SDL_atomic_t: struct {
+        value: i32
+    };
+
+    extern "C" {
+        fn SDL_AtomicCAS(a: &SDL_atomic_t, oldval: i32, newval: i32): SDL_bool;
+        fn SDL_AtomicSet(a: &SDL_atomic_t, v: i32): i32;
+        fn SDL_AtomicGet(a: &SDL_atomic_t): i32;
+        fn SDL_AtomicAdd(a: &SDL_atomic_t, v: i32): i32;
+    }
+
+    fn SDL_AtomicIncRef(a: &SDL_atomic_t): i32 {
+        <- SDL_AtomicAdd(a, 1);
+    }
+
+    fn SDL_AtomicDecRef(a: &SDL_atomic_t): SDL_bool {
+        <- SDL_AtomicAdd(a, -1): SDL_bool;
+    }
+
+    extern "C" {
+        fn SDL_AtomicCASPtr(a: &&void, oldval: &void, newval: &void): SDL_bool;
+        fn SDL_AtomicSetPtr(a: &&void, v: &void): &void;
+        fn SDL_AtomicGetPtr(a: &&void): &void;
+    }
+}

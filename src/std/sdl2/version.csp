@@ -1,0 +1,60 @@
+#[
+  Simple DirectMedia Layer
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
+]#
+
+# This header defines the current SDL version.
+
+namespace sdl {
+    type SDL_version: struct {
+        major: u8,
+        minor: u8,
+        patch: u8
+    };
+}
+
+macro SDL_MAJOR_VERSION { 2 }
+macro SDL_MINOR_VERSION { 0 }
+macro SDL_PATCHLEVEL { 22 }
+
+macro SDL_VERSION(x) {
+    (x).major = SDL_MAJOR_VERSION!;
+    (x).minor = SDL_MINOR_VERSION!;
+    (x).patch = SDL_PATCHLEVEL!;
+}
+
+macro SDL_VERSIONNUM(x, y, z) {
+    ((x) * 1000 + (y) * 100 + (z))
+}
+
+macro SDL_COMPILEDVERSION {
+    SDL_VERSIONNUM!(SDL_MAJOR_VERSION!, SDL_MINOR_VERSION!, SDL_PATCHLEVEL!)
+}
+
+macro SDL_VERSION_ATLEAST(x, y, z) {
+    (SDL_COMPILEDVERSION! >= SDL_VERSIONNUM!(x, y, z))
+}
+
+namespace sdl {
+    extern "C" {
+        fn SDL_GetVersion(ver: &SDL_version);
+        fn SDL_GetRevision(): &const char;
+        fn SDL_GetRevisionNumber(): i32;
+    }
+}

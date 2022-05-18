@@ -1,0 +1,6 @@
+namespace sdl {
+    type SDL_bool: enum {
+        FALSE,
+        TRUE
+    };
+}
