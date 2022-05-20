@@ -1,0 +1,97 @@
+#[
+  Simple DirectMedia Layer
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
+]#
+
+import "libc/stdio.csp";
+import "stdinc.csp";
+
+macro SDL_RWOPS_UNKNOWN   { (0: u32) } #*< Unknown stream type
+macro SDL_RWOPS_WINFILE   { (1: u32) } #*< Win32 file
+macro SDL_RWOPS_STDFILE   { (2: u32) } #*< Stdio file
+macro SDL_RWOPS_JNIFILE   { (3: u32) } #*< Android asset
+macro SDL_RWOPS_MEMORY    { (4: u32) } #*< Memory stream
+macro SDL_RWOPS_MEMORY_RO { (5: u32) } #*< Read-Only memory stream
+
+namespace sdl {
+    type SDL_RWops: struct {
+        size: fn<i64>(&SDL_RWops),
+        seek: fn<i64>(&SDL_RWops, i64, i32),
+        read: fn<u64>(&SDL_RWops, &void, u64, u64),
+        write: fn<u64>(&SDL_RWops, &const void, u64, u64),
+        close: fn<u64>(&SDL_RWops),
+
+        typ: i32,
+        hidden: union {
+            stdio: struct {
+                autoclose: SDL_bool,
+                fp: &libc::FILE
+            },
+            mem: struct {
+                base: &u8,
+                here: &u8,
+                stop: &u8
+            },
+            unknown: struct {
+                data1: &void,
+                data2: &void
+            }
+        }
+    };
+
+    extern "C" {
+        fn SDL_RWFromFile(file: &const char, mode: &const char): &SDL_RWops;
+        fn SDL_RWFromFP(file: &libc::FILE, autoclose: SDL_bool): &SDL_RWops;
+        fn SDL_RWFromMem(mem: &void, size: i32): &SDL_RWops;
+        fn SDL_RWFromConstMem(mem: &const void, size: i32): &SDL_RWops;
+        
+        fn SDL_AllocRW(): &SDL_RWops;
+        fn SDL_FreeRW(area: &SDL_RWops);
+
+macro SDL_RW_SEEK_SET { 0 }
+macro SDL_RW_SEEK_CUR { 1 }
+macro SDL_RW_SEK_END { 2 }
+
+        fn SDL_RWsize(context: &SDL_RWops): i64;
+        fn SDL_RWseek(context: &SDL_RWops, offset: i64, whence: i32): i64;
+        fn SDL_RWtell(context: &SDL_RWops): i64;
+        fn SDL_RWread(context: &SDL_RWops, ptr: &void, size: u64, maxnum: u64): u64;
+        fn SDL_RWwrite(context: &SDL_RWops, ptr: &const void, size: u64, num: u64): u64;
+        fn SDL_RWclose(context: &SDL_RWops): i32;
+        
+        fn SDL_LoadFile_RW(src: &SDL_RWops, datasize: &u64, freesrc: i32): &void;
+        fn SDL_LoadFile(file: &const char, datasize: &u64): &void;
+        
+        fn SDL_ReadU8(src: &SDL_RWops): u8;
+        fn SDL_ReadLE16(src: &SDL_RWops): u16;
+        fn SDL_ReadBE16(src: &SDL_RWops): u16;
+        fn SDL_ReadLE32(src: &SDL_RWops): u32;
+        fn SDL_ReadBE32(src: &SDL_RWops): u32;
+        fn SDL_ReadLE64(src: &SDL_RWops): u64;
+        fn SDL_ReadBE64(src: &SDL_RWops): u64;
+
+        fn SDL_WriteU8(dst: &SDL_RWops, value: u8): u64;
+        fn SDL_WriteLE16(dst: &SDL_RWops, value: u16): u64;
+        fn SDL_WriteBE16(dst: &SDL_RWops, value: u16): u64;
+        fn SDL_WriteLE32(dst: &SDL_RWops, value: u32): u64;
+        fn SDL_WriteBE32(dst: &SDL_RWops, value: u32): u64;
+        fn SDL_WriteLE64(dst: &SDL_RWops, value: u64): u64;
+        fn SDL_WriteBE64(dst: &SDL_RWops, value: u64): u64;
+    }
+}
