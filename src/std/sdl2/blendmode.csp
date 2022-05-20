@@ -19,36 +19,45 @@
   3. This notice may not be removed or altered from any source distribution.
 ]#
 
-# Simple error message routines for SDL.
+# Header file declaring the SDL_BlendMode enumeration
 
 namespace sdl {
-    extern "C" {
-        fn SDL_SetError(fmt: &const char, args: ...): i32;
-        fn SDL_GetError(): &const char;
-        fn SDL_GetErrorMsg(errstr: &char, maxlen: i32): &char;
-        fn SDL_ClearError();
-    }
-
-    fn SDL_OutOfMemory(): i32 {
-        <- SDL_Error(sdl::SDL_errorcode::ENOMEM);
-    }
-
-    fn SDL_Unsupported(): i32 {
-        <- SDL_Error(sdl::SDL_errorcode::UNSUPPORTED);
-    }
-
-    fn SDL_InvalidParamError(param: &const char): i32 {
-        <- SDL_SetError("Parameter '%s' is invalid", param);
-    }
-
-    type SDL_errorcode: enum {
-        ENOMEM,
-        EFREAD,
-        EFWRITE,
-        EFSEEK,
-        UNSUPPORTED,
-        LASTERROR
+    type SDL_BlendMode: enum {
+        NONE,
+        BLEND,
+        ADD,
+        MOD = 4,
+        MUL = 0,
+        INVALID = 0x7FFFFFFF
     };
 
-    extern "C" fn SDL_Error(code: SDL_errorcode): i32;
+    type SDL_BlendOperation: enum {
+        ADD = 1,
+        SUBTRACT,
+        REV_SUBTRACT,
+        MINIMUM,
+        MAXIMUM
+    };
+
+    type SDL_BlendFactor: enum {
+        ZERO = 1,
+        ONE,
+        SRC_COLOR,
+        ONE_MINUS_SRC_COLOR,
+        SRC_ALPHA,
+        ONE_MINUS_SRC_ALPHA,
+        DST_COLOR,
+        ONE_MINUS_DST_COLOR,
+        DST_ALPHA,
+        ONE_MINUS_DST_ALPHA
+    };
+
+    extern "C" fn SDL_ComposeCustomBlendMode(
+        srcColorFactor: SDL_BlendFactor,
+        dstColorFactor: SDL_BlendFactor,
+        colorOperation: SDL_BlendOperation,
+        srcAlphaFactor: SDL_BlendFactor,
+        dstAlphaFactor: SDL_BlendFactor,
+        alphaOperation: SDL_BlendOperation
+    ): SDL_BlendMode;
 }

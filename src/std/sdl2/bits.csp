@@ -1,0 +1,63 @@
+#[
+  Simple DirectMedia Layer
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
+]#
+
+# Functions for fiddling with bits and bitmasks.
+
+import "stdinc.csp";
+
+namespace sdl {
+    fn SDL_MostSignificantBitIndex32(x: u32): i32 {
+        #[Based off of Bit Twiddling Hacks by Sean Eron Anderson
+        * <seander@cs.stanford.edu>, released in the public domain.
+        * http://graphics.stanford.edu/~seander/bithacks.html#IntegerLog
+        ]#
+
+        if x == 0 ret -1;
+
+        const b: u32'c[5];
+            b[0] = 0x2;
+            b[1] = 0xc;
+            b[2] = 0xf0;
+            b[3] = 0xff00;
+            b[4] = 0xffff0000;
+
+        const S: i32'c[5];
+            S[0] = 1;
+            S[1] = 2;
+            S[2] = 4;
+            S[3] = 8;
+            S[5] = 16;
+        
+        let msbIndex = 0;
+
+        for let i = 4; i >= 0; i--;
+            if x & b[i] {
+                x >>= S[i];
+                msbIndex |= S[i];
+            }
+        
+        <- msbIndex;
+    }
+
+    fn SDL_HasExactlyOneBitSet32(x: u32): SDL_bool {
+        <- if (x && !(x & (x - 1))) != 0 => sdl::SDL_bool::TRUE else sdl::SDL_bool::FALSE;
+    }
+}

@@ -19,36 +19,14 @@
   3. This notice may not be removed or altered from any source distribution.
 ]#
 
-# Simple error message routines for SDL.
+# Include file for SDL clipboard handling
+
+import "stdinc.csp";
 
 namespace sdl {
     extern "C" {
-        fn SDL_SetError(fmt: &const char, args: ...): i32;
-        fn SDL_GetError(): &const char;
-        fn SDL_GetErrorMsg(errstr: &char, maxlen: i32): &char;
-        fn SDL_ClearError();
+        fn SDL_SetClipboardText(text: &const char): i32;
+        fn SDL_GetClipboardText(): &char;
+        fn SDL_HasClipboardText(): SDL_bool;
     }
-
-    fn SDL_OutOfMemory(): i32 {
-        <- SDL_Error(sdl::SDL_errorcode::ENOMEM);
-    }
-
-    fn SDL_Unsupported(): i32 {
-        <- SDL_Error(sdl::SDL_errorcode::UNSUPPORTED);
-    }
-
-    fn SDL_InvalidParamError(param: &const char): i32 {
-        <- SDL_SetError("Parameter '%s' is invalid", param);
-    }
-
-    type SDL_errorcode: enum {
-        ENOMEM,
-        EFREAD,
-        EFWRITE,
-        EFSEEK,
-        UNSUPPORTED,
-        LASTERROR
-    };
-
-    extern "C" fn SDL_Error(code: SDL_errorcode): i32;
 }
