@@ -3,12 +3,12 @@
 # link with the gnulibc standard library
 import "link.csp";
 
-
-type ptrdiff_t: i64;
-type size_t: u64;
-type max_align_t: f64;
-type wchar_t: i32;
-
+namespace libc {
+    type ptrdiff_t: i64;
+    type size_t: u64;
+    type max_align_t: f64;
+    type wchar_t: i32;
+}
 # kind of unecessary, since CSpydr already includes nil, which is the same
 #macro NULL { nil }
 

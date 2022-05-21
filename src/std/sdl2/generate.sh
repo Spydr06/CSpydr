@@ -2,7 +2,7 @@
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 SDL_FILE="sdl.csp"
-LICENSE="#[
+COPYRIGHT="#[
   Simple DirectMedia Layer
   Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
 
@@ -29,6 +29,7 @@ LICENSE="#[
 "
 
 CODE="
+
 macro SDL_INIT_TIMER          { (0x00000001: u32) }
 macro SDL_INIT_AUDIO          { (0x00000010: u32) }
 macro SDL_INIT_VIDEO          { (0x00000020: u32) }
@@ -65,6 +66,6 @@ pushd $SCRIPT_DIR
 
 gen-allimport-file $SDL_FILE $SCRIPT_DIR "Main include header for the SDL library"
 
-echo "$LICENSE$(cat $SDL_FILE)$CODE" > $SDL_FILE
+echo "$COPYRIGHT$(cat $SDL_FILE)$CODE" > $SDL_FILE
 
 popd

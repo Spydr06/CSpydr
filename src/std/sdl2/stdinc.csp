@@ -1,6 +1,249 @@
+#[
+  Simple DirectMedia Layer
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
+]#
+
+# This is a general header that includes C language support.
+
+import "libc/stddef.csp";
+
+macro SDL_arraysize(array) { (len array) }
+macro SDL_TABLESIZE(table) { SDL_arraysize!(table) }
+
+#TODO: macro SDL_STRINGIFY_ARG(arg) { quote!(arg) }
+
+macro SDL_reinterpet_cast(type_, expr) { ((expr): (type_)) }
+macro SDL_static_cast(type_, expr)     { ((expr): (type_)) }
+macro SDL_const_cast(type_, expr)      { ((expr): (type_)) }
+
+macro SDL_FOURCC(a, b, c, d) {
+    (
+        (SDL_static_cast!(u32, SDL_static_cast!(u8, (a))) << 0)  |
+        (SDL_static_cast!(u32, SDL_static_cast!(u8, (b))) << 8)  |
+        (SDL_static_cast!(u32, SDL_static_cast!(u8, (c))) << 16) |
+        (SDL_static_cast!(u32, SDL_static_cast!(u8, (d))) << 24)
+    )
+}
+
 namespace sdl {
     type SDL_bool: enum {
         FALSE,
         TRUE
     };
+
+    # !
+    # ! The following integer types are not used in CSpydr, as it already has fixed-size integers
+    # !
+
+macro SDL_MAX_SINT8 { (0x7f: i8) }
+macro SDL_MIN_SINT8 { (~0x7f: i8) }
+    type Sint8: i8;
+
+macro SDL_MAX_UINT8 { (0xff: u8) }
+macro SDL_MIN_UINT8  { (0x00: u8) }
+    type Uint8: u8;
+
+macro SDL_MAX_SINT16 { (0x7fff: i16) }
+macro SDL_MIN_SINT16 { (~0x7fff: i16) }
+    type Sint16: i16;
+
+macro SDL_MAX_UINT16 { (0xffff: u16) }
+macro SDL_MIN_UINT16 { (0x0000: u16) }
+    type Uint16: u16;
+
+macro SDL_MAX_SINT32 { (0x7fffffff: i32) }
+macro SDL_MIN_SINT32 { (~0x7fffffff: i32) }
+    type Sint32: i32;
+
+macro SDL_MAX_UINT32 { (0xffffffff: u32) }
+macro SDL_MIN_UINT32 { (0x00000000: u32) }
+    type Uint32: u32;
+
+macro SDL_MAX_SINT64 { (0x7fffffffffffffff: i64) }
+macro SDL_MIN_SINT64 { (~0x7fffffffffffffff: i64) }
+    type Sint64: i64;
+
+macro SDL_MAX_UINT64 { (0xffffffffffffffff: u64) }
+macro SDL_MIN_UINT64 { (0x0000000000000000: u64) }
+    type Uint64: u64;
+}
+
+# todo: macro SDL_FLT_EPSILON
+
+macro SDL_IN_BYTECAP(x)        {}
+macro SDL_INOUT_Z_CAP(x)       {}
+macro SDL_OUT_Z_CAP(x)         {}
+macro SDL_OUT_CAP(x)           {}
+macro SDL_OUT_BYTECAP(x)       {}
+macro SDL_OUT_Z_BYTECAP(x)     {}
+macro SDL_PRINTF_FORMAT_STRING {}
+macro SDL_SCANF_FORMAT_STRING  {}
+
+namespace sdl {
+    extern "C" {
+        fn SDL_malloc(size: u64): &void;
+        fn SDL_calloc(nmemb: u64, size: u64): &void;
+        fn SDL_realloc(mem: &void, size: u64): &void;
+        fn SDL_free(mem: &void);
+    }
+
+    type SDL_malloc_func: fn<&void>(u64);
+    type SDL_calloc_func: fn<&void>(u64, u64);
+    type SDL_realloc_func: fn<&void>(&void, u64);
+    type SDL_free_func: fn(&void);
+
+    extern "C" {
+        fn SDL_GetMemoryFunctions(malloc_func: &SDL_malloc_func,
+                                  calloc_func: &SDL_calloc_func,
+                                  realloc_func: &SDL_realloc_func,
+                                  free_func: &SDL_free_func
+                                );
+
+        fn SDL_SetMemoryFunctions(malloc_func: SDL_malloc_func,
+                                  calloc_func: SDL_calloc_func,
+                                  realloc_func: SDL_realloc_func,
+                                  free_func: SDL_free_func
+                                ): i32;
+        
+        fn SDL_GetNumAllocations(): i32;
+        fn SDL_gentenv(name: &const char): &char;
+        fn SDL_setenv(name: &const char, value: &const char, overwrite: i32): i32;
+        fn SDL_qsort(base: &void, nmemb: u64, size: u64, compare: fn<i32>(&const void, &const void));
+        fn SDL_abs(x: i32): i32;
+    }
+
+    fn SDL_min(x: i32, y: i32): i32 {
+        <- if x < y => x else y;
+    }
+
+    fn SDL_max(x: i32, y: i32): i32 {
+        <- if x > y => x else y;
+    }
+
+    fn SDL_clamp(x: i32, a: i32, b: i32): i32 {
+        <- if x < a => a else if x > b => b else x;
+    }
+
+    extern "C" {
+        fn SDL_isalpha(x: i32): i32;
+        fn SDL_isalnum(x: i32): i32;
+        fn SDL_isblank(x: i32): i32;
+        fn SDL_iscntrl(x: i32): i32;
+        fn SDL_isdigit(x: i32): i32;
+        fn SDL_isxdigit(x: i32): i32;
+        fn SDL_ispunct(x: i32): i32;
+        fn SDL_isspace(x: i32): i32;
+        fn SDL_isupper(x: i32): i32;
+        fn SDL_islower(x: i32): i32;
+        fn SDL_isprint(x: i32): i32;
+        fn SDL_isgraph(x: i32): i32;
+        fn SDL_toupper(x: i32): i32;
+        fn SDL_tolower(x: i32): i32;
+
+        fn SDL_crc32(crc: u32, data: &const void, len_: u64): u32;
+        fn SDL_memset(dst: &void, c: i32, len_: u64): &void;
+    }
+
+    fn SDL_zero(ptr: &void, len_: u64): &void {
+        <- SDL_memset(ptr, 0, len_);
+    }
+
+macro SDL_zero(x)  { SDL_zero(&(x), sizeof typeof (x)) }
+macro SDL_zerop(x) { SDL_zero((x), sizeof typeof *(x)) }
+macro SDL_zeroa(x) { SDL_zero((x), sizeof typeof (x)) }
+
+    fn SDL_memset4(dst: &void, val: u32, dwords: u64) {
+        if dwords == 0 ret;
+
+        let n = (dwords + 3) / 4;
+        let p = SDL_static_cast!(&u32, dst);
+        let _val = val;
+
+        if dwords % 4 == 0
+            while n-- != 0 {
+                *p++ = _val;
+            }
+        else 
+            *p = _val; 
+        
+        while n-- != 0 {
+            match dwords % 4 {
+                0 => {
+                    *p++ = _val;
+                    *p++ = _val;
+                    *p++ = _val;
+                    *p++ = _val;
+                }
+                1 => {
+                    *p++ = _val;
+                    *p++ = _val;
+                    *p++ = _val;
+                }
+                2 => {
+                    *p++ = _val;
+                    *p++ = _val;
+                }
+                3 => *p++ = _val;
+            }
+        }
+    }
+
+    extern "C" {
+        fn SDL_memcpy(dst: &void, src: &const void, len_: u64): &void;
+        fn SDL_memmove(dst: &void, src: &const void, len_: u64): &void;
+        fn SDL_memcmp(s1: &const void, s2: &const void, len_: u64): i32;
+
+        fn SDL_strlen(str: &const char): u64;
+        fn SDL_wcslen(str: &const libc::wchar_t): u64;
+    }
+
+macro SDL_ICONV_ERROR { ((-1): u64) }
+macro SDL_ICONV_E2BIG { ((-2): u64) }
+macro SDL_ICONV_EILSEQ { ((-3): u64) }
+macro SDL_ICONV_EINVAL { ((-4): u64) }
+
+    type SDL_iconv_t: &void;
+
+    extern "C" {
+        fn SDL_iconv_open(tocode: &const char, fromcode: &const char): SDL_iconv_t;
+        fn SDL_iconv_close(cd: SDL_iconv_t): i32;
+        fn SDL_iconv(cd: SDL_iconv_t, inbuf: &&const char, inbytesleft: &u64, outbuf: &&char, outbytesleft: &u64): u64;
+        fn SDL_iconv_string(tocode: &const char, fromcode: &const char, inbuf: &const char, inbytesleft: u64): &char;
+    }
+
+    fn SDL_iconv_utf8_locals(s: &const char): &char {
+        <- SDL_iconv_string("", "UTF-8", s, SDL_strlen(s) + 1);
+    }
+
+    fn SDL_iconv_utf8_ucs2(s: &const char): &u16 {
+        <- SDL_iconv_string("UCS-2-INTERNAL", "UTF-8", s, SDL_strlen(s) + 1);
+    }
+
+    fn SDL_iconv_utf8_ucs4(s: &const char): &u32 {
+        <- SDL_iconv_string("UCS-4-INTERNAL", "UTF-8", s, SDL_strlen(s) + 1);
+    }
+
+    fn SDL_iconv_wchar_utf8(s: &const libc::wchar_t): &char {
+        <- SDL_iconv_string("UTF-8", "WCHAR_T", s: &char, (SDL_wcslen(s) + 1) * sizeof libc::wchar_t);
+    }
+
+    fn SDL_memcpy4(dst: &void, src: &const void, dwords: u64): &void {
+        <- SDL_memcpy(dst, src, dwords * 4);
+    }
 }
