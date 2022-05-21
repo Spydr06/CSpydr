@@ -16,6 +16,7 @@
 #include "debugger/dbg.h"
 #include "globals.h"
 #include "codegen/llvm/llvm_codegen.h"
+#include "timer/timer.h"
 
 // generate the ast from the source file (lexing, preprocessing, parsing)
 static void generate_ast(ASTProg_T* ast, char* path, bool silent);
@@ -41,6 +42,7 @@ void compile(char* input_file, char* output_file, Action_T action)
     if(global.optimize)
         optimize(&ast);
 
+    timer_start("code generation");
     switch(global.ct)
     {
         case CT_TRANSPILE:
@@ -61,6 +63,7 @@ void compile(char* input_file, char* output_file, Action_T action)
             LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " Unknown compile type %d!\n", global.ct);
             exit(1);
     }
+    timer_stop();
 
     for(size_t i = 0; i < ast.imports->size; i++)
         free_file(ast.imports->items[i]);
@@ -69,8 +72,10 @@ void compile(char* input_file, char* output_file, Action_T action)
     switch(action)
     {
         case AC_RUN:
+            timer_start("executing");
             run(output_file);
             remove(output_file);
+            timer_stop();
             break;
 
         case AC_BUILD:

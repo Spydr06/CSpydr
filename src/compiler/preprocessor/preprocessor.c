@@ -1,18 +1,18 @@
 #include "preprocessor.h"
 #include "config.h"
 #include "stdmacros.h"
-#include "../lexer/lexer.h"
-#include "../lexer/token.h"
-#include "../error/error.h"
-#include "../platform/platform_bindings.h"
-#include "../globals.h"
+#include "lexer/lexer.h"
+#include "lexer/token.h"
+#include "error/error.h"
+#include "platform/platform_bindings.h"
+#include "globals.h"
+#include "timer/timer.h"
+#include "io/log.h"
+#include "io/io.h"
 
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
-
-#include "../io/io.h"
-#include "../io/log.h"
 
 #define throw_error(...)              \
     do {                              \
@@ -460,6 +460,8 @@ static void expand_macro_call(Preprocessor_T* pp, MacroCall_T call, List_T* src_
 
 List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
 {
+    timer_start("lexing main file");
+    
     Preprocessor_T pp;
     init_preprocessor(&pp, lex);
 
@@ -474,6 +476,9 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
     for(tok = lexer_next_token(lex); tok->type != TOKEN_EOF; tok = lexer_next_token(lex))
         list_push(pp.tokens, tok);
     Token_T* eof = tok;
+    
+    timer_stop();
+    timer_start("lexing import files");
 
     /**************************************
     * Stage 1: lex and import all files   *
@@ -487,6 +492,9 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
     }
 
     push_tok(&pp, eof);
+
+    timer_stop();
+    timer_start("preprocessing");
 
     /***************************************
     * Stage 2: parse macro definitions     *
@@ -525,9 +533,11 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
         list_push(token_stage_3, tok);
     }
 
-
     free_list(pp.tokens);     // free from stage 0 & 1
     free_list(token_stage_2); // free from stage 2
     free_preprocessor(&pp);
+
+    timer_stop();
+
     return token_stage_3;
 }

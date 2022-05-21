@@ -7,6 +7,7 @@
 #include "io/log.h"
 #include "list.h"
 #include "globals.h"
+#include "timer/timer.h"
 
 #define throw_error(...)              \
     do {                              \
@@ -19,6 +20,8 @@ void evaluate_const_exprs(ASTProg_T* ast);
 
 void optimize(ASTProg_T *ast)
 {
+    timer_start("code optimization");
+
     static struct {
         void (*fn)(ASTProg_T*);
         const char* description;
@@ -41,6 +44,8 @@ void optimize(ASTProg_T *ast)
 
     if(count && !global.silent)
         fprintf(OUTPUT_STREAM, "\n");
+    
+    timer_stop();
 }
 
 void remove_dead_code(ASTProg_T* ast)

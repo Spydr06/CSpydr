@@ -28,4 +28,11 @@ void globals_exit_hook(void)
 {
     free_list(global.compiler_flags);
     free_list(global.linker_flags);
+
+    if(global.timesteps) {
+        for(size_t i = 0; i < global.timesteps->size; i++) {
+            free(global.timesteps->items[i]);
+        }
+        free_list(global.timesteps);
+    } 
 }

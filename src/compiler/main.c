@@ -15,6 +15,7 @@
 #include <string.h>
 
 // compiler includes
+#include "timer/timer.h"
 #include "toolchain.h"
 #include "io/io.h"
 #include "io/log.h"
@@ -30,7 +31,7 @@
 // default texts, which get shown if you enter help, info or version flags
 #define CSPC_HELP_COMMAND "cspc --help"
 
-const char usage_text[] = COLOR_BOLD_WHITE "Usage:" COLOR_RESET " cspc [run, build, debug, repl] [<input file> <flags>]\n"
+const char usage_text[] = COLOR_BOLD_WHITE "Usage:" COLOR_RESET " cspc [run, build, debug] [<input file> <flags>]\n"
                          "       cspc [--help, --info, --version]\n";
 
 // this text gets shown if -i or --info is used
@@ -80,6 +81,7 @@ const char help_text[] = "%s"
                        "  -c                     | Compile and assemble, but do not link\n"
                        "  -0, --no-opt           | Disables all code optimization\n"
                        "      --set-mmcd [int]   | Sets the maximum macro call depth (default: %d) (unsafe: could cause stack overflow)\n"
+                       "      --show-timings     | Shows the duration the different compiler stages took\n"
                        "\n"
                        "If you are unsure, what CSpydr is (or how to use it), please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n";
 
@@ -217,6 +219,8 @@ i32 main(i32 argc, char* argv[])
                 exit(1);
             }
         }
+        else if(streq(arg, "--show-timings"))
+            enable_timer();
         else
             evaluate_info_flags(argv[i]);
     }
@@ -225,6 +229,10 @@ i32 main(i32 argc, char* argv[])
         LOG_WARN(COLOR_BOLD_YELLOW "[Warning]" COLOR_RESET COLOR_YELLOW " Compilation mode `transpile` is deprecated and will get removed eventually\n");
 
     compile(input_file, output_file, action);
+
+    if(global.timer_enabled) {
+        timer_print_summary();
+    }
 
     if(!streq(cc_flags, DEFAULT_CC_FLAGS))
         free(cc_flags);

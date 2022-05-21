@@ -33,8 +33,11 @@ __CSP_GLOBAL struct {
             bool do_link          : 1;
             bool do_assemble      : 1;
             bool do_parsing       : 1;
+            bool timer_enabled    : 1;
+
+            u8 __unused__ : 5;
         };
-        u8 flags;
+        u16 flags;
     };
 
     u32 emitted_warnings;
@@ -47,6 +50,9 @@ __CSP_GLOBAL struct {
 
     List_T* compiler_flags;
     List_T* linker_flags;
+
+    // timesteps recorded by `timer/timer.c`
+    List_T* timesteps;
 } global;
 
 __CSP_GLOBAL void globals_exit_hook(void);

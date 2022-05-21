@@ -20,8 +20,9 @@
 #include "utils.h"
 #include "globals.h"
 #include "optimizer/constexpr.h"
+#include "timer/timer.h"
 
-#include <asm-generic/errno-base.h>
+#include <errno.h>
 #include <limits.h>
 #include <string.h>
 #include <float.h>
@@ -413,6 +414,7 @@ void parse(ASTProg_T* ast, List_T* files, bool is_silent)
     List_T* tokens = lex_and_preprocess_tokens(&lex, files, is_silent);
 
     // initialize the parser;
+    timer_start("parsing");
     Parser_T parser;
     init_parser(&parser, tokens);
 
@@ -448,8 +450,12 @@ void parse(ASTProg_T* ast, List_T* files, bool is_silent)
     free_list(tokens);
     free_parser(&parser);
 
+    timer_stop();
+
+    timer_start("code validation");
     // check the ast for validity
     validate_ast(ast);
+    timer_stop();
 }
 
 /////////////////////////////////
