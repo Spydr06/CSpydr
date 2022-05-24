@@ -731,6 +731,7 @@ static void fn_end(ASTObj_T* fn, va_list args)
     ASTType_T* return_type = expand_typedef(v, fn->return_type);
     Token_T* return_tok = fn->return_type->tok ? fn->return_type->tok : fn->tok;
     char buf[BUFSIZ];
+    memset(buf, 0, LEN(buf));
 
     switch(return_type->kind)
     {
