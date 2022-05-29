@@ -1,0 +1,156 @@
+import "math.csp";
+
+namespace std {
+    type Vector2i: struct {
+        x: i32,
+        y: i32
+    };
+
+    type Vector2f: struct {
+        x: f32,
+        y: f32
+    };
+
+    type Vector2d: struct {
+        x: f64,
+        y: f64
+    };
+
+    namespace vector2i {
+        fn new(x: i32, y: i32): Vector2i {
+            <- Vector2i::{x, y};
+        }
+
+        fn new0(): Vector2i {
+            <- Vector2i::{0, 0};
+        }
+
+        fn to_2f(v: Vector2i): Vector2f {
+            <- Vector2f::{v.x: f32, v.y: f32};
+        }
+
+        fn to_2d(v: Vector2i): Vector2d {
+            <- Vector2d::{v.x: f64, v.y: f64};
+        }
+
+        fn array(v: Vector2i, a: &i32[2]): i32[] {
+            <- *a = [v.x, v.y];
+        }
+
+        fn add(a: Vector2i, b: Vector2i): Vector2i {
+            <- Vector2i::{a.x + b.x, a.y + b.y};
+        }
+
+        fn sub(a: Vector2i, b: Vector2i): Vector2i {
+            <- Vector2i::{a.x - b.x, a.y - b.y};
+        }
+
+        fn mul(a: Vector2i, b: Vector2i): Vector2i {
+            <- Vector2i::{a.x * b.x, a.y * b.y};
+        }
+
+        fn div(a: Vector2i, b: Vector2i): Vector2i {
+            <- Vector2i::{a.x / b.x, a.y / b.y};
+        }
+
+        fn abs(v: Vector2i): i32 {
+            <- math::sqrt(v.x² + v.y²): i32;
+        }
+
+        fn dist(a: Vector2i, b: Vector2i): i32 {
+            <- math::sqrt((b.x - a.x)² + (b.y - a.y)²): i32;
+        }
+    }
+
+    namespace vector2f {
+        fn new(x: f32, y: f32): Vector2f {
+            <- Vector2f::{x, y};
+        }
+
+        fn new0(): Vector2f {
+            <- Vector2f::{0, 0};
+        }
+
+        fn to_2i(v: Vector2f): Vector2i {
+            <- Vector2i::{v.x: i32, v.y: i32};
+        }
+
+        fn to_2d(v: Vector2f): Vector2d {
+            <- Vector2d::{v.x: f64, v.y: f64};
+        }
+
+        fn array(v: Vector2f, a: &f32[2]): f32[] {
+            <- *a = [v.x, v.y];
+        }
+
+        fn add(a: Vector2f, b: Vector2f): Vector2f {
+            <- Vector2f::{a.x + b.x, a.y + b.y};
+        }
+
+        fn sub(a: Vector2f, b: Vector2f): Vector2f {
+            <- Vector2f::{a.x - b.x, a.y - b.y};
+        }
+
+        fn mul(a: Vector2f, b: Vector2f): Vector2f {
+            <- Vector2f::{a.x * b.x, a.y * b.y};
+        }
+
+        fn div(a: Vector2f, b: Vector2f): Vector2f {
+            <- Vector2f::{a.x / b.x, a.y / b.y};
+        }
+
+        fn abs(v: Vector2f): f32 {
+            <- math::sqrt(v.x² + v.y²): f32;
+        }
+
+        fn dist(a: Vector2f, b: Vector2f): f32 {
+            <- math::sqrt((b.x - a.x)² + (b.y - a.y)²): f32;
+        }
+    }
+
+    namespace vector2d {
+        fn new(x: f64, y: f64): Vector2d {
+            <- Vector2d::{x, y};
+        }
+
+        fn new0(): Vector2d {
+            <- Vector2d::{0, 0};
+        }
+
+        fn to_2i(v: Vector2d): Vector2i {
+            <- Vector2i::{v.x: i32, v.y: i32};
+        }
+
+        fn to_2f(v: Vector2d): Vector2f {
+            <- Vector2d::{v.x: f32, v.y: f32};
+        }
+
+        fn array(v: Vector2d, a: &f64[2]): f64[] {
+            <- *a = [v.x, v.y];
+        }
+
+        fn add(a: Vector2d, b: Vector2d): Vector2d {
+            <- Vector2d::{a.x + b.x, a.y + b.y};
+        }
+
+        fn sub(a: Vector2d, b: Vector2d): Vector2d {
+            <- Vector2d::{a.x - b.x, a.y - b.y};
+        }
+
+        fn mul(a: Vector2d, b: Vector2d): Vector2d {
+            <- Vector2d::{a.x / b.x, a.y / b.y};
+        }
+
+        fn div(a: Vector2d, b: Vector2d): Vector2d {
+            <- Vector2d::{a.x / b.x, a.y / b.y};
+        }
+
+        fn abs(v: Vector2d): f64 {
+            <- math::sqrt(v.x² + v.y²);
+        }
+
+        fn dist(a: Vector2d, b: Vector2d): f64 {
+            <- math::sqrt((b.x - a.x)² + (b.y - a.y)²);
+        }
+    }
+}
