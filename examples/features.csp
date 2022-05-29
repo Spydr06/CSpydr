@@ -1,7 +1,10 @@
 import "std.csp";
 
+let x: char[5] = "abcd";
+
 fn main(): i32 
 {
-
+    std::io::puts(&x[0]);
+    #std::io::printf("%s\n", "hello");
     <- 0;
 }

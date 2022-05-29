@@ -491,6 +491,16 @@ static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var)
     
     if(value->kind == ND_STR) 
     {   
+        // for array types, we have to emit the array length before the string
+        ASTType_T* ty = unpack(var->data_type);
+        if(ty->kind == TY_ARRAY) 
+        {
+            u8 len_buffer[sizeof(u64)] = {0};
+            memcpy(len_buffer, &ty->base->size, sizeof(len_buffer));
+            for(size_t i = 0; i < sizeof(u64); i++)
+                asm_println(cg, "  .byte %d", (int) len_buffer[i]);
+        }
+
         asm_println(cg, "  .ascii \"%s\\0\"", value->str_val);
     }
     else
