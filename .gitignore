@@ -72,6 +72,10 @@ a.xml
 a.out.c
 test.s
 
+# KDevelop
+*.kdev4
+.kdev4/
+
 # cmake
 *.cmake
 CMakeCache.txt
