@@ -21,7 +21,7 @@ namespace std {
             <- Vector2i::{x, y};
         }
 
-        fn new0(): Vector2i {
+        fn zero(): Vector2i {
             <- Vector2i::{0, 0};
         }
 
@@ -67,7 +67,7 @@ namespace std {
             <- Vector2f::{x, y};
         }
 
-        fn new0(): Vector2f {
+        fn zero(): Vector2f {
             <- Vector2f::{0, 0};
         }
 
@@ -113,7 +113,7 @@ namespace std {
             <- Vector2d::{x, y};
         }
 
-        fn new0(): Vector2d {
+        fn zero(): Vector2d {
             <- Vector2d::{0, 0};
         }
 
