@@ -2148,13 +2148,13 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             
             asm_gen_expr(cg, node->condition);
             asm_cmp_zero(cg, node->condition->data_type);
-            asm_println(cg, "  je  .L.else.%ld", c);
+            asm_println(cg, "  je  .L.else.%lu", c);
             asm_gen_stmt(cg, node->if_branch);
-            asm_println(cg, "  jmp .L.end.%ld", c);
-            asm_println(cg, ".L.else.%ld:", c);
+            asm_println(cg, "  jmp .L.end.%lu", c);
+            asm_println(cg, ".L.else.%lu:", c);
             if(node->else_branch)
                 asm_gen_stmt(cg, node->else_branch);
-            asm_println(cg, ".L.end.%ld:", c);
+            asm_println(cg, ".L.end.%lu:", c);
 
             cg->cur_count = pc;
         } return;
@@ -2168,7 +2168,7 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_gen_expr(cg, node->condition);
             asm_gen_expr(cg, id);
             asm_cmp_zero(cg, node->condition->data_type);
-            asm_println(cg, "  je .L.else.%ld", c);
+            asm_println(cg, "  je .L.else.%lu", c);
             asm_gen_stmt(cg, node->if_branch);
 
             // generate the exit function
@@ -2187,11 +2187,11 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
                 }
             });
             
-            asm_println(cg, "  jmp .L.end.%ld", c);
-            asm_println(cg, ".L.else.%ld:", c);
+            asm_println(cg, "  jmp .L.end.%lu", c);
+            asm_println(cg, ".L.else.%lu:", c);
             if(node->else_branch)
                 asm_gen_stmt(cg, node->else_branch);
-            asm_println(cg, ".L.end.%ld:", c);
+            asm_println(cg, ".L.end.%lu:", c);
 
             cg->cur_count = pc;
         } return;
@@ -2207,18 +2207,18 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             
             if(node->init_stmt)
                 asm_gen_stmt(cg, node->init_stmt);
-            asm_println(cg, ".L.begin.%ld:", c);
+            asm_println(cg, ".L.begin.%lu:", c);
             if(node->condition) {
                 asm_gen_expr(cg, node->condition);
                 asm_cmp_zero(cg, node->condition->data_type);
-                asm_println(cg, "  je .L.break.%ld", c);
+                asm_println(cg, "  je .L.break.%lu", c);
             }
             asm_gen_stmt(cg, node->body);
-            asm_println(cg, ".L.continue.%ld:", c);
+            asm_println(cg, ".L.continue.%lu:", c);
             if(node->expr)
                 asm_gen_expr(cg, node->expr);
-            asm_println(cg, "  jmp .L.begin.%ld", c);
-            asm_println(cg, ".L.break.%ld:", c);
+            asm_println(cg, "  jmp .L.begin.%lu", c);
+            asm_println(cg, ".L.break.%lu:", c);
 
             cg->cur_count = pc;
             cg->cur_brk_id = pbrk;
@@ -2234,19 +2234,55 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
                   = cg->cur_count 
                   = cg->max_count++;
 
-            asm_println(cg, ".L.begin.%ld:", c);
+            asm_println(cg, ".L.begin.%lu:", c);
             asm_gen_expr(cg, node->condition);
             asm_cmp_zero(cg, node->condition->data_type);
-            asm_println(cg, "  je .L.break.%ld", c);
+            asm_println(cg, "  je .L.break.%lu", c);
             asm_gen_stmt(cg, node->body);
-            asm_println(cg, ".L.continue.%ld:", c);
-            asm_println(cg, "  jmp .L.begin.%ld", c);
-            asm_println(cg, ".L.break.%ld:", c);
+            asm_println(cg, ".L.continue.%lu:", c);
+            asm_println(cg, "  jmp .L.begin.%lu", c);
+            asm_println(cg, ".L.break.%lu:", c);
 
             cg->cur_count = pc;
             cg->cur_brk_id = pbrk;
             cg->cur_cnt_id = pcnt;
         } return;
+
+        case ND_DO_UNLESS:
+        {
+            u64 pc = cg->cur_count;
+            u64 c = cg->cur_count = cg->max_count++;
+
+            asm_gen_expr(cg, node->condition);
+            asm_cmp_zero(cg, node->condition->data_type);
+            asm_println(cg, "  jne .L.skip_unless.%lu", c);
+            asm_gen_stmt(cg, node->body);
+            asm_println(cg, ".L.skip_unless.%lu:", c);
+
+            cg->cur_count = pc;
+        } return;
+
+        case ND_DO_WHILE:
+        {
+            u64 pc = cg->cur_count;
+            u64 pbrk = cg->cur_brk_id;
+            u64 pcnt = cg->cur_cnt_id; 
+            u64 c = cg->cur_brk_id 
+                  = cg->cur_count 
+                  = cg->max_count++;  
+
+            asm_println(cg, ".L.begin.%lu:", c);
+            asm_gen_stmt(cg, node->body);
+            asm_println(cg, ".L.continue.%lu:", c);
+            asm_gen_expr(cg, node->condition);
+            asm_cmp_zero(cg, node->condition->data_type);
+            asm_println(cg, "  jne .L.begin.%lu", c);
+            asm_println(cg, ".L.break.%lu:", c);
+
+            cg->cur_count = pc;
+            cg->cur_brk_id = pbrk;
+            cg->cur_cnt_id = pcnt; 
+        } return;   
 
         case ND_LOOP:
         {
@@ -2257,11 +2293,11 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
                   = cg->cur_count 
                   = cg->max_count++;
             
-            asm_println(cg, ".L.begin.%ld:", c);
+            asm_println(cg, ".L.begin.%lu:", c);
             asm_gen_stmt(cg, node->body);
-            asm_println(cg, ".L.continue.%ld:", c);
-            asm_println(cg, "  jmp .L.begin.%ld", c);
-            asm_println(cg, ".L.break.%ld:", c);
+            asm_println(cg, ".L.continue.%lu:", c);
+            asm_println(cg, "  jmp .L.begin.%lu", c);
+            asm_println(cg, ".L.break.%lu:", c);
 
             cg->cur_count = pc;
             cg->cur_brk_id = pbrk;
@@ -2287,13 +2323,13 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
                 asm_pop(cg, "%rdi");
                 asm_println(cg, "  cmp %s, %s", ax, di);
                 asm_pop(cg, "%rax");
-                asm_println(cg, "  je .L.case.%ld.%ld", i, c);
+                asm_println(cg, "  je .L.case.%ld.%lu", i, c);
             }
             
             if(node->default_case) 
             {
                 node->default_case->long_val = node->cases->size;
-                asm_println(cg, "  jmp .L.case.%ld.%ld", node->cases->size, c);
+                asm_println(cg, "  jmp .L.case.%lu.%lu", node->cases->size, c);
             }
             
             for(size_t i = 0; i < node->cases->size; i++)
@@ -2301,16 +2337,16 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             if(node->default_case)
                 asm_gen_stmt(cg, node->default_case);
             
-            asm_println(cg, ".L.break.%ld:", c);
+            asm_println(cg, ".L.break.%lu:", c);
 
             cg->cur_count = pc;
             cg->cur_brk_id = pbrk;
         } return;
         
         case ND_CASE:
-            asm_println(cg, ".L.case.%ld.%ld:", node->long_val, cg->cur_count);
+            asm_println(cg, ".L.case.%ld.%lu:", node->long_val, cg->cur_count);
             asm_gen_stmt(cg, node->body);
-            asm_println(cg, "  jmp .L.break.%ld", cg->cur_count);
+            asm_println(cg, "  jmp .L.break.%lu", cg->cur_count);
             return;
         
         case ND_BLOCK:
@@ -2350,11 +2386,11 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         
         case ND_CONTINUE:
-            asm_println(cg, "  jmp .L.continue.%ld", cg->cur_cnt_id);
+            asm_println(cg, "  jmp .L.continue.%lu", cg->cur_cnt_id);
             return;
 
         case ND_BREAK:
-            asm_println(cg, "  jmp .L.break.%ld", cg->cur_brk_id);
+            asm_println(cg, "  jmp .L.break.%lu", cg->cur_brk_id);
             return;
         
         case ND_MATCH_TYPE:

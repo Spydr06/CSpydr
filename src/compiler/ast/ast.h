@@ -102,6 +102,8 @@ typedef enum {
     ND_EXPR_STMT, // "executable" expressions
     ND_BREAK,     // break;
     ND_CONTINUE,  // continue;
+    ND_DO_UNLESS, // do {} unless x;
+    ND_DO_WHILE,  // do {} while x;
     ND_LEN,       // len x
     ND_USING,     // using x::y
     ND_WITH,      // with x = y {}

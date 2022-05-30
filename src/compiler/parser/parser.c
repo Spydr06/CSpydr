@@ -1522,6 +1522,36 @@ static ASTNode_T* parse_with(Parser_T* p, bool needs_semicolon)
     return with_stmt;
 }
 
+static ASTNode_T* parse_do(Parser_T* p, bool needs_semicolon)
+{
+    parser_consume(p, TOKEN_DO, "expect `do` keyword");
+
+    ASTNode_T* body = parse_stmt(p, false);
+
+    ASTNode_T* do_stmt = NULL;
+    switch(p->tok->type) 
+    {
+        case TOKEN_UNLESS:
+            do_stmt = init_ast_node(ND_DO_UNLESS, p->tok);
+            break;
+        case TOKEN_WHILE:
+            do_stmt = init_ast_node(ND_DO_WHILE, p->tok);
+            break;
+        default:
+            throw_error(ERR_SYNTAX_ERROR, p->tok, "exect either `while` or `unless` after `do`-stmt body");
+    }
+
+    parser_advance(p);
+    do_stmt->body = body;
+    do_stmt->condition = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+    parser_consume(p, TOKEN_SEMICOLON, do_stmt->kind == ND_DO_UNLESS 
+        ? "expect `;` after do-unless condition" 
+        : "expect `;` after do-while condition"
+    );
+
+    return do_stmt;
+}
+
 static ASTNode_T* parse_stmt(Parser_T* p, bool needs_semicolon)
 {
 
@@ -1543,6 +1573,8 @@ static ASTNode_T* parse_stmt(Parser_T* p, bool needs_semicolon)
             return parse_match(p);
         case TOKEN_WITH:
             return parse_with(p, needs_semicolon);
+        case TOKEN_DO:
+            return parse_do(p, needs_semicolon);
         case TOKEN_CONST:
         case TOKEN_LET:
             {

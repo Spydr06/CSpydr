@@ -110,6 +110,8 @@ typedef enum TOKEN_TYPE {
     TOKEN_ASM,          // asm
     TOKEN_USING,        // using
     TOKEN_WITH,         // with
+    TOKEN_DO,           // do
+    TOKEN_UNLESS,       // unless
 
     TOKEN_CURRENT_FN,   // special token for the __func__! macro
 

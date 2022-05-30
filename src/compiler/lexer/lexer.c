@@ -45,6 +45,8 @@ const struct {
     {"asm", TOKEN_ASM},
     {"using", TOKEN_USING},
     {"with", TOKEN_WITH},
+    {"do", TOKEN_DO},
+    {"unless", TOKEN_UNLESS},
     {NULL, TOKEN_EOF}   // end of array indicator
 };
 

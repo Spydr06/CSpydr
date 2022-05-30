@@ -700,6 +700,7 @@ static bool stmt_returns_value(ASTNode_T* node)
         case ND_LOOP:
         case ND_FOR:
         case ND_WHILE:
+        case ND_DO_WHILE:
             return stmt_returns_value(node->body);
         case ND_MATCH:
             if(!node->default_case)
