@@ -4,6 +4,9 @@ namespace std {
     type ErrorType: enum {
         GENERIC,
         NONE,
+        INVAL,
+        IO,
+        NILPTR
     };
 
     type Error: struct {
@@ -12,25 +15,36 @@ namespace std {
     };
 
     namespace error {
-        let error: Error;
+        namespace __static {
+            let __error: Error;
+        }
 
         fn new(kind: ErrorType, msg: &char): Error {
-            <- error = Error :: {kind, msg};
+            __static::__error.kind = kind;
+            __static::__error.msg = msg;
+            <- __static::__error;
         }
 
-        fn set(err: Error): Error {
-            error = err;
-            <- err;
+        fn none(): Error {
+            __static::__error.kind = ErrorType::NONE;
+            __static::__error.msg = "";
+            <- __static::__error;
         }
 
-        fn get(): Error {
-            <- error;
+        fn current(): Error {
+            do
+                __static::__error = none()
+            unless __static::__error;
+            <- __static::__error;
         }
 
-        fn str(err: ErrorType): &char {
+        fn str(err: ErrorType): &const char {
             match err {
                 ErrorType::NONE => ret "none";
                 ErrorType::GENERIC => ret "generic";
+                ErrorType::INVAL => ret "invalid";
+                ErrorType::IO => ret "input/output";
+                ErrorType::NILPTR => ret "nil pointer";
                 _ => ret "<unknown>";
             }
         }

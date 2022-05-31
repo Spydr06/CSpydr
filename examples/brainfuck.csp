@@ -103,10 +103,10 @@ fn main(argc: i32, argv: &&char): i32
 {
     using std;
 
-    if argc != 2 {
+    do {
         io::eprintf("Usage: %s filename\n", argv[0]);
         <- Status::ERR;
-    }
+    } unless argc == 2;
 
     let status = Status::OK;
     with f = file::open(argv[1], file::READ) {

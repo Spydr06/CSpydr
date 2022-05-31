@@ -9,7 +9,7 @@ namespace std {
         desc: i32,
         mode: u8,
         path: &char,
-        offset: u64
+        offset: u64,
     };
 
     namespace file {
@@ -18,7 +18,7 @@ namespace std {
         const READ_WRITE: u8 = 0b0011;
         const CREATE: u8     = 0b0100;
 
-        fn open(path: const &char, mode: u8): &std::File
+        fn open(path: &const char, mode: u8): &std::File
         {
             let file: &File = mem::alloc(sizeof File);
             file.mode = mode;
@@ -34,12 +34,16 @@ namespace std {
                 sys_flags |= io::O_RDONLY;
             else if mode & WRITE 
                 sys_flags |= io::O_WRONLY;
-            else
+            else {
+                error::new(std::ErrorType::INVAL, "invalid mode for `std::file::open()`");
                 <- nil;
+            }
 
             file.desc = syscall::open(path, sys_flags, 416);
-            if file.desc <= -1
+            if file.desc < 0 {
+                error::new(std::ErrorType::IO, "could not write file");
                 <- nil;
+            }
 
             <- file;
         }
@@ -47,14 +51,19 @@ namespace std {
         fn write_str(file: &File, str: const &char)
             write(file, str: const &void, c_str::strlen(str));
 
-        fn write(file: &File, data: const &void, count: usize)
+        fn write(file: &File, data: const &void, count: usize): u64
         {
-            syscall::write(file.desc, data, count);
+            let written = syscall::write(file.desc, data, count);
+            if written == -1 
+                error::new(std::ErrorType::IO, "could not write to file");
+            <- written;
         }
 
-        fn read(file: &File, buffer: &void, count: usize)
+        fn read(file: &File, buffer: &void, count: usize): &void
         {
-            syscall::read(file.desc, buffer, count);
+            if syscall::pread64(file.desc, buffer, count, file.offset) == -1 
+                error::new(std::ErrorType::IO, "could not read file");
+            <- buffer;
         }
 
         fn readc(file: &File): char 
@@ -63,14 +72,16 @@ namespace std {
                 ret -1;
 
             let c = '\0';
-            syscall::pread64(file.desc, &c, 1, file.offset);
+            if syscall::pread64(file.desc, &c, 1, file.offset) == -1 
+                error::new(std::ErrorType::IO, "could not read file");
             file.offset++;
             <- c;
         }
 
         fn close(file: &File)
         {
-            syscall::close(file.desc);
+            if syscall::close(file.desc) == -1
+                error::new(std::ErrorType::IO, "could not close file");
             free!(file);
         }
         [exit_fn("close": &std::File)]
@@ -78,21 +89,56 @@ namespace std {
         fn size(file: &File): i64
         {
             let stat: Stat;
-            if !file
+            if !file || syscall::fstat(file.desc, &stat)
+            {
+                error::new(std::ErrorType::IO, "could not get statistics of file");
                 <- -1;
-            if syscall::fstat(file.desc, &stat)
-                <- -1;
+            }
 
             <- stat.size;
         }
 
         fn read_all(file: &File): String
         {
-            let file_size = size(file);
-            let str = string::init_sized(file_size);
-            read(file, str, file_size);
+            <- size(file) |> read(file, string::init_sized($), $);
+        }
 
-            <- str;
+        const SEEK_SET: u8 = 1;
+        const SEEK_CUR: u8 = 2; 
+        const SEEK_END: u8 = 3;
+
+        fn seek(file: &File, offset: i64, whence: u8): Error
+        {
+            do 
+                ret error::new(std::ErrorType::NILPTR, "`file` argument is nil")
+            unless file;
+
+            match whence {
+                SEEK_SET => file.offset = offset;
+                SEEK_CUR => file.offset += offset;
+                SEEK_END => file.offset = size(file) - offset - 1;
+                _ => ret error::new(std::ErrorType::INVAL, "value of `whence` is invalid");
+            }
+
+            ret error::none();
+        }
+
+        fn tell(file: &File): i64 
+        {
+            do {
+                error::new(std::ErrorType::NILPTR, "`file` argument is nil")
+                <- -1;
+            } unless file;
+            <- file.offset;
+        } 
+
+        fn rewind(file: &File)
+        {
+            do {
+                error::new(std::ErrorType::NILPTR, "`file` argument is nil")
+                <- -1;
+            } unless file;
+            file.offset = 0;
         }
     }
 }

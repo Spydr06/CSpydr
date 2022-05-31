@@ -252,11 +252,13 @@ namespace std {
                             <- str!{"\0"};
                         }
                         'e' => {
-                            concat(&str, error::str(err));
+                            let err = va_arg!{args, Error};
+
+                            concat(&str, error::str(err.kind));
                             
-                            if error::error.msg {
+                            if err.msg {
                                 append(&str, ' ');
-                                concat(&str, error::error.msg);
+                                concat(&str, err.msg);
                             }
                         }
                     }
