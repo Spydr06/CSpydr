@@ -1,0 +1,138 @@
+import "io.csp";
+import "syscall.csp";
+import "error.csp";
+import "memory.csp";
+
+# copied from stat.h
+macro __S_IFDIR { 0o40000 }
+macro __S_IFMT { 0o170000 }
+
+macro S_ISDIR(__mode) {
+    (((__mode) & __S_IFMT!) == __S_IFDIR!)
+}
+
+namespace std {
+    type Directory: struct {
+        fd: i32,
+        tell: i64,
+        buf_pos: i32,
+        buf_end: i32,
+        buf: u8'c[2048],
+    };
+
+    type DirEntry: struct {
+        ino: u64,
+        off: i64,
+        reclen: u16,
+        type_: u8,
+        name: char'c[256]
+    };
+
+    namespace directory {
+        fn fd(d: &Directory): i32 {
+            <- if d == nil => -1 else d.fd;
+        }
+
+        fn fopen(fd: i32): &Directory 
+        {
+            using syscall;
+            let st: Stat;
+            let dir: &Directory = nil;
+
+            if fstat(fd, &st) < 0
+                <- nil;
+            if fcntl(fd, io::F_GETFL) & io::O_PATH {
+                error::new(std::ErrorType::BADF, "");
+                <- nil;
+            }
+            do {
+                error::new(std::ErrorType::NOTDIR, "");
+                <- nil;
+            } unless S_ISDIR!(st.mode);
+            do ret 0 unless dir = mem::calloc(1, sizeof Directory);
+
+            fcntl2(fd, io::F_SETFD, io::FD_CLOEXEC);
+            dir.fd = fd;
+            <- dir;
+        }
+
+        fn open(name: &const char): &Directory 
+        {
+            using io;
+
+            let fd = 0;
+            if (fd = syscall::open(name, O_RDONLY | O_DIRECTORY | O_CLOEXEC, 0) < 0)
+            {
+                error::new(std::ErrorType::IO, "could not open directory");
+                <- nil;
+            }
+
+            let dir: &Directory = nil;
+            do {
+                syscall::close(fd);
+                <- nil;
+            } unless dir = mem::calloc(1, sizeof Directory);
+
+            dir.fd = fd;
+            <- dir;
+        }
+
+        fn close(dir: &Directory): i32 
+        {
+            let return = syscall::close(dir.fd);
+            mem::free(dir);
+            <- return;
+        }
+        [exit_fn("close": &std::Directory)]
+
+        fn tell(dir: &Directory): i64 
+        {
+            do {
+                error::new(std::ErrorType::NILPTR, "`dir` argument is nil");
+                <- -1;
+            } unless dir;
+            <- dir.tell;
+        }
+
+        const SEEK_SET: i32 = 0;
+
+        fn seek(dir: &Directory, offset: i64): Error
+        {
+            do 
+                <- error::new(std::ErrorType::NILPTR, "`dir` argument is nil")
+            unless dir;
+            dir.tell = syscall::lseek(dir.fd, offset, SEEK_SET);
+            dir.buf_pos = dir.buf_end = 0;
+            <- error::none();
+        }
+
+        fn rewind(dir: &Directory): Error 
+        {
+            do
+                <- error::new(std::ErrorType::NILPTR, "`dir` argument is nil")
+            unless dir;
+            syscall::lseek(dir.fd, 0, SEEK_SET);
+            dir.buf_pos = dir.buf_end = 0;
+            dir.tell = 0;
+            <- error::none();
+        }
+
+        fn read(dir: &Directory): &DirEntry
+        {
+            if dir.buf_pos > dir.buf_end {
+                let length = syscall::getdents(dir.fd, dir.buf, sizeof typeof dir.buf);
+                if length < 0 {
+                    error::new(std::ErrorType::IO, "error in `std::syscall::getdents()`");
+                    <- nil;
+                }
+                dir.buf_end = length;
+                dir.buf_pos = 0;
+            }
+
+            let de = (&(dir.buf) + dir.buf_pos): &DirEntry;
+            dir.buf_pos += de.reclen;
+            dir.tell = de.off;
+            <- de;
+        }
+    }
+}

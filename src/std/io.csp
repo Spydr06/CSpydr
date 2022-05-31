@@ -72,10 +72,16 @@ namespace std {
     const err: i32 = stdout!;
 
     namespace io {
-        const O_RDONLY: i32 = 0;
-        const O_WRONLY: i32 = 1;
-        const O_RDWR: i32   = 2;
-        const O_CREAT: i32  = 64;
+        const O_RDONLY: i32   = 0;
+        const O_WRONLY: i32   = 1;
+        const O_RDWR: i32     = 2;
+        const O_CREAT: i32    = 64;
+        const O_EXEC: i32     = 2097152;
+        const O_TTY_INIT: i32 = 0;
+        const O_SEARCH: i32   = 2097152;
+        const O_PATH: i32     = 2097152;
+        const O_DIRECTORY: i32 = 0o200000;
+        const O_CLOEXEC: i32 = 0o2000000;
 
         const F_OK: i32    = 0;
         const R_OK: i32    = 4;
@@ -105,6 +111,14 @@ namespace std {
         const F_SET_RW_HINT: i32      = 1036;
         const F_GET_FILE_RW_HINT: i32 = 1037;
         const F_SET_FILE_RW_HINT: i32 = 1038;
+
+        const F_DUPFD: i32 = 0;
+        const F_GETFD: i32 = 1;
+        const F_SETFD: i32 = 2;
+        const F_GETFL: i32 = 3;
+        const F_SETFL: i32 = 4;
+
+        const FD_CLOEXEC: i32 = 1;
         
         const RWF_WRITE_LIFE_NOT_SET: i32 = 0;
         const RWH_WRITE_LIFE_NONE: i32	  = 1;

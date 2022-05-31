@@ -6,7 +6,9 @@ namespace std {
         NONE,
         INVAL,
         IO,
-        NILPTR
+        NILPTR,
+        BADF,
+        NOTDIR
     };
 
     type Error: struct {
@@ -45,6 +47,8 @@ namespace std {
                 ErrorType::INVAL => ret "invalid";
                 ErrorType::IO => ret "input/output";
                 ErrorType::NILPTR => ret "nil pointer";
+                ErrorType::BADF => ret "bad file descriptor";
+                ErrorType::NOTDIR => ret "not a directory";
                 _ => ret "<unknown>";
             }
         }

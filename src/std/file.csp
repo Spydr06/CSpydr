@@ -3,6 +3,8 @@ import "io.csp";
 import "option.csp";
 import "utils.csp";
 import "c_str.csp";
+import "error.csp";
+import "str.csp";
 
 namespace std {
     type File: struct {
@@ -61,7 +63,7 @@ namespace std {
 
         fn read(file: &File, buffer: &void, count: usize): &void
         {
-            if syscall::pread64(file.desc, buffer, count, file.offset) == -1 
+            if syscall::read(file.desc, buffer, count) == -1 
                 error::new(std::ErrorType::IO, "could not read file");
             <- buffer;
         }
@@ -72,7 +74,7 @@ namespace std {
                 ret -1;
 
             let c = '\0';
-            if syscall::pread64(file.desc, &c, 1, file.offset) == -1 
+            if syscall::read(file.desc, &c, 1) == -1 
                 error::new(std::ErrorType::IO, "could not read file");
             file.offset++;
             <- c;
@@ -103,9 +105,9 @@ namespace std {
             <- size(file) |> read(file, string::init_sized($), $);
         }
 
-        const SEEK_SET: u8 = 1;
-        const SEEK_CUR: u8 = 2; 
-        const SEEK_END: u8 = 3;
+        const SEEK_SET: u8 = 0;
+        const SEEK_CUR: u8 = 1; 
+        const SEEK_END: u8 = 2;
 
         fn seek(file: &File, offset: i64, whence: u8): Error
         {
@@ -120,7 +122,8 @@ namespace std {
                 _ => ret error::new(std::ErrorType::INVAL, "value of `whence` is invalid");
             }
 
-            ret error::none();
+            syscall::lseek(file.desc, file.offset, SEEK_SET);
+            <- error::none();
         }
 
         fn tell(file: &File): i64 
@@ -138,7 +141,8 @@ namespace std {
                 ret error::new(std::ErrorType::NILPTR, "`file` argument is nil")
             unless file;
             file.offset = 0;
-            ret error::none();
+            syscall::lseek(file.desc, 0, SEEK_SET);
+            <- error::none();
         }
     }
 }

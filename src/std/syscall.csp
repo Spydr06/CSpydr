@@ -456,6 +456,9 @@ namespace std {
         fn fcntl(fd: i32, cmd: i32): i32
             syscall!(Syscall::FCNTL, fd, cmd);
         
+        fn fcntl2(fd: i32, cmd: i32, arg: i32): i32
+            syscall!(Syscall::FCNTL, fd, cmd, arg);
+
         fn flock(fd: i32, operation: i32): i32
             syscall!(Syscall::FLOCK, fd, operation);
         
@@ -471,7 +474,8 @@ namespace std {
         fn ftruncate(fd: i32, length: off_t): i32
             syscall!(Syscall::FTRUNCATE, fd, length);
         
-        # TODO: getdents
+        fn getdents(fd: u32, dirp: &void, count: u32): i64
+            syscall!(Syscall::GETDENTS, fd, dirp, count);
 
         fn getcwd(buf: &char, size: usize): &char
             syscall!(Syscall::GETCWD, buf, size);
