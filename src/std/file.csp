@@ -126,19 +126,19 @@ namespace std {
         fn tell(file: &File): i64 
         {
             do {
-                error::new(std::ErrorType::NILPTR, "`file` argument is nil")
+                error::new(std::ErrorType::NILPTR, "`file` argument is nil");
                 <- -1;
             } unless file;
             <- file.offset;
         } 
 
-        fn rewind(file: &File)
+        fn rewind(file: &File): Error
         {
-            do {
-                error::new(std::ErrorType::NILPTR, "`file` argument is nil")
-                <- -1;
-            } unless file;
+            do
+                ret error::new(std::ErrorType::NILPTR, "`file` argument is nil")
+            unless file;
             file.offset = 0;
+            ret error::none();
         }
     }
 }

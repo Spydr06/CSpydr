@@ -261,6 +261,14 @@ namespace std {
                                 concat(&str, err.msg);
                             }
                         }
+                        'E' => {
+                            let err = error::current();
+                            concat(&str, error::str(err.kind));
+                            if err.msg {
+                                append(&str, ' ');
+                                concat(&str, err.msg);
+                            }
+                        }
                     }
                 }
                 else
