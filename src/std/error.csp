@@ -27,9 +27,15 @@ namespace std {
             <- __static::__error;
         }
 
+        fn set(err: Error): Error {
+            __static::__error.kind = err.kind;
+            __static::__error.msg = err.msg;
+            <- __static::__error;
+        }
+
         fn none(): Error {
             __static::__error.kind = ErrorType::NONE;
-            __static::__error.msg = "";
+            __static::__error.msg = nil;
             <- __static::__error;
         }
 
@@ -38,6 +44,13 @@ namespace std {
                 __static::__error = none()
             unless __static::__error;
             <- __static::__error;
+        }
+
+        fn clear(): Error {
+            let last = __static::__error;
+            __static::__error.kind = ErrorType::NONE;
+            __static::__error.msg = nil;
+            <- last;
         }
 
         fn str(err: ErrorType): &const char {

@@ -11,7 +11,7 @@ namespace std {
         desc: i32,
         mode: u8,
         path: &char,
-        offset: u64,
+        offset: i64,
     };
 
     namespace file {
@@ -43,28 +43,43 @@ namespace std {
 
             file.desc = syscall::open(path, sys_flags, 416);
             if file.desc < 0 {
-                error::new(std::ErrorType::IO, "could not write file");
+                error::new(std::ErrorType::IO, "could not open file");
                 <- nil;
             }
 
             <- file;
         }
 
-        fn write_str(file: &File, str: const &char)
-            write(file, str: const &void, c_str::strlen(str));
+        fn fopen(fd: i32): &std::File
+        {
+            let file: &File = mem::alloc(sizeof File);
+            file.mode = 0;
+            file.offset = 0;
+            file.desc = fd;
+            file.path = "";
+            <- file;
+        }
 
-        fn write(file: &File, data: const &void, count: usize): u64
+        fn write_str(file: &File, str: &const char)
+            write(file, str: &const void, c_str::strlen(str));
+
+        fn write(file: &File, data: &const void, count: usize): u64
         {
             let written = syscall::write(file.desc, data, count);
             if written == -1 
                 error::new(std::ErrorType::IO, "could not write to file");
+            else
+                file.offset += written;
             <- written;
         }
 
         fn read(file: &File, buffer: &void, count: usize): &void
         {
-            if syscall::read(file.desc, buffer, count) == -1 
+            let bytes_read = syscall::read(file.desc, buffer, count);
+            if bytes_read == -1 
                 error::new(std::ErrorType::IO, "could not read file");
+            else
+                file.offset += bytes_read;
             <- buffer;
         }
 
@@ -76,7 +91,8 @@ namespace std {
             let c = '\0';
             if syscall::read(file.desc, &c, 1) == -1 
                 error::new(std::ErrorType::IO, "could not read file");
-            file.offset++;
+            else
+                file.offset++;
             <- c;
         }
 
@@ -118,7 +134,7 @@ namespace std {
             match whence {
                 SEEK_SET => file.offset = offset;
                 SEEK_CUR => file.offset += offset;
-                SEEK_END => file.offset = size(file) - offset - 1;
+                SEEK_END => file.offset = size(file) - offset;
                 _ => ret error::new(std::ErrorType::INVAL, "value of `whence` is invalid");
             }
 

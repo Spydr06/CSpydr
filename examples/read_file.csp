@@ -1,7 +1,7 @@
 import "file.csp";
 import "io.csp";
 
-macro PATH { "examples/assets/test.txt" }
+macro PATH { "examples/assets/teset.txt" }
 
 fn main(): i32 {
     using std;
@@ -12,7 +12,7 @@ fn main(): i32 {
         string::free(buffer);
     }
     else
-        io::eputs("Error reading " PATH!);
+        io::eprintf("%E `" PATH! "`\n");
     
     <- 0;
 }

@@ -209,12 +209,32 @@ namespace std {
             <- str!{(&buf): &char};
         }
 
+        #[ 
+            formats a string with given arguments
+            format arguments:
+            "%%" => '%'
+            "%i" => insert an i32
+            "%u" => insert an u32
+            "%l" => insert an i64
+            "%o" => insert an i64 in octal form
+            "%x" => insert an u64 in hexadecimal form
+            "%p" => insert a pointer/memory address (&void or u64)
+            "%c" => insert a character
+            "%s" => insert a string
+            "%n" => return a null character immediately
+            "%e" => insert an "Error" type from the VAList as &Error
+            "%E" => insert the current error set at std::error::__static::__error
+        ]#
         fn format(fmt: const &char, args: ...): &void
             <- va_format(fmt, &args);
 
         fn va_format(fmt: const &char, args: &VAList): &void
         {
             let str = str!{};
+            do {
+                error::new(ErrorType::NILPTR, "`fmt` is nil");
+                <- str;
+            } unless fmt;
 
             for ; (*fmt) != '\0'; fmt++; {
                 if (*fmt) == '%' {
@@ -229,6 +249,10 @@ namespace std {
                         }
                         'u' => {
                             c_str::from_uint(va_arg!{args, u32}, buf, 10);
+                            concat(&str, buf);
+                        }
+                        'l' => {
+                            c_str::from_int(va_arg!{args, i64}, buf, 10);
                             concat(&str, buf);
                         }
                         'o' => {
@@ -252,12 +276,12 @@ namespace std {
                             <- str!{"\0"};
                         }
                         'e' => {
-                            let err = va_arg!{args, Error};
+                            let err = va_arg!{args, &Error};
 
                             concat(&str, error::str(err.kind));
                             
                             if err.msg {
-                                append(&str, ' ');
+                                concat(&str, ": ");
                                 concat(&str, err.msg);
                             }
                         }
@@ -265,7 +289,7 @@ namespace std {
                             let err = error::current();
                             concat(&str, error::str(err.kind));
                             if err.msg {
-                                append(&str, ' ');
+                                concat(&str, ": ");
                                 concat(&str, err.msg);
                             }
                         }

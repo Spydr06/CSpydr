@@ -2,19 +2,22 @@ import "std.csp";
 
 fn main(): i32 
 {
-    using std::io;
+    using std;
 
-    do {
-        puts("1"); # should be executed
-    } unless false;
+    with f = file::open("examples/assets/test.txt", file::READ) # open a file
+    {
+        let buffer: char[10];
 
-    do {
-        puts("2"); # should not be executed
-    } unless true;
+        file::read(f, &buffer[0], (len buffer) - 1);       # read the first 9 bytes of the file
+        io::printf("%s, %i\n", &buffer[0], file::tell(f)); # print them with the current cursor position
 
-    do {
-        puts("3"); # should be executed once 
-    } while false;
+        mem::zero(&buffer[0], len buffer);                  
+
+        file::read(f, &buffer[0], (len buffer) - 1);       # read the next 9 bytes of the file
+        io::printf("%s, %l\n", &buffer[0], file::tell(f)); # print them with the current cursor position
+
+        io::printf("%l\n", file::size(f)); # print the size of the file
+    }
 
     <- 0;
 }
