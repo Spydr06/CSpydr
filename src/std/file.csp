@@ -63,13 +63,31 @@ namespace std {
         fn write_str(file: &File, str: &const char)
             write(file, str: &const void, c_str::strlen(str));
 
-        fn write(file: &File, data: &const void, count: usize): u64
+        fn write(file: &File, data: &const void, count: usize): i64
         {
             let written = syscall::write(file.desc, data, count);
             if written == -1 
                 error::new(std::ErrorType::IO, "could not write to file");
             else
                 file.offset += written;
+            <- written;
+        }
+
+        fn writef(file: &File, fmt: &const char, args: ...): i64
+        {
+            <- vwritef(file, fmt, &args);
+        }
+
+        fn vwritef(file: &File, fmt: &const char, args: &VAList): i64
+        {
+            using string;
+            let written = -1;
+            with formatted = va_format(fmt, args)
+                written = syscall::write(file.desc, formatted, c_str::strlen(formatted));
+            
+            if written == -1
+                error::new(std::ErrorType::IO, "could not write to file");
+            
             <- written;
         }
 
