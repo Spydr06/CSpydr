@@ -56,17 +56,36 @@ A list of all the features, that are/will be implemented.
 - [x] `cURL` header implementation 
 - [x] from-the-ground custom written `stdlib` based on linux syscalls (in progress)
 
-## Building | Installation
+## Installation
 
 Currently, CSpydr is only available for Linux. Once a first major release is in sight I will create an [AUR](https://aur.archlinux.org/) repository for [Arch Linux](https://archlinux.org/), but at the moment building and installation is done via CMake from source. Of course you can still use CSpydr via [WSL](https://docs.microsoft.com/en-us/windows/wsl/) on Windows!
 <br/>
-To build CSpydr on your computer enter these following commands in a terminal
-
+### Getting CSpydr
 ```console
 $ git clone https://github.com/spydr06/cspydr.git
-$ cd ./cspydr
 ```
+
+### Dependencies
+CSpydr depends on the following libraries. They need to be installed on your computer for CSpydr to successfully build. Be sure to also install the corresponding `-dev` or `-devel` of library packages for header files.
+
+**Libraries:**
+- `libbsd`
+- `json-c`
+- `glibc`
+- `llvm` with `llvm-c` bindings **(optional)**
+
+**Programs:**
+- `cmake`
+- `gcc` or `clang`
+- `as` (GNU assembler)
+- `ld` (GNU linker)
+- `llvm-config` **(optional)**
+
+### Building
+Building CSpydr is done via CMake using the following commands (after cloning this repository):
+
 ```console
+$ cd ./cspydr
 $ cmake .
 $ make
 ```
@@ -78,6 +97,8 @@ $ make
 > ```
 > (to reenable, set `NO_LLVM=0`)
 
+### Installation
+Global installation is neccessary, because of the compiler needing the standard library to be present at `/usr/share/cspydr/std`.
 To install CSpydr with all of its components (cspc - The CSpydr Compiler and the CSpydr Standard Library), enter this command (needs root privileges):
 ```console
 # make install
