@@ -103,9 +103,10 @@ namespace std {
 
         fn readc(file: &File): char 
         {
-            if file == nil
-                ret -1;
-
+            do {
+                error::new(std::ErrorType::NILPTR, "`file` is nil");
+                <- -1;
+            } unless file;
             let c = '\0';
             if syscall::read(file.desc, &c, 1) == -1 
                 error::new(std::ErrorType::IO, "could not read file");
@@ -114,11 +115,16 @@ namespace std {
             <- c;
         }
 
-        fn close(file: &File)
+        fn close(file: &File): Error
         {
+            do
+                <- error::new(std::ErrorType::NILPTR, "`file` is nil")
+            unless file;
             if syscall::close(file.desc) == -1
-                error::new(std::ErrorType::IO, "could not close file");
-            free!(file);
+                <- error::new(std::ErrorType::IO, "could not close file");
+            mem::free(file);
+
+            <- error::none();
         }
         [exit_fn("close": &std::File)]
 
