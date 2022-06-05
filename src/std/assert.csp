@@ -1,0 +1,41 @@
+import "io.csp";
+
+macro assert(condition, error_msg) {
+    do {
+        if ::std::assert::ENABLED && !(condition) {
+            ::std::assert::fail((error_msg), __func__, __line__, __file__);
+        }
+    } while false
+}
+
+macro assert_false(condition, error_msg) {
+    do {
+        if ::std::assert::ENABLED && (condition) {
+            ::std::assert::fail((error_msg), __func__, __line__, __file__);
+        }
+    } while false
+}
+
+namespace std {
+    namespace assert {
+        let ENABLED: bool = true;
+
+        fn fail(msg: &const char, func: &const char, line: i32, file: &const char) {
+            using io, color, process;
+
+            eprintf("%s%s:%i in %s(): assertion failed: %s%s\n", 
+                &RED[0], 
+                file, 
+                line, 
+                func, 
+                msg, 
+                &RESET[0]
+            );
+            exit(std::ExitCode::FAILURE);
+        }
+
+        fn disable() ENABLED = false;
+        fn enable() ENABLED = true;
+        fn status(): bool ret ENABLED;
+    }
+}

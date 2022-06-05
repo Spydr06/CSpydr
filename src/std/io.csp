@@ -146,6 +146,20 @@ namespace std {
         
         const EOF: char = '\0';
 
+        namespace color {
+            const RESET: char[5] = [27: char, '[', '0', 'm', '\0'];
+            const BOLD: char[5] =  [27: char, '[', '1', 'm', '\0'];
+              
+            const BLACK: char[6] =   [27: char, '[', '3', '0', 'm', '\0'];
+            const RED: char[6] =     [27: char, '[', '3', '1', 'm', '\0'];
+            const GREEN: char[6] =   [27: char, '[', '3', '2', 'm', '\0'];
+            const YELLOW: char[6] =  [27: char, '[', '3', '3', 'm', '\0'];
+            const BLUE: char[6] =    [27: char, '[', '3', '4', 'm', '\0'];
+            const MAGENTA: char[6] = [27: char, '[', '3', '5', 'm', '\0'];
+            const CYAN: char[6] =    [27: char, '[', '3', '6', 'm', '\0'];
+            const WHITE: char[6] =   [27: char, '[', '3', '7', 'm', '\0'];
+        }
+
         fn puts(str: const &char)  fputs(str, stdout!);
         fn putc(c: char)           fputc(c, stdout!);
         fn eputs(str: const &char) fputs(str, stderr!);

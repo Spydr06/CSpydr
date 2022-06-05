@@ -1203,7 +1203,7 @@ static ASTNode_T* parse_return(Parser_T* p, bool needs_semicolon)
     if(!tok_is(p, TOKEN_SEMICOLON))
     {
         if((p->cur_fn && p->cur_fn->return_type->kind == TY_VOID))
-            throw_error(ERR_TYPE_CAST_WARN, ret->tok, "cannot return value from function with type `void`, expect `;`");
+            throw_error(ERR_TYPE_ERROR_UNCR, ret->tok, "cannot return value from function with type `void`, expect `;`");
         ret->return_val = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
     }
     if(needs_semicolon)
@@ -2380,6 +2380,7 @@ static ASTNode_T* parse_pow_3(Parser_T* p, ASTNode_T* left)
 static ASTNode_T* parse_current_fn_token(Parser_T* p)
 {
     p->tok->type = TOKEN_STRING,
+    p->tok = realloc(p->tok, sizeof(Token_T) + strlen(p->cur_fn->id->callee) + 1);
     strcpy(p->tok->value, p->cur_fn->id->callee);
 
     return parse_str_lit(p, false);
