@@ -590,8 +590,10 @@ static void check_exit_fns(Validator_T* v)
         if(!types_equal(((ASTObj_T*) fn->args->items[0])->data_type, handle->type))
             throw_error(ERR_TYPE_ERROR_UNCR, handle->tok, "specified data type and first argument type of function `%s` do not match", fn->id->callee);
 
+        /*
         if(expand_typedef(v, fn->return_type)->kind != TY_VOID)
             throw_error(ERR_UNUSED, handle->tok, "function `%s` returns a value that cannot be accessed", fn->id->callee);
+        */
     }
 }
 
