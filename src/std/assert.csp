@@ -8,6 +8,14 @@ macro assert(condition, error_msg) {
     } while false
 }
 
+macro assert(condition) {
+    do {
+        if ::std::assert::ENABLED && !(condition) {
+            ::std::assert::fail("", __func__, __line__, __file__);
+        }
+    } while false
+}
+
 macro assert_false(condition, error_msg) {
     do {
         if ::std::assert::ENABLED && (condition) {
