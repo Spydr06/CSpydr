@@ -1,0 +1,104 @@
+import "error.csp";
+
+namespace std {
+    type Testing: struct {
+        successful: u64,
+        tests: &(std::testing::Test[]),
+        current: u64,
+        errors: i32
+    };
+
+    namespace testing {
+        type Test: struct {
+            func: const fn(&Testing),
+            desc: &const char
+        };
+
+        fn new(tests: Test[]): std::Testing {
+            <- Testing::{
+                0, &tests
+            };
+        }
+
+        fn run(t: &Testing, idx: u64): bool {
+            do {
+                error::new(std::ErrorType::NILPTR, "argument t is nil or contains no tests");
+                <- false;
+            } unless t && t.tests;
+
+            if idx >= len *t.tests {
+                error::new(std::ErrorType::INDEXOUTOFBOUNDS, "idx bigger than t.tests array");
+                <- false;
+            }
+
+            let test = (*t.tests)[idx];
+            do {
+                error::new(std::ErrorType::NILPTR, "t.tests[idx] is nil");
+                <- false;
+            } unless test && test.func;
+
+            t.errors = 0;
+            t.current = idx;
+
+            io::printf("Running test %l/%l: `%s`", idx + 1, len *t.tests, test.desc);
+            test.func(t);
+
+            using io::color;
+            match t.errors {
+                0 => {
+                    io::printf("\t[ %s%sOK%s ]\n", &GREEN[0], &BOLD[0], &RESET[0]);
+                    t.errors = 0;
+                    <- true;
+                }
+                _ => {
+                    io::printf("\t[%s%sFAIL%s]\n", &RED[0], &BOLD[0], &RESET[0]);
+                    t.errors = 0;
+                    <- false;
+                }
+            }
+
+        }
+
+        fn run_all(t: &Testing): u64 {
+            do {
+                error::new(std::ErrorType::NILPTR, "argument t is nil or contains no tests");
+                <- 0;
+            } unless t && t.tests;
+
+            t.successful = 0;
+
+            for let i: u64 = 0; i < len *t.tests; i++; {
+                if run(t, i)
+                    t.successful++;
+            }
+
+            using io::color;
+            if t.successful == len *t.tests {
+                io::printf("[ %s%sOK%s ] All %l tests finished successfully.\n", &GREEN[0], &BOLD[0], &RESET[0], t.successful);
+                <- 0;
+            }
+            else {
+                let failed = (len *t.tests) - t.successful;
+                io::printf("[%s%sFAIL%s] %l of %l tests failed, %l finished successfully.\n", &RED[0], &BOLD[0], &RESET[0], failed, len *t.tests, t.successful);
+                <- failed;
+            }
+        }
+
+        fn assert(t: &Testing, condition: bool, error_msg: &const char) {
+            do {
+                error::new(std::ErrorType::NILPTR, "argument t is nil");
+                ret;
+            } unless t && t.tests;
+
+            using io::color;
+            do {
+                io::eprintf("\n    %sTest `%s` (%l): assertion failed: %s%s", &RED[0], (*t.tests)[t.current].desc, t.current + 1, error_msg, &RESET[0]);
+                t.errors++;
+            } unless condition;
+        }
+
+        fn assert_false(t: &Testing, condition: bool, error_msg: &const char) {
+            assert(t, !condition, error_msg);
+        }
+    }
+}

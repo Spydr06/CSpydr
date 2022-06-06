@@ -84,6 +84,7 @@ install_manifest.txt
 CMakeFiles/
 bin/
 compile_commands.json
+cmake_install.cmake
 *#
 src/std/std.csp
 src/std/libc/libc.csp

@@ -1,12 +1,29 @@
-import "std.csp";
+import "testing.csp";
+import "io.csp";
 
 fn main(): i32 
 {
-    using std;
+    using std::testing;
 
-    assert!(true, "this should not trigger");
-    assert_false!(false, "this should not trigger");
-    assert!(false, "this should trigger an assertion");
+    let tests = [
+        Test::{
+            const |t: &std::Testing| => {
+                using std::testing;
+                assert(t, true, "should pass");
+            }, 
+            "Test one"
+        },
+        Test::{
+            const |t: &std::Testing| => {
+                using std::testing;
+                assert(t, false, "should fail");
+            },
+            "Test two"
+        }
+    ];
+
+    let t = new(tests);
+    run_all(&t);
 
     <- 0;
 }

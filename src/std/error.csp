@@ -8,7 +8,8 @@ namespace std {
         IO,
         NILPTR,
         BADF,
-        NOTDIR
+        NOTDIR,
+        INDEXOUTOFBOUNDS,
     };
 
     type Error: struct {
@@ -22,34 +23,43 @@ namespace std {
         }
 
         fn new(kind: ErrorType, msg: &char): Error {
-            __static::__error.kind = kind;
-            __static::__error.msg = msg;
-            <- __static::__error;
+            using __static;
+
+            __error.kind = kind;
+            __error.msg = msg;
+            <- __error;
         }
 
         fn set(err: Error): Error {
-            __static::__error.kind = err.kind;
-            __static::__error.msg = err.msg;
-            <- __static::__error;
+            using __static;
+
+            __error.kind = err.kind;
+            __error.msg = err.msg;
+            <- __error;
         }
 
         fn none(): Error {
-            __static::__error.kind = ErrorType::NONE;
-            __static::__error.msg = nil;
-            <- __static::__error;
+            using __static;
+
+            __error.kind = ErrorType::NONE;
+            __error.msg = nil;
+            <- __error;
         }
 
         fn current(): Error {
+            using __static;
             do
-                __static::__error = none()
-            unless __static::__error;
-            <- __static::__error;
+                __error = none()
+            unless __error;
+            <- __error;
         }
 
         fn clear(): Error {
-            let last = __static::__error;
-            __static::__error.kind = ErrorType::NONE;
-            __static::__error.msg = nil;
+            using __static;
+
+            let last = __error;
+            __error.kind = ErrorType::NONE;
+            __error.msg = nil;
             <- last;
         }
 
@@ -62,6 +72,7 @@ namespace std {
                 ErrorType::NILPTR => ret "nil pointer";
                 ErrorType::BADF => ret "bad file descriptor";
                 ErrorType::NOTDIR => ret "not a directory";
+                ErrorType::INDEXOUTOFBOUNDS => ret "index out of bounds";
                 _ => ret "<unknown>";
             }
         }
