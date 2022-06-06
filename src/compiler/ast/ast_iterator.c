@@ -407,6 +407,7 @@ static void ast_type(const ASTIteratorList_T* list, ASTType_T* type, va_list cus
             break;
         
         case TY_VLA:
+            ast_type(list, type->base, custom_args);
             list_fn(list->type_fns[TY_VLA], type, custom_args);
             break;
 

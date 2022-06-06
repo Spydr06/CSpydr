@@ -807,6 +807,7 @@ static void asm_gen_index(ASMCodegenData_T* cg, ASTNode_T* index, bool gen_addre
     switch(unpack(index->left->data_type)->kind)
     {
         case TY_PTR:
+        case TY_FN:
             asm_gen_expr(cg, index->expr);
             asm_pop(cg, "%rdi");
             asm_println(cg, "  imul $%d, %%rax", index->data_type->size);
@@ -926,6 +927,8 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_MEMBER:
             asm_gen_addr(cg, node->left);
             asm_println(cg, "  add $%ld, %%rax", node->body->offset);
+            if(unpack(node->data_type)->kind == TY_FN)
+                asm_println(cg, "  mov (%%rax), %%rax");
             return;
         case ND_INDEX:
             asm_gen_index(cg, node, true);
@@ -944,6 +947,9 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_ARRAY:
         case ND_STRUCT:
             asm_gen_expr(cg, node);
+            return;
+        case ND_CAST:
+            asm_gen_addr(cg, node->left);
             return;
         default:
             throw_error(ERR_CODEGEN, node->tok, "cannot generate address from node of kind %d", node->kind);
@@ -1205,9 +1211,9 @@ static void asm_load(ASMCodegenData_T* cg, ASTType_T *ty) {
     switch (ty->kind) {
         case TY_C_ARRAY:
         case TY_STRUCT:
-        case TY_FN:
         case TY_ARRAY:
         case TY_VLA:
+        case TY_FN:
             return;
         case TY_F32:
             asm_println(cg, "  movss (%%rax), %%xmm0");
@@ -1625,11 +1631,21 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_ID:
             asm_gen_addr(cg, node);
             asm_load(cg, node->data_type);
+
+            if(unpack(node->data_type)->kind == TY_FN && 
+                node->referenced_obj && 
+                (node->referenced_obj->kind == OBJ_LOCAL || node->referenced_obj->kind == OBJ_FN_ARG)
+            )
+                    asm_println(cg, "  mov (%%rax), %%rax");
             return;
 
         case ND_MEMBER:
             asm_gen_addr(cg, node);
             asm_load(cg, node->data_type);
+
+            if(unpack(node->data_type)->kind == TY_FN)
+                asm_println(cg, "  mov (%%rax), %%rax");
+
             return;
         
         case ND_ARRAY:
@@ -1690,6 +1706,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                 asm_gen_addr(cg, node->left);
                 asm_push(cg);
                 asm_gen_expr(cg, node->right);
+
                 asm_store(cg, node->left->data_type);
                 return;
             }

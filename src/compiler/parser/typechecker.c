@@ -56,7 +56,7 @@ static void typecheck_assignment(ASTNode_T* assignment, va_list args)
     if(unpack(assignment->right->data_type)->kind == TY_ARRAY &&
         unpack(assignment->left->data_type)->kind == TY_VLA)
     {
-        
+        // todo    
     }
 
     char buf1[BUFSIZ] = {};
@@ -131,7 +131,7 @@ static void typecheck_array_lit(ASTNode_T* a_lit, va_list args)
         else
             throw_error(ERR_TYPE_ERROR_UNCR, arg->tok, "cannot implicitly cast from `%s` to `%s`",
                 ast_type_to_str(buf1, arg->data_type, BUFSIZ),
-                buf2[0] == '\0' ? buf2 : ast_type_to_str(buf2, base_ty, BUFSIZ)
+                ast_type_to_str(buf2, base_ty, BUFSIZ)
             );
     }
 }
@@ -258,6 +258,8 @@ bool implicitly_castable(Token_T* tok, ASTType_T* from, ASTType_T* to)
         return true;
     if(from->kind == TY_PTR && unpack(from->base)->kind == TY_ARRAY && to->kind == TY_VLA)
         return types_equal(unpack(from->base)->base, to->base);
+    if(from->kind == TY_STRUCT && to->kind == TY_STRUCT)
+        return types_equal(from, to);
     return false;
 }
 
