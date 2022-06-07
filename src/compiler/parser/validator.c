@@ -235,7 +235,7 @@ void validate_ast(ASTProg_T* ast)
     // end the validator
     end_scope(&v);
     v.global_scope = NULL;
-    global.current_fn = NULL;
+    v.current_function = NULL;
 
     // check for the main function
     check_exit_fns(&v);
@@ -246,7 +246,7 @@ void validate_ast(ASTProg_T* ast)
     }
 
     // check all data types and create implicit casts when needed
-    run_typechecker(ast);
+    run_typechecker(ast, &v);
 
     // Emit an error summary
     if(!global.silent)
@@ -1396,7 +1396,8 @@ static void assignment_end(ASTNode_T* assign, va_list args)
                 case OBJ_FN_ARG:
                     //if(assigned_obj->is_constant)
                     //    throw_error(ERR_CONST_ASSIGN, assigned_obj->tok, "cannot assign a value to constant %s `%s`", obj_kind_to_str(assigned_obj->kind), assigned_obj->id->callee);
-
+                    if(assigned_obj->is_constant)
+                        assigned_obj->data_type->is_constant = true;
                     break;
 
                 case OBJ_FUNCTION:

@@ -1,7 +1,7 @@
 import "file.csp";
 import "io.csp";
 
-macro PATH { "examples/assets/teset.txt" }
+macro PATH { "examples/assets/test.txt" }
 
 fn main(): i32 {
     using std;

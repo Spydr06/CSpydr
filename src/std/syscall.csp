@@ -260,22 +260,22 @@ namespace std {
         fn read(fd: i32, buf: &void, count: usize): ssize_t
             syscall!(Syscall::READ, fd, buf, count);
 
-        fn write(fd: i32, buf: const &void, count: usize): ssize_t
+        fn write(fd: i32, buf: &const void, count: usize): ssize_t
             syscall!(Syscall::WRITE, fd, buf, count);
 
-        fn open(pathname: const &char, flags: i32, mode: mode_t): i32
+        fn open(pathname: &const char, flags: i32, mode: mode_t): i32
             syscall!(Syscall::OPEN, pathname, flags, mode);
 
         fn close(fd: i32): i32
             syscall!(Syscall::CLOSE, fd);
 
-        fn stat(filename: const &char, buf: &Stat): i32
+        fn stat(filename: &const char, buf: &Stat): i32
             syscall!(Syscall::STAT, filename, buf);
 
         fn fstat(fd: i32, buf: &Stat): i32
             syscall!(Syscall::FSTAT, fd, buf);
 
-        fn lstat(path: const &char, buf: &Stat): i32
+        fn lstat(path: &const char, buf: &Stat): i32
             syscall!(Syscall::LSTAT, path, buf);
         
         fn poll(fds: &PollFd, nfds: nfds_t, timeout: i32): i32
@@ -314,7 +314,7 @@ namespace std {
         fn writev(fd: i32, iov: &IOVec, iovcnt: i32): ssize_t
             syscall!(Syscall::WRITEV, fd, iov, iovcnt);
 
-        fn access(pathname: const &char, mode: i32): i32
+        fn access(pathname: &const char, mode: i32): i32
             syscall!(Syscall::ACCESS, pathname, mode);
         
         fn pipe(pipefd: &i32): i32
@@ -341,7 +341,7 @@ namespace std {
         fn shmget(key: key_t, size: usize, shmflg: i32): i32
             syscall!(Syscall::SHMGET, key, size, shmflg);
         
-        fn shmat(shmid: i32, shmaddr: const &void, shmflg: i32): &void
+        fn shmat(shmid: i32, shmaddr: &const void, shmflg: i32): &void
             syscall!(Syscall::SHMAT, shmid, shmaddr, shmflg);
         
         fn dup(oldfd: i32): i32
@@ -353,7 +353,7 @@ namespace std {
         fn pause(): i32
             syscall!(Syscall::PAUSE);
         
-        fn nanosleep(req: const &TimeSpec, rem: &TimeSpec): i32
+        fn nanosleep(req: &const TimeSpec, rem: &TimeSpec): i32
             syscall!(Syscall::NANOSLEEP, req, rem);
     
         fn alarm(seconds: u32): u32
@@ -371,19 +371,19 @@ namespace std {
         fn accept(sockfd: i32, addr: &SockAddr, addrlen: &socklen_t): i32
             syscall!(Syscall::ACCEPT, sockfd, addr, addrlen);
 
-        fn sendto(sockfd: i32, buf: const &void, length: usize, flags: i32)
+        fn sendto(sockfd: i32, buf: &const void, length: usize, flags: i32)
             syscall!(Syscall::SENDTO, sockfd, buf, length, flags);
 
         fn recvfrom(sockfd: i32, buf: &void, length: usize, flags: i32, src_addr: &SockAddr, addrlen: &socklen_t): ssize_t
             syscall!(Syscall::RECVFROM, sockfd, buf, length, flags, src_addr, addrlen);
 
-        # TODO: fn sendmsg(sockfd: i32, msg: const &msghdr, flags: i32);
+        # TODO: fn sendmsg(sockfd: i32, msg: &const msghdr, flags: i32);
         # TODO: fn recvmsg
 
         fn shutdown(sockfd: i32, how: i32): i32
             syscall!(Syscall::SHUTDOWN, sockfd, how);
         
-        fn bind(sockfd: i32, addr: const &SockAddr, addrlen: socklen_t): i32
+        fn bind(sockfd: i32, addr: &const SockAddr, addrlen: socklen_t): i32
             syscall!(Syscall::BIND, sockfd, addr, addrlen);
         
         fn listen(sockfd: i32, backlog: i32): i32
@@ -398,7 +398,7 @@ namespace std {
         fn socketpair(domain: i32, _type: i32, protocol: i32, sv: &i32): i32
             syscall!(Syscall::SOCKETPAIR, domain, _type, protocol, sv);
 
-        fn setsockopt(sockfd: i32, level: i32, optname: i32, optval: const &void, optlen: socklen_t): i32
+        fn setsockopt(sockfd: i32, level: i32, optname: i32, optval: &const void, optlen: socklen_t): i32
             syscall!(Syscall::SETSOCKOPT, sockfd, level, optname, optval, optlen);
         
         fn getsockopt(sockfd: i32, level: i32, optname: i32, optval: &void, optlen: &socklen_t): i32
@@ -413,7 +413,7 @@ namespace std {
         fn vfork(): pid_t
             syscall!(Syscall::VFORK);
         
-        fn execve(pathname: const &char, argv: &const &char, envp: &const &char): i32
+        fn execve(pathname: &const char, argv: &&const char, envp: &&const char): i32
             syscall!(Syscall::EXECVE, pathname, argv, envp);
 
         fn exit(status: i32)
@@ -439,13 +439,13 @@ namespace std {
         fn semctl(semid: i32, semnum: i32, cmd: i32): i32
             syscall!(Syscall::SEMCTL, semid, semnum, cmd);
         
-        fn shmdt(shmaddr: const &void): i32
+        fn shmdt(shmaddr: &const void): i32
             syscall!(Syscall::SHMDT, shmaddr);
         
         fn msgget(key: key_t, msgflg: i32): i32
             syscall!(Syscall::MSGGET, key, msgflg);
 
-        fn msgsnd(msqid: i32, msgp: const &void, msgsz: usize, msgflg: i32): i32
+        fn msgsnd(msqid: i32, msgp: &const void, msgsz: usize, msgflg: i32): i32
             syscall!(Syscall::MSGSND, msqid, msgp, msgsz, msgflg);
         
         fn msgrcv(msqid: i32, msgp: &void, msgsz: usize, msgtyp: i64, msgflg: i32): ssize_t
@@ -468,7 +468,7 @@ namespace std {
         fn fdatasync(fd: i32): i32
             syscall!(Syscall::FDATASYNC, fd);
         
-        fn truncate(path: const &char, length: off_t): i32
+        fn truncate(path: &const char, length: off_t): i32
             syscall!(Syscall::TRUNCATE, path, length);
         
         fn ftruncate(fd: i32, length: off_t): i32
@@ -480,37 +480,37 @@ namespace std {
         fn getcwd(buf: &char, size: usize): &char
             syscall!(Syscall::GETCWD, buf, size);
         
-        fn chdir(path: const &char): i32
+        fn chdir(path: &const char): i32
             syscall!(Syscall::CHDIR, path);
         
         fn fchdir(fd: i32): i32
             syscall!(Syscall::FCHDIR, fd);
         
-        fn rename(oldpath: const &char, newpath: const &char): i32
+        fn rename(oldpath: &const char, newpath: &const char): i32
             syscall!(Syscall::RENAME, oldpath, newpath);
         
-        fn mkdir(pathname: const &char, mode: mode_t): i32
+        fn mkdir(pathname: &const char, mode: mode_t): i32
             syscall!(Syscall::MKDIR, pathname, mode);
         
-        fn rmdir(pathname: const &char): i32
+        fn rmdir(pathname: &const char): i32
             syscall!(Syscall::RMDIR, pathname);
         
-        fn creat(pathname: const &char, mode: mode_t): i32
+        fn creat(pathname: &const char, mode: mode_t): i32
             syscall!(Syscall::CREAT, pathname, mode);
         
-        fn link(oldpath: const &char, newpath: const &char): i32
+        fn link(oldpath: &const char, newpath: &const char): i32
             syscall!(Syscall::LINK, oldpath, newpath);
         
-        fn unlink(pathname: const &char): i32
+        fn unlink(pathname: &const char): i32
             syscall!(Syscall::UNLINK, pathname);
         
-        fn symlink(oldpath: const &char, newpath: const &char): i32
+        fn symlink(oldpath: &const char, newpath: &const char): i32
             syscall!(Syscall::SYMLINK, oldpath, newpath);
 
-        fn readlink(path: const &char, buf: &char, bufsiz: usize): ssize_t
+        fn readlink(path: &const char, buf: &char, bufsiz: usize): ssize_t
             syscall!(Syscall::READLINK, path, buf, bufsiz);
         
-        fn chmod(path: const &char, mode: mode_t): i32
+        fn chmod(path: &const char, mode: mode_t): i32
             syscall!(Syscall::CHMOD, path, mode);
         
         fn fchmod(fd: i32, mode: mode_t): i32

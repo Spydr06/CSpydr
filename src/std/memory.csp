@@ -116,7 +116,7 @@ namespace std {
         }
         [exit_fn("free": &void)]
 
-        fn copy(dest: &void, src: &void, n: usize): i32
+        fn copy(dest: &void, src: &const void, n: usize): i32
         {
             if ptr_overlap(dest, src, n) ret -1; # error
 
@@ -129,7 +129,7 @@ namespace std {
             <- 0; # success
         }
 
-        fn move(dest: &void, src: &void, n: usize): &void
+        fn move(dest: &void, src: &const void, n: usize): &void
         {
             let tmp: &u8 = alloc(n); # allocate memory for a temporary array
             copy(tmp, src, n);       # copy the source to tmp 
@@ -139,10 +139,10 @@ namespace std {
             <- dest;
         }
 
-        fn eq(a: &void, b: &void, n: usize): bool
+        fn eq(a: &const void, b: &const void, n: usize): bool
         {
-            let x: &u8 = a;
-            let y: &u8 = b;
+            let x: &const u8 = a;
+            let y: &const u8 = b;
 
             for let i: usize = 0; i < n; i++;
                 if x[i] != y[i] ret false; # not equal
@@ -160,10 +160,10 @@ namespace std {
             set(ptr, 0, size);
 
         # function to check if two pointer overlap
-        fn ptr_overlap(a: &void, b: &void, n: usize): bool
+        fn ptr_overlap(a: &const void, b: &const void, n: usize): bool
         {
-            let x: &u8 = a;
-            let y: &u8 = b;
+            let x: &const u8 = a;
+            let y: &const u8 = b;
             <- (x <= y && x + n > y) || (y <= x && y + n > x);
         }
     }

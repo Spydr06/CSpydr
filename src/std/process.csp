@@ -82,7 +82,7 @@ namespace std {
         fn vfork(): pid_t
             <- syscall::vfork();
 
-        fn execve(pathname: const &char, argv: &const &char, envp: &const &char): i32
+        fn execve(pathname: &const char, argv: &&const char, envp: &&const char): i32
             <- syscall::execve(pathname, argv, envp); 
         
         fn kill(pid: pid_t, sig: i32): i32

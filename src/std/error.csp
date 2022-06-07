@@ -22,7 +22,7 @@ namespace std {
             let __error: Error;
         }
 
-        fn new(kind: ErrorType, msg: &char): Error {
+        fn new(kind: ErrorType, msg: &const char): Error {
             using __static;
 
             __error.kind = kind;

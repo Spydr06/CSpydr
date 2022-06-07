@@ -10,26 +10,26 @@ namespace std {
             let __strtok_old: &char = nil;
         }
 
-        fn strlen(str: const &char): usize
+        fn strlen(str: &const char): usize
         {
             let length: usize = 0;
             while str[length] != nil length++;
             <- length;
         }
         
-        fn strnlen(s: const &char, n: usize): usize
+        fn strnlen(s: &const char, n: usize): usize
             <- strlen(s);
 
         # similar to c_str::copy
-        fn copy(dest: &char, src: const &char)
+        fn copy(dest: &char, src: &const char)
         {
             mem::move(dest, src, strlen(src));
         }
 
-        fn strcpy(dest: &char, src: const &char)
+        fn strcpy(dest: &char, src: &const char)
             copy(dest, src);
         
-        fn strncpy(s1: &char, s2: const &char, n: usize): &char 
+        fn strncpy(s1: &char, s2: &const char, n: usize): &char 
         {
             let size = strnlen(s2, n);
             if size != n
@@ -37,13 +37,13 @@ namespace std {
             <- mem::copy(s1, s2, size);
         }
 
-        fn strcat(dest: &char, src: const &char): &char
+        fn strcat(dest: &char, src: &const char): &char
         {
             strcpy(dest + strlen(dest), src);
             <- dest;
         }
 
-        fn strncat(dest: &char, src: const &char, n: usize): &char
+        fn strncat(dest: &char, src: &const char, n: usize): &char
         {
             let a = dest;
             dest += strlen(dest);
@@ -51,7 +51,7 @@ namespace std {
             {
                 n--;
                 (*dest) = *src;
-                (*src)++;
+                (src)++;
                 (*dest)++;
             }
 
@@ -60,7 +60,7 @@ namespace std {
             <- a;
         }
 
-        fn strcmp(p1: const &char, p2: const &char): i32
+        fn strcmp(p1: &const char, p2: &const char): i32
         {
             let s1: &u8 = p1;
             let s2: &u8 = p2;
@@ -78,7 +78,7 @@ namespace std {
             <- c1 - c2;
         }
 
-        fn strncmp(p1: const &char, p2: const &char, n: usize): i32
+        fn strncmp(p1: &const char, p2: &const char, n: usize): i32
         {
             let s1: &u8 = p1;
             let s2: &u8 = p2;
@@ -107,7 +107,7 @@ namespace std {
             <- nil;
         }
 
-        fn strsep(stringp: &&char, delim: const &char): &char
+        fn strsep(stringp: &&char, delim: &const char): &char
         {
             let begin = *stringp;
             if begin == nil ret nil;
@@ -126,7 +126,7 @@ namespace std {
         
         # Return the length of the maximum initial segment
         # of S which contains only characters in ACCEPT.
-        fn strspn(s: const &char, accept: const &char): usize
+        fn strspn(s: &const char, accept: &const char): usize
         {
             let n: usize = 0;
             let p: &char = nil;
@@ -144,7 +144,7 @@ namespace std {
         
         # Return the length of the maximum initial segment of S
         # which contains no characters from REJECT.
-        fn strcspn(str: &char, reject: const &char): usize
+        fn strcspn(str: &char, reject: &const char): usize
         {
             let size: usize = 0;
 
@@ -162,7 +162,7 @@ namespace std {
         }
         
         # Find the first occurrence of C in S.
-        fn strchr(s: const &char, c_in: i32): const &char
+        fn strchr(s: &const char, c_in: i32): &const char
         {
             if s == nil || c_in > 255 || c_in < 0
                 <- nil;
@@ -170,7 +170,7 @@ namespace std {
             let s_len = strlen(s);
             for let i: usize = 0; i < s_len; i++;
                 if (c_in: char) == s[i]
-                    <- (&s[i]): const &char;
+                    <- &s[i];
 
             <- nil;
         }
@@ -192,7 +192,7 @@ namespace std {
         }
         
         # Find the first occurrence in S of any character in ACCEPT.
-        fn strpbrk(s: &char, accept: const &char): &char
+        fn strpbrk(s: &char, accept: &const char): &char
         {
             s += strcspn(s, accept);
             <- if (*s) != '\0' => s else nil: &char;
@@ -208,7 +208,7 @@ namespace std {
 	        x = strtok(NULL, "=");		// x = NULL
 		    // s = "abc\0=-def\0"
         ]#
-        fn strtok(s: &char, delim: const &char): &char
+        fn strtok(s: &char, delim: &const char): &char
         {   
             using __static;
 
@@ -236,12 +236,12 @@ namespace std {
         }
         
         # Search no more than N bytes of S for C.
-        fn memchr(s: const &void, c_in: i32, n: usize): &void
+        fn memchr(s: &const void, c_in: i32, n: usize): &void
         {
             let c = c_in: u8;
             let ch_ptr: &u8;
 
-            for ch_ptr = (s: const &u8); n > 0 && (ch_ptr: u64 % sizeof LongWord) != 0; n--; {
+            for ch_ptr = (s: &const u8); n > 0 && (ch_ptr: u64 % sizeof LongWord) != 0; n--; {
                 ch_ptr++;
                 if (*ch_ptr) == c
                     <- ch_ptr: &void;
@@ -265,7 +265,7 @@ namespace std {
                 n -= sizeof LongWord;
             }
 
-            ch_ptr = longword_ptr: const &u8;
+            ch_ptr = longword_ptr: &const u8;
 
             for ; n > 0; n--; {
                 ch_ptr++;
@@ -276,7 +276,7 @@ namespace std {
             <- nil;
         }
 
-        fn rawmemchr(s: const &void, c: i32): &void
+        fn rawmemchr(s: &const void, c: i32): &void
         {
             if c != '\0' 
                 <- memchr(s, c, (-1): usize);

@@ -2,6 +2,7 @@
 
 # link with the gnulibc standard library
 import "link.csp";
+import "stddef.csp";
 
 namespace libc {
 
@@ -23,13 +24,13 @@ extern "C" {
     fn strncmp(s1: const &char, s2: const &char, n: size_t): i32;
 
     fn strcoll(s1: const &char, s2: const &char): i32;
-    fn strxfrm(s1: &char, s2: const &char, n: size_t): size_t;
+    fn strxfrm(s1: &char, s2: const &char, n: size_t): libc::size_t;
 
     fn strchr(s: const &char, c: i32): &char;
-    fn strcspn(s1: const &char, s2: const &char): size_t;
+    fn strcspn(s1: const &char, s2: const &char): libc::size_t;
     fn strpbrk(s1: const &char, s2: const &char): &char;
     fn strrchr(s: const &char, c: i32): &char;
-    fn strspn(s1: const &char, s2: const &char): size_t;
+    fn strspn(s1: const &char, s2: const &char): libc::size_t;
     fn strstr(s1: const &char, s2: const &char): &char;
     fn strtok(s1: &char, s2: const &char): &char;
 
@@ -38,7 +39,7 @@ extern "C" {
 
     fn strerror(errnum: i32): &char;
 
-    fn strlen(s: const &char): size_t;
+    fn strlen(s: const &char): libc::size_t;
     
 }
 

@@ -85,11 +85,15 @@ void default_error_handler(ErrorType_T ty, Token_T* tok, const char* format, va_
     u32 character = tok->pos + 1;
 
     // print the error
-    if(global.current_fn && *global.current_fn) 
+    static ASTObj_T* last_fn; // remember the last function to eliminate duplication in multiple errors of the same function
+    if(global.current_fn && *global.current_fn && *global.current_fn != last_fn) 
     {
         char buf[BUFSIZ] = {};
         fprintf(ERR_OUTPUT_STREAM, COLOR_MAGENTA "In function " COLOR_BOLD_MAGENTA "%s:\n" COLOR_RESET, ast_id_to_str(buf, (*global.current_fn)->id, LEN(buf)));
+        last_fn = *global.current_fn;
     }
+    else
+        last_fn = NULL;
 
     fprintf(ERR_OUTPUT_STREAM, err_tmp1, source_file_path, (long) line, (long) character, is_error ? COLOR_BOLD_RED : COLOR_BOLD_YELLOW, error_str);
     vfprintf(ERR_OUTPUT_STREAM, format, args);

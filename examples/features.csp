@@ -5,25 +5,7 @@ fn main(): i32
 {
     using std::testing;
 
-    let tests = [
-        Test::{
-            const |t: &std::Testing| => {
-                using std::testing;
-                assert(t, true, "should pass");
-            }, 
-            "Test one"
-        },
-        Test::{
-            const |t: &std::Testing| => {
-                using std::testing;
-                assert(t, false, "should fail");
-            },
-            "Test two"
-        }
-    ];
-
-    let t = new(tests);
-    run_all(&t);
+    const x = 1;
 
     <- 0;
 }

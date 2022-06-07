@@ -209,8 +209,13 @@ char* ast_type_to_str(char* dest, ASTType_T* ty, size_t size)
             for(size_t i = 0; i < ty->members->size; i++)
             {
                 ASTNode_T* member = ty->members->items[i];
-                strcat(dest, member->id->callee);
-                strcat(dest, ": ");
+                
+                if(member->id->callee && strlen(member->id->callee) != 0)
+                {
+                    strcat(dest, member->id->callee);
+                    strcat(dest, ": ");
+                }
+
                 ast_type_to_str(dest, member->data_type, size);
                 if(ty->members->size - i > 1)
                     strcat(dest, ", ");

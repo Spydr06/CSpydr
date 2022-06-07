@@ -160,14 +160,14 @@ namespace std {
             const WHITE: char[6] =   [27: char, '[', '3', '7', 'm', '\0'];
         }
 
-        fn puts(str: const &char)  fputs(str, stdout!);
+        fn puts(str: &const char)  fputs(str, stdout!);
         fn putc(c: char)           fputc(c, stdout!);
-        fn eputs(str: const &char) fputs(str, stderr!);
+        fn eputs(str: &const char) fputs(str, stderr!);
         fn eputc(c: char)          fputc(c, stderr!);
 
         fn getc(): char ret fgetc(stdin!);
 
-        fn fputs(str: const &char, fd: i32)
+        fn fputs(str: &const char, fd: i32)
         {
             write(fd, str);
             write(fd, "\n");
@@ -190,16 +190,16 @@ namespace std {
             syscall::close(fd); # error handling
         }
 
-        fn printf(fmt: const &char, args: ...): i32
+        fn printf(fmt: &const char, args: ...): i32
             <- vfprintf(out, fmt, &args);
 
-        fn eprintf(fmt: const &char, args: ...): i32
+        fn eprintf(fmt: &const char, args: ...): i32
             <- vfprintf(err, fmt, &args);
 
-        fn fprintf(fd: i32, fmt: const &char, args: ...): i32
+        fn fprintf(fd: i32, fmt: &const char, args: ...): i32
             <- vfprintf(fd, fmt, &args);
 
-        fn vfprintf(fd: i32, fmt: const &char, args: &VAList): i32
+        fn vfprintf(fd: i32, fmt: &const char, args: &VAList): i32
         {
             using string;
 
@@ -209,7 +209,7 @@ namespace std {
             <- 0;
         }
 
-        fn write(fd: i32, buf: const &char) 
+        fn write(fd: i32, buf: &const char) 
         {
             if syscall::write(fd, buf, c_str::strlen(buf)) <= 0
             {
@@ -218,7 +218,7 @@ namespace std {
             }
         }
 
-        fn writeln(fd: i32, buf: const &char)
+        fn writeln(fd: i32, buf: &const char)
         {
             if syscall::write(fd, buf, c_str::strlen(buf) + 1) <= 0
             {

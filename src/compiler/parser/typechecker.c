@@ -6,11 +6,17 @@
 
 #include "ast/ast.h"
 #include "error/error.h"
+#include "globals.h"
 #include "optimizer/constexpr.h"
 #include "parser/validator.h"
 #include "utils.h"
 #include "codegen/codegen_utils.h"
 #include "ast/ast_iterator.h"
+
+#define GET_VALIDATOR(va) Validator_T* v = va_arg(va, Validator_T*)
+
+static void set_fn(ASTObj_T* fn, va_list args);
+static void unset_fn(ASTObj_T* fn, va_list args);
 
 static ASTNode_T* typecheck_arg_pass(ASTType_T* expected, ASTNode_T* received);
 static void typecheck_call(ASTNode_T* call, va_list args);
@@ -18,20 +24,42 @@ static void typecheck_explicit_cast(ASTNode_T* cast, va_list args);
 static void typecheck_assignment(ASTNode_T* assignment, va_list args);
 static void typecheck_array_lit(ASTNode_T* a_lit, va_list args);
 static void typecheck_struct_lit(ASTNode_T* a_lit, va_list args);
+static void typecheck_inc(ASTNode_T* inc, va_list args);
+static void typecheck_dec(ASTNode_T* dec, va_list args);
 
 static const ASTIteratorList_T iterator = {
+    .obj_start_fns = {
+        [OBJ_FUNCTION] = set_fn,
+    },
+    .obj_end_fns = {
+        [OBJ_FUNCTION] = unset_fn
+    },
     .node_end_fns = {
         [ND_CALL] = typecheck_call,
         [ND_CAST] = typecheck_explicit_cast,
         [ND_ASSIGN] = typecheck_assignment,
         [ND_ARRAY] = typecheck_array_lit,
         [ND_STRUCT] = typecheck_struct_lit,
+        [ND_INC] = typecheck_inc,
+        [ND_DEC] = typecheck_dec
     }
 };
 
-void run_typechecker(ASTProg_T* ast)
+void run_typechecker(ASTProg_T* ast, Validator_T* v)
 {
-    ast_iterate(&iterator, ast);
+    ast_iterate(&iterator, ast, v);
+}
+
+static void set_fn(ASTObj_T* fn, va_list args)
+{
+    GET_VALIDATOR(args);
+    v->current_function = fn;
+}
+
+static void unset_fn(ASTObj_T* fn, va_list args)
+{
+    GET_VALIDATOR(args);
+    v->current_function = NULL;
 }
 
 static void typecheck_call(ASTNode_T* call, va_list args)
@@ -44,10 +72,21 @@ static void typecheck_call(ASTNode_T* call, va_list args)
 
 static void typecheck_assignment(ASTNode_T* assignment, va_list args)
 {
+    char buf1[BUFSIZ] = {};
+    char buf2[BUFSIZ] = {};
+
+    if(unpack(assignment->left->data_type)->is_constant && !assignment->is_initializing)
+        throw_error(
+            ERR_TYPE_ERROR_UNCR, 
+            assignment->tok, 
+            "cannot assign new values to constant type `%s`", 
+            ast_type_to_str(buf1, assignment->left->data_type, LEN(buf1))
+        );
+
     if(types_equal(assignment->left->data_type, assignment->right->data_type))
         return;
 
-    if(implicitly_castable(assignment->tok, assignment->right->data_type, assignment->left->data_type))
+    if(implicitly_castable(assignment->tok, assignment->right->data_type, assignment->left->data_type) != CAST_ERR)
     {
         assignment->right = implicit_cast(assignment->tok, assignment->right, assignment->left->data_type);
         return;
@@ -59,8 +98,6 @@ static void typecheck_assignment(ASTNode_T* assignment, va_list args)
         // todo    
     }
 
-    char buf1[BUFSIZ] = {};
-    char buf2[BUFSIZ] = {};
     throw_error(ERR_TYPE_ERROR_UNCR, assignment->tok, "assignment type missmatch: cannot assign `%s` to `%s`", 
         ast_type_to_str(buf1, assignment->right->data_type, LEN(buf1)),
         ast_type_to_str(buf2, assignment->left->data_type, LEN(buf2))    
@@ -72,7 +109,7 @@ static ASTNode_T* typecheck_arg_pass(ASTType_T* expected, ASTNode_T* received)
     if(types_equal(expected, received->data_type))
         return received;
     
-    if(implicitly_castable(received->tok, received->data_type, expected))
+    if(implicitly_castable(received->tok, received->data_type, expected) == CAST_OK)
         return implicit_cast(received->tok, received, expected);
     
     char buf1[BUFSIZ] = {};
@@ -126,7 +163,7 @@ static void typecheck_array_lit(ASTNode_T* a_lit, va_list args)
         if(types_equal(arg->data_type, base_ty))
             continue;
 
-        if(implicitly_castable(arg->tok, arg->data_type, base_ty))
+        if(implicitly_castable(arg->tok, arg->data_type, base_ty) == CAST_OK)
             a_lit->args->items[i] = implicit_cast(arg->tok, arg, base_ty);
         else
             throw_error(ERR_TYPE_ERROR_UNCR, arg->tok, "cannot implicitly cast from `%s` to `%s`",
@@ -146,7 +183,7 @@ static void typecheck_struct_lit(ASTNode_T* s_lit, va_list args)
 
     if(got_len > expected_len) 
     {
-        throw_error(ERR_TYPE_ERROR_UNCR, s_lit->tok, "too many struct members for specified type `%s`", ast_type_to_str(buf1, s_lit->data_type, BUFSIZ));
+        throw_error(ERR_TYPE_ERROR_UNCR, s_lit->tok, "too many struct members for specified type `%s`", ast_type_to_str(buf1, s_lit->data_type, LEN(buf1)));
         memset(buf1, '\0', BUFSIZ * sizeof(char));
     }
 
@@ -158,7 +195,7 @@ static void typecheck_struct_lit(ASTNode_T* s_lit, va_list args)
         if(types_equal(arg->data_type, expected_ty))
             continue;
 
-        if(implicitly_castable(arg->tok, arg->data_type, expected_ty))
+        if(implicitly_castable(arg->tok, arg->data_type, expected_ty) == CAST_OK)
             s_lit->args->items[i] = implicit_cast(arg->tok, arg, expected_ty);
         else
             throw_error(ERR_TYPE_ERROR_UNCR, arg->tok, "cannot implicitly cast from `%s` to `%s`",
@@ -166,6 +203,20 @@ static void typecheck_struct_lit(ASTNode_T* s_lit, va_list args)
                 buf2[0] == '\0' ? buf2 : ast_type_to_str(buf2, expected_ty, BUFSIZ)
             );
     }
+}
+
+static void typecheck_inc(ASTNode_T* inc, va_list args)
+{
+    char buf[BUFSIZ] = {'\0'};
+    if(inc->data_type->is_constant)
+        throw_error(ERR_TYPE_ERROR_UNCR, inc->tok, "cannot increment constant type `%s`", ast_type_to_str(buf, inc->data_type, LEN(buf)));
+}
+
+static void typecheck_dec(ASTNode_T* dec, va_list args)
+{
+    char buf[BUFSIZ] = {'\0'};
+    if(dec->data_type->is_constant)
+        throw_error(ERR_TYPE_ERROR_UNCR, dec->tok, "cannot decrement constant type `%s`", ast_type_to_str(buf, dec->data_type, LEN(buf)));
 }
 
 bool types_equal(ASTType_T* a, ASTType_T* b)
@@ -186,7 +237,7 @@ bool types_equal(ASTType_T* a, ASTType_T* b)
             {
                 ASTNode_T* am = a->members->items[i];
                 ASTNode_T* bm = b->members->items[i];
-                if(!identifiers_equal(am->id, bm->id) || !types_equal(am->data_type, bm->data_type))
+                if(!types_equal(am->data_type, bm->data_type))
                     return false;
             }
             return true;
@@ -219,13 +270,16 @@ bool types_equal(ASTType_T* a, ASTType_T* b)
     }
 }
 
-bool implicitly_castable(Token_T* tok, ASTType_T* from, ASTType_T* to)
+enum IMPLICIT_CAST_RESULT implicitly_castable(Token_T* tok, ASTType_T* from, ASTType_T* to)
 {
     from = unpack(from);
     to = unpack(to);
 
     if(!from || !to)
-        return false;
+        return CAST_ERR;
+
+    if(from->base && to->base && from->base->is_constant && !to->base->is_constant)
+        return CAST_DELETING_CONST;
     
     // Buffer for warnings and errors
     char buf1[BUFSIZ] = {};
@@ -238,29 +292,29 @@ bool implicitly_castable(Token_T* tok, ASTType_T* from, ASTType_T* to)
         //        ast_type_to_str(buf1, from, LEN(buf1)),
         //        ast_type_to_str(buf2, to, LEN(buf2))
         //    );
-        return true;
+        return CAST_OK;
     }
     if(is_flonum(from) && is_flonum(to))
-        return true;
+        return CAST_OK;
     if(is_integer(from) && is_flonum(to))
-        return true;
+        return CAST_OK;
     if(is_flonum(from) && is_integer(to))
     {
         throw_error(ERR_TYPE_CAST_WARN, tok, "implicitly casting from `%s` to `%s`",
             ast_type_to_str(buf1, from, LEN(buf1)),
             ast_type_to_str(buf2, to, LEN(buf2))
         );
-        return true;
+        return CAST_OK;
     }
     if((from->kind == TY_PTR || from->kind == TY_C_ARRAY) && to->kind == TY_PTR)
-        return true;
+        return CAST_OK;
     if(from->kind == TY_ARRAY && to->kind == TY_VLA)
-        return true;
+        return CAST_OK;
     if(from->kind == TY_PTR && unpack(from->base)->kind == TY_ARRAY && to->kind == TY_VLA)
-        return types_equal(unpack(from->base)->base, to->base);
+        return types_equal(unpack(from->base)->base, to->base) ? CAST_OK : CAST_ERR;
     if(from->kind == TY_STRUCT && to->kind == TY_STRUCT)
-        return types_equal(from, to);
-    return false;
+        return types_equal(from, to) ? CAST_OK : CAST_ERR;
+    return CAST_ERR;
 }
 
 ASTNode_T* implicit_cast(Token_T* tok, ASTNode_T* expr, ASTType_T* to)

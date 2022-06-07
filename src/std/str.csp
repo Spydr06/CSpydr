@@ -98,7 +98,7 @@ namespace std {
             <- str_data.alloc > str_data.size + 1;
         }
 
-        fn concat(dest: &String, src: String) 
+        fn concat(dest: &String, src: &const char) 
         {
             let str_data = get_data(*dest);
             let str_len = size(*dest);
@@ -225,14 +225,14 @@ namespace std {
             "%e" => insert an "Error" type from the VAList as &Error
             "%E" => insert the current error set at std::error::__static::__error
         ]#
-        fn format(fmt: const &char, args: ...): &void
+        fn format(fmt: &const char, args: ...): &void
             <- va_format(fmt, &args);
 
-        fn va_format(fmt: const &char, args: &VAList): &void
+        fn va_format(fmt: &const char, args: &VAList): &void
         {
             let str = str!{};
             do {
-                error::new(ErrorType::NILPTR, "`fmt` is nil");
+                error::new(std::ErrorType::NILPTR, "`fmt` is nil");
                 <- str;
             } unless fmt;
 
