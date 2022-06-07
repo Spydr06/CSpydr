@@ -3,9 +3,5 @@ import "io.csp";
 
 fn main(): i32 
 {
-    using std::testing;
-
-    const x = 1;
-
     <- 0;
 }

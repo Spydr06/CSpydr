@@ -1,0 +1,197 @@
+#[
+  Simple DirectMedia Layer
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
+]#
+
+#[
+ *  \file SDL_pixels.h
+ *
+ *  Header for the enumerated pixel format definitions.
+]#
+
+import "stdinc.csp";
+import "endian.csp";
+
+macro SDL_ALPHA_OPAQUE { 255 }
+macro SDL_ALPHA_TRANSPARENT { 0 }
+
+namespace std {
+    type SDL_PixelType: enum {
+        UNKNOWN,
+        INDEX1,
+        INDEX4,
+        INDEX8,
+        PACKED8,
+        PACKED16,
+        PACKED32,
+        ARRAYU8,
+        ARRAYU16,
+        ARRAYU32,
+        ARRAYF16,
+        ARRAYF32
+    };
+
+    type SDL_BitmapOrder: enum {
+        NONE,
+        _4321,
+        _1234
+    };
+
+    type SDL_PackedOrder: enum {
+        NONE,
+        XRGB,
+        RGBX,
+        ARGB,
+        RGBA,
+        XBGR,
+        BGRX,
+        ABGR,
+        BGRA
+    };
+
+    type SDL_ArrayOrder: enum {
+        NONE,
+        RGB,
+        RGBA,
+        ARGB,
+        BGR,
+        BGRA,
+        ABGR
+    };
+
+    type SDL_PackedLayout: enum {
+        NONE,
+        _332,
+        _4444,
+        _1555,
+        _5551,
+        _565,
+        _8888,
+        _2101010,
+        _1010102
+    };
+}
+
+macro SDL_DEFINE_PIXELFOURCC(a, b, c, d) {
+    SDL_FOURCC!(a, b, c, d)
+}
+
+macro SDL_DEFINE_PIXELFORMAT(_type, order, layout, bits, bytes) {
+    ((1 << 28) | ((_type) << 24) | ((order) << 20) | ((layout) << 16) | ((bits) << 8) | (bytes))
+}
+
+macro SDL_PIXELFLAG(x) {
+    (((x) >> 28) & 0x0f)
+}
+
+macro SDL_PIXELTYPE(x) {
+    (((x) >> 24) & 0x0f)
+}
+
+macro SDL_PIXELORDER(x) {
+    (((x) >> 20) & 0x0f)
+}
+
+macro SDL_PIXELLAYOUT(x) {
+    (((x) >> 16) & 0x0f)
+}
+
+macro SDL_BITSPERPIXEL(x) {
+    # todo       
+}
+
+macro SDL_ISPIXELFORMAT_INDEXED(x) {
+    # todo
+}
+
+macro SDL_PIXELFORMAT_PACKED(x) {
+    # todo
+}
+
+macro SDL_ISPIXELFORMAT_ARRAY(x) {
+    # todo
+}
+
+macro SDL_ISPIXELFORMAT_ALPHA(x) {
+    # todo
+}
+
+macro ISPIXELFORMAT_FOURCC(format) {
+    ((format) && (SDL_PIXELFLAG!(format) != 1))
+}
+
+namespace sdl {
+    type SDL_PixelFormatEnum: enum {
+
+    };
+
+    type SDL_Color: struct {
+        r: u8,
+        g: u8,
+        b: u8
+    };
+
+    type SDL_Palette: struct {
+        ncolors: i32,
+        colors: &SDL_Color,
+        version: u32,
+        refcount: i32
+    };
+
+    type SDL_PixelFormat: struct {
+        format: u32,
+        palette: &SDL_Palette,
+        BitsPerPixel: u8,
+        BytesPerPixel: u8,
+        padding: u8,
+        Rmask: u32,
+        Gmask: u32,
+        Bmask: u32,
+        Amask: u32,
+        Rloss: u8,
+        Gloss: u8,
+        Bloss: u8,
+        Aloss: u8,
+        Rshift: u8,
+        Gshift: u8,
+        Bshift: u8,
+        Ashift: u8,
+        refcount: i32,
+        next: &SDL_PixelFormat
+    };
+
+    extern "C" {
+        fn SDL_GetPixelFormatName(format: u32): &const char;
+        fn SDL_PixelFormatEnumToMasks(format: u32, bpp: &i32, Rmask: &u32, Gmask: &u32, Bmask: &u32, Amask: &u32): sdl::SDL_bool;
+        fn SDL_MasksToPixelFormatEnum(bpp: i32, Rmask: u32, Gmask: u32, Bmask: u32, Amask: u32);
+        fn SDL_AllocFormat(pixel_format: u32): &SDL_PixelFormat;
+        fn SDL_FreeFormat(format: &SDL_PixelFormat);
+
+        fn SDL_AllocPalette(ncolors: i32): &SDL_Palette;
+        fn SDL_SetPixelFormatPalette(format: &SDL_PixelFormat, palette: &SDL_Palette): i32;
+        fn SDL_SetPaletteColors(format: &SDL_Palette, colors: &const SDL_Color, firstcolor: i32, ncolors: i32): i32;
+        fn SDL_FreePalette(palette: &SDL_Palette);
+
+        fn SDL_MapRGB(format: &const SDL_PixelFormat, r: u8, b: u8, g: u8): u32;
+        fn SDL_MapRGBA(format: &const SDL_PixelFormat, r: u8, g: u8, b: u8, a: u8): u32;
+        fn SDL_GetRGB(pixel: u32, format: &const SDL_PixelFormat, r: &u8, g: &u8, b: &u8);
+        fn SDL_GetRGBA(pixel: u32, format: &const SDL_PixelFormat, r: &u8, g: &u8, b: &u8, a: &u8);
+        fn SDL_CalculateGammaRamp(gamma: f32, ramp: &u16);
+    }
+}

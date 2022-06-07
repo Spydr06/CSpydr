@@ -1,0 +1,124 @@
+#[
+  Simple DirectMedia Layer
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
+]#
+
+#[*
+ *  \file SDL_rect.h
+ *
+ *  Header file for SDL_rect definition and management functions.
+ ]#
+
+import "stdinc.csp";
+import "error.csp";
+import "pixels.csp";
+import "rwops.csp";
+
+namespace sdl {
+    type SDL_Point: struct {
+        x: i32,
+        y: i32
+    };
+
+    type SDL_FPoint: struct {
+        x: f32,
+        y: f32
+    };
+
+    type SDL_Rect: struct {
+        x: i32,
+        y: i32,
+        w: i32,
+        h: i32
+    };
+
+    type SDL_FRect: struct {
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32
+    };
+
+    fn SDL_PointInRect(p: &const SDL_Point, r: &const SDL_Rect): SDL_bool
+    {
+        <- if (p.x >= r.x) && (p.x < (r.x + r.w)) && (p.y >= r.y) && (p.y < (r.y + r.h))
+            => SDL_TRUE!
+            else SDL_FALSE!;
+    }
+
+    fn SDL_RectEmpty(r: &const SDL_Rect): SDL_bool
+    {
+        <- if (!r) || (r.w <= 0) || (r.h <= 0)
+            => SDL_TRUE!
+            else SDL_FALSE!;
+    }
+
+    fn SDL_RectEquals(a: &const SDL_Rect, b: &const SDL_Rect): SDL_bool
+    {
+        <- if (a != nil) && (b != nil) && (a.x == b.x) && (a.y == b.y) && (a.w == b.w) && (a.h == b.h)
+            => SDL_TRUE!
+            else SDL_FALSE!;
+    }
+
+    extern "C" {
+        fn SDL_HasIntersection(a: &const SDL_Rect, b: &const SDL_Rect): SDL_bool;
+        fn SDL_IntersectRect(a: &const SDL_Rect, b: &const SDL_Rect, result: &SDL_Rect): SDL_bool;
+        fn SDL_UnionRect(a: &const SDL_Rect, b: &const SDL_Rect, result: &SDL_Rect);
+        fn SDL_EnclosePoints(points: &const SDL_Point, count: i32, clip: &const SDL_Rect, result: &SDL_Rect): SDL_bool;
+        fn SDL_IntersectRectAndLIne(rect: &const SDL_Rect, x1: &i32, y1: &i32, x2: &i32, y2: &i32): SDL_bool;
+    }
+
+    fn SDL_PointInFRect(p: &const SDL_FPoint, r: &const SDL_FRect): SDL_bool
+    {
+        <- if (p.x >= r.x) && (p.x < (r.x + r.w)) && (p.y >= r.y) && (p.y < (r.y + r.h))
+            => SDL_TRUE!
+            else SDL_FALSE!;
+    }
+
+    fn SDL_FRectEmpty(r: &const SDL_FRect): SDL_bool
+    {
+        <- if (r != nil) || (r.w <= 0.0) || (r.h <= 0.0)
+            => SDL_TRUE!
+            else SDL_FALSE!;
+    }
+
+    fn SDL_FRectEqualsEpsilon(a: &const SDL_FRect, b: &const SDL_FRect, epsilon: const f32): SDL_bool
+    {
+        <- if (a != nil) && (b != nil) && ((a == b) ||
+                ((SDL_fabs(a.x - b.x) <= epsilon) &&
+                (SDL_fabs(a.y - b.y) <= epsilon) &&
+                (SDL_fabs(a.w - b.w) <= epsilon) &&
+                (SDL_fabs(a.h - b.h) <= epsilon)))
+            => SDL_TRUE!
+            else SDL_FALSE!;
+    }
+
+    fn SDL_FRectEquals(a: &const SDL_FRect, b: &const SDL_FRect): SDL_bool
+    {
+        <- SDL_FRectEqualsEpsilon(a, b, SDL_FLT_EPSILON!);
+    }
+
+    extern "C" {
+        fn SDL_HasIntersectionF(a: &const SDL_FRect, b: &const SDL_FRect): SDL_bool;
+        fn SDL_IntersectFRect(a: &const SDL_FRect, b: &const SDL_FRect, result: &SDL_FRect): SDL_bool;
+        fn SDL_UnionFRect(a: &const SDL_FRect, b: &const SDL_FRect, result: &SDL_FRect): SDL_bool;
+        fn SDL_EncloseFPoints(points: &const SDL_FPoint, count: i32, clip: &const SDL_FRect, result: &SDL_FRect): SDL_bool;
+        fn SDL_IntersetFRectAndLine(rect: &const SDL_FRect, x1: &f32, y1: &f32, x2: &f32, y2: &f32): SDL_bool;
+    }
+}

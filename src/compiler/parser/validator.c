@@ -271,11 +271,6 @@ static ASTObj_T* search_in_current_scope(VScope_T* scope, char* id)
     return hashmap_get(scope->objs, id);
 }
 
-static ASTNode_T* search_node_in_current_scope(VScope_T* scope, char* id)
-{
-    return hashmap_get(scope->objs, id);
-}
-
 static ASTObj_T* search_in_scope(VScope_T* scope, char* id)
 {
     if(!scope)

@@ -49,8 +49,8 @@ static void ast_obj(const ASTIteratorList_T* list, ASTObj_T* obj, va_list custom
     switch(obj->kind)
     {
         case OBJ_FUNCTION:
-            ast_type(list, obj->return_type, custom_args);
             ast_id(list, true, obj->id, custom_args);
+            ast_type(list, obj->return_type, custom_args);
 
             for(size_t i = 0; i < obj->args->size; i++)
                 ast_obj(list, obj->args->items[i], custom_args);

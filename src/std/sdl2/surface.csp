@@ -1,0 +1,82 @@
+#[
+  Simple DirectMedia Layer
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
+]#
+
+#[
+ *  \file SDL_surface.h
+ *
+ *  Header file for ::SDL_Surface definition and management functions.
+]#
+
+import "stdinc.csp";
+import "pixels.csp";
+import "rect.csp";
+import "blendmode.csp";
+import "rwops.csp";
+
+macro SDL_SWSURFACE    { 0 }
+macro SDL_PREALLOC     { 1 }
+macro SDL_RLEACCEL     { 2 }
+macro SDL_DONTFREE     { 4 }
+macro SDL_SIMD_ALIGNED { 8 }
+
+macro SDL_MUSTLOCK(s) {
+    (((s).flags & SDL_RLEACCEL!) != 0)
+}
+
+namespace sdl {
+    type SDL_BlitMap: void;
+
+    type SDL_Surface: struct {
+        flags: const u32,
+        format: const &const SDL_PixelFormat,
+        w: const i32,
+        h: const i32,
+        pitch: const i32,
+        pixels: &void,
+        userdata: &void,
+        locked: const i32,
+        list_blitmap: &void,
+        map: &SDL_BlitMap,
+        refcount: i32
+    };
+
+    type SDL_blit: fn<i32>(&SDL_Surface, &SDL_Rect, &SDL_Surface, &SDL_Rect);
+
+    type SDL_YUV_CONVERSION_MODE: enum {
+        JPEG,        #*< Full range JPEG */
+        BT601,       #*< BT.601 (the default) */
+        BT709,       #*< BT.709 */
+        AUTOMATIC    #*< BT.601 for SD content, BT.709 for HD content */
+    };
+
+    extern "C" {
+        fn SDL_CreateRGBSurface(flags: u32, width: i32, height: i32, depth: i32, rmask: u32, gmask: u32, bmask: u32, amask: u32): &SDL_Surface;
+        fn SDL_CreateRGBSurfaceWithFormat(flags: u32, width: i32, height: i32, depth: i32, format: u32): &SDL_Surface;
+        fn SDL_CreateRGBSurfaceFrom(pixels: &void, width: i32, height: i32, depth: i32, pitch: i32, Rmask: u32, Gmask: u32, Bmask: u32, Amask: u32): &SDL_Surface;
+        fn SDL_CreateRGBSurfaceWithFormatFrom(pixels: &void, width: i32, height: i32, depth: i32, pitch: i32, format: u32): &SDL_Surface;
+        fn SDL_FreeSurface(surface: &SDL_Surface);
+    }
+    [exit_fn("SDL_FreeSurface": &sdl::SDL_Surface)]
+
+    extern "C" {
+        
+    }
+}

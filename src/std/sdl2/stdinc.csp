@@ -41,6 +41,9 @@ macro SDL_FOURCC(a, b, c, d) {
     )
 }
 
+macro SDL_FALSE { ::sdl::SDL_bool::FALSE }
+macro SDL_TRUE { ::sdl::SDL_bool::TRUE }
+
 namespace sdl {
     type SDL_bool: enum {
         FALSE,
@@ -84,7 +87,7 @@ macro SDL_MIN_UINT64 { (0x0000000000000000: u64) }
     type Uint64: u64;
 }
 
-# todo: macro SDL_FLT_EPSILON
+macro SDL_FLT_EPSILON { 0.0000001192 }
 
 macro SDL_IN_BYTECAP(x)        {}
 macro SDL_INOUT_Z_CAP(x)       {}
@@ -211,6 +214,8 @@ macro SDL_zeroa(x) { SDL_zero((x), sizeof typeof (x)) }
 
         fn SDL_strlen(str: &const char): u64;
         fn SDL_wcslen(str: &const libc::wchar_t): u64;
+
+        fn SDL_fabs(x: f64): f64;
     }
 
 macro SDL_ICONV_ERROR { ((-1): u64) }

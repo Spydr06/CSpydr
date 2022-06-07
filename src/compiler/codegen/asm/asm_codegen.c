@@ -1960,7 +1960,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                 case ND_LT:
                 case ND_GT:
                     asm_println(cg, "  ucomi%s %%xmm0, %%xmm1", sz);
-                    asm_println(cg, "  seta %%ak");
+                    asm_println(cg, "  seta %%al");
                     asm_println(cg, "  and $1, %%al");
                     asm_println(cg, "  movzb %%al, %%rax");
                     return;
