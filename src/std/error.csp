@@ -1,19 +1,151 @@
 import "str.csp";
+import "libc/errno.csp";
 
 namespace std {
-    type ErrorType: enum {
-        GENERIC,
-        NONE,
-        INVAL,
+    type Errno: enum {
+        NONE = 0,
+        PERM = 1,
+        NOENT,
+        SRCH,
+        INTR,
         IO,
-        NILPTR,
+        NXIO,
+        TOOBIG,
+        NOEXEC,
         BADF,
+        CHILD,
+        AGAIN,
+        NOMEM,
+        ACCESS,
+        EFAULT,
+        NOTBLK,
+        BUSY,
+        EXIST,
+        XDEV,
+        NODEV,
         NOTDIR,
+        ISDIR,
+        INVAL,
+        NFILE,
+        MFILE,
+        NOTTY,
+        TXTBSY,
+        FBIG,
+        NOSPC,
+        SPIPE,
+        ROFS,
+        MLINK,
+        PIPE,
+        DOM,
+        RANGE,
+        DEADLK,
+        NAMETOOLONG,
+        NOLCK,
+        NOSYS,
+        NOTEMPTY,
+        LOOP,
+        WOULDBLOCK = 11,
+        NOMSG = 42,
+        IDRM,
+        CHRNG,
+        L2NSYNC,
+        L3HLT,
+        L3RST,
+        LNRNG,
+        UNATCH,
+        NOCSI,
+        L2HLT,
+        BADE,
+        BADR,
+        XFULL,
+        NOANO,
+        BADRQC,
+        BADSLT,
+        DEADLOCK = 35,
+        BFONT = 59,
+        NOSTR,
+        NODATA,
+        TME,
+        NOSR,
+        NONET,
+        NOPKG,
+        REMOTE,
+        NOLINK,
+        ADV,
+        SRMNT,
+        COMM,
+        PROTO,
+        MULTIHOP,
+        DOTDOT,
+        BADMSG,
+        OVERFLOW,
+        NOTUNIQ,
+        BADFD,
+        REMCHG,
+        LIBACC,
+        LIBBAD,
+        LIBSCN,
+        LIBMAX,
+        LIBEXEC,
+        ILSEQ,
+        RESTART,
+        STRPIPE,
+        USERS,
+        NOTSOCK,
+        DESTADDRREQ,
+        MSGSIZE,
+        PROTOTYPE,
+        NOPROTOOPT,
+        PROTONOSUPPORT,
+        SOCKTNOSUPPORT,
+        OPNOTSUPP,
+        NOTSUP = 95,
+        PFNOSUPPORT,
+        AFNOSUPPORT,
+        ADDRINUSE,
+        ADDRNOTAVAIL,
+        NETDOWN,
+        NETUNREACH,
+        NETRESET,
+        CONNABORTED,
+        CONNRESET,
+        NOBUFS,
+        ISCONN,
+        NOTCONN,
+        SHUTDOWN,
+        TOOMANYREFS,
+        TIMEDOUT,
+        CONNREFUSED,
+        HOSTDOWN,
+        HOSTUNREACH,
+        ALREADY,
+        INPROGRESS,
+        STALE,
+        UCLEAN,
+        NOTNAM,
+        NAVAIL,
+        INAM,
+        REMOTEIO,
+        DQUOT,
+        NOMEDIUM,
+        MEDIUMTYPE,
+        CANCELED,
+        NOKEY,
+        KEYEXPIRED,
+        KEYREVOKED,
+        KEYREJECTED,
+        OWNERDEAD,
+        NOTRECOVERABLE,
+        RFKIL,
+        HWPOISON,
+        NILPTR,
         INDEXOUTOFBOUNDS,
+
+        __LAST
     };
 
     type Error: struct {
-        kind: ErrorType,
+        kind: Errno,
         msg: &char
     };
 
@@ -22,7 +154,7 @@ namespace std {
             let __error: Error;
         }
 
-        fn new(kind: ErrorType, msg: &const char): Error {
+        fn new(kind: Errno, msg: &const char): Error {
             using __static;
 
             __error.kind = kind;
@@ -41,7 +173,7 @@ namespace std {
         fn none(): Error {
             using __static;
 
-            __error.kind = ErrorType::NONE;
+            __error.kind = Errno::NONE;
             __error.msg = nil;
             <- __error;
         }
@@ -58,21 +190,20 @@ namespace std {
             using __static;
 
             let last = __error;
-            __error.kind = ErrorType::NONE;
+            __error.kind = Errno::NONE;
             __error.msg = nil;
             <- last;
         }
 
-        fn str(err: ErrorType): &const char {
+        fn str(err: Errno): &const char {
             match err {
-                ErrorType::NONE => ret "none";
-                ErrorType::GENERIC => ret "generic";
-                ErrorType::INVAL => ret "invalid";
-                ErrorType::IO => ret "input/output";
-                ErrorType::NILPTR => ret "nil pointer";
-                ErrorType::BADF => ret "bad file descriptor";
-                ErrorType::NOTDIR => ret "not a directory";
-                ErrorType::INDEXOUTOFBOUNDS => ret "index out of bounds";
+                Errno::NONE => ret "none";
+                Errno::INVAL => ret "invalid";
+                Errno::IO => ret "input/output";
+                Errno::NILPTR => ret "nil pointer";
+                Errno::BADF => ret "bad file descriptor";
+                Errno::NOTDIR => ret "not a directory";
+                Errno::INDEXOUTOFBOUNDS => ret "index out of bounds";
                 _ => ret "<unknown>";
             }
         }

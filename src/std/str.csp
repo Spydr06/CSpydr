@@ -232,7 +232,7 @@ namespace std {
         {
             let str = str!{};
             do {
-                error::new(std::ErrorType::NILPTR, "`fmt` is nil");
+                error::new(std::Errno::NILPTR, "`fmt` is nil");
                 <- str;
             } unless fmt;
 

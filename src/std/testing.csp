@@ -22,18 +22,18 @@ namespace std {
 
         fn run(t: &Testing, idx: u64): bool {
             do {
-                error::new(std::ErrorType::NILPTR, "argument t is nil or contains no tests");
+                error::new(std::Errno::NILPTR, "argument t is nil or contains no tests");
                 <- false;
             } unless t && t.tests;
 
             if idx >= len *t.tests {
-                error::new(std::ErrorType::INDEXOUTOFBOUNDS, "idx bigger than t.tests array");
+                error::new(std::Errno::INDEXOUTOFBOUNDS, "idx bigger than t.tests array");
                 <- false;
             }
 
             let test = (*t.tests)[idx];
             do {
-                error::new(std::ErrorType::NILPTR, "t.tests[idx] is nil");
+                error::new(std::Errno::NILPTR, "t.tests[idx] is nil");
                 <- false;
             } unless test && test.func;
 
@@ -61,7 +61,7 @@ namespace std {
 
         fn run_all(t: &Testing): u64 {
             do {
-                error::new(std::ErrorType::NILPTR, "argument t is nil or contains no tests");
+                error::new(std::Errno::NILPTR, "argument t is nil or contains no tests");
                 <- 0;
             } unless t && t.tests;
 
@@ -86,7 +86,7 @@ namespace std {
 
         fn assert(t: &Testing, condition: bool, error_msg: &const char) {
             do {
-                error::new(std::ErrorType::NILPTR, "argument t is nil");
+                error::new(std::Errno::NILPTR, "argument t is nil");
                 ret;
             } unless t && t.tests;
 

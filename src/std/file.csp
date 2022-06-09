@@ -37,13 +37,13 @@ namespace std {
             else if mode & WRITE 
                 sys_flags |= io::O_WRONLY;
             else {
-                error::new(std::ErrorType::INVAL, "invalid mode for `std::file::open()`");
+                error::new(std::Errno::INVAL, "invalid mode for `std::file::open()`");
                 <- nil;
             }
 
             file.desc = syscall::open(path, sys_flags, 416);
             if file.desc < 0 {
-                error::new(std::ErrorType::IO, "could not open file");
+                error::new(std::Errno::IO, "could not open file");
                 <- nil;
             }
 
@@ -67,7 +67,7 @@ namespace std {
         {
             let written = syscall::write(file.desc, data, count);
             if written == -1 
-                error::new(std::ErrorType::IO, "could not write to file");
+                error::new(std::Errno::IO, "could not write to file");
             else
                 file.offset += written;
             <- written;
@@ -86,7 +86,7 @@ namespace std {
                 written = syscall::write(file.desc, formatted, c_str::strlen(formatted));
             
             if written == -1
-                error::new(std::ErrorType::IO, "could not write to file");
+                error::new(std::Errno::IO, "could not write to file");
             
             <- written;
         }
@@ -95,7 +95,7 @@ namespace std {
         {
             let bytes_read = syscall::read(file.desc, buffer, count);
             if bytes_read == -1 
-                error::new(std::ErrorType::IO, "could not read file");
+                error::new(std::Errno::IO, "could not read file");
             else
                 file.offset += bytes_read;
             <- buffer;
@@ -104,12 +104,12 @@ namespace std {
         fn readc(file: &File): char 
         {
             do {
-                error::new(std::ErrorType::NILPTR, "`file` is nil");
+                error::new(std::Errno::NILPTR, "`file` is nil");
                 <- -1;
             } unless file;
             let c = '\0';
             if syscall::read(file.desc, &c, 1) == -1 
-                error::new(std::ErrorType::IO, "could not read file");
+                error::new(std::Errno::IO, "could not read file");
             else
                 file.offset++;
             <- c;
@@ -118,10 +118,10 @@ namespace std {
         fn close(file: &File): Error
         {
             do
-                <- error::new(std::ErrorType::NILPTR, "`file` is nil")
+                <- error::new(std::Errno::NILPTR, "`file` is nil")
             unless file;
             if syscall::close(file.desc) == -1
-                <- error::new(std::ErrorType::IO, "could not close file");
+                <- error::new(std::Errno::IO, "could not close file");
             mem::free(file);
 
             <- error::none();
@@ -133,7 +133,7 @@ namespace std {
             let stat: Stat;
             if !file || syscall::fstat(file.desc, &stat)
             {
-                error::new(std::ErrorType::IO, "could not get statistics of file");
+                error::new(std::Errno::IO, "could not get statistics of file");
                 <- -1;
             }
 
@@ -152,14 +152,14 @@ namespace std {
         fn seek(file: &File, offset: i64, whence: u8): Error
         {
             do 
-                ret error::new(std::ErrorType::NILPTR, "`file` argument is nil")
+                ret error::new(std::Errno::NILPTR, "`file` argument is nil")
             unless file;
 
             match whence {
                 SEEK_SET => file.offset = offset;
                 SEEK_CUR => file.offset += offset;
                 SEEK_END => file.offset = size(file) - offset;
-                _ => ret error::new(std::ErrorType::INVAL, "value of `whence` is invalid");
+                _ => ret error::new(std::Errno::INVAL, "value of `whence` is invalid");
             }
 
             syscall::lseek(file.desc, file.offset, SEEK_SET);
@@ -169,7 +169,7 @@ namespace std {
         fn tell(file: &File): i64 
         {
             do {
-                error::new(std::ErrorType::NILPTR, "`file` argument is nil");
+                error::new(std::Errno::NILPTR, "`file` argument is nil");
                 <- -1;
             } unless file;
             <- file.offset;
@@ -178,7 +178,7 @@ namespace std {
         fn rewind(file: &File): Error
         {
             do
-                ret error::new(std::ErrorType::NILPTR, "`file` argument is nil")
+                ret error::new(std::Errno::NILPTR, "`file` argument is nil")
             unless file;
             file.offset = 0;
             syscall::lseek(file.desc, 0, SEEK_SET);
