@@ -1,30 +1,19 @@
 import "std.csp";
-import "io.csp";
 
-fn main(): i32 
+fn main(argc: i32, argv: &&char): i32 
 {
-    using std::testing;
-    let tests = [
-        Test::{
-            const |t: &std::Testing| => std::io::puts(nil), # this segfaults, testing should still continue
-            "Test one"
-        },
-        Test::{
-            const |t: &std::Testing| => {
-                std::testing::assert(t, false, "should fail");
-            },
-            "Test two"
-        },
-        Test::{
-            const |t: &std::Testing| => {
-                std::testing::assert(t, true, "should pass");
-            },
-            "Test three"
-        }
+    using std, flag;
+    let args = argv;
+
+    let _flags = [
+        help(),
+        new("-a", "A test", || => io::puts("Hi")),
+        new_str("-s", "String test", |s: &const char| => io::puts(s)),
+        new_bool("-b", "boolean test", |b: bool| => io::puts(if b => "t" else "f")),
+        new_int("-i", "integer test", |i: i64| => io::printf("int: %i\n", i))
     ];
 
-    let t = new(tests);
-    run_all(&t);
+    let err = flags::parse(_flags, argc, argv);
 
     <- 0;
 }

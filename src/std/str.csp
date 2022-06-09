@@ -136,6 +136,19 @@ namespace std {
             <- c_str::strstr(str, substr) != nil;
         }
 
+        fn equal(a: &const char, b: &const char): bool
+        {
+            if a == b ret true;
+            
+            let length = c_str::strlen(a);
+            if length != c_str::strlen(b) 
+                ret false;
+
+            for let i: u64 = 0; i < length; i++;
+                if a[i] != b[i] ret false;
+            <- true;
+        }
+
         # checks if a string contains a char
         fn contains_char(str: String, c: char): bool
         {

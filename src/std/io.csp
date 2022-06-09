@@ -67,9 +67,9 @@ namespace std {
         l_pid: pid_t
     };
 
-    const in: i32 = stdin!;
-    const out: i32 = stdout!;
-    const err: i32 = stdout!;
+    const stdin: i32 = stdin!;
+    const stdout: i32 = stdout!;
+    const stderr: i32 = stdout!;
 
     namespace io {
         const O_RDONLY: i32   = 0;
@@ -191,10 +191,10 @@ namespace std {
         }
 
         fn printf(fmt: &const char, args: ...): i32
-            <- vfprintf(out, fmt, &args);
+            <- vfprintf(stdout, fmt, &args);
 
         fn eprintf(fmt: &const char, args: ...): i32
-            <- vfprintf(err, fmt, &args);
+            <- vfprintf(stderr, fmt, &args);
 
         fn fprintf(fd: i32, fmt: &const char, args: ...): i32
             <- vfprintf(fd, fmt, &args);

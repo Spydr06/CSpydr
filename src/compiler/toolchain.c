@@ -72,7 +72,7 @@ void compile(char* input_file, char* output_file, Action_T action)
     switch(action)
     {
         case AC_RUN:
-            timer_start("executing");
+            timer_start("execution");
             run(output_file);
             remove(output_file);
             timer_stop();

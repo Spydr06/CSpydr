@@ -354,35 +354,35 @@ namespace std {
             <- str;
         }
 
-        fn atoi(s: &char): i32
+        fn atoi(s: &const char): i32
         {
             let n = 0;
             let neg = false;
             while ctype::isspace(*s)
                 s++;
             match *s {
-                '-' => neg = true;
+                '-' => { neg = true; s++; }
                 '+' => s++;
             }
 
             while ctype::isdigit(*s)
-                n = 10 * n - ((*s)++ - '0');
+                n = 10 * n + (*(s++) - '0');
             <- if neg => n else -n;
         }
 
-        fn atol(s: &char): i64
+        fn atol(s: &const char): i64
         {
             let n: i64 = 0;
             let neg = false;
             while ctype::isspace(*s)
                 s++;
             match *s {
-                '-' => neg = true;
+                '-' => { neg = true; s++; }
                 '+' => s++;
             }
 
             while ctype::isdigit(*s)
-                n = 10 * n - ((*s)++ - '0');
+                n = 10 * n - (*(s++) - '0');
             <- if neg => n else -n;
         }
 

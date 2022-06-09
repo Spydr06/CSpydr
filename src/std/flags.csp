@@ -1,0 +1,154 @@
+import "error.csp";
+import "io.csp";
+import "str.csp";
+
+namespace std {
+    type Flag: struct {
+        func: fn(&void),
+        name: &const char,
+        desc: &const char,
+        kind: flag::Kind,
+    };
+
+    namespace flag {
+        type Kind: enum {
+            DEFAULT,
+            STRING,
+            BOOL,
+            INT,
+            HELP
+        };
+
+        fn new(name: &const char, desc: &const char, func: fn): Flag 
+        {            
+            <- Flag::{
+                func: fn(&void),
+                name,
+                desc,
+                Kind::DEFAULT
+            };
+        }
+
+        fn new_str(name: &const char, desc: &const char, func: fn(&const char)): Flag
+        {
+            <- Flag::{
+                func: fn(&void),
+                name,
+                desc,
+                Kind::STRING
+            };
+        }
+
+        fn new_bool(name: &const char, desc: &const char, func: fn(bool)): Flag
+        {
+            <- Flag::{
+                func: fn(&void),
+                name,
+                desc,
+                Kind::BOOL
+            };
+        }
+
+        fn new_int(name: &const char, desc: &const char, func: fn(i64)): Flag
+        {
+            <- Flag::{
+                func: fn(&void),
+                name,
+                desc,
+                Kind::INT
+            };
+        }
+
+        fn help(): Flag
+        {
+            <- Flag::{
+                const |flags: const Flag[]| => {
+                    for let i = 0; i < len flags; i++; {
+                        let args: &char = "";
+                        match flags[i].kind {
+                            std::flag::Kind::STRING => args = " <string>";
+                            std::flag::Kind::BOOL =>   args = " [true|false]";
+                            std::flag::Kind::INT =>    args = " <integer>";
+                            _ => {}
+                        }
+
+                        std::io::printf("  %s%s: %s\n", flags[i].name, args, flags[i].desc);
+                    }
+                }: fn(&void),
+                "--help",
+                "display this help text.",
+                Kind::HELP
+            };
+        }
+    }
+
+    namespace flags {
+        fn parse(flags: const Flag[], argc: i32, argv: &&char): Error
+        {
+            for let i = 1; i < argc; i++; {
+                let arg = argv[i];
+                let matched = false;
+
+                for let j = 0; j < len flags; j++; {
+                    if string::equal(flags[j].name, arg) {
+                        matched = true;
+                        
+                        match flags[j].kind {
+                            std::flag::Kind::DEFAULT => {
+                                flags[j].func(nil);
+                            }
+                            std::flag::Kind::HELP => {
+                                flags[j].func(flags: &void);
+                            }
+                            std::flag::Kind::STRING => {
+                                if (i += 1) >= argc {
+                                    using io::color;
+                                    io::eprintf("%sExpect <string> after `%s`.%s\n", &RED[0], arg, &RESET[0]);
+                                    <- error::new(std::Errno::INVAL, "expected string");
+                                }
+                                flags[j].func(argv[i]);
+                            }
+                            std::flag::Kind::BOOL => {
+                                if (i += 1) >= argc {
+                                    using io::color;
+                                    io::eprintf("%sExpect [true|false] after `%s`.%s\n", &RED[0], arg, &RESET[0]);
+                                    <- error::new(std::Errno::INVAL, "expected bool");
+                                }
+                                let bool_val = false;
+                                if string::equal(argv[i], "true")
+                                    bool_val = true;
+                                else if !string::equal(argv[i], "false")
+                                {
+                                    using io::color;
+                                    io::eprintf("%sExpect [true|false] after `%s`, got %s.%s\n", &RED[0], arg, argv[i], &RESET[0]);
+                                    <- error::new(std::Errno::INVAL, "expected bool");
+                                }
+                                flags[j].func(bool_val: &void);
+                            }
+                            std::flag::Kind::INT => {
+                                if (i += 1) >= argc {
+                                    using io::color;
+                                    io::eprintf("%sExpect <integer> after `%s`.%s\n", &RED[0], arg, &RESET[0]);
+                                    <- error::new(std::Errno::INVAL, "expected int");
+                                }
+                                let int = c_str::atol(argv[i]);
+                                flags[j].func(int: &void);
+                            }
+                            _ => {}
+                        }
+
+                        break;
+                    }
+                }
+
+                if !matched {
+                    using io::color;
+                    io::eprintf("%sUnexpected argument `%s`.%s\n", &RED[0], arg, &RESET[0]);
+                    <- error::new(std::Errno::INVAL, "unexpected argument");
+                }
+            }
+
+            <- error::none();
+        }
+    }
+}

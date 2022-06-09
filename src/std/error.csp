@@ -1,5 +1,4 @@
 import "str.csp";
-import "libc/errno.csp";
 
 namespace std {
     type Errno: enum {
