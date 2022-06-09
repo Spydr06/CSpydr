@@ -1419,6 +1419,18 @@ static void asm_gen_struct_lit(ASMCodegenData_T* cg, ASTNode_T* node)
     }
 }
 
+static void asm_gen_inline_strlen(ASMCodegenData_T* cg)
+{
+    asm_println(cg, "  mov %%rax, %%rdi");
+    asm_println(cg, "  mov $-1, %%rcx");
+    asm_println(cg, "  xor %%rax, %%rax");
+    asm_println(cg, "  cld");
+    asm_println(cg, "  repne scasb");
+    asm_println(cg, "  not %%rcx");
+    asm_println(cg, "  dec %%rcx");
+    asm_println(cg, "  mov %%rcx, %%rax");
+}
+
 static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
 {
     if(node->tok && cg->embed_file_locations)
@@ -1499,12 +1511,12 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         
         case ND_LEN:
             {
-                ASTType_T* array_type = unpack(node->expr->data_type);
+                ASTType_T* ty = unpack(node->expr->data_type);
 
-                switch(array_type->kind)
+                switch(ty->kind)
                 {
                     case TY_C_ARRAY:
-                        asm_println(cg, "  mov $%lu, %%rax", array_type->num_indices);
+                        asm_println(cg, "  mov $%lu, %%rax", ty->num_indices);
                         break;
                     
                     case TY_ARRAY:
@@ -1512,6 +1524,14 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                         asm_gen_addr(cg, node->expr);
                         asm_println(cg, "  mov (%%rax), %%rax");
                         break;
+                    
+                    case TY_PTR:
+                        if(unpack(ty->base)->kind == TY_CHAR)
+                        {
+                            asm_gen_expr(cg, node->expr);
+                            asm_gen_inline_strlen(cg);
+                            break;
+                        }
 
                     default:
                         throw_error(ERR_CODEGEN, node->tok, "`len` operator not implemented for this data type");

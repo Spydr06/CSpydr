@@ -2,18 +2,9 @@ import "std.csp";
 
 fn main(argc: i32, argv: &&char): i32 
 {
-    using std, flag;
-    let args = argv;
-
-    let _flags = [
-        help(),
-        new("-a", "A test", || => io::puts("Hi")),
-        new_str("-s", "String test", |s: &const char| => io::puts(s)),
-        new_bool("-b", "boolean test", |b: bool| => io::puts(if b => "t" else "f")),
-        new_int("-i", "integer test", |i: i64| => io::printf("int: %i\n", i))
-    ];
-
-    let err = flags::parse(_flags, argc, argv);
+    using std;
+    let x: &char = "hello world";
+    io::printf("%l\n", len x);
 
     <- 0;
 }
