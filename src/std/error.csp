@@ -138,8 +138,11 @@ namespace std {
         NOTRECOVERABLE,
         RFKIL,
         HWPOISON,
+
+        # custom error codes for CSpydr
         NILPTR,
         INDEXOUTOFBOUNDS,
+        ASSERT,
 
         __LAST
     };
@@ -196,6 +199,9 @@ namespace std {
         }
 
         fn str(err: Errno): &const char {
+            if err < 0
+                err = -err; # for -INVAL, etc.
+
             match err {
                 Errno::NONE => ret "none";
                 Errno::INVAL => ret "invalid";
@@ -204,6 +210,7 @@ namespace std {
                 Errno::BADF => ret "bad file descriptor";
                 Errno::NOTDIR => ret "not a directory";
                 Errno::INDEXOUTOFBOUNDS => ret "index out of bounds";
+                Errno::ASSERT => ret "failed assertion";
                 _ => ret "<unknown>";
             }
         }

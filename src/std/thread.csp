@@ -1,34 +1,99 @@
 import "process.csp";
+import "libc/pthread.csp";
+import "memory.csp";
 
 namespace std {
     type Thread: struct {
-
+        func: const fn(&Thread),
+        pt: libc::PThread,
+        running: bool,
+        userdata: &void
     };
 
     namespace thread {
-        #[fn create(thread: &Thread, func: fn): i32
+        fn create(func: const fn(&Thread), userdata: &void): &std::Thread
         {
+            let thread: &Thread = mem::alloc(sizeof Thread);
+            thread.userdata = userdata;
 
+            using libc, pthread;
+            let err = pthread_create(&thread.pt, nil, func: const fn<&void>(&void), thread);
+            if err {
+                error::new(err, "failed creating pthread object");
+                <- nil;
+            }
+
+            thread.running = true;
+            <- thread;
         }
 
-        fn detach(thread: &Thread): i32
+        fn detach(thread: &Thread): Error
         {
-
+            using libc::pthread;
+            let err = pthread_detach(&thread.pt);
+            if err
+                <- error::new(err, "failed detaching thread");
+            <- error::none();
         }
 
-        fn exit(thread: &Thread) 
+        fn exit() 
         {
-
+            using libc::pthread;
+            pthread_exit(nil);
         }
 
-        fn join(thread: &Thread) 
+        fn join(t: &Thread): Error
         {
+            do
+                <- error::new(std::Errno::NILPTR, "join(): `t` is nil")
+            unless t;
 
+            if t.running {
+                using libc::pthread, mem;
+                pthread_join(t.pt, nil);
+            }
+
+            #mem::free(t);
+            <- error::none();
         }
+        [exit_fn("join": &std::Thread)]
 
         fn self(): Thread 
         {
+            using libc, pthread;
+            <- Thread::{
+                nil: const fn(&Thread),
+                pthread_self(),
+                true # the thread must be running if self() is called
+            };
+        }
 
-        }]#
+        fn equal(a: &const Thread, b: &const Thread): bool
+        {
+            if a == b ret true;
+         
+            using libc, pthread;
+            <- a.func == b.func && pthread_equal(a.pt, b.pt);
+        }
+
+        fn get_pthread(t: &const Thread): libc::PThread
+        {
+            do {
+                error::new(std::Errno::NILPTR, "get_pthread(): `t` is nil");
+                <- nil;
+            } unless t;
+
+            <- t.pt;
+        }
+
+        fn get_userdata(t: &const Thread): &void
+        {
+            do {
+                error::new(std::Errno::NILPTR, "get_userdata(): `t` is nil");
+                <- nil;
+            } unless t;
+
+            <- t.userdata;
+        }
     }
 }

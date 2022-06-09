@@ -1,7 +1,18 @@
-import "testing.csp";
+import "std.csp";
 import "io.csp";
 
 fn main(): i32 
 {
+    using std::testing;
+    let tests = [
+        Test::{
+            const |t: &std::Testing| => {std::io::puts("hi");},
+            "Test one"
+        }
+    ];
+
+    let t = new(tests);
+    run_all(&t);
+
     <- 0;
 }

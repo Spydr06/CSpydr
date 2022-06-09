@@ -1,4 +1,5 @@
 import "error.csp";
+import "thread.csp";
 
 namespace std {
     type Testing: struct {
@@ -41,7 +42,22 @@ namespace std {
             t.current = idx;
 
             io::printf("Running test %l/%l: `%s`", idx + 1, len *t.tests, test.desc);
-            test.func(t);
+            
+            let userdata = [t: &void, &test];
+            with th = thread::create(const |th: &Thread| => {
+                    let data = th.userdata: (&void)[2];
+                    let t: &std::Testing = data[0];
+                    let test: &std::testing::Test = data[1];
+                    test.func(t);
+                }, 
+                userdata: &void
+            ) {
+                thread::join(th);
+            }
+            else {
+                io::eprintf("error creating thread: %E");
+                t.errors++;
+            }
 
             using io::color;
             match t.errors {

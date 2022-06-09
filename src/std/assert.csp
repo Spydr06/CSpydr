@@ -39,7 +39,7 @@ namespace std {
                 msg, 
                 &RESET[0]
             );
-            exit(std::Errno::FAIL);
+            exit(std::Errno::ASSERT);
         }
 
         fn disable() ENABLED = false;
