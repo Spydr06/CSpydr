@@ -6,8 +6,20 @@ fn main(): i32
     using std::testing;
     let tests = [
         Test::{
-            const |t: &std::Testing| => {std::io::puts("hi");},
+            const |t: &std::Testing| => std::io::puts(nil), # this segfaults, testing should still continue
             "Test one"
+        },
+        Test::{
+            const |t: &std::Testing| => {
+                std::testing::assert(t, false, "should fail");
+            },
+            "Test two"
+        },
+        Test::{
+            const |t: &std::Testing| => {
+                std::testing::assert(t, true, "should pass");
+            },
+            "Test three"
         }
     ];
 

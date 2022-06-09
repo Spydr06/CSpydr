@@ -211,6 +211,7 @@ namespace std {
                 Errno::NOTDIR => ret "not a directory";
                 Errno::INDEXOUTOFBOUNDS => ret "index out of bounds";
                 Errno::ASSERT => ret "failed assertion";
+                Errno::CHILD => ret "child";
                 _ => ret "<unknown>";
             }
         }

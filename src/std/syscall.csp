@@ -419,7 +419,8 @@ namespace std {
         fn exit(status: i32)
             syscall!(Syscall::EXIT, status);
         
-        # TODO: fn wait4(pid: pid_t, wstatus: &i32, options: i32, )
+        fn wait4(pid: pid_t, wstatus: &i32, options: i32, arg: i32): pid_t
+            syscall!(Syscall::WAIT4, pid, wstatus, options, arg);
 
         fn kill(pid: pid_t, sig: i32): i32
             syscall!(Syscall::KILL, pid, sig);

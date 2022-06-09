@@ -37,6 +37,52 @@ namespace std {
         const CLONE_NEWNET: i32         = 0x40000000;
         const CLONE_IO: i32             = 0x80000000;
 
+        # ISO C99 signals
+        const SIGINT: i32  = 2;
+        const SIGILL: i32  = 4;
+        const SIGABRT: i32 = 6;
+        const SIGFPE: i32  = 8;
+        const SIGSEGV: i32 = 11;
+        const SIGTERM: i32 = 15;
+        
+        # Historical signals specified by POSIX
+        const SIGHUP: i32    = 1;
+        const SIGQUIT: i32   = 3;
+        const SIGTRAP: i32   = 5;
+        const SIGKILL: i32   = 9;
+        const SIGPIPE: i32   = 13;
+        const SIGALARM: i32 = 14;
+        
+        # Platform-specific signals
+        const SIGSTKFLT: i32 = 16;
+        const SIGPWR: i32 = 30;
+        const SIGBUS: i32 = 7;
+        const SIGSYS: i32 = 31;
+    
+        # POSIX signals
+        const SIGURG: i32 = 23;
+        const SIGSTOP: i32 = 19;
+        const SIGTSTP: i32 = 20;
+        const SIGCONT: i32 = 18;
+        const SIGCHLD: i32 = 17;
+        const SIGTTIN: i32 = 21;
+        const SIGTTOU: i32 = 22;
+        const SIGPOLL: i32 = 29;
+        const SIGXFSZ: i32 = 25;
+        const SIGXCPU: i32 = 24;
+        const SIGVTALRM: i32 = 26;
+        const SIGPROF: i32 = 27;
+        const SIGUSR1: i32 = 10;
+        const SIGUSR2: i32 = 12;
+
+        # Non-standard
+        const SIGWINCH: i32 = 28;
+
+        # Archaic names for compatibility
+        const SIGIO: i32   = 29;
+        const SIGIOT: i32  = 6;
+        const SIGGCLD: i32 = 17;
+
         namespace __static {
             let __at_exit_fns: fn(ExitCode) 'c[MAX_EXIT_HANDLERS!];
             let __at_exit_cnt: u32;
@@ -87,5 +133,69 @@ namespace std {
         
         fn kill(pid: pid_t, sig: i32): i32
             <- syscall::kill(pid, sig);
+        
+        fn waitpid(pid: pid_t, status: &i32, options: i32): pid_t
+            <- syscall::wait4(pid, status, options, 0);
+
+        fn exit_status(status: i32): i32 {
+            <- (status & 0xff00) >> 8;
+        }
+
+        fn term_sig(status: i32): i32 {
+            <- status & 0x7f;
+        }
+
+        fn stop_sig(status: i32): i32 {
+            <- (status & 0xff00) >> 8;
+        }
+
+        fn exited(status: i32): bool {
+            <- term_sig(status) == 0;
+        }
+
+        fn signaled(status: i32): bool {
+            <- (((status & 0x7f) + 1): i8 >> 1) > 0;
+        }
+
+        fn stopped(status: i32): bool {
+            <- (status & 0xff) == 0x7f;
+        }
+
+        fn signum_str(num: i32): &const char {
+            match num {
+                SIGINT => ret "SIGINT";
+                SIGILL => ret "SIGILL";
+                SIGABRT => ret "SIGABRT";
+                SIGFPE => ret "SIGFPE";
+                SIGSEGV => ret "SIGSEGV";
+                SIGTERM => ret "SIGTERM";
+                SIGHUP => ret "SIGHUP";
+                SIGQUIT => ret "SIGQUIT";
+                SIGTRAP => ret "SIGTRAP";
+                SIGKILL => ret "SIGKILL";
+                SIGPIPE => ret "SIGPIPE";
+                SIGALARM => ret "SIGALARM";
+                SIGSTKFLT => ret "SIGSTKFLT";
+                SIGPWR => ret "SIGPWR";
+                SIGBUS => ret "SIGBUS";
+                SIGSYS => ret "SIGSYS";
+                SIGURG => ret "SIGURG";
+                SIGSTOP => ret "SIGSTOP";
+                SIGTSTP => ret "SIGTSTP";
+                SIGCONT => ret "SIGCONT";
+                SIGCHLD => ret "SIGCHLD";
+                SIGTTIN => ret "SIGTTIN";
+                SIGTTOU => ret "SIGTTOU";
+                SIGPOLL => ret "SIGPOLL";
+                SIGXFSZ => ret "SIGXFSZ";
+                SIGXCPU => ret "SIGXCPU";
+                SIGVTALRM => ret "SIGVTALRM";
+                SIGPROF => ret "SIGPROF";
+                SIGUSR1 => ret "SIGUSR1";
+                SIGUSR2 => ret "SIGUSR2";
+                SIGWINCH => ret "SINGINCH";
+                _ => ret "<unknown>";
+            }
+        }
     }
 }

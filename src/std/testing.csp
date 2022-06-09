@@ -1,5 +1,5 @@
 import "error.csp";
-import "thread.csp";
+import "process.csp";
 
 namespace std {
     type Testing: struct {
@@ -42,21 +42,38 @@ namespace std {
             t.current = idx;
 
             io::printf("Running test %l/%l: `%s`", idx + 1, len *t.tests, test.desc);
-            
-            let userdata = [t: &void, &test];
-            with th = thread::create(const |th: &Thread| => {
-                    let data = th.userdata: (&void)[2];
-                    let t: &std::Testing = data[0];
-                    let test: &std::testing::Test = data[1];
+
+            using process;
+            let pid = fork();
+            match pid {
+                (-1): pid_t => {
+                    error::new(std::Errno::CHILD, "could not fork process");
+                    <- false;
+                }
+                0 => {
+                    # new child process
                     test.func(t);
-                }, 
-                userdata: &void
-            ) {
-                thread::join(th);
-            }
-            else {
-                io::eprintf("error creating thread: %E");
-                t.errors++;
+                    exit(t.errors); # pass the number of errors through the exit status to the parent process
+                }
+                _ => {
+                    # parent process
+                    let exit_code = 0;
+                    waitpid(pid, &exit_code, 0);
+                    if exited(exit_code)
+                        t.errors += exit_status(exit_code); # the exit status marks the number of errors
+                    else if signaled(exit_code) {
+                        let signame = signum_str(term_sig(exit_code));
+
+                        using io::color;
+                        io::printf("\n    %sTest `%s` (%i) terminated with signal %s.%s", &RED[0], test.desc, idx + 1, signame, &RESET[0]);
+                        t.errors ++;
+                    }
+                    else {
+                        using io::color;
+                        io::printf("\n   %sTest `%s` (%i) terminated in an unexpected way.%s", &RED[0], test.desc, idx + 1, &RESET[0]);
+                        t.errors++;
+                    }
+                }
             }
 
             using io::color;
