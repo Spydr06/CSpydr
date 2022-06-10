@@ -105,7 +105,7 @@ To install CSpydr with all of its components (cspc - The CSpydr Compiler and the
 ```
 Alternatively, you can specify the path of the std library with the `-p` or `--std-path` flags:
 ```console
-# cspc <your build command> -p ./src/std
+$ cspc <your build command> -p ./src/std
 ```
 
 ## Usage
