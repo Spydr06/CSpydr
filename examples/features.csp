@@ -3,7 +3,7 @@ import "std.csp";
 fn main(argc: i32, argv: &&char): i32 
 {
     using std;
-    let x: &char = "hello world";
+    let x: &char = "44";
     io::printf("%l\n", len x);
 
     <- 0;

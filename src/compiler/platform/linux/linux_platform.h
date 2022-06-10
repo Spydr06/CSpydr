@@ -14,7 +14,6 @@
 #define DIRECTORY_DELIMS "/"
 
 #define CACHE_DIR ".cache/cspydr"
-#define STD_DIR "/usr/share/cspydr/std"
 
 #define clrscr() printf("\e[1;1H\e[2J")
 

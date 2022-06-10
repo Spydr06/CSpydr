@@ -45,6 +45,7 @@ __CSP_GLOBAL struct {
 
     char* exec_name;
     char* main_src_file;
+    char* std_path;
 
     ASTObj_T** current_fn;
 
