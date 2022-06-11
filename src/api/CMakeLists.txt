@@ -8,6 +8,7 @@ add_library(cspydr SHARED ${api_source})
 set_target_properties(cspydr PROPERTIES
     SOVERSION 1
     PUBLIC_HEADER include/cspydr.h
+    POSITION_INDEPENDENT_CODE ON
 )
 target_include_directories(cspydr PRIVATE ${CMAKE_SOURCE_DIR}/src/compiler)
 target_link_libraries(cspydr libcspc)

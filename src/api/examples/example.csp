@@ -1,11 +1,14 @@
 import "csp/cspydr.csp";
+import "std.csp";
 
 fn main(): i32 {
     using cspydr;
-    let compiler = init_compiler();
+    let compiler = csp_init_compiler();
     
     # do something with compiler 
+    std::io::puts(csp_status_str(csp_get_status(compiler)));
 
-    free_compiler(compiler);
+    csp_free_compiler(compiler);
     <- 0;
+
 }

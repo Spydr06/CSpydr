@@ -27,9 +27,19 @@ namespace cspydr {
 #endif
 
 typedef struct CSPYDR_COMPILER_STRUCT Compiler_T;
+typedef enum {
+    COMPILER_NONE = 0,
+    COMPILER_INIT,
+    COMPILER_PARSED,
+    COMPILER_OPTIMIZED,
+    COMPILER_GENERATED,
+    COMPILER_EXECUTED
+} CompilerStatus_T;
 
-extern Compiler_T* init_compiler();
-extern void free_compiler(Compiler_T* compiler);
+extern Compiler_T* csp_init_compiler();
+extern void csp_free_compiler(Compiler_T* compiler);
+extern CompilerStatus_T csp_get_status(Compiler_T* compiler);
+const char* csp_status_str(CompilerStatus_T status);
 
 #ifdef __cplusplus
     } // extern "C"

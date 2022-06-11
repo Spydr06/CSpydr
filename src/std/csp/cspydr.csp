@@ -22,9 +22,19 @@
 
 namespace cspydr {
     type Compiler: void;
+    type Status: enum {
+        NONE = 0,
+        INIT,
+        PARSED,
+        OPTIMIZED,
+        GENERATED,
+        EXECUTED
+    };
 
     extern "C" {
-        fn init_compiler(): &Compiler;
-        fn free_compiler(Compiler: &Compiler);
+        fn csp_init_compiler(): &Compiler;
+        fn csp_free_compiler(compiler: &Compiler);
+        fn csp_get_status(compiler: &Compiler): Status;
+        fn csp_status_str(status: Status): &const char;
     }
 }
