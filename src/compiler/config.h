@@ -27,6 +27,7 @@
 
 #if defined(__linux) || defined(__linux__)
     #define CSPYDR_LINUX 1
+    #define DEFAULT_STD_PATH "/usr/share/cspydr/std"
 #else
     #error "Your current platform is not supported by CSpydr"
 #endif

@@ -22,6 +22,7 @@ void init_globals(void)
     list_push(global.compiler_flags, (void*) all_warnings_flag);
 
     global.linker_flags = init_list();
+    global.std_path = DEFAULT_STD_PATH;
 }
 
 void globals_exit_hook(void)

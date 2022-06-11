@@ -82,6 +82,7 @@ const char help_text[] = "%s"
                        "  -0, --no-opt           | Disables all code optimization\n"
                        "      --set-mmcd [int]   | Sets the maximum macro call depth (default: %d) (unsafe: could cause stack overflow)\n"
                        "      --show-timings     | Shows the duration the different compiler stages took\n"
+                       "  -p, --std-path         | Set the path of the standard library (default: " DEFAULT_STD_PATH ")\n"
                        "\n"
                        "If you are unsure, what CSpydr is (or how to use it), please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n";
 
@@ -221,6 +222,15 @@ i32 main(i32 argc, char* argv[])
         }
         else if(streq(arg, "--show-timings"))
             enable_timer();
+        else if(streq(arg, "-p") || streq(arg, "--std-path"))
+        {
+            if(!argv[++i])
+            {
+                LOG_ERROR_F("[Error] Expect STD path after %s.", arg);
+                exit(1);
+            }
+            global.std_path = argv[i];
+        }
         else
             evaluate_info_flags(argv[i]);
     }

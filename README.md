@@ -98,10 +98,14 @@ $ make
 > (to reenable, set `NO_LLVM=0`)
 
 ### Installation
-Global installation is neccessary, because of the compiler needing the standard library to be present at `/usr/share/cspydr/std`.
+Global installation is necessary, because of the compiler needing the standard library to be present at `/usr/share/cspydr/std`.
 To install CSpydr with all of its components (cspc - The CSpydr Compiler and the CSpydr Standard Library), enter this command (needs root privileges):
 ```console
 # make install
+```
+Alternatively, you can specify the path of the std library with the `-p` or `--std-path` flags:
+```console
+$ cspc <your build command> -p ./src/std
 ```
 
 ## Usage

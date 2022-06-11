@@ -1423,10 +1423,10 @@ static void asm_gen_inline_strlen(ASMCodegenData_T* cg)
 {
     asm_println(cg, "  mov %%rax, %%rdi");
     asm_println(cg, "  mov $-1, %%rcx");
-    asm_println(cg, "  xor %%rax, %%rax");
+    asm_println(cg, "  mov $0, %%eax");
     asm_println(cg, "  cld");
     asm_println(cg, "  repne scasb");
-    asm_println(cg, "  not %%rcx");
+    asm_println(cg, "  xor $-1, %%rcx");
     asm_println(cg, "  dec %%rcx");
     asm_println(cg, "  mov %%rcx, %%rax");
 }
