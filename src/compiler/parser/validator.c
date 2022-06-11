@@ -1509,7 +1509,7 @@ static void len(ASTNode_T* len, va_list args)
     GET_VALIDATOR(args);
 
     ASTType_T* ty = expand_typedef(v, len->expr->data_type);
-    if(ty->kind != TY_C_ARRAY && ty->kind != TY_ARRAY && ty->kind != TY_VLA && !(ty->kind == TY_PTR && expand_typedef(v,ty->base)->kind == TY_CHAR))
+    if(ty->kind != TY_C_ARRAY && ty->kind != TY_ARRAY && ty->kind != TY_VLA && !(ty->kind == TY_PTR && expand_typedef(v, ty->base)->kind == TY_CHAR))
     {
         char buf[BUFSIZ] = {'\0'};
         throw_error(ERR_TYPE_ERROR, len->tok, "cannot get length of type `%s`, expect array or `&char`",

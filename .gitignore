@@ -89,3 +89,4 @@ cmake_install.cmake
 src/std/std.csp
 src/std/libc/libc.csp
 src/std/sdl2/sdl.csp
+*.pc

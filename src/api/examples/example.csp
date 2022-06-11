@@ -1,0 +1,11 @@
+import "csp/cspydr.csp";
+
+fn main(): i32 {
+    using cspydr;
+    let compiler = init_compiler();
+    
+    # do something with compiler 
+
+    free_compiler(compiler);
+    <- 0;
+}

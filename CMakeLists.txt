@@ -20,6 +20,8 @@ add_subdirectory(lib)
 add_subdirectory(src/compiler)
 # linter soruce
 add_subdirectory(src/linter)
+# api source
+add_subdirectory(src/api)
 # compiler tests
 add_subdirectory(tests/compiler)
 # cspydr standard library
