@@ -9,8 +9,9 @@ typedef struct SRC_FILE_STRUCT
     List_T* lines;
     u32 num_lines;
     u32 file_no;
+    i32 wd; // inotify watchdog
 
-    const char* path;
+    char* path;
     char* short_path;
 } File_T;
 

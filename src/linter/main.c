@@ -24,6 +24,7 @@
 // linter includes
 #include "linter.h"
 #include "error.h"
+#include "live.h"
 
 #define streq(a, b) (strcmp(a, b) == 0)
 
@@ -57,12 +58,13 @@ const char info_text[] = COLOR_BOLD_MAGENTA "** csp-lint - The CSpydr Programmin
 
 const char help_text[] = "%s"
                          COLOR_BOLD_WHITE "Options:\n" COLOR_RESET
-                         "  -h, --help             | Displays this help text and quits\n"
-                         "  -i, --info             | Displays information text and quits\n"
-                         "      --version          | Displays the version of CSpydr and quits\n"
-                         "  -v, --verbose          | Sets verbose error messages, used for programs\n"
-                         "                         | communicating with the linter\n"
-                         "  -o, --output           | Sets an output file for the error log\n";
+                         "  -h, --help             | Displays this help text and quits.\n"
+                         "  -i, --info             | Displays information text and quits.\n"
+                         "      --version          | Displays the version of CSpydr and quits.\n"
+                         "  -v, --verbose          | Sets verbose error messages, used for programs.\n"
+                         "                         | communicating with the linter.\n"
+                         "  -o, --output           | Sets an output file for the error log.\n"
+                         "  -l, --live             | Start a live session of the linter.\n";
 
 // this text gets shown if -v or --version is used
 const char version_text[] = COLOR_BOLD_MAGENTA "** csp-lint - The CSpydr Programming Language Linter **\n" COLOR_RESET
@@ -87,6 +89,7 @@ i32 main(i32 argc, char* argv[])
     global.exec_name = argv[0]; // save the execution name for later use
 
     char* src_path = NULL;
+    bool is_live = false;
     
     for(i32 i = 1; i < argc; i++)
     {
@@ -128,6 +131,8 @@ i32 main(i32 argc, char* argv[])
 
             set_error_handler(linter_error_handler); // switch to the linter error handler since text files don't support color
         }
+        else if(streq(arg, "-l") || streq(arg, "--live"))
+            is_live = true;
         else if(arg[0] == '-')
         {
             LOG_ERROR_F("[Error] Invalid option `%s`\n", arg);
@@ -150,7 +155,11 @@ i32 main(i32 argc, char* argv[])
         exit(1);
     }
 
-    atexit(summary);
-
-    return lint(src_path);
+    if(is_live)
+        live_session(src_path);
+    else
+    {
+        atexit(summary);
+        return lint(src_path);
+    }
 }

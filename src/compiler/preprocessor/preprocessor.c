@@ -1,5 +1,6 @@
 #include "preprocessor.h"
 #include "config.h"
+#include "mem/mem.h"
 #include "stdmacros.h"
 #include "lexer/lexer.h"
 #include "lexer/token.h"
@@ -211,6 +212,8 @@ static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
     File_T* import_file = read_file(imp->import_path);
     import_file->short_path = strdup(imp->tok->value);
     import_file->file_no = ++file_no;
+    import_file->path = strdup(imp->import_path);
+    mem_add_ptr(import_file->path);
 
     Lexer_T import_lexer;
     init_lexer(&import_lexer, import_file);
