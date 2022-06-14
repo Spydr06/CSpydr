@@ -172,6 +172,7 @@ CSpydr is licensed under the [MIT License](https://mit-license.org/)
 ## Resources | Reference | Inspiration
 
 - chibicc C compiler: https://github.com/rui314/chibicc.git
+- vcc: https://github.com/lemoncmd/vcc.git
 - tac programming language: https://github.com/sebbekarlsson/tac.git
 - summus programming language: https://github.com/igor84/summus.git
 - porth programming language: https://gitlab.com/tsoding/porth.git
