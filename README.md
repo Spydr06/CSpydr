@@ -35,8 +35,8 @@ A list of all the features, that are/will be implemented.
 - [x] primitive data types `i8` `i16` `i32` `i64` `u8` `u16` `u32` `u64` `f32` `f64` `f80` `bool` `char` `void`
 - [x] pointers, arrays and c-like arrays `&` `[]` `'c[]`
 - [x] custom data types `struct` `union` `enum` `{}` (tuples)
-- [x] control statements `if` `match` `for` `while` `loop` `ret` `break` `continue` `noop` `with`
-- [x] different loop types: `for`, `while` and `loop`
+- [x] control statements `if` `match` `for` `while` `loop` `ret` `break` `continue` `noop` `with` `do-while` `do-unless`
+- [x] different loop types: `for`, `while`, `do-while` and `loop`
 - [x] expressions
 - [x] `extern` functions and globals
 - [x] type-related keywords `sizeof` `typeof` `alignof` `len`
