@@ -1,0 +1,38 @@
+import "testing.csp";
+
+fn main(): i32 {
+    using std, testing;
+
+    let tests = [
+        Test::{
+            const |t: &std::Testing| => {},
+            "test one"
+        },
+        Test::{
+            const |t: &std::Testing| => {
+                using std::testing;
+                assert_fatal(t, 0 == 1, "0 != 1");
+            },
+            "test two"
+        },
+        Test::{
+            const |t: &std::Testing| => {
+                using std::testing;
+                skip();
+            },
+            "test three"
+        },
+        Test::{
+            const |t: &std::Testing| => {
+                using std::testing;
+                assert(t, 2 == 2, "2 != 2");
+            },
+            "test four"
+        }
+    ];
+
+    let t = new(tests);
+    run_all(&t);
+
+    <- 0;
+}

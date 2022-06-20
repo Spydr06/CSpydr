@@ -283,7 +283,14 @@ namespace std {
                             concat(&str, buf);
                         }
                         'c' => append(&str, va_arg!{args, char}); # char
-                        's' => concat(&str, va_arg!{args, &char});
+                        's' => {
+                            let arg = va_arg!{args, &char};
+
+                            if arg
+                                concat(&str, arg);
+                            else
+                                concat(&str, "(nil)");
+                        }
                         'n' => {
                             free(str);
                             <- str!{"\0"};

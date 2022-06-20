@@ -3,10 +3,12 @@ import "process.csp";
 
 namespace std {
     type Testing: struct {
-        successful: u64,
         tests: &(std::testing::Test[]),
         current: u64,
-        errors: i32
+        errors: i32,
+        skipped: u64,
+        failed: u64,
+        successful: u64,
     };
 
     namespace testing {
@@ -15,27 +17,31 @@ namespace std {
             desc: &const char
         };
 
+        type TestExit: enum {
+            OK, SKIP, FAIL
+        };
+
         fn new(tests: Test[]): std::Testing {
             <- Testing::{
-                0, &tests
+                &tests
             };
         }
 
-        fn run(t: &Testing, idx: u64): bool {
+        fn run(t: &Testing, idx: u64): TestExit {
             do {
                 error::new(std::Errno::NILPTR, "argument t is nil or contains no tests");
-                <- false;
+                <- TestExit::FAIL;
             } unless t && t.tests;
 
             if idx >= len *t.tests {
                 error::new(std::Errno::INDEXOUTOFBOUNDS, "idx bigger than t.tests array");
-                <- false;
+                <- TestExit::FAIL;
             }
 
             let test = (*t.tests)[idx];
             do {
                 error::new(std::Errno::NILPTR, "t.tests[idx] is nil");
-                <- false;
+                <- TestExit::FAIL;
             } unless test && test.func;
 
             t.errors = 0;
@@ -45,22 +51,29 @@ namespace std {
 
             using process;
             let pid = fork();
+            let skipped = false;
             match pid {
                 (-1): pid_t => {
                     error::new(std::Errno::CHILD, "could not fork process");
-                    <- false;
+                    <- TestExit::FAIL;
                 }
                 0 => {
                     # new child process
                     test.func(t);
-                    exit(t.errors); # pass the number of errors through the exit status to the parent process
+                    exit(t.errors + 1); # pass the number of errors through the exit status to the parent process
                 }
                 _ => {
                     # parent process
                     let exit_code = 0;
                     waitpid(pid, &exit_code, 0);
-                    if exited(exit_code)
-                        t.errors += exit_status(exit_code); # the exit status marks the number of errors
+                    if exited(exit_code) {
+                        let status = exit_status(exit_code);
+
+                        match status {
+                            0 => skipped = true;
+                            _ => t.errors += (status - 1);
+                        }
+                    }
                     else if signaled(exit_code) {
                         let signame = signum_str(term_sig(exit_code));
 
@@ -77,16 +90,21 @@ namespace std {
             }
 
             using io::color;
+            if skipped {
+                io::printf("\t[%s%sSKIP%s]\n", &YELLOW[0], &BOLD[0], &RESET[0]);
+                <- TestExit::SKIP;
+            }
+
             match t.errors {
                 0 => {
                     io::printf("\t[ %s%sOK%s ]\n", &GREEN[0], &BOLD[0], &RESET[0]);
                     t.errors = 0;
-                    <- true;
+                    <- TestExit::OK;
                 }
                 _ => {
                     io::printf("\t[%s%sFAIL%s]\n", &RED[0], &BOLD[0], &RESET[0]);
                     t.errors = 0;
-                    <- false;
+                    <- TestExit::FAIL;
                 }
             }
 
@@ -101,19 +119,29 @@ namespace std {
             t.successful = 0;
 
             for let i: u64 = 0; i < len *t.tests; i++; {
-                if run(t, i)
-                    t.successful++;
+                match run(t, i) {
+                    TestExit::OK => t.successful++;
+                    TestExit::SKIP => t.skipped++;
+                    TestExit::FAIL => t.failed++;
+                    _ => noop;
+                }
             }
 
+            let total = len *t.tests;
+
             using io::color;
-            if t.successful == len *t.tests {
+            if t.successful == total {
                 io::printf("[ %s%sOK%s ] All %l tests finished successfully.\n", &GREEN[0], &BOLD[0], &RESET[0], t.successful);
                 <- 0;
             }
+            if t.successful + t.skipped == total {
+                io::printf("[ %s%sOK%s ] %l of %l tests finished successfully, %l were skipped.\n", &GREEN[0], &BOLD[0], &RESET[0], t.successful, total, t.skipped);
+                <- 0;
+            }
             else {
-                let failed = (len *t.tests) - t.successful;
-                io::printf("[%s%sFAIL%s] %l of %l tests failed, %l finished successfully.\n", &RED[0], &BOLD[0], &RESET[0], failed, len *t.tests, t.successful);
-                <- failed;
+                io::printf("[%s%sFAIL%s] %l of %l tests failed, %l finished successfully", &RED[0], &BOLD[0], &RESET[0], t.failed, total, t.successful);
+                io::printf(", %l skipped.\n", t.skipped);
+                <- t.failed;
             }
         }
 
@@ -132,6 +160,25 @@ namespace std {
 
         fn assert_false(t: &Testing, condition: bool, error_msg: &const char) {
             assert(t, !condition, error_msg);
+        }
+
+        fn assert_fatal(t: &Testing, condition: bool, error_msg: &const char) {
+            do {
+                error::new(std::Errno::NILPTR, "argument t is nil");
+                ret;
+            } unless t && t.tests;
+
+            using io::color;
+            do {
+                io::eprintf("\n    %sTest `%s` (%l): fatal assertion failed: %s%s", &RED[0], (*t.tests)[t.current].desc, t.current + 1, error_msg, &RESET[0]);
+                t.errors++;
+                process::exit(2);
+            } unless condition;
+        }
+
+        # skip the current test by terminating the process
+        fn skip() {
+            process::exit(0);
         }
     }
 }
