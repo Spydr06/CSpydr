@@ -3,6 +3,9 @@
 #include "io/log.h"
 #include "globals.h"
 
+#include <string.h>
+#include <stdio.h>
+
 static void print_current_fn(void) {
     static ASTObj_T* last_fn; // remember the last function to eliminate duplication in multiple errors of the same function
     if(global.current_fn && *global.current_fn && *global.current_fn != last_fn) 
@@ -43,4 +46,24 @@ void default_error_handler(ErrorType_T ty, Token_T* tok, const char* format, va_
     for(u32 i = 0; i < strlen(tok->value) - 1; i++)
         fprintf(ERR_OUTPUT_STREAM, "~");
     fprintf(ERR_OUTPUT_STREAM, err_tmp3);
+}
+
+void default_panic_handler(void) 
+{
+    // Emit an error summary
+    if(!global.silent)
+    {
+        if(global.emitted_errors && global.emitted_warnings)
+        {
+            LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " %u error%s and %u warning%s thrown during code validation; aborting.\n", global.emitted_errors, global.emitted_errors == 1 ? "" : "s", global.emitted_warnings, global.emitted_warnings == 1 ? "" : "s");
+            exit(1);
+        }
+        else if(global.emitted_errors)
+        {
+            LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " %u error%s thrown during code validation; aborting.\n", global.emitted_errors, global.emitted_errors == 1 ? "" : "s");
+            exit(1);
+        }
+        else if(global.emitted_warnings)
+            LOG_WARN_F(COLOR_BOLD_YELLOW "[Warning]" COLOR_RESET COLOR_YELLOW " %u warning%s thrown during code validation\n", global.emitted_warnings, global.emitted_warnings == 1 ? "" : "s");
+    }
 }

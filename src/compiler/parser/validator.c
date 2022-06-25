@@ -248,22 +248,8 @@ void validate_ast(ASTProg_T* ast)
     // check all data types and create implicit casts when needed
     run_typechecker(ast, &v);
 
-    // Emit an error summary
-    if(!global.silent)
-    {
-        if(global.emitted_errors && global.emitted_warnings)
-        {
-            LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " %u error%s and %u warning%s thrown during code validation; aborting.\n", global.emitted_errors, global.emitted_errors == 1 ? "" : "s", global.emitted_warnings, global.emitted_warnings == 1 ? "" : "s");
-            exit(1);
-        }
-        else if(global.emitted_errors)
-        {
-            LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " %u error%s thrown during code validation; aborting.\n", global.emitted_errors, global.emitted_errors == 1 ? "" : "s");
-            exit(1);
-        }
-        else if(global.emitted_warnings)
-            LOG_WARN_F(COLOR_BOLD_YELLOW "[Warning]" COLOR_RESET COLOR_YELLOW " %u warning%s thrown during code validation\n", global.emitted_warnings, global.emitted_warnings == 1 ? "" : "s");
-    }
+    if(global.emitted_errors)
+        panic();
 }
 
 static ASTObj_T* search_in_current_scope(VScope_T* scope, char* id)

@@ -54,7 +54,7 @@ void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
 
     // exit if mandatory
     if(error_types[ty].force_exit)
-        exit(1);
+        panic();
 }
 
 void set_error_handler(ErrorHandlerFn_T fn)

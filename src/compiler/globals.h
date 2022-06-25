@@ -13,6 +13,7 @@
 #include "util.h"
 #include "list.h"
 #include "config.h"
+#include "error/exception.h"
 
 // all global variables, that the compiler needs
 __CSP_GLOBAL struct {
@@ -51,6 +52,8 @@ __CSP_GLOBAL struct {
 
     List_T* compiler_flags;
     List_T* linker_flags;
+
+    Exception_T main_error_exception;
 
     // timesteps recorded by `timer/timer.c`
     List_T* timesteps;

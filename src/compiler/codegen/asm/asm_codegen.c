@@ -216,7 +216,7 @@ static void write_code(ASMCodegenData_T* cg, const char* target, bool cachefile)
         if(make_dir(cache_dir))
         {
             LOG_ERROR("error creating cache directory `" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "`.\n");
-            exit(1);
+            throw(global.main_error_exception);
         }
         sprintf(file_path, "%s" DIRECTORY_DELIMS "%s.s", cache_dir, target);
     }
@@ -300,7 +300,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         if(exit_code != 0)
         {
             LOG_ERROR_F("error assembling code. (exit code %d)\n", exit_code);
-            exit(1);
+            throw(global.main_error_exception);
         }
     }
 
@@ -345,7 +345,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         if(exit_code != 0)
         {
             LOG_ERROR_F("error linking code. (exit code %d)\n", exit_code);
-            exit(1);
+            throw(global.main_error_exception);
         }
     
         free_list(args);

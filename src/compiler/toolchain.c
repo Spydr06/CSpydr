@@ -2,6 +2,7 @@
 
 #include <string.h>
 
+#include "error/panic.h"
 #include "optimizer/optimizer.h"
 #include "platform/platform_bindings.h"
 #include "mem/mem.h"
@@ -17,6 +18,7 @@
 #include "globals.h"
 #include "codegen/llvm/llvm_codegen.h"
 #include "timer/timer.h"
+#include "error/error.h"
 
 // generate the ast from the source file (lexing, preprocessing, parsing)
 static void generate_ast(ASTProg_T* ast, char* path, bool silent);
@@ -30,64 +32,69 @@ static void run(char* file);
 
 void compile(char* input_file, char* output_file, Action_T action)
 {
-    global.embed_debug_info = action == AC_DEBUG;
-    global.main_src_file = input_file;
+    try(global.main_error_exception) {
+        global.embed_debug_info = action == AC_DEBUG;
+        global.main_src_file = input_file;
 
-    ASTProg_T ast = {};
-    if(global.from_json)
-        ast_from_json(&ast, input_file);
-    else
-        generate_ast(&ast, input_file, global.silent);
+        ASTProg_T ast = {};
+        if(global.from_json)
+            ast_from_json(&ast, input_file);
+        else
+            generate_ast(&ast, input_file, global.silent);
 
-    if(global.optimize)
-        optimize(&ast);
+        if(global.optimize)
+            optimize(&ast);
 
-    timer_start("code generation");
-    switch(global.ct)
-    {
-        case CT_TRANSPILE:
-            transpile_c(&ast, output_file, global.print_code, global.silent);
-            break;
-        case CT_ASM:
-            generate_asm(&ast, output_file, global.print_code, global.silent);
-            break;
+        timer_start("code generation");
+        switch(global.ct)
+        {
+            case CT_TRANSPILE:
+                transpile_c(&ast, output_file, global.print_code, global.silent);
+                break;
+            case CT_ASM:
+                generate_asm(&ast, output_file, global.print_code, global.silent);
+                break;
 #ifdef CSPYDR_USE_LLVM
-        case CT_LLVM:
-            generate_llvm(&ast, output_file, global.print_code, global.silent);
-            break;
+            case CT_LLVM:
+                generate_llvm(&ast, output_file, global.print_code, global.silent);
+                break;
 #endif
-        case CT_TO_JSON:
-            generate_json(&ast, output_file, global.print_code, global.silent);
-            break;
-        default:
-            LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " Unknown compile type %d!\n", global.ct);
-            exit(1);
+            case CT_TO_JSON:
+                generate_json(&ast, output_file, global.print_code, global.silent);
+                break;
+            default:
+                LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " Unknown compile type %d!\n", global.ct);
+                panic();
+        }
+        timer_stop();
+
+        for(size_t i = 0; i < ast.imports->size; i++)
+            free_file(ast.imports->items[i]);
+        mem_free();
+
+        switch(action)
+        {
+            case AC_RUN:
+                timer_start("execution");
+                run(output_file);
+                remove(output_file);
+                timer_stop();
+                break;
+
+            case AC_BUILD:
+                break;
+
+            case AC_DEBUG:
+                debug_repl(input_file, output_file);
+                break;
+
+            default:
+                LOG_ERROR_F(COLOR_BOLD_RED "[ERROR]" COLOR_RESET COLOR_RED "unknown action `%d`\n", action);
+                break;
+        }
     }
-    timer_stop();
-
-    for(size_t i = 0; i < ast.imports->size; i++)
-        free_file(ast.imports->items[i]);
-    mem_free();
-
-    switch(action)
-    {
-        case AC_RUN:
-            timer_start("execution");
-            run(output_file);
-            remove(output_file);
-            timer_stop();
-            break;
-
-        case AC_BUILD:
-            break;
-
-        case AC_DEBUG:
-            debug_repl(input_file, output_file);
-            break;
-
-        default:
-            LOG_ERROR_F(COLOR_BOLD_RED "[ERROR]" COLOR_RESET COLOR_RED "unknown action `%d`\n", action);
-            break;
+    catch {
+        get_panic_handler()();
     }
 }
 

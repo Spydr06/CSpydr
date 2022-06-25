@@ -5,6 +5,7 @@
 #include <stdbool.h>
 
 #include "list.h"
+#include "panic.h"
 #include "lexer/token.h"
 
 #define unreachable() \
