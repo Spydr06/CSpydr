@@ -18,4 +18,6 @@ bool file_is_executable(char* file);
 
 void print_buffer(u8* buffer, size_t size);
 
+bool question(const char* question);
+
 #endif

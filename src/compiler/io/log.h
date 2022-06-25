@@ -32,4 +32,11 @@
 #define LOG_ERROR(format)  fprintf(OUTPUT_STREAM, COLOR_RED format COLOR_RESET)
 #define LOG_OK(format)     fprintf(OUTPUT_STREAM, COLOR_GREEN format COLOR_RESET)
 
+#ifdef _WIN32
+    #include <conio.h>
+    #define LOG_CLEAR() clrscr()
+#else
+    #define LOG_CLEAR() system("clear")
+#endif
+
 #endif

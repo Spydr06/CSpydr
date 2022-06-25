@@ -8,6 +8,7 @@
 #include <globals.h>
 #include <parser/parser.h>
 #include <mem/mem.h>
+#include <error/panic.h>
 
 #include <stdlib.h>
 #ifdef CSPYDR_LINUX
@@ -18,33 +19,51 @@
 
 #define ERROR_MSG(str) COLOR_BOLD_RED "[Error] " COLOR_RESET COLOR_RED str COLOR_RESET
 
-static List_T* lint_watched(const char* filepath)
+static List_T* FILES = NULL;
+
+static void free_files(int fd) 
 {
-    ASTProg_T ast = {};
-
-    List_T* files = init_list();
-    list_push(files, read_file(filepath));
-    global.silent = true;
-
-    pid_t pid = fork();
-    switch(pid)
+    if(FILES != NULL)
     {
-        case -1:
-            LOG_ERROR(ERROR_MSG("Could not fork process."));
-            exit(1);
-        case 0:
-            parse(&ast, files, true);
-            exit(0);
-        default: {
-            int exit_code;
-            waitpid(pid, &exit_code, 0);
+        for(size_t i = 0; i < FILES->size; i++)
+        {
+            File_T* file = FILES->items[i];
+            if(fd) {
+                inotify_rm_watch(fd, file->wd);
+            }
+            free_file(file);
         }
+        free_list(FILES);
     }
 
-    return files;
+    mem_free();
+    globals_exit_hook();
 }
 
-static bool get_event(fd)
+static void sigint_handler(int dummy) 
+{
+    if(question(COLOR_BOLD_YELLOW "\rDo you really want to quit?")) 
+        exit(dummy);
+}
+
+void lint_watched(const char* filepath)
+{
+    init_globals();
+
+    FILES = init_list();
+    list_push(FILES, read_file(filepath));
+
+    ASTProg_T ast = {};
+    try(global.main_error_exception)
+    {
+        global.silent = true;
+        parse(&ast, FILES, true);
+    }
+    catch {
+    };
+}
+
+static bool get_event(int fd)
 {
     char buffer[BUFSIZ] = {};
     int len = read(fd, buffer, BUFSIZ);
@@ -64,6 +83,8 @@ void live_session(const char* filepath)
     exit(1);
 #else
 
+    signal(SIGINT, sigint_handler);
+
     int fd = inotify_init();
     if(fd < 0) {
         LOG_ERROR(ERROR_MSG("Could not initialize inotify."));
@@ -71,28 +92,22 @@ void live_session(const char* filepath)
     }
 
     bool relint = true;
-    List_T* files = NULL;
     while(1) 
     {
         if(relint) 
         {
             relint = false;
-            if(files != NULL)
-            {
-                for(size_t i = 0; i < files->size; i++)
-                {
-                    File_T* file = files->items[i];
-                    inotify_rm_watch(fd, file->wd);
-                    free_file(file);
-                }
-                free_list(files);
-                mem_free();
-            }
 
-            files = lint_watched(filepath);
-            for(size_t i = 0; i < files->size; i++)
+            LOG_CLEAR();
+            
+            free_files(fd);
+            close(fd);
+            fd = inotify_init();
+
+            lint_watched(filepath);
+            for(size_t i = 0; i < FILES->size; i++)
             {
-                File_T* file = files->items[i];
+                File_T* file = FILES->items[i];
                 file->wd = inotify_add_watch(fd, file->path, IN_MODIFY | IN_DELETE);
                 if(file->wd == -1)
                     LOG_ERROR_F(ERROR_MSG("Could not add watch to %s.\n"), file->path);
