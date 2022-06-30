@@ -6,5 +6,12 @@
     set_target_properties(acutest PROPERTIES LINKER_LANGUAGE C)
 
 # json-c
-    find_library(json-c NAMES libjson-c json-c REQUIRED)
-    find_library(bsd NAMES libbsd bsd REQUIRED)
+    set(BUILD_SHARED_LIBS FALSE)
+    add_subdirectory(json-c)
+
+# dirent for windows
+    if(MSVC)
+        add_subdirectory(dirent)
+    else()
+        add_library(dirent)
+    endif()

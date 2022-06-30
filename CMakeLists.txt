@@ -10,6 +10,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # emit warnings
 if (MSVC)
     add_compile_options(/W4)
+    set(NO_LLVM 1)
 else()
     add_compile_options(-Wall)
 endif()

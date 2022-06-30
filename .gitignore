@@ -76,17 +76,28 @@ test.s
 *.kdev4
 .kdev4/
 
-# cmake
+# CMake Files
 *.cmake
 CMakeCache.txt
 Makefile*
 install_manifest.txt
 CMakeFiles/
-bin/
 compile_commands.json
 cmake_install.cmake
+
+# Output directory
+bin/
+
+# Emacs tmp files
 *#
-src/std/std.csp
+*.pc
+
+# Auto-generated std code
 src/std/libc/libc.csp
 src/std/sdl2/sdl.csp
-*.pc
+src/std/std.csp
+
+# Visual Studio files
+*.sln
+*.vcxproj
+*.filters

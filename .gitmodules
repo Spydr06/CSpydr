@@ -1,3 +1,9 @@
 [submodule "doc"]
 	path = doc
 	url = https://github.com/Spydr06/CSpydr.wiki.git
+[submodule "lib/json-c"]
+	path = lib/json-c
+	url = https://github.com/json-c/json-c
+[submodule "lib/dirent"]
+	path = lib/dirent
+	url = https://github.com/tronkko/dirent
