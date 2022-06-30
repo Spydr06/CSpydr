@@ -62,7 +62,7 @@ Currently, CSpydr is only available for Linux. Once a first major release is in 
 <br/>
 ### Getting CSpydr
 ```console
-$ git clone https://github.com/spydr06/cspydr.git
+$ git clone https://github.com/spydr06/cspydr.git --recursive
 ```
 
 ### Dependencies
