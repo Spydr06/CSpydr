@@ -6,7 +6,7 @@
     set_target_properties(acutest PROPERTIES LINKER_LANGUAGE C)
 
 # json-c
-    if(NOT EXISTS lib/json-c)
+    if(NOT EXISTS lib/json-c OR NOT EXISTS lib/json-c/CMakeLists.txt)
         message("lib/json-c not found, cloning repository...")
         execute_process(COMMAND git clone https://github.com/json-c/json-c.git lib/json-c)
     else()
@@ -17,7 +17,7 @@
 
 # dirent for windows
     if(MSVC)
-        if(NOT EXISTS lib/dirent)
+        if(NOT EXISTS lib/dirent OR NOT EXISTS lib/json-c/CMakeLists.txt)
             message("lib/dirent not found, cloning repository...")
             execute_process(COMMAND git clone https://github.com/tronkko/dirent.git lib/dirent)
         else()
