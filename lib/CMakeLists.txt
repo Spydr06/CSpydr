@@ -6,11 +6,23 @@
     set_target_properties(acutest PROPERTIES LINKER_LANGUAGE C)
 
 # json-c
+    if(NOT EXISTS lib/json-c)
+        message("lib/json-c not found, cloning repository...")
+        execute_process(COMMAND git clone https://github.com/json-c/json-c.git lib/json-c)
+    else()
+        message("lib/json-c found.")
+    endif()
     set(BUILD_SHARED_LIBS FALSE)
     add_subdirectory(json-c)
 
 # dirent for windows
     if(MSVC)
+        if(NOT EXISTS lib/dirent)
+            message("lib/dirent not found, cloning repository...")
+            execute_process(COMMAND git clone https://github.com/tronkko/dirent.git lib/dirent)
+        else()
+            message("lib/dirent found.")
+        endif() 
         add_subdirectory(dirent)
     else()
         set(dirent "")
