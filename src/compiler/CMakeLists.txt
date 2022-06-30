@@ -15,7 +15,7 @@ set_target_properties(libcspc PROPERTIES
 
 if(${NO_LLVM})
         add_compile_definitions(CSPYDR_NO_LLVM)
-        target_link_libraries(libcspc LINK_PUBLIC m json-c bsd)
+        target_link_libraries(libcspc LINK_PUBLIC m json-c)
 else()
         add_compile_definitions(CSPYDR_USE_LLVM)
         
@@ -24,7 +24,7 @@ else()
 
         execute_process(COMMAND llvm-config --libs all OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE llvm_libraries)
         target_include_directories(libcspc INTERFACE ${LLVM_INCLUDE_DIRS})
-        target_link_libraries(libcspc LINK_PUBLIC m json-c bsd "${llvm_libraries}")
+        target_link_libraries(libcspc LINK_PUBLIC m json-c "${llvm_libraries}")
 endif()
 
 # build the main executable

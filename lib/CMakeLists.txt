@@ -13,5 +13,5 @@
     if(MSVC)
         add_subdirectory(dirent)
     else()
-        add_library(dirent)
+        set(dirent "")
     endif()
