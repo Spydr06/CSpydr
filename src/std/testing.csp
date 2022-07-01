@@ -117,6 +117,8 @@ namespace std {
             } unless t && t.tests;
 
             t.successful = 0;
+            t.skipped = 0;
+            t.failed = 0;
 
             for let i: u64 = 0; i < len *t.tests; i++; {
                 match run(t, i) {
