@@ -95,5 +95,16 @@ namespace std {
 
             <- t.userdata;
         }
+
+        fn async(func: const fn(&Thread)): Error {
+            let thread = create(func, nil);
+
+            if error::is_some() 
+                <- error::current();
+            
+            join(thread);
+
+            <- error::current();
+        }
     }
 }

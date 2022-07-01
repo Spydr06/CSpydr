@@ -1,6 +1,9 @@
 #include "api.h"
 #include "include/cspydr.h"
+#include <mem/mem.h>
 #include <globals.h>
+#include <io/io.h>
+#include <parser/parser.h>
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -18,13 +21,13 @@ Compiler_T* csp_init_compiler()
     return compiler;
 }
 
-void csp_free_compiler(Compiler_T *compiler)
+void csp_free_compiler(Compiler_T* compiler)
 {
     globals_exit_hook();
     free(compiler);
 }
 
-CompilerStatus_T csp_get_status(Compiler_T *compiler)
+CompilerStatus_T csp_get_status(Compiler_T* compiler)
 {
     if(compiler)
         return compiler->status;

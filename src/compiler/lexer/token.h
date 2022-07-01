@@ -3,7 +3,7 @@
 
 #include "io/file.h"
 #include "config.h"
-#include "../../api/include/cspydr_tokens.h"
+#include "../../api/include/cspydr.h"
 
 #define TOKEN_ID CSPYDR_TOKEN_ID
 #define TOKEN_MACRO_CALL CSPYDR_TOKEN_MACRO_CALL

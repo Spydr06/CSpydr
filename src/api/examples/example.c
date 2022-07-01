@@ -3,7 +3,7 @@
 
 int main() 
 {
-    Compiler_T* compiler = csp_init_compiler();
+    CSpydrCompiler_T* compiler = csp_init_compiler();
 
     // do something with compiler
     puts(csp_status_str(csp_get_status(compiler)));

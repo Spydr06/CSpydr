@@ -7,7 +7,7 @@
 #include "hashmap.h"
 #include "lexer/token.h"
 #include "config.h"
-#include "../../api/include/cspydr_ast_enums.h"
+#include "../../api/include/cspydr.h"
 
 #include <stdint.h>
 #include <stdio.h>

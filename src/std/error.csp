@@ -214,5 +214,10 @@ namespace std {
                 _ => ret "<unknown>";
             }
         }
+
+        fn is_some(): bool {
+            using __static;
+            <- __error.kind == Errno::NONE;
+        }
     }
 }

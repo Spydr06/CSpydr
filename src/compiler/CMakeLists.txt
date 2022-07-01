@@ -7,7 +7,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 file(GLOB_RECURSE compiler_source *.c *.cpp *.cc *.c++)
 list(REMOVE_ITEM compiler_source "main.c")
 
-add_library(libcspc ${compiler_source})
+add_library(libcspc STATIC ${compiler_source})
 set_target_properties(libcspc PROPERTIES 
         LINKER_LANGUAGE C
         POSITION_INDEPENDENT_CODE ON
