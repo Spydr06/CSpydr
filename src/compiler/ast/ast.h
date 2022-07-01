@@ -7,162 +7,128 @@
 #include "hashmap.h"
 #include "lexer/token.h"
 #include "config.h"
+#include "../../api/include/cspydr_ast_enums.h"
 
 #include <stdint.h>
 #include <stdio.h>
 
-typedef struct AST_NODE_STRUCT ASTNode_T;
-typedef struct AST_IDENTIFIER_STRUCT ASTIdentifier_T;
-typedef struct AST_TYPE_STRUCT ASTType_T;
-typedef struct AST_OBJ_STRUCT ASTObj_T;
+#define ND_NOOP CSPYDR_ND_NOOP
+#define ND_ID CSPYDR_ND_ID
+#define ND_INT CSPYDR_ND_INT
+#define ND_LONG CSPYDR_ND_LONG
+#define ND_ULONG CSPYDR_ND_ULONG
+#define ND_FLOAT CSPYDR_ND_FLOAT
+#define ND_DOUBLE CSPYDR_ND_DOUBLE
+#define ND_BOOL CSPYDR_ND_BOOL
+#define ND_CHAR CSPYDR_ND_CHAR
+#define ND_STR CSPYDR_ND_STR
+#define ND_NIL CSPYDR_ND_NIL
+#define ND_ARRAY CSPYDR_ND_ARRAY
+#define ND_STRUCT CSPYDR_ND_STRUCT
+#define ND_ADD CSPYDR_ND_ADD
+#define ND_SUB CSPYDR_ND_SUB
+#define ND_MUL CSPYDR_ND_MUL
+#define ND_DIV CSPYDR_ND_DIV
+#define ND_MOD CSPYDR_ND_MOD
+#define ND_NEG CSPYDR_ND_NEG
+#define ND_BIT_NEG CSPYDR_ND_BIT_NEG
+#define ND_NOT CSPYDR_ND_NOT
+#define ND_REF CSPYDR_ND_REF
+#define ND_DEREF CSPYDR_ND_DEREF
+#define ND_EQ CSPYDR_ND_EQ
+#define ND_NE CSPYDR_ND_NE
+#define ND_GT CSPYDR_ND_GT
+#define ND_GE CSPYDR_ND_GE
+#define ND_LT CSPYDR_ND_LT
+#define ND_LE CSPYDR_ND_LE
+#define ND_AND CSPYDR_ND_AND
+#define ND_OR CSPYDR_ND_OR
+#define ND_LSHIFT CSPYDR_ND_LSHIFT
+#define ND_RSHIFT CSPYDR_ND_RSHIFT
+#define ND_XOR CSPYDR_ND_XOR
+#define ND_BIT_OR CSPYDR_ND_BIT_OR
+#define ND_BIT_AND CSPYDR_ND_BIT_AND
+#define ND_INC CSPYDR_ND_INC
+#define ND_DEC CSPYDR_ND_DEC
+#define ND_CLOSURE CSPYDR_ND_CLOSURE
+#define ND_ASSIGN CSPYDR_ND_ASSIGN
+#define ND_MEMBER CSPYDR_ND_MEMBER
+#define ND_CALL CSPYDR_ND_CALL
+#define ND_INDEX CSPYDR_ND_INDEX
+#define ND_CAST CSPYDR_ND_CAST
+#define ND_SIZEOF CSPYDR_ND_SIZEOF
+#define ND_ALIGNOF CSPYDR_ND_ALIGNOF
+#define ND_PIPE CSPYDR_ND_PIPE
+#define ND_HOLE CSPYDR_ND_HOLE
+#define ND_LAMBDA CSPYDR_ND_LAMBDA
+#define ND_ELSE_EXPR CSPYDR_ND_ELSE_EXPR
+#define ND_TYPE_EXPR CSPYDR_ND_TYPE_EXPR
+#define ND_BLOCK CSPYDR_ND_BLOCK
+#define ND_IF CSPYDR_ND_IF
+#define ND_TERNARY CSPYDR_ND_TERNARY
+#define ND_LOOP CSPYDR_ND_LOOP
+#define ND_WHILE CSPYDR_ND_WHILE
+#define ND_FOR CSPYDR_ND_FOR
+#define ND_MATCH CSPYDR_ND_MATCH
+#define ND_MATCH_TYPE CSPYDR_ND_MATCH_TYPE
+#define ND_CASE CSPYDR_ND_CASE
+#define ND_CASE_TYPE CSPYDR_ND_CASE_TYPE
+#define ND_RETURN CSPYDR_ND_RETURN
+#define ND_EXPR_STMT CSPYDR_ND_EXPR_STMT
+#define ND_BREAK CSPYDR_ND_BREAK
+#define ND_CONTINUE CSPYDR_ND_CONTINUE
+#define ND_DO_UNLESS CSPYDR_ND_DO_UNLESS
+#define ND_DO_WHILE CSPYDR_ND_DO_WHILE
+#define ND_LEN CSPYDR_ND_LEN
+#define ND_USING CSPYDR_ND_USING
+#define ND_WITH CSPYDR_ND_WITH
+#define ND_STRUCT_MEMBER CSPYDR_ND_STRUCT_MEMBER
+#define ND_ASM CSPYDR_ND_ASM
+#define ND_KIND_LEN CSPYDR_ND_KIND_LEN
 
-typedef enum {
-    ND_NOOP,
+#define TY_I8 CSPYDR_TY_I8
+#define TY_I16 CSPYDR_TY_I16
+#define TY_I32 CSPYDR_TY_I32
+#define TY_I64 CSPYDR_TY_I64
+#define TY_U8 CSPYDR_TY_U8
+#define TY_U16 CSPYDR_TY_U16
+#define TY_U32 CSPYDR_TY_U32
+#define TY_U64 CSPYDR_TY_U64
+#define TY_F32 CSPYDR_TY_F32
+#define TY_F64 CSPYDR_TY_F64
+#define TY_F80 CSPYDR_TY_F80
+#define TY_BOOL CSPYDR_TY_BOOL
+#define TY_VOID CSPYDR_TY_VOID
+#define TY_CHAR CSPYDR_TY_CHAR
+#define TY_PTR CSPYDR_TY_PTR
+#define TY_ARRAY CSPYDR_TY_ARRAY
+#define TY_VLA CSPYDR_TY_VLA
+#define TY_C_ARRAY CSPYDR_TY_C_ARRAY
+#define TY_STRUCT CSPYDR_TY_STRUCT
+#define TY_ENUM CSPYDR_TY_ENUM
+#define TY_FN CSPYDR_TY_FN
+#define TY_UNDEF CSPYDR_TY_UNDEF
+#define TY_TYPEOF CSPYDR_TY_TYPEOF
+#define TY_TEMPLATE CSPYDR_TY_TEMPLATE
+#define TY_KIND_LEN CSPYDR_TY_KIND_LEN
 
-    // identifiers
-    ND_ID,      // x
+#define OBJ_GLOBAL CSPYDR_OBJ_GLOBAL
+#define OBJ_LOCAL CSPYDR_OBJ_LOCAL
+#define OBJ_FUNCTION CSPYDR_OBJ_FUNCTION
+#define OBJ_FN_ARG CSPYDR_OBJ_FN_ARG
+#define OBJ_TYPEDEF CSPYDR_OBJ_TYPEDEF
+#define OBJ_NAMESPACE CSPYDR_OBJ_NAMESPACE
+#define OBJ_ENUM_MEMBER CSPYDR_OBJ_ENUM_MEMBER
+#define OBJ_LAMBDA CSPYDR_OBJ_LAMBDA
+#define OBJ_KIND_LEN CSPYDR_OBJ_KIND_LEN
 
-    // literals
-    ND_INT,     // 0
-    ND_LONG,
-    ND_ULONG, 
-    ND_FLOAT,   // 0.1
-    ND_DOUBLE,
-    ND_BOOL,    // true, false
-    ND_CHAR,    // 'x'
-    ND_STR,     // "..."
-    ND_NIL,     // nil
-
-    ND_ARRAY,   // [2, 4, ...]
-    ND_STRUCT,  // {3, 4, ...}
-
-    // operators
-    ND_ADD,     // +
-    ND_SUB,     // -
-    ND_MUL,     // *
-    ND_DIV,     // /
-    ND_MOD,     // %
-
-    ND_NEG,     // unary -
-    ND_BIT_NEG, // unary ~
-    ND_NOT,     // unary !
-    ND_REF,     // unary &
-    ND_DEREF,   // unary *
-
-    ND_EQ,      // ==
-    ND_NE,      // !=
-    ND_GT,      // >
-    ND_GE,      // >=
-    ND_LT,      // <
-    ND_LE,      // <=
-
-    ND_AND, // &&
-    ND_OR,  // ||
-
-    ND_LSHIFT,  // <<
-    ND_RSHIFT,  // >>
-    ND_XOR,     // ^
-    ND_BIT_OR,  // |
-    ND_BIT_AND, // &
-
-    ND_INC,     // ++
-    ND_DEC,     // --
-
-    ND_CLOSURE, // ()
-    ND_ASSIGN,  // x = y
-
-    ND_MEMBER,  // x.y
-    ND_CALL,    // x(y, z)
-    ND_INDEX,   // x[y]
-    ND_CAST,    // x:i32
-
-    ND_SIZEOF,  // sizeof x
-    ND_ALIGNOF, // alignof x
-
-    ND_PIPE,    // x |> y
-    ND_HOLE,    // $
-    ND_LAMBDA,  // |x: i32| => {}
-
-    ND_ELSE_EXPR, // x else y
-
-    ND_TYPE_EXPR, // type expressions like: "(type) T == U" or "(type) reg_class(T)"
-
-    // statements
-    ND_BLOCK,   // {...}https://github.com/deter0/ActivateWindows2
-    ND_IF,      // if x {}
-    ND_TERNARY, // if x => y <> z
-    ND_LOOP,    // loop {}
-    ND_WHILE,   // while x {}
-    ND_FOR,     // for let i: i32 = 0; i < x; i++ {}
-    ND_MATCH,   // match x {}
-    ND_MATCH_TYPE, // match (type) T {}
-    ND_CASE,    // x => {} !!only in match statements!!
-    ND_CASE_TYPE, // i32 => {}
-    ND_RETURN,  // ret x;
-    ND_EXPR_STMT, // "executable" expressions
-    ND_BREAK,     // break;
-    ND_CONTINUE,  // continue;
-    ND_DO_UNLESS, // do {} unless x;
-    ND_DO_WHILE,  // do {} while x;
-    ND_LEN,       // len x
-    ND_USING,     // using x::y
-    ND_WITH,      // with x = y {}
-    ND_STRUCT_MEMBER,  // struct members
-
-    ND_ASM, // inline assembly
-
-    ND_KIND_LEN
-} ASTNodeKind_T;
-
-typedef enum {
-    TY_I8,      // i8
-    TY_I16,     // i16
-    TY_I32,     // i32
-    TY_I64,     // i64
-
-    TY_U8,      // u8
-    TY_U16,     // u16
-    TY_U32,     // u32
-    TY_U64,     // u64
-
-    TY_F32,     // f32
-    TY_F64,     // f64
-    TY_F80,     // f80
-
-    TY_BOOL,    // bool
-    TY_VOID,    // void
-    TY_CHAR,    // char
-
-    TY_PTR,     // &x
-    TY_ARRAY,   // x[y]
-    TY_VLA,     // x[]
-    TY_C_ARRAY, // x'c[y]
-    TY_STRUCT,  // struct {}
-    TY_ENUM,    // enum {}
-
-    TY_FN,      // fn(x): y
-
-    TY_UNDEF,   // <identifier>
-    TY_TYPEOF,  // typeof x
-    TY_TEMPLATE, // template types temporarily used during parsing
-    
-    TY_KIND_LEN
-} ASTTypeKind_T;
-
-typedef enum {
-    OBJ_GLOBAL,      // global variable
-    OBJ_LOCAL,       // local variable
-    OBJ_FUNCTION,    // function
-    OBJ_FN_ARG,      // function argument
-    OBJ_TYPEDEF,     // datatype definition
-    OBJ_NAMESPACE,   // namespace
-    OBJ_ENUM_MEMBER, // member of an `enum` data type
-
-    //! internal:
-    OBJ_LAMBDA,      // lambda implementation used internally
-
-    OBJ_KIND_LEN
-} ASTObjKind_T;
+typedef enum CSPYDR_AST_NODE_KIND_ENUM ASTNodeKind_T;
+typedef enum CSPYDR_AST_OBJ_KIND_ENUM  ASTObjKind_T;
+typedef enum CSPYDR_AST_TYPE_KIND_ENUM ASTTypeKind_T;
+typedef struct AST_NODE_STRUCT         ASTNode_T;
+typedef struct AST_IDENTIFIER_STRUCT   ASTIdentifier_T;
+typedef struct AST_TYPE_STRUCT         ASTType_T;
+typedef struct AST_OBJ_STRUCT          ASTObj_T;
 
 struct AST_NODE_STRUCT
 {

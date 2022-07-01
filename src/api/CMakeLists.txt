@@ -5,9 +5,12 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 file(GLOB api_source *.c *.cpp *.cc *.c++)
 
 add_library(cspydr SHARED ${api_source})
+
+file(GLOB_RECURSE public_headers include/*.h include/*.hpp)
+
 set_target_properties(cspydr PROPERTIES
     SOVERSION 1
-    PUBLIC_HEADER include/cspydr.h
+    PUBLIC_HEADER "${public_headers}"
     POSITION_INDEPENDENT_CODE ON
 )
 target_include_directories(cspydr PRIVATE ${CMAKE_SOURCE_DIR}/src/compiler)

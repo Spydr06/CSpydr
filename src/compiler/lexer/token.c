@@ -7,7 +7,7 @@
 
 Token_T* init_token(char* value, u32 line, u32 pos, TokenType_T type, File_T* source)
 {
-    Token_T* token = mem_malloc(sizeof(struct TOKEN_STRUCT) + (strlen(value) + 1) * sizeof(char));
+    Token_T* token = mem_malloc(sizeof(struct CSPYDR_TOKEN_STRUCT) + (strlen(value) + 1) * sizeof(char));
 
     token->line = line;
     token->pos = pos;

@@ -26,7 +26,14 @@ namespace cspydr {
     extern "C" {
 #endif
 
-typedef struct CSPYDR_COMPILER_STRUCT Compiler_T;
+#include "cspydr_ast_enums.h"
+#include "cspydr_tokens.h"
+
+typedef struct CSPYDR_COMPILER_STRUCT CSpydrCompiler_T;
+
+extern CSpydrCompiler_T* csp_init_compiler();
+extern void csp_free_compiler(CSpydrCompiler_T* compiler);
+
 typedef enum {
     COMPILER_NONE = 0,
     COMPILER_INIT,
@@ -36,10 +43,17 @@ typedef enum {
     COMPILER_EXECUTED
 } CompilerStatus_T;
 
-extern Compiler_T* csp_init_compiler();
-extern void csp_free_compiler(Compiler_T* compiler);
-extern CompilerStatus_T csp_get_status(Compiler_T* compiler);
+extern CompilerStatus_T csp_get_status(CSpydrCompiler_T* compiler);
 const char* csp_status_str(CompilerStatus_T status);
+
+typedef enum CSPYDR_TOKEN_TYPE CSpydrTokenType_T;
+typedef struct CSPYDR_TOKEN_STRUCT CSpydrToken_T;
+
+typedef struct AST_NODE_STRUCT       CSpydrASTNode_T;
+typedef struct AST_OBJ_STRUCT        CSpydrASTObj_T;
+typedef struct AST_TYPE_STRUCT       CSpydrASTType_T;
+typedef struct AST_IDENTIFIER_STRUCT CSpydrASTIdentifier_T;
+typedef struct AST_PROG_STRUCT       CSpydrASTProg_T;
 
 #ifdef __cplusplus
     } // extern "C"
