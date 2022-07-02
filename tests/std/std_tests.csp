@@ -64,14 +64,14 @@ fn c_str_test_strlen(t: &std::Testing) {
     using std::testing;
     let x = "hello";
     assert(t, std::c_str::strlen(x) == 5, "std::c_str::strlen(x) != 5");
-    assert(t, std::c_str::strlen("cspydr") == 6, "std::c_str::strlen('cspydr') != 6");
+    assert(t, std::c_str::strlen("cspydr") == 6, "std::c_str::strlen(\"cspydr\") != 6");
 }
 
 fn c_str_test_strnlen(t: &std::Testing) {
     using std::testing;
     let x = "hello";
     assert(t, std::c_str::strnlen(x, 5) == 5, "std::c_str::strnlen(x, 5) != 5");
-    assert(t, std::c_str::strnlen("cspydr", 6) == 6, "std::c_str::strnlen('cspydr', 6) != 6");
+    assert(t, std::c_str::strnlen("cspydr", 6) == 6, "std::c_str::strnlen(\"cspydr\", 6) != 6");
 }
 
 fn c_str_test_strcpy(t: &std::Testing) {
@@ -150,7 +150,7 @@ fn c_str_test_strstr(t: &std::Testing) {
     let needle = "hello";
 
     assert(t, std::c_str::strstr(haystack, needle) != nil, "std::c_str::strstr(haystack, needle) == nil");
-    assert(t, std::c_str::strstr(haystack, "hallo") == nil, "std::c_str::strstr(haystack, 'hallo') != nil");
+    assert(t, std::c_str::strstr(haystack, "hallo") == nil, "std::c_str::strstr(haystack, \"hallo\") != nil");
 }
 
 fn c_str_test_strsep(t: &std::Testing) {

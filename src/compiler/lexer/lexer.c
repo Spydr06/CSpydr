@@ -362,12 +362,13 @@ static Token_T* lexer_get_str(Lexer_T* lexer)
 
     lexer_advance(lexer);
 
-    while(lexer->c != '"')
+    while(lexer->c != '"' || lexer_peek(lexer, -1) == '\\')
     {
         if(strlen(buffer) - 3 >= length)
             buffer = realloc(buffer, length *= 2);
 
         strcat(buffer, (char[2]){lexer->c, '\0'});
+
         lexer_advance(lexer);
 
         if(lexer->c == '\0')
