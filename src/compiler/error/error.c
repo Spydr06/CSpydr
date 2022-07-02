@@ -32,6 +32,7 @@ static struct { const char* as_str; bool force_exit; bool is_error; } error_type
     [ERR_NORETURN]          = {"no return", false    , true},
     [ERR_UNREACHABLE]       = {"unreachable", false  , false},
     [ERR_CALL_ERROR]        = {"call", true          , true},
+    [ERR_CALL_ERROR_UNCR]   = {"call", false         , true},
 };
 
 static ErrorHandlerFn_T ERROR_HANDLER = default_error_handler;

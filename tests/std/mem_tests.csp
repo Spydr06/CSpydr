@@ -1,0 +1,64 @@
+# --------------------------#
+# unit tests for memory.csp #
+# --------------------------#
+
+fn mem_test_alloc(t: &std::Testing) {
+    using std::testing, std::mem;
+
+    let unfreed = unfreed_allocs;
+    let ptr: &u8 = alloc(10);
+
+    assert(t, unfreed_allocs - unfreed == 1, "unfreed_allocs - unfreed != 1");
+    
+    for let i = 0; i < 10; i++; 
+        ptr[i] = i;
+    for let i = 0; i < 10; i++; 
+        assert(t, ptr[i] == i, "ptr[i] != i");
+}
+
+fn mem_test_free(t: &std::Testing) {
+    using std::testing, std::mem;
+
+    let unfreed = unfreed_allocs;
+    let ptr: &u8 = alloc(10);
+
+    assert(t, unfreed_allocs - unfreed == 1, "unfreed_allocs - unfreed != 1");
+    free(ptr);
+    assert(t, unfreed_allocs - unfreed == 0, "unfreed_allocs - unfreed != 0");
+}
+
+fn mem_test_calloc(t: &std::Testing) {
+    using std::testing, std::mem;
+
+    let ptr: &u8 = calloc(2, 5);
+    
+    for let i = 0; i < 10; i++; {
+        assert(t, ptr[i] == 0, "ptr[i] != 0");
+        ptr[i] = i;
+    }
+    for let i = 0; i < 10; i++; 
+        assert(t, ptr[i] == i, "ptr[i] != i");
+    
+    free(ptr);
+}
+
+fn mem_test_realloc(t: &std::Testing) {
+    using std::testing, std::mem;
+
+    let ptr: &u8 = alloc(5);
+
+    for let i = 0; i < 5; i++;
+        ptr[i] = i;
+
+    ptr = realloc(ptr, 10);
+
+    for let i = 0; i < 5; i++;
+        ptr[i + 5] = i;
+
+    for let i = 0; i < 5; i++; {
+        assert(t, ptr[i] == i, "ptr[i] != i");
+        assert(t, ptr[i + 5] == i, "ptr[i + 5] != i");
+    }
+
+    free(ptr);
+}

@@ -1035,12 +1035,12 @@ static void call(ASTNode_T* call, va_list args)
     if(is_variadic(call_type) && received_arg_num < expected_arg_num)
     {
         char buf[BUFSIZ] = {};
-        throw_error(ERR_CALL_ERROR, call->tok, "type `%s` expects %lu or more call arguments, got %lu", ast_type_to_str(buf, call_type, LEN(buf)), expected_arg_num, received_arg_num);
+        throw_error(ERR_CALL_ERROR_UNCR, call->tok, "type `%s` expects %lu or more call arguments, got %lu", ast_type_to_str(buf, call_type, LEN(buf)), expected_arg_num, received_arg_num);
     }
     else if(!is_variadic(call_type) && received_arg_num != expected_arg_num)
     {
         char buf[BUFSIZ] = {};
-        throw_error(ERR_CALL_ERROR, call->tok, "type `%s` expects %lu call arguments, got %lu", ast_type_to_str(buf, call_type, LEN(buf)), expected_arg_num, received_arg_num);
+        throw_error(ERR_CALL_ERROR_UNCR, call->tok, "type `%s` expects %lu call arguments, got %lu", ast_type_to_str(buf, call_type, LEN(buf)), expected_arg_num, received_arg_num);
     }
     
     // if we compile using the assembly compiler, a buffer for the return value is needed when handling big structs

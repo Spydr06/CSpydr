@@ -179,7 +179,7 @@ namespace std {
         }
 
         # skip the current test by terminating the process
-        fn skip() {
+        fn skip(t: &Testing) {
             process::exit(0);
         }
     }

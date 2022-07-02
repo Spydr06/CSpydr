@@ -1,0 +1,242 @@
+# -------------------------#
+# unit tests for c_str.csp #
+# -------------------------#
+
+fn c_str_test_strlen(t: &std::Testing) {
+    using std::testing;
+    let x = "hello";
+    assert(t, std::c_str::strlen(x) == 5, "std::c_str::strlen(x) != 5");
+    assert(t, std::c_str::strlen("cspydr") == 6, "std::c_str::strlen(\"cspydr\") != 6");
+}
+
+fn c_str_test_strnlen(t: &std::Testing) {
+    using std::testing;
+    let x = "hello";
+    assert(t, std::c_str::strnlen(x, 5) == 5, "std::c_str::strnlen(x, 5) != 5");
+    assert(t, std::c_str::strnlen("cspydr", 6) == 6, "std::c_str::strnlen(\"cspydr\", 6) != 6");
+}
+
+fn c_str_test_strcpy(t: &std::Testing) {
+    using std::testing;
+    let src = "hello";
+    let dest: char 'c[6];
+    std::c_str::strcpy(dest, src);
+    assert(t, src[0] == dest[0], "src[0] != dest[0]");
+    assert(t, src[1] == dest[1], "src[1] != dest[1]");
+    assert(t, src[2] == dest[2], "src[2] != dest[2]");
+    assert(t, src[3] == dest[3], "src[3] != dest[3]");
+    assert(t, src[4] == dest[4], "src[4] != dest[4]");
+}
+
+fn c_str_test_strncpy(t: &std::Testing) {
+    using std::testing;
+
+    let src = "hello";
+    let dest: char 'c[6];
+    std::c_str::strncpy(dest, src, 4);
+    assert(t, src[0] == dest[0], "src[0] != dest[0]");
+    assert(t, src[1] == dest[1], "src[1] != dest[1]");
+    assert(t, src[2] == dest[2], "src[2] != dest[2]");
+    assert(t, src[3] == dest[3], "src[3] != dest[3]");
+    assert(t, src[4] == dest[4], "src[4] != dest[4]");
+}
+
+fn c_str_test_strcat(t: &std::Testing) {
+    using std::testing;
+
+    let a = "hel";
+    let b = "lo";
+    let dest: char 'c[6];
+    std::c_str::strcat(dest, a);
+    assert(t, dest[0] == 'h', "dest[0] != 'h'");
+    assert(t, dest[1] == 'e', "dest[1] != 'e'");
+    assert(t, dest[2] == 'l', "dest[2] != 'l'");
+    std::c_str::strcat(dest, b);
+    assert(t, dest[3] == 'l', "dest[3] != 'l'");
+    assert(t, dest[4] == 'o', "dest[4] != 'o'");
+}
+
+fn c_str_test_strncat(t: &std::Testing) {
+    using std::testing;
+
+    let src = "hello, world!";
+    let dest: char 'c[6];
+    std::c_str::strncat(dest, src, 5);
+    assert(t, dest[0] == 'h', "dest[0] != 'h'");
+    assert(t, dest[1] == 'e', "dest[1] != 'e'");
+    assert(t, dest[2] == 'l', "dest[2] != 'l'");
+    assert(t, dest[3] == 'l', "dest[3] != 'l'");
+    assert(t, dest[4] == 'o', "dest[4] != 'o'");
+}
+
+fn c_str_test_strcmp(t: &std::Testing) {
+    using std::testing;
+
+    let a = "hello";
+    let b = "hello";
+    assert(t, std::c_str::strcmp(a, b) == 0, "std::c_str::strcmp(a, b) != 0");
+}
+
+fn c_str_test_strncmp(t: &std::Testing) {
+    using std::testing;
+
+    let a = "hello, world!";
+    let b = "hello";
+    assert(t, std::c_str::strncmp(a, b, 5) == 0, "std::c_str::strncmp(a, b) != 0");
+}
+
+fn c_str_test_strstr(t: &std::Testing) {
+    using std::testing;
+
+    let haystack = "hello, world!";
+    let needle = "hello";
+
+    assert(t, std::c_str::strstr(haystack, needle) != nil, "std::c_str::strstr(haystack, needle) == nil");
+    assert(t, std::c_str::strstr(haystack, "hallo") == nil, "std::c_str::strstr(haystack, \"hallo\") != nil");
+}
+
+fn c_str_test_strsep(t: &std::Testing) {
+    using std::testing;
+    # TODO
+    skip(t);
+}
+
+fn c_str_test_strspn(t: &std::Testing) {
+    using std::testing;
+    # TODO
+    skip(t);
+}
+
+fn c_str_test_strcspn(t: &std::Testing) {
+    using std::testing;
+    # TODO
+    skip(t);
+}
+
+fn c_str_test_strchr(t: &std::Testing) {
+    using std::testing;
+    # TODO
+    skip(t);
+}
+
+fn c_str_test_strrchr(t: &std::Testing) {
+    using std::testing;
+    # TODO
+    skip(t);
+}
+
+fn c_str_test_strpbrk(t: &std::Testing) {
+    using std::testing;
+    # TODO
+    skip(t);
+}
+
+fn c_str_test_strtok(t: &std::Testing) {
+    using std::testing;
+    # TODO
+    skip(t);
+}
+
+fn c_str_test_memchr(t: &std::Testing) {
+    using std::testing;
+    # TODO
+    skip(t);
+}
+
+fn c_str_test_rawmemchr(t: &std::Testing) {
+    using std::testing;
+    # TODO
+    skip(t);
+}
+
+fn c_str_test_reverse(t: &std::Testing) {
+    using std::testing;
+
+    let str = "hello";
+    std::c_str::reverse(str);
+    assert(t, str[0] == 'o', "str[0] != 'o'");
+    assert(t, str[1] == 'l', "str[1] != 'l'");
+    assert(t, str[2] == 'l', "str[2] != 'l'");
+    assert(t, str[3] == 'e', "str[3] != 'e'");
+    assert(t, str[4] == 'h', "str[4] != 'h'");
+}
+
+fn c_str_test_from_int(t: &std::Testing) {
+    using std::testing;
+    
+    let num = 69;
+
+    let decimal: char 'c[10];
+    std::c_str::from_int(num, decimal, 10);
+    assert(t, decimal[0] == '6', "decimal[0] != '6'");
+    assert(t, decimal[1] == '9', "decimal[1] != '9'");
+
+    let hexadecimal: char 'c[10];
+    std::c_str::from_int(num, hexadecimal, 16);
+    assert(t, hexadecimal[0] == '4', "hexadecimal[0] != '4'");
+    assert(t, hexadecimal[1] == '5', "hexadecimal[1] != '5'");
+
+    let octal: char 'c[10];
+    std::c_str::from_int(num, octal, 8);
+    assert(t, octal[0] == '1', "octal[0] != '1'");
+    assert(t, octal[1] == '0', "octal[1] != '0'");
+    assert(t, octal[2] == '5', "octal[2] != '5'");
+
+    let negative = -42;
+    std::c_str::from_int(negative, decimal, 10);
+    assert(t, decimal[0] == '-', "decimal[0] != '-'");
+    assert(t, decimal[1] == '4', "decimal[1] != '4'");
+    assert(t, decimal[2] == '2', "decimal[2] != '2'");
+}
+
+fn c_str_test_from_uint(t: &std::Testing) {
+    using std::testing;
+    
+    let num = 69;
+
+    let decimal: char 'c[10];
+    std::c_str::from_uint(num, decimal, 10);
+    assert(t, decimal[0] == '6', "decimal[0] != '6'");
+    assert(t, decimal[1] == '9', "decimal[1] != '9'");
+
+    let hexadecimal: char 'c[10];
+    std::c_str::from_uint(num, hexadecimal, 16);
+    assert(t, hexadecimal[0] == '4', "hexadecimal[0] != '4'");
+    assert(t, hexadecimal[1] == '5', "hexadecimal[1] != '5'");
+
+    let octal: char 'c[10];
+    std::c_str::from_uint(num, octal, 8);
+    assert(t, octal[0] == '1', "octal[0] != '1'");
+    assert(t, octal[1] == '0', "octal[1] != '0'");
+    assert(t, octal[2] == '5', "octal[2] != '5'");
+}
+
+fn c_str_test_from_bool(t: &std::Testing) {
+    using std::testing;
+    
+    let str: char 'c[10];
+    std::c_str::from_bool(true, str);
+    assert(t, str[0] == 't', "str[0] != 't'");
+    assert(t, str[1] == 'r', "str[1] != 'r'");
+    assert(t, str[2] == 'u', "str[2] != 'u'");
+    assert(t, str[3] == 'e', "str[3] != 'e'");
+
+    std::c_str::from_bool(false, str);
+    assert(t, str[0] == 'f', "str[0] != 'f'");
+    assert(t, str[1] == 'a', "str[1] != 'a'");
+    assert(t, str[2] == 'l', "str[2] != 'l'");
+    assert(t, str[3] == 's', "str[3] != 's'");
+    assert(t, str[4] == 'e', "str[4] != 'e'");
+}
+
+fn c_str_test_atoi(t: &std::Testing) {
+    using std::testing;
+    # TODO
+    skip(t);
+}
+
+fn c_str_test_atol(t: &std::Testing) {
+    using std::testing;
+    # TODO
+    skip(t);
+}

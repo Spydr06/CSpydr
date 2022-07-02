@@ -66,7 +66,7 @@ static void typecheck_call(ASTNode_T* call, va_list args)
 {
     ASTType_T* call_type = unpack(call->expr->data_type);
     size_t expected_arg_num = call_type->arg_types->size;
-    for(size_t i = 0; i < expected_arg_num; i++)
+    for(size_t i = 0; i < MIN(expected_arg_num, call->args->size); i++)
         call->args->items[i] = typecheck_arg_pass(call_type->arg_types->items[i], call->args->items[i]);
 }
 

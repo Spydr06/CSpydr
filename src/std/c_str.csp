@@ -283,11 +283,12 @@ namespace std {
             <- (s + strlen(s)): &char;
         }
 
-        fn reverse(str: &char)
+        fn reverse(str: &char): &char
         {
             let size = strlen(str);
             for let i: usize = 0; i < size / 2; i++;
                 swap!(str[i], str[size - i - 1]);
+            <- str;
         }
 
         fn from_int(num: i64, str: &char, base: i32): &char 
