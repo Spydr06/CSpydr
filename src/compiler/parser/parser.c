@@ -1020,6 +1020,7 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
     fn->data_type->base = fn->return_type;
     fn->data_type->is_constant = true;
     fn->data_type->arg_types = init_list();
+    fn->data_type->size = PTR_S;
     for(size_t i = 0; i < fn->args->size; i++)
         list_push(fn->data_type->arg_types, ((ASTObj_T*) fn->args->items[i])->data_type);
     mem_add_list(fn->data_type->arg_types);

@@ -4,34 +4,19 @@ fn main(): i32 {
     using std::testing;
 
     let tests = [
-        Test::{
-            const |t: &std::Testing| => array_test_last(t),
-            "array.csp last!()"
-        },
-        Test::{
-            const |t: &std::Testing| => array_test_first(t), 
-            "array.csp first!()"
-        },
-        Test::{
-            const |t: &std::Testing| => assert_test_disable(t),
-            "assert.csp std::assert::disable()"
-        },
-        Test::{
-            const |t: &std::Testing| => c_str_test_strlen(t),
-            "c_str.csp std::c_str::strlen()"
-        },
-        Test::{
-            const |t: &std::Testing| => c_str_test_strnlen(t),
-            "c_str.csp std::c_str::strnlen()"
-        },
-        Test::{
-            const |t: &std::Testing| => c_str_test_strcpy(t),
-            "c_str.csp std::c_str::strcpy()"
-        },
-        Test::{
-            const |t: &std::Testing| => c_str_test_strncpy(t),
-            "c_str.csp std::c_str::strncpy()"
-        },
+        Test::{array_test_last, "array.csp last!()"},
+        Test::{array_test_first, "array.csp first!()"},
+        Test::{assert_test_disable, "assert.csp std::assert::disable()"},
+        Test::{c_str_test_strlen, "c_str.csp std::c_str::strlen()"},
+        Test::{c_str_test_strnlen, "c_str.csp std::c_str::strnlen()"},
+        Test::{c_str_test_strcpy, "c_str.csp std::c_str::strcpy()"},
+        Test::{c_str_test_strncpy, "c_str.csp std::c_str::strncpy()"},
+        Test::{c_str_test_strcat, "c_str.csp std::c_str::strcat()"},
+        Test::{c_str_test_strncat, "c_str.csp std::c_str::strncat()"},
+        Test::{c_str_test_strcmp, "c_str.csp std::c_str::strcmp()"},
+        Test::{c_str_test_strncmp, "c_str.csp std::c_str::strncmp()"},
+        Test::{c_str_test_strstr, "c_str.csp std::c_str::strstr()"},
+        Test::{c_str_test_strsep, "c_str.csp std::c_str::strsep()"},
     ];
 
     let t = new(tests);
@@ -103,7 +88,6 @@ fn c_str_test_strcpy(t: &std::Testing) {
 
 fn c_str_test_strncpy(t: &std::Testing) {
     using std::testing;
-    skip();
 
     let src = "hello";
     let dest: char 'c[6];
@@ -113,4 +97,68 @@ fn c_str_test_strncpy(t: &std::Testing) {
     assert(t, src[2] == dest[2], "src[2] != dest[2]");
     assert(t, src[3] == dest[3], "src[3] != dest[3]");
     assert(t, src[4] == dest[4], "src[4] != dest[4]");
+}
+
+fn c_str_test_strcat(t: &std::Testing) {
+    using std::testing;
+
+    let a = "hel";
+    let b = "lo";
+    let dest: char 'c[6];
+    std::c_str::strcat(dest, a);
+    assert(t, dest[0] == 'h', "dest[0] != 'h'");
+    assert(t, dest[1] == 'e', "dest[1] != 'e'");
+    assert(t, dest[2] == 'l', "dest[2] != 'l'");
+    std::c_str::strcat(dest, b);
+    assert(t, dest[3] == 'l', "dest[3] != 'l'");
+    assert(t, dest[4] == 'o', "dest[4] != 'o'");
+}
+
+fn c_str_test_strncat(t: &std::Testing) {
+    using std::testing;
+
+    let src = "hello, world!";
+    let dest: char 'c[6];
+    std::c_str::strncat(dest, src, 5);
+    assert(t, dest[0] == 'h', "dest[0] != 'h'");
+    assert(t, dest[1] == 'e', "dest[1] != 'e'");
+    assert(t, dest[2] == 'l', "dest[2] != 'l'");
+    assert(t, dest[3] == 'l', "dest[3] != 'l'");
+    assert(t, dest[4] == 'o', "dest[4] != 'o'");
+}
+
+fn c_str_test_strcmp(t: &std::Testing) {
+    using std::testing;
+
+    let a = "hello";
+    let b = "hello";
+    assert(t, std::c_str::strcmp(a, b) == 0, "std::c_str::strcmp(a, b) != 0");
+}
+
+fn c_str_test_strncmp(t: &std::Testing) {
+    using std::testing;
+
+    let a = "hello, world!";
+    let b = "hello";
+    assert(t, std::c_str::strncmp(a, b, 5) == 0, "std::c_str::strncmp(a, b) != 0");
+}
+
+fn c_str_test_strstr(t: &std::Testing) {
+    using std::testing;
+
+    let haystack = "hello, world!";
+    let needle = "hello";
+
+    assert(t, std::c_str::strstr(haystack, needle) != nil, "std::c_str::strstr(haystack, needle) == nil");
+    assert(t, std::c_str::strstr(haystack, "hallo") == nil, "std::c_str::strstr(haystack, 'hallo') != nil");
+}
+
+fn c_str_test_strsep(t: &std::Testing) {
+    # TODO
+}
+
+fn c_str_test_strspn(t: &std::Testing) {
+    using std::testing;
+
+    let s = "hello, world!";
 }
