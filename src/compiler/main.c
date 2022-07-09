@@ -15,6 +15,7 @@
 #include <string.h>
 
 // compiler includes
+#include "platform/linux/linux_platform.h"
 #include "timer/timer.h"
 #include "toolchain.h"
 #include "io/io.h"
@@ -87,6 +88,7 @@ const char help_text[] = "%s"
                        "      --set-mmcd [int]   | Sets the maximum macro call depth (default: %d) (unsafe: could cause stack overflow)\n"
                        "      --show-timings     | Shows the duration the different compiler stages took\n"
                        "  -p, --std-path         | Set the path of the standard library (default: " DEFAULT_STD_PATH ")\n"
+                       "      --clear-cache      | Clears the cache located at %s" DIRECTORY_DELIMS CACHE_DIR "\n"
                        "\n"
                        "If you are unsure, what CSpydr is (or how to use it), please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n";
 
@@ -114,11 +116,13 @@ static void evaluate_info_flags(char* argv)
     get_cspydr_build(csp_build);
     
     if(streq(argv, "-h") || streq(argv, "--help"))
-        printf(help_text, usage_text, __CSP_DEFAULT_MAX_MACRO_CALL_DEPTH);
+        printf(help_text, usage_text, __CSP_DEFAULT_MAX_MACRO_CALL_DEPTH, get_home_directory());
     else if(streq(argv, "-i") || streq(argv, "--info"))
         printf(info_text, get_cspydr_version(), csp_build);
     else if(streq(argv, "-v") || streq(argv, "--version"))
         printf(version_text, get_cspydr_version(), csp_build);
+    else if(streq(argv, "--clear-cache"))
+        clear_cache();
     else
     {
         LOG_ERROR_F("unknown or wrong used flag \"%s\", type \"cspydr --help\" to get help.\n", argv);

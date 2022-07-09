@@ -1,4 +1,5 @@
 #if defined(__linux__) || defined (__linux)
+#define _XOPEN_SOURCE 500
 
 #include "linux_platform.h"
 #include "io/log.h"
@@ -13,6 +14,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <ftw.h>
 
 char* get_absolute_path(char* relative_path) 
 {
@@ -78,6 +80,21 @@ i32 subprocess(const char* p_name, char* const* p_arg, bool print_exit_msg)
     }
 
     return WEXITSTATUS(pid_status);
+}
+
+static i32 unlink_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
+{
+    i32 rv = remove(fpath);
+
+    if (rv)
+        perror(fpath);
+
+    return rv;
+}
+
+i32 remove_directory(const char* dirname)
+{
+    return nftw(dirname, unlink_cb, 64, FTW_DEPTH | FTW_PHYS);
 }
 
 #endif

@@ -3,12 +3,15 @@
 #include "config.h"
 #include "file.h"
 #include "log.h"
+#include "platform/platform_bindings.h"
+#include "globals.h"
 
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
 
 File_T* read_file(const char* path)
 {
@@ -119,4 +122,37 @@ bool question(const char* question)
     }
 
     return answer == 'y' || answer == 'Y';
+}
+
+void clear_cache(void)
+{
+    char buffer[BUFSIZ] = {'\0'};
+    get_cache_dir(buffer);
+
+    if(!global.silent)
+        LOG_OK_F(COLOR_BOLD_RED "  Deleting" COLOR_RESET "   %s\n", buffer);
+
+    bool failure = remove_directory(buffer) == -1;
+    if(failure)
+    {
+        if(errno == ENOENT) // no error gets thrown if the cache folder does not exist. Just return.
+            return;
+        LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " deleting `%s`: %s\n", buffer, strerror(errno));
+        exit(1);
+    }
+}
+
+char* get_cache_dir(char* buffer) 
+{
+    sprintf(buffer, "%s" DIRECTORY_DELIMS CACHE_DIR, get_home_directory());
+    return buffer;
+}
+
+char* get_cached_file_path(char* buffer, const char* filename, const char* fileextension)
+{
+    get_cache_dir(buffer);
+    strcat(buffer, DIRECTORY_DELIMS);
+    strcat(buffer, filename);
+    if(fileextension)
+        strcat(buffer, fileextension);
 }

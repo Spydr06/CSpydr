@@ -277,11 +277,12 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
     if(!global.do_assemble)
         return;
     char asm_source_file[BUFSIZ] = {'\0'};
-    sprintf(asm_source_file, "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.s", get_home_directory(), target);
+    get_cached_file_path(asm_source_file, target, ".s");
 
-    char obj_file[BUFSIZ] = {'\n'};
-    if(global.do_link)
-        sprintf(obj_file, "%s" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "%s.o", get_home_directory(), target);
+    char obj_file[BUFSIZ] = {'\0'};
+    if(global.do_link) {
+        get_cached_file_path(obj_file, target, ".o");
+    }
     else
         sprintf(obj_file, "%s.o", target);
 

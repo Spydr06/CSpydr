@@ -24,6 +24,8 @@ char* get_path_from_file(char* file_path);
 
 bool make_dir(char* path);
 
+i32 remove_directory(const char* dirname);
+
 i32 subprocess(const char* p_name, char* const* p_arg, bool pri32_exit_msg);
 
 #endif
