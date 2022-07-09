@@ -1,5 +1,13 @@
 import "memory.csp";
 
+macro ptr(x) {
+    ((x): &void)
+}
+
+macro ptr(x, ty) {
+    ((x): &(ty))
+}
+
 macro each(i, lo, hi) 
 {
     let i = lo; i < hi; i++

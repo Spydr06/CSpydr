@@ -1,24 +1,84 @@
 type RegexTest: struct {
     regex: &const char,
     matchstr: &const char,
+    expectedlen: i32,
     should_pass: bool,
-    expectedlen: i32
 };
+
+const PRINT_SUCCESSFUL_REGEX_TESTS: bool = true;
 
 fn test_regex(t: &std::Testing)
 {
     using std::testing;
 
     let tests = [
-        RegexTest::{"\\d", "5",        true,  1},
-        RegexTest::{"\\w+", "hello",   true,  5},
-        RegexTest::{"\\s", "\t \n",    true,  1},
-        RegexTest::{"\\S", "\t \n",    false, 0},
-        #RegexTest::{"[\\s]", "\t \n",  true,  1},
-        #RegexTest::{"[\\S]", "\t \n",  false, 0},
-        #RegexTest::{"[\\D]", "5",      false, 0},
-        #RegexTest::{"\\W+", "hello", false, 0},
-        #RegexTest::{"[0-9]+", "12345", true,  5},
+        RegexTest::{"\\d", "5",                1, true },
+        RegexTest::{"\\w+", "hello",           5, true },
+        RegexTest::{"\\s", "\t \n",            1, true },
+        RegexTest::{"\\S", "\t \n",            0, false},
+        RegexTest::{"[\\s]", "\t \n",          1, true },
+        RegexTest::{"[\\S]", "\t \n",          0, false},
+        RegexTest::{"[\\D]", "5",              0, false},
+        RegexTest::{"\\W+", "hello",           0, false},
+        RegexTest::{"[0-9]+", "12345",         5, true },
+        RegexTest::{"\\D", "hey",              1, true },
+        RegexTest::{"\\d", "hey",              0, false},
+        RegexTest::{"[^\\w]", "\\",            1, true },
+        RegexTest::{"[\\W]", "\\",             1, true },
+        RegexTest::{"[\\w]", "\\",             0, false}, 
+        RegexTest::{"[^\\d]", "d",             1, true },
+        RegexTest::{"[\\d]", "d",              0, false},
+        RegexTest::{"[^\\D]", "d",             0, false},
+        RegexTest::{"[\\D]", "d",              1, true },
+        #RegexTest::{"^.*\\\\.*$", "c:\\Tools", 8, true },
+        #RegexTest::{"^[\\+-]*[\\d]+$", "+27",  3, true },
+        RegexTest::{"[abc]", "1c2",            1, true },
+        RegexTest::{"[abc]", "1C2",            0, false}, 
+        RegexTest::{"[1-5]+", "0123456789",    5, true },
+        RegexTest::{"[.2]", "1C2",             1, true },
+        RegexTest::{"a*$", "Xaa",              2, true },
+        RegexTest::{"[a-h]+", "abcdefghxxx",   8, true },
+        RegexTest::{"[a-h]+", "ABCDEFGH",      0, false},
+        RegexTest::{"[A-H]+", "ABCDEFGH",      8, true },
+        RegexTest::{"[A-H]+", "abcdefgh",      0, false},
+        RegexTest::{"[^\\s]+", "abc def",      3, true },
+        RegexTest::{"[^fc]+", "abc def",       2, true },
+        RegexTest::{"[^d\\sf]+", "abc def",    3, true },
+        #RegexTest::{"\n", "abc\ndef",          1, true },
+        #RegexTest::{"b.\\s*\n", "aa\r\nbb\r\ncc\r\n\r\n", 3, true},
+        #RegexTest::{".*c", "abcabc",           6, true },
+        #RegexTest::{".+c", "abcabc",           6, true },
+        RegexTest::{"[b-z].*", "ab",           1, true },
+        RegexTest::{"b[k-z]*", "ab",         1, true },
+        RegexTest::{"[0-9]", "  - ",           0, false},
+        RegexTest::{"[^0-9]", "  - ",          1, true },
+        RegexTest::{"0|", "0|",                2, true },
+        RegexTest::{"\\d\\d:\\d\\d:\\d\\d", "0s:00:00",  0, false},
+        RegexTest::{"\\d\\d:\\d\\d:\\d\\d", "000:00",    0, false},
+        RegexTest::{"\\d\\d:\\d\\d:\\d\\d", "00:0000",   0, false},
+        RegexTest::{"\\d\\d:\\d\\d:\\d\\d", "100:0:00",  0, false},
+        RegexTest::{"\\d\\d:\\d\\d:\\d\\d", "00:100:00", 0, false},
+        RegexTest::{"\\d\\d:\\d\\d:\\d\\d", "0:00:100",  0, false},
+        RegexTest::{"\\d\\d?:\\d\\d?:\\d\\d?", "0:0:0",  5, true },
+        RegexTest::{"\\d\\d?:\\d\\d?:\\d\\d?", "0:00:0", 6, true },
+        RegexTest::{"\\d\\d?:\\d\\d?:\\d\\d?", "0:0:00", 5, true },
+        RegexTest::{"\\d\\d?:\\d\\d?:\\d\\d?", "00:0:0", 6, true },
+        RegexTest::{"\\d\\d?:\\d\\d?:\\d\\d?", "00:00:0",  7, true},
+        RegexTest::{"\\d\\d?:\\d\\d?:\\d\\d?", "00:0:00",  6, true},
+        RegexTest::{"\\d\\d?:\\d\\d?:\\d\\d?", "0:00:00",  6, true},
+        RegexTest::{"\\d\\d?:\\d\\d?:\\d\\d?", "00:00:00", 7, true},
+        RegexTest::{"[Hh]ello [Ww]orld\\s*[!]?", "Hello world !",    12, true},
+        RegexTest::{"[Hh]ello [Ww]orld\\s*[!]?", "hello world !",    12, true},
+        RegexTest::{"[Hh]ello [Ww]orld\\s*[!]?", "Hello World !",    12, true},
+        RegexTest::{"[Hh]ello [Ww]orld\\s*[!]?", "Hello world!   ",  11, true},
+        RegexTest::{"[Hh]ello [Ww]orld\\s*[!]?", "Hello world  !",   13, true},
+        RegexTest::{"[Hh]ello [Ww]orld\\s*[!]?", "hello World    !", 15, true},
+        RegexTest::{"\\d\\d?:\\d\\d?:\\d\\d?", "a:0",      0, false},
+        RegexTest::{".?bar",            "real_bar",        4, true },
+        RegexTest::{".?bar",            "real_foo",        0, false},
+        RegexTest::{"X?Y",              "Z",               0, false},
+     #   RegexTest::{"[a-z]+\nbreak",    "blahblah\nbreak", 14, true},
+     #   RegexTest::{"[a-z\\s]+\nbreak", "bla bla \nbreak", 14, true},
     ];
 
     for let i = 0; i < len tests; i++; {
@@ -31,9 +91,18 @@ fn test_regex(t: &std::Testing)
 
         if should_pass {
             assert(t, result.index != -1, "[%i/%l] result.index == -1, test didn't match as expected", i + 1, len tests);
-            assert(t, result.length == expectedlen, "[%i/%l] result.length != expectedlen", i + 1, len tests);
+            
+            if result.index != -1
+                assert(t, result.length == expectedlen, "[%i/%l] result.length (%i) != expectedlen (%i)", i + 1, len tests, result.length, expectedlen);
+            if result.length != expectedlen || result.index == -1
+                std::io::printf("\t(\"%s\")", regex);
         }
         else
-            assert(t, result.index == -1, "result.index != -1, [%i/%l] test matched unexpectedly", i + 1, len tests);
+            assert(t, result.index == -1, "result.index != -1, [%i/%l] `%s` matched `%s` unexpectedly", i + 1, len tests, tests[i].regex, tests[i].matchstr);
+        
+        if PRINT_SUCCESSFUL_REGEX_TESTS && ((should_pass && result.index != -1) || (!should_pass && result.index == -1)) {
+            using std::io::color;
+            log(t, "[%i/%l] passed\t[ %s%sOK%s ]", i + 1, len tests, &BOLD[0], &GREEN[0], &RESET[0]);
+        }
     };
 }

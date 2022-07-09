@@ -362,7 +362,7 @@ static Token_T* lexer_get_str(Lexer_T* lexer)
 
     lexer_advance(lexer);
 
-    while(lexer->c != '"' || lexer_peek(lexer, -1) == '\\')
+    while(lexer->c != '"' || (lexer_peek(lexer, -1) == '\\' && lexer_peek(lexer, -2) != '\\'))
     {
         if(strlen(buffer) - 3 >= length)
             buffer = realloc(buffer, length *= 2);

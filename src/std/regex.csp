@@ -1,7 +1,7 @@
 import "types.csp";
 import "memory.csp";
 
-macro MAX_REGEXP_OBJECTS { 1024 }
+macro MAX_REGEXP_OBJECTS        { 1024 }
 macro MAX_REGEXP_CHAR_CLASS_LEN { 1024 }
 
 namespace std {
@@ -154,7 +154,7 @@ namespace std {
                     io::putc(']');
                 }
                 else if pattern[i].kind == RegexKind::CHAR
-                    io::printf(" '%c'", pattern[i].u.ch);
+                    io::printf(" '%C'", pattern[i].u.ch);
                 io::puts("");
             }
         }
@@ -214,7 +214,7 @@ namespace std {
                         <- *text == '\0';
                     (*matchlength)++;
                 }
-                while *text == '\0' && match_one(*pattern++, *text++);
+                while *text != '\0' && match_one(*pattern, *text) && pattern++ && text++;
                 
                 *matchlength = pre;
                 <- false;
@@ -274,7 +274,7 @@ namespace std {
                         <- true;
                     }
                 }
-                while *str++ != '\0';
+                while *str != '\0' && str++;
                 <- 0;
             }
 
@@ -305,7 +305,7 @@ namespace std {
                     (*matchlength)++;
                 }
                 while text >= prepoint {
-                    if match_pattern(pattern, text++, matchlength)
+                    if match_pattern(pattern, text--, matchlength)
                         <- true;
                     (*matchlength)--;
                 }
@@ -330,15 +330,15 @@ namespace std {
 
             fn match_question(p: Regex, pattern: &Regex, text: &const char, matchlength: &i32): bool
             {
-                if p.kind == RegexKind::UNUSED
+                if p.kind == RegexKind::UNUSED || match_pattern(pattern, text, matchlength)
                     <- true;
-                if match_pattern(pattern, text, matchlength)
-                    <- true;
-                if *text && match_one(p, *text++)
+                if *text && match_one(p, *text) {
+                    text++;
                     if match_pattern(pattern, text, matchlength) {
                         (*matchlength)++;
                         <- true;
                     }
+                }
                 <- false;
             }
         }

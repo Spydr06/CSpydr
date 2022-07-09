@@ -92,6 +92,13 @@ void compile(char* input_file, char* output_file, Action_T action)
                 LOG_ERROR_F(COLOR_BOLD_RED "[ERROR]" COLOR_RESET COLOR_RED "unknown action `%d`\n", action);
                 break;
         }
+
+        if(global.clear_cache_after)
+        {
+            timer_start("clear cache");
+            clear_cache();
+            timer_stop();
+        }
     }
     catch {
         get_panic_handler()();

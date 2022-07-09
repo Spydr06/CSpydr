@@ -242,6 +242,8 @@ i32 main(i32 argc, char* argv[])
             }
             global.std_path = argv[i];
         }
+        else if(streq(arg, "--clear-cache"))
+            global.clear_cache_after = true;
         else
             evaluate_info_flags(argv[i]);
     }

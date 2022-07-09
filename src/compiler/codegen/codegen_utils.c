@@ -152,3 +152,9 @@ bool should_emit(ASTObj_T* obj)
 {
     return global.optimize ? obj->referenced : true;
 }
+
+bool ptr_type(ASTType_T* ty)
+{
+    ty = unpack(ty);
+    return ty->kind == TY_PTR || ty->kind == TY_VLA;
+}

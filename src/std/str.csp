@@ -283,6 +283,23 @@ namespace std {
                             concat(&str, buf);
                         }
                         'c' => append(&str, va_arg!{args, char}); # char
+                        'C' => {
+                            let c = va_arg!{args, char};
+                            match c {
+                                '\a' => concat(&str, "\\a");
+                                '\b' => concat(&str, "\\b");
+                                '\t' => concat(&str, "\\t");
+                                '\v' => concat(&str, "\\v");
+                                '\n' => concat(&str, "\\n");
+                                '\r' => concat(&str, "\\r");
+                                '\f' => concat(&str, "\\f");
+                                '\'' => concat(&str, "\\'");
+                                '\"' => concat(&str, "\\");
+                                '\\' => concat(&str, "\\\\");
+                                '\0' => concat(&str, "\\0");
+                                _ => append(&str, c);
+                            }
+                        }
                         's' => {
                             let arg = va_arg!{args, &char};
 
