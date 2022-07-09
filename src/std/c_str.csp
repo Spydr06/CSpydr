@@ -28,13 +28,15 @@ namespace std {
 
         fn strcpy(dest: &char, src: &const char)
             copy(dest, src);
-        
-        fn strncpy(s1: &char, s2: &const char, n: usize): &char 
+
+        fn strncpy(d: &char, s: &const char, n: usize): &char 
         {
-            let size = strnlen(s2, n);
-            if size != n
-                mem::set(s1 + size, '\0', n - size);
-            <- mem::copy(s1, s2, size);
+            let i: u64;
+            for i = 0; i < n && s[i] != '\0'; i++; 
+                d[i] = s[i];
+            for ; i < n; i++; 
+                d[i] = '\0';
+            <- d;
         }
 
         fn strcat(dest: &char, src: &const char): &char
@@ -47,49 +49,31 @@ namespace std {
         {
             let a = dest;
             dest += strlen(dest);
-            while n != 0 && (*src) != '\0'
-            {
+            while n && *src {
                 n--;
-                (*dest) = *src;
-                (src)++;
-                (*dest)++;
+                *dest++ = *src++;
             }
-
-            (*dest) = 0;
-            (*dest)++;
             <- a;
         }
 
-        fn strcmp(p1: &const char, p2: &const char): i32
+        fn strcmp(l: &const char, r: &const char): i32
         {
-            let s1: &u8 = p1;
-            let s2: &u8 = p2;
-
-            let c1 = *(s1++);
-            let c2 = *(s2++);
-
-            while c1 == c2 {
-                c1 = *(s1++);
-                c2 = *(s2++);
-                if c1 == '\0'
-                    <- c1 - c2;
+            while *l == *r && *l {
+                l++;
+                r++;
             }
-
-            <- c1 - c2;
+            <- *l - *r;
         }
 
-        fn strncmp(p1: &const char, p2: &const char, n: usize): i32
+        fn strncmp(l: &const char, r: &const char, n: usize): i32
         {
-            let s1: &u8 = p1;
-            let s2: &u8 = p2;
-            if !(n--)
-                <- 0;
-            for ; (*s1) != '\0' && (*s2) != '\0' && (*s1) == (*s2); n--; {
-                s1++;
-                s2++;
+            if !n-- ret 0;
+            while *l && *r && n && *l == *r {
+                l++;
+                r++;
+                n--;
             }
-
-            <- (*s1) - (*s2);
+            <- *l - *r;
         }
 
         fn strstr(str: &char, substr: &char): &char
@@ -359,14 +343,14 @@ namespace std {
         {
             let n = 0;
             let neg = false;
-            while ctype::isspace(*s)
+            while character::isspace(*s)
                 s++;
             match *s {
                 '-' => { neg = true; s++; }
                 '+' => s++;
             }
 
-            while ctype::isdigit(*s)
+            while character::isdigit(*s)
                 n = 10 * n + (*(s++) - '0');
             <- if neg => n else -n;
         }
@@ -375,14 +359,14 @@ namespace std {
         {
             let n: i64 = 0;
             let neg = false;
-            while ctype::isspace(*s)
+            while character::isspace(*s)
                 s++;
             match *s {
                 '-' => { neg = true; s++; }
                 '+' => s++;
             }
 
-            while ctype::isdigit(*s)
+            while character::isdigit(*s)
                 n = 10 * n - (*(s++) - '0');
             <- if neg => n else -n;
         }

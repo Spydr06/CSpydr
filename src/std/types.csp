@@ -32,22 +32,12 @@ namespace std {
     type nlink_t: u64;
     type uid_t: u32;
     type gid_t: u32;
-    type off_t: i64;
     type blksize_t: i64;
     type blkcnt_t: i64;
-    type time_t: i64;
     type nfds_t: u32;
     type ssize_t: i64;
     type key_t: i32;
     type pid_t: i32;
-    type div_t: struct {
-        quot: i32,
-        rem: i32
-    };
-    type ldiv_t: struct {
-        quot: i64,
-        rem: i64
-    };
     type sa_family_t: u16;
     type in_port_t: u16;
     type socklen_t: u32;

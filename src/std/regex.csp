@@ -1,72 +1,351 @@
 import "types.csp";
 import "memory.csp";
 
-namespace std {
-    type Regex: struct {
+macro MAX_REGEXP_OBJECTS { 1024 }
+macro MAX_REGEXP_CHAR_CLASS_LEN { 1024 }
 
+namespace std {
+    type RegexKind: enum {
+        UNUSED,
+        DOT,
+        BEGIN, END,
+        QUESTIONMARK,
+        STAR, PLUS,
+        CHAR, CHAR_CLASS, INV_CHAR_CLASS,
+        DIGIT, NOT_DIGIT,
+        ALPHA, NOT_ALPHA,
+        WHITESPACE, NOT_WHITESPACE,
+        BRANCH
+    };
+
+    type Regex: struct {
+        kind: u8,
+        u: union {
+            ch: u8,
+            ccl: &u8
+        }
     };
 
     type RegexMatch: struct {
-        begin: usize,
-        end: usize
-    };
-
-    type RegexError: enum {
-        OK = 0,
-	    FAILED_ALLOC,
-	    INVALID_PARAMS,
-	    EARLY_QUANTIFIER,
-	    INVALID_COMPLEX_QUANT,
-	    UNEXPECTED_EOL,
-	    INVALID_COMPLEX_CLASS,
-	    UNCLOSED_SUBEXPRESSION,
+        index: i32,
+        length: i32
     };
 
     namespace regex {
+        fn compile(pattern: &const char): &Regex
+        {
+            using __static;
+            let ccl_bufidx = 1;
+
+            let i = 0;
+            let j = 0;
+    
+            while pattern[i] != '\0' && (j + 1 < len compiled)
+            {
+                let c = pattern[i];
+
+                match c {
+                    '^' => compiled[j].kind = RegexKind::BEGIN;
+                    '$' => compiled[j].kind = RegexKind::END;
+                    '.' => compiled[j].kind = RegexKind::DOT;
+                    '*' => compiled[j].kind = RegexKind::STAR;
+                    '+' => compiled[j].kind = RegexKind::PLUS;
+                    '?' => compiled[j].kind = RegexKind::QUESTIONMARK;
+
+                    '\\' => if pattern[i + 1] != '\0'
+                        __internal::compile_char(pattern, i += 1, j);
+
+                    '[' => {
+                        let buf_begin = ccl_bufidx;
+                        if pattern[i + 1] == '^' {
+                            compiled[j].kind = RegexKind::INV_CHAR_CLASS;
+                            i++;
+                            if pattern[i + 1] == '\0'
+                                <- 0;
+                        }
+                        else
+                            compiled[j].kind = RegexKind::CHAR_CLASS;
+                        
+                        while pattern[i += 1] != ']' && pattern[i] != '\0' {
+                            if pattern[i] == '\\' {
+                                if ccl_bufidx >= (len ccl_buf) - 1
+                                    # TODO: exceeded internal buffer
+                                    <- 0;
+                                if pattern[i + 1] == '\0'
+                                    <- 0;
+                                ccl_buf[ccl_bufidx++] = pattern[i++];
+                            }
+                            else if (ccl_bufidx >= len ccl_buf)
+                                # TODO: exceeded internal buffer
+                                <- 0;
+                            ccl_buf[ccl_bufidx++] = pattern[i];
+                        }
+
+                        if ccl_bufidx >= len ccl_buf
+                            # TODO: exceeded internal buffer
+                            <- 0;
+                        
+                        ccl_buf[ccl_bufidx++] = 0;
+                        compiled[j].u.ccl = &ccl_buf[buf_begin];
+                    }
+
+                    _ => {
+                        compiled[j].kind = RegexKind::CHAR;
+                        compiled[j].u.ch = c;
+                    }
+                }
+
+                if pattern[i] == 0 
+                    ret 0;
+                i++;
+                j++;
+            }
+
+            compiled[j].kind = RegexKind::UNUSED;
+
+            <- &compiled[0];
+        }
+
+        fn match_pattern(pattern: &Regex, text: &const char): RegexMatch
+        {
+            if pattern == nil
+                <- RegexMatch::{-1, 0};
+            let matchlength = 0;
+
+            if pattern.kind == RegexKind::BEGIN
+                <- RegexMatch::{
+                    if __internal::match_pattern(&pattern[1], text, &matchlength) => 0 else -1,
+                    matchlength
+                };
+            
+            let index = -1;
+            do {
+                index++;
+                if __internal::match_pattern(pattern, text, &matchlength) {
+                    if *text == '\0'
+                        <- RegexMatch::{-1, matchlength};
+                    <- RegexMatch::{index, matchlength};
+                }
+            } 
+            while *(text++) != '\0';
+
+            <- RegexMatch::{-1, matchlength};
+        }
+
+        fn matches(pattern: &const char, text: &const char): std::RegexMatch
+        {
+            <- match_pattern(compile(pattern), text);
+        }
+
+        fn print(pattern: &Regex) 
+        {
+            for let i = 0; i < len __static::compiled; i++; {
+                if pattern[i].kind == RegexKind::UNUSED
+                    break;
+                io::printf(kind_str(pattern[i].kind));
+                if pattern[i].kind == RegexKind::CHAR_CLASS || pattern[i].kind == RegexKind::INV_CHAR_CLASS {
+                    io::printf(" [");
+                    for let j = 0; j < len __static::ccl_buf; j++; {
+                        let c = pattern[i].u.ccl[j];
+                        if c == '\0' || c == ']'
+                            break;
+                        io::putc(c);
+                    }
+                    io::putc(']');
+                }
+                else if pattern[i].kind == RegexKind::CHAR
+                    io::printf(" '%c'", pattern[i].u.ch);
+                io::puts("");
+            }
+        }
+
+        fn kind_str(kind: RegexKind): &const char {
+            match kind {
+                RegexKind::UNUSED =>         ret "UNUSED";
+                RegexKind::DOT =>            ret "DOT";
+                RegexKind::BEGIN =>          ret "BEGIN";
+                RegexKind::END =>            ret "END";
+                RegexKind::QUESTIONMARK =>   ret "QUESTIONMARK";
+                RegexKind::STAR =>           ret "STAR";
+                RegexKind::PLUS =>           ret "PLUS";
+                RegexKind::CHAR =>           ret "CHAR";
+                RegexKind::CHAR_CLASS =>     ret "CHAR_CLASS";
+                RegexKind::INV_CHAR_CLASS => ret "INV_CHAR_CLASS";
+                RegexKind::DIGIT =>          ret "DIGIT";
+                RegexKind::NOT_DIGIT =>      ret "NOT_DIGIT";
+                RegexKind::ALPHA =>          ret "ALPHA";
+                RegexKind::NOT_ALPHA =>      ret "NOT_ALPHA";
+                RegexKind::WHITESPACE =>     ret "WHITESPACE";
+                RegexKind::NOT_WHITESPACE => ret "NOT_WHITESPACE";
+                RegexKind::BRANCH =>         ret "BRANCH";
+                _ =>                         ret "<unknown>";
+            }
+        }
+
+        namespace __internal {
+            fn compile_char(pattern: &const char, i: i32, j: i32) {
+                using __static;
+
+                match pattern[i] {
+                    'd' => compiled[j].kind = RegexKind::DIGIT;
+                    'D' => compiled[j].kind = RegexKind::NOT_DIGIT;
+                    'w' => compiled[j].kind = RegexKind::ALPHA;
+                    'W' => compiled[j].kind = RegexKind::NOT_ALPHA;
+                    's' => compiled[j].kind = RegexKind::WHITESPACE;
+                    'S' => compiled[j].kind = RegexKind::NOT_WHITESPACE;
+                    _ => {
+                        compiled[j].kind = RegexKind::CHAR;
+                        compiled[j].u.ch = pattern[i];
+                    }
+                }
+            }
+
+            fn match_pattern(pattern: &Regex, text: &const char, matchlength: &i32): bool 
+            {
+                let pre = *matchlength;
+                do {
+                    if pattern.kind == RegexKind::UNUSED || pattern[1].kind == RegexKind::QUESTIONMARK
+                        <- match_question(*pattern, &pattern[2], text, matchlength);
+                    else if pattern[1].kind == RegexKind::STAR
+                        <- match_star(*pattern, &pattern[2], text, matchlength);
+                    else if pattern[1].kind == RegexKind::PLUS
+                        <- match_plus(*pattern, &pattern[2], text, matchlength);
+                    else if pattern.kind == RegexKind::END && pattern[1].kind == RegexKind::UNUSED
+                        <- *text == '\0';
+                    (*matchlength)++;
+                }
+                while *text == '\0' && match_one(*pattern++, *text++);
+                
+                *matchlength = pre;
+                <- false;
+            }
+
+            fn match_alphanum(c: char): bool 
+            {
+                <- c == '_' || character::isalpha(c) || character::isdigit(c);
+            }
+
+            fn match_range(c: char, str: &const char): bool 
+            {
+                <- c != '-' && 
+                    str[0] != '\0' && 
+                    str[0] != '-' && 
+                    str[1] == '-' && 
+                    str[2] != '\0' &&
+                    c >= str[0] &&
+                    c <= str[2];
+            }
+
+            fn match_dot(c: char): bool
+            {
+                <- c != '\n' && c != '\r';
+            }
+
+            fn match_metachar(c: char, str: &const char): bool
+            {
+                using character;
+
+                match *str {
+                    'd' => ret isdigit(c);
+                    'D' => ret !isdigit(c);
+                    'w' => ret isalnum(c);
+                    'W' => ret !isalnum(c);
+                    's' => ret isspace(c);
+                    'S' => ret !isspace(c);
+                    _ =>   ret c == *str;
+                }
+            }
+
+            fn match_charclass(c: char, str: &const char): bool 
+            {
+                do {
+                    if match_range(c, str)
+                        <- true;
+                    else if *str == '\\' {
+                        str++;
+                        if match_metachar(c, str)
+                            <- true;
+                        else if c == *str && !character::ismetachar(c)
+                            <- true;
+                    }
+                    else if c == *str {
+                        if c == '-'
+                            <- str[-1] == '\0' || str[1] == '\0';
+                        <- true;
+                    }
+                }
+                while *str++ != '\0';
+                <- 0;
+            }
+
+            fn match_one(p: Regex, c: char): bool
+            {
+                using character;
+
+                match p.kind {
+                    RegexKind::DOT =>            ret match_dot(c);
+                    RegexKind::CHAR_CLASS =>     ret match_charclass(c, p.u.ccl);
+                    RegexKind::INV_CHAR_CLASS => ret !match_charclass(c, p.u.ccl);
+                    RegexKind::DIGIT =>          ret isdigit(c);
+                    RegexKind::NOT_DIGIT =>      ret !isdigit(c);
+                    RegexKind::ALPHA =>          ret isalpha(c);
+                    RegexKind::NOT_ALPHA =>      ret !isalpha(c);
+                    RegexKind::WHITESPACE =>     ret isspace(c);
+                    RegexKind::NOT_WHITESPACE => ret !isspace(c);
+                    _ =>                         ret p.u.ch == c;
+                }
+            }
+
+            fn match_star(p: Regex, pattern: &Regex, text: &const char, matchlength: &i32): bool
+            {
+                let prelen = *matchlength;
+                let prepoint = text;
+                while *text != '\0' && match_one(p, *text) {
+                    text++;
+                    (*matchlength)++;
+                }
+                while text >= prepoint {
+                    if match_pattern(pattern, text++, matchlength)
+                        <- true;
+                    (*matchlength)--;
+                }
+                *matchlength = prelen;
+                <- false;
+            }
+
+            fn match_plus(p: Regex, pattern: &Regex, text: &const char, matchlength: &i32): bool
+            {
+                let prepoint = text;
+                while *text != '\0' && match_one(p, *text) {
+                    text++;
+                    (*matchlength)++;
+                }
+                while text > prepoint {
+                    if match_pattern(pattern, text--, matchlength)
+                        <- true;
+                    (*matchlength)--;
+                }
+                <- false;
+            }
+
+            fn match_question(p: Regex, pattern: &Regex, text: &const char, matchlength: &i32): bool
+            {
+                if p.kind == RegexKind::UNUSED
+                    <- true;
+                if match_pattern(pattern, text, matchlength)
+                    <- true;
+                if *text && match_one(p, *text++)
+                    if match_pattern(pattern, text, matchlength) {
+                        (*matchlength)++;
+                        <- true;
+                    }
+                <- false;
+            }
+        }
+
         namespace __static {
-            let err: RegexError = RegexError::OK;
+            let compiled: Regex[MAX_REGEXP_OBJECTS!];
+            let ccl_buf: char[MAX_REGEXP_CHAR_CLASS_LEN!];
         }
-
-        fn compile(re: const &char): &Regex
-        {
-            <- nil;
-        }
-
-        fn error(): RegexError
-        {
-            <- __static::err;
-        }
-
-        fn errorstr(error: RegexError): const &char
-        {
-            match error {
-                RegexError::OK => ret "ok";
-                RegexError::FAILED_ALLOC           => ret "failed allocation";
-                RegexError::INVALID_PARAMS         => ret "invalid parameters";
-                RegexError::EARLY_QUANTIFIER       => ret "early quantifier";
-                RegexError::INVALID_COMPLEX_QUANT  => ret "invalid complex quantifier";
-                RegexError::UNEXPECTED_EOL         => ret "unexpected end of line";
-                RegexError::INVALID_COMPLEX_CLASS  => ret "invalid complex class";
-                RegexError::UNCLOSED_SUBEXPRESSION => ret "unclosed subexpresion";
-                _ => ret "unrecognized regex error";
-            }
-        }
-
-        fn matches(re: &Regex, s: const &char, m: &RegexMatch): bool
-        {
-            <- true;
-        }
-
-        fn free(re: &Regex)
-        {
-            if !re {
-                __static::err = RegexError::INVALID_PARAMS;
-                ret;
-            }
-
-            mem::free(re);
-        }
-
-        [ignore_unused("*")] # temporary
     }
 }

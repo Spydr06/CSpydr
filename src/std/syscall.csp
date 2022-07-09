@@ -281,10 +281,10 @@ namespace std {
         fn poll(fds: &PollFd, nfds: nfds_t, timeout: i32): i32
             syscall!(Syscall::POLL, fds, nfds, timeout);
 
-        fn lseek(fd: i32, offset: off_t, whence: i32): off_t
+        fn lseek(fd: i32, offset: Offset, whence: i32): Offset
             syscall!(Syscall::LSEEK, fd, offset, whence);
 
-        fn mmap(addr: &void, length: usize, prot: i32, flags: i32, fd: i32, off: off_t): &void
+        fn mmap(addr: &void, length: usize, prot: i32, flags: i32, fd: i32, off: Offset): &void
             syscall!(Syscall::MMAP, addr, length, prot, flags, fd, off);
 
         fn mprotect(addr: &void, length: usize, prot: i32): i32
@@ -302,10 +302,10 @@ namespace std {
         fn ioctl(fd: i32, cmd: i32, arg: u64): i32
             syscall!(Syscall::IOCTL, fd, cmd, arg);
         
-        fn pread64(fd: i32, buf: &void, count: usize, offset: off_t): ssize_t
+        fn pread64(fd: i32, buf: &void, count: usize, offset: Offset): ssize_t
             syscall!(Syscall::PREAD64, fd, buf, count, offset);
 
-        fn pwrite64(fd: i32, buf: &void, count: usize, offset: off_t): ssize_t
+        fn pwrite64(fd: i32, buf: &void, count: usize, offset: Offset): ssize_t
             syscall!(Syscall::PWRITE64, fd, buf, count, offset);
 
         fn readv(fd: i32, iov: &IOVec, iovcnt: i32): ssize_t
@@ -320,7 +320,7 @@ namespace std {
         fn pipe(pipefd: &i32): i32
             syscall!(Syscall::PIPE, pipefd);
 
-        fn time(time: &time_t): std::time_t
+        fn time(time: &TimeVal): std::TimeVal
             syscall!(Syscall::TIME, time);
         
         fn shed_yield(): i32
@@ -362,7 +362,7 @@ namespace std {
         fn getpid(): pid_t
             syscall!(Syscall::GETPID);
 
-        fn sendfile(out_fd: i32, in_fd: i32, offset: &off_t, count: usize): ssize_t
+        fn sendfile(out_fd: i32, in_fd: i32, offset: &Offset, count: usize): ssize_t
             syscall!(Syscall::SENDFILE, out_fd, in_fd, offset, count);
         
         fn socket(domain: i32, _type: i32, protocol: i32): i32
@@ -469,10 +469,10 @@ namespace std {
         fn fdatasync(fd: i32): i32
             syscall!(Syscall::FDATASYNC, fd);
         
-        fn truncate(path: &const char, length: off_t): i32
+        fn truncate(path: &const char, length: Offset): i32
             syscall!(Syscall::TRUNCATE, path, length);
         
-        fn ftruncate(fd: i32, length: off_t): i32
+        fn ftruncate(fd: i32, length: Offset): i32
             syscall!(Syscall::FTRUNCATE, fd, length);
         
         fn getdents(fd: u32, dirp: &void, count: u32): i64

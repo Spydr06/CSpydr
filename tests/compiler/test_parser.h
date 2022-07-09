@@ -13,7 +13,7 @@ void name(void) {                         \
     TEST_ASSERT(file != NULL);            \
     List_T* files = init_list();          \
     list_push(files, file);               \
-    ASTProg_T prog;                       \
+    ASTProg_T prog = {0};                 \
     parse(&prog, files, true);            \
     code                                  \
 }                                                                

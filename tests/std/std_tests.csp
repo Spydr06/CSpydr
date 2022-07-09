@@ -40,17 +40,20 @@ fn main(): i32 {
         # math.csp
         Test::{math_test_pow, "math.csp std::math::pow()"},
         Test::{math_test_div, "math.csp std::math::div()"},
-        Test::{math_test_ldiv, "math.csp std::math::ldiv()"},
+        Test::{math_test_div64, "math.csp std::math::div64()"},
         Test::{math_test_mod, "math.csp std::math::mod()"},
         Test::{math_test_sqrt, "math.csp std::math::sqrt()"},
         Test::{math_test_abs, "math.csp std::math::abs()"},
-        Test::{math_test_labs, "math.csp std::math::labs()"},
+        Test::{math_test_abs64, "math.csp std::math::abs64()"},
 
         # memory.csp
         Test::{mem_test_alloc, "mem.csp std::mem::alloc()"},
         Test::{mem_test_free, "mem.csp std::mem::free()"},
         Test::{mem_test_calloc, "mem.csp std::mem::calloc()"},
         Test::{mem_test_realloc, "mem.csp std::mem::realloc()"},
+
+        # regex.csp
+        Test::{test_regex, "regex.csp"},
     ];
 
     let t = new(tests);
@@ -93,3 +96,4 @@ fn assert_test_disable(t: &std::Testing) {
 import "c_str_tests.csp";
 import "math_tests.csp";
 import "mem_tests.csp";
+import "regex_tests.csp";

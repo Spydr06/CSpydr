@@ -3,8 +3,10 @@ import "syscall.csp";
 import "str.csp";
 
 namespace std {
+    type TimeVal: i64;
+
     type Time: struct {
-        unix_secs: time_t,
+        unix_secs: TimeVal,
         year: u16,  # 2022 (0 to 65535)
         month: u8,  # 02   (1 to 12)
         day: u8,    # 07   (1 to 31)
@@ -14,7 +16,7 @@ namespace std {
     };
 
     type TimeSpec: struct {
-        tv_sec: time_t,
+        tv_sec: TimeVal,
         tv_nsec: i64
     };
 
@@ -102,7 +104,7 @@ namespace std {
         }
 
         namespace unix {
-            fn secs(): std::time_t
+            fn secs(): std::TimeVal
             {
                 <- syscall::time(nil);
             }

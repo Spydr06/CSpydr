@@ -9,6 +9,16 @@ macro min(a, b) {
 }
 
 namespace std {
+    type Division: struct {
+        quot: i32,
+        rem: i32
+    };
+
+    type Division64: struct {
+        quot: i64,
+        rem: i64
+    };
+
     namespace math {
         const PI: f64 = 3.141592653589793;
 
@@ -46,14 +56,14 @@ namespace std {
             }
         }
 
-        fn div(num: i32, den: i32): std::div_t
-            <- div_t :: {
+        fn div(num: i32, den: i32): std::Division
+            <- Division :: {
                 num / den,
                 num % den
             };
         
-        fn ldiv(num: i64, den: i64): std::ldiv_t
-            <- ldiv_t :: {
+        fn div64(num: i64, den: i64): std::Division64
+            <- Division64 :: {
                 num / den,
                 num % den
             };
@@ -80,9 +90,7 @@ namespace std {
         fn abs(a: i32): i32
             <- if a > 0 => a else -a;
         
-        fn labs(a: i64): i64
+        fn abs64(a: i64): i64
             <- if a > 0 => a else -a;
-
-        
     }
 }

@@ -15,9 +15,9 @@ fn math_test_div(t: &std::Testing) {
     assert(t, d.rem == 1, "d.rem != 1");
 }
 
-fn math_test_ldiv(t: &std::Testing) {
+fn math_test_div64(t: &std::Testing) {
     using std::testing, std::math;
-    let d = 10 `ldiv` 3;
+    let d = 10 `div64` 3;
     assert(t, d.quot == 3, "d.quot != 3");
     assert(t, d.rem == 1, "d.rem != 1");
 }
@@ -44,8 +44,8 @@ fn math_test_abs(t: &std::Testing) {
     assert(t, abs(-1234) == 1234, "abs(-1234) != 1234");
 }
 
-fn math_test_labs(t: &std::Testing) {
+fn math_test_abs64(t: &std::Testing) {
     using std::testing, std::math;
-    assert(t, labs(1234) == 1234, "labs(1234) != 1234");
-    assert(t, labs(-1234) == 1234, "labs(-1234) != 1234");
+    assert(t, abs64(1234) == 1234, "abs64(1234) != 1234");
+    assert(t, abs64(-1234) == 1234, "abs64(-1234) != 1234");
 }

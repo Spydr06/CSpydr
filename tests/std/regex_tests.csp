@@ -1,0 +1,39 @@
+type RegexTest: struct {
+    regex: &const char,
+    matchstr: &const char,
+    should_pass: bool,
+    expectedlen: i32
+};
+
+fn test_regex(t: &std::Testing)
+{
+    using std::testing;
+
+    let tests = [
+        RegexTest::{"\\d", "5",        true,  1},
+        RegexTest::{"\\w+", "hello",   true,  5},
+        RegexTest::{"\\s", "\t \n",    true,  1},
+        RegexTest::{"\\S", "\t \n",    false, 0},
+        RegexTest::{"[\\s]", "\t \n",  true,  1},
+        #RegexTest::{"[\\S]", "\t \n",  false, 0},
+        #RegexTest::{"[\\D]", "5",      false, 0},
+        #RegexTest::{"\\W+", "hello", false, 0},
+        #RegexTest::{"[0-9]+", "12345", true,  5},
+    ];
+
+    for let i = 0; i < len tests; i++; {
+        let regex = tests[i].regex;
+        let matchstr = tests[i].matchstr;
+        let should_pass = tests[i].should_pass;
+        let expectedlen = tests[i].expectedlen;
+
+        let result = std::regex::matches(regex, matchstr);
+
+        if should_pass {
+            assert(t, result.index != -1, "[%i/%l] result.index == -1, test didn't match as expected", i + 1, len tests);
+            assert(t, result.length == expectedlen, "[%i/%l] result.length != expectedlen", i + 1, len tests);
+        }
+        else
+            assert(t, result.index == -1, "result.index != -1, [%i/%l] test matched unexpectedly", i + 1, len tests);
+    };
+}

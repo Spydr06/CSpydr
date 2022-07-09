@@ -117,7 +117,7 @@ namespace std {
     }
 
     # utility functions from "ctype.h" of the C standard library
-    namespace ctype {
+    namespace character {
         fn isalnum(c: i32): i32
             <- isalpha(c) != 0 || isdigit(c) != 0;
 
@@ -170,5 +170,8 @@ namespace std {
                 <- c | 0x5f;
             <- c;
         }
+
+        fn ismetachar(c: i32): i32
+            <- c == 's' || c == 'S' || c == 'w' || c == 'W' || c == 'd' || c == 'D';
     }
 }

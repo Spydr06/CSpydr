@@ -147,7 +147,7 @@ namespace std {
             }
         }
 
-        fn assert(t: &Testing, condition: bool, error_msg: &const char) {
+        fn va_assert(t: &Testing, condition: bool, error_msg: &const char, va_list: &VAList) {
             do {
                 error::new(std::Errno::NILPTR, "argument t is nil");
                 ret;
@@ -155,16 +155,22 @@ namespace std {
 
             using io::color;
             do {
-                io::eprintf("\n    %sTest `%s` (%l): assertion failed: %s%s", &RED[0], (*t.tests)[t.current].desc, t.current + 1, error_msg, &RESET[0]);
+                io::eprintf("\n    %sTest `%s` (%l): assertion failed: ", &RED[0], (*t.tests)[t.current].desc, t.current + 1);
+                io::vfprintf(stderr!, error_msg, va_list);
+                io::eprintf(&RESET[0]);
                 t.errors++;
             } unless condition;
         }
 
-        fn assert_false(t: &Testing, condition: bool, error_msg: &const char) {
-            assert(t, !condition, error_msg);
+        fn assert(t: &Testing, condition: bool, error_msg: &const char, args: ...) {
+            va_assert(t, condition, error_msg, &args);
         }
 
-        fn assert_fatal(t: &Testing, condition: bool, error_msg: &const char) {
+        fn assert_false(t: &Testing, condition: bool, error_msg: &const char, args: ...) {
+            va_assert(t, !condition, error_msg, &args);
+        }
+
+        fn assert_fatal(t: &Testing, condition: bool, error_msg: &const char, args: ...) {
             do {
                 error::new(std::Errno::NILPTR, "argument t is nil");
                 ret;
@@ -172,7 +178,9 @@ namespace std {
 
             using io::color;
             do {
-                io::eprintf("\n    %sTest `%s` (%l): fatal assertion failed: %s%s", &RED[0], (*t.tests)[t.current].desc, t.current + 1, error_msg, &RESET[0]);
+                io::eprintf("\n    %sTest `%s` (%l): fatal assertion failed: ", &RED[0], (*t.tests)[t.current].desc, t.current + 1);
+                io::vfprintf(stderr!, error_msg, &args);
+                io::eprintf(&RESET[0]);
                 t.errors++;
                 process::exit(2);
             } unless condition;
@@ -182,5 +190,6 @@ namespace std {
         fn skip(t: &Testing) {
             process::exit(0);
         }
+        [ignore_unused("skip")]
     }
 }

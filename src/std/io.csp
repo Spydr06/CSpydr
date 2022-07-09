@@ -36,14 +36,14 @@ namespace std {
         uid: uid_t,         # User ID of the file's owner
         gid: gid_t,         # Group ID of the file's owner
         rdev: dev_t,        # Device number, if device
-        size: off_t,        # Sote of the file (in bytes)
+        size: Offset,        # Sote of the file (in bytes)
         blksize: blksize_t, # Optimal blocksize for IO
         blocks: blkcnt_t,   # Number 512-byte blocks allocated
-        atime: time_t,
+        atime: TimeVal,
         atimensec: u64,
-        mtime: time_t,
+        mtime: TimeVal,
         mtimensec: u64,
-        ctime: time_t,
+        ctime: TimeVal,
         ctimensec: u64,
         __glibc_reserved: u64 'c[3]
     };
@@ -62,10 +62,12 @@ namespace std {
     type FLock: struct {
         l_type: i16,
         l_whence: i16,
-        l_start: off_t,
-        l_len: off_t,
+        l_start: Offset,
+        l_len: Offset,
         l_pid: pid_t
     };
+
+    type Offset: i64;
 
     const stdin: i32 = stdin!;
     const stdout: i32 = stdout!;

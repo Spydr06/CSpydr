@@ -38,7 +38,7 @@ fn c_str_test_strncpy(t: &std::Testing) {
     assert(t, src[1] == dest[1], "src[1] != dest[1]");
     assert(t, src[2] == dest[2], "src[2] != dest[2]");
     assert(t, src[3] == dest[3], "src[3] != dest[3]");
-    assert(t, src[4] == dest[4], "src[4] != dest[4]");
+    assert(t, dest[4] == 0, "dest[4] != 0");
 }
 
 fn c_str_test_strcat(t: &std::Testing) {
