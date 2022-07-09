@@ -56,79 +56,9 @@ A list of all the features, that are/will be implemented.
 - [x] `cURL` header implementation 
 - [x] from-the-ground custom written `stdlib` based on linux syscalls (in progress)
 
-## Installation
+## Installation and Usage
 
-Currently, CSpydr is only available for Linux. Once a first major release is in sight I will create an [AUR](https://aur.archlinux.org/) repository for [Arch Linux](https://archlinux.org/), but at the moment building and installation is done via CMake from source. Of course you can still use CSpydr via [WSL](https://docs.microsoft.com/en-us/windows/wsl/) on Windows!
-<br/>
-### Getting CSpydr
-```console
-$ git clone https://github.com/spydr06/cspydr.git --recursive
-```
-
-### Dependencies
-CSpydr depends on the following libraries. They need to be installed on your computer for CSpydr to successfully build. Be sure to also install the corresponding `-dev` or `-devel` of library packages for header files.
-
-**Libraries:**
-- `libbsd`
-- `json-c`
-- `glibc`
-- `llvm` with `llvm-c` bindings **(optional)**
-
-**Programs:**
-- `cmake`
-- `gcc` or `clang`
-- `as` (GNU assembler)
-- `ld` (GNU linker)
-- `llvm-config` **(optional)**
-
-### Building
-Building CSpydr is done via CMake using the following commands (after cloning this repository):
-
-```console
-$ cd ./cspydr
-$ cmake .
-$ make
-```
-
-> If you don't want llvm in your build, you can disable it with:
-> ```console
-> $ cmake . -DNO_LLVM=1
-> $ make
-> ```
-> (to reenable, set `NO_LLVM=0`)
-
-### Installation
-Global installation is necessary, because of the compiler needing the standard library to be present at `/usr/share/cspydr/std`.
-To install CSpydr with all of its components (cspc - The CSpydr Compiler and the CSpydr Standard Library), enter this command (needs root privileges):
-```console
-# make install
-```
-Alternatively, you can specify the path of the std library with the `-p` or `--std-path` flags:
-```console
-$ cspc <your build command> -p ./src/std
-```
-
-## Usage
-
-To compile a CSpydr program use the following command:
-```console
-$ cspc build <your file>
-```
-To directly run a program use this command:
-```console
-$ cspc run <your file>
-```
-To launch a special debug shell, start your program using the `debug` action:
-<br/>
-*(not finished yet!)*
-```console
-$ cspc debug <your file>
-```
-
-Get help using this command:
-```console
-$ cspc --help
-```
+Please refer to [INSTALL.md](https://github.com/Spydr06/CSpydr/blob/main/INSTALL.md) for installation instructions and information about compatability
 
 ## The CSpydr Syntax
 
@@ -152,6 +82,28 @@ $ cspc run hello-world.csp
 ### Examples
 
 For more examples, please refer to the `examples/` directory in this repository.
+
+## Usage
+
+To compile a CSpydr program use the following command:
+```console
+$ cspc build <your file>
+```
+To directly run a program use this command:
+```console
+$ cspc run <your file>
+```
+To launch a special debug shell, start your program using the `debug` action:
+<br/>
+*(not finished yet!)*
+```console
+$ cspc debug <your file>
+```
+
+Get help using this command:
+```console
+$ cspc --help
+```
 
 *(I will write a proper documentation in the future!)*
 
