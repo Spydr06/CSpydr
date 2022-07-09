@@ -59,9 +59,9 @@ $ make
 > $ cmake . -DNO_LLVM=1
 > $ make
 > ```
-> (to reenable, set `NO_LLVM=0`)
-<br/>
-> builds without llvm will not rely on `llvm` and `llvm-config`
+> (to reenable, set `NO_LLVM=0`.)
+> 
+> Builds without llvm will not rely on `llvm` and `llvm-config`
 
 ## Installation
 
