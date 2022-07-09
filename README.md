@@ -177,3 +177,4 @@ CSpydr is licensed under the [MIT License](https://mit-license.org/)
 - summus programming language: https://github.com/igor84/summus.git
 - porth programming language: https://gitlab.com/tsoding/porth.git
 - cURL C library for transferring data: https://github.com/curl/curl
+- tiny-regex-c as the main inspiration behind `regex.csp`: https://github.com/kokke/tiny-regex-c.git

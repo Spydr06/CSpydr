@@ -4,13 +4,9 @@ fn main(): i32
 {
     using std;
 
-    let pattern: &std::Regex = regex::compile("a*$");
-    #let r = regex::match_pattern(pattern, "ahem.. 'hello world !' ..");
-    #if r.index != -1 {
-    #    io::printf("matches\n");
-    #}
-    #io::printf("matches %i with length %i\n", r.index, r.length);
-    regex::print(pattern);
+    if regex::matches("[Hh]ello, [Ww]orld", "Hello, world") |> $.index != -1 {
+        io::printf("matches\n");
+    }
 
     <- 0;
 }
