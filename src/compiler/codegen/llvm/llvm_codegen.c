@@ -1,3 +1,4 @@
+#include <llvm-c/Core.h>
 #ifdef CSPYDR_USE_LLVM
 
 #include <string.h>
@@ -295,6 +296,10 @@ static void gen_enum(ASTObj_T* tydef, va_list args)
         LLVMValueRef value = LLVMAddGlobal(cg->module, type, llvm_gen_identifier(cg, member->id));
         LLVMSetInitializer(value, gen_global_initializer(cg, member->value, type));
     }
+}
+
+void llvm_exit_hook(void) {
+    LLVMShutdown();
 }
 
 #endif

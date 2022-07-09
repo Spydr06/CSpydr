@@ -26,6 +26,10 @@
 #include "config.h"
 #include "globals.h"
 
+#ifdef CSPYDR_USE_LLVM
+    #include "codegen/llvm/llvm_codegen.h"
+#endif
+
 #define streq(a, b) (strcmp(a, b) == 0)
 
 // default texts, which get shown if you enter help, info or version flags
@@ -129,6 +133,9 @@ i32 main(i32 argc, char* argv[])
 {
     init_globals();
     atexit(globals_exit_hook);
+#ifdef CSPYDR_USE_LLVM
+    atexit(llvm_exit_hook);
+#endif
 
     global.exec_name = argv[0]; // save the execution name for later use
     if(argc == 1)

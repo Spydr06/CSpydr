@@ -585,6 +585,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
 
                         for(i8 i = 0; i < 8; i++)
                             asm_println(cg, "  .byte %d", length.bytes[i]);
+                        asm_println(cg, "  .zero %d", obj->data_type->size - 8);
                     }
                     else
                     {

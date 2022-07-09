@@ -4,6 +4,7 @@
 
 #include "ast/ast.h"
 
+void llvm_exit_hook(void);
 void generate_llvm(ASTProg_T *ast, char *output_file, bool print_code, bool is_silent);
 
 #endif
