@@ -2,6 +2,14 @@
 
 Building and installation is done via CMake from source.
 
+## Overview
+- [Compatability](https://github.com/Spydr06/CSpydr/blob/main/INSTALL.md#compatability)
+- [Obtaining CSpydr](https://github.com/Spydr06/CSpydr/blob/main/INSTALL.md#obtaining-cspydr)
+- [Dependencies](https://github.com/Spydr06/CSpydr/blob/main/INSTALL.md#dependencies)
+- [Building](https://github.com/Spydr06/CSpydr/blob/main/INSTALL.md#building)
+- [Installation](https://github.com/Spydr06/CSpydr/blob/main/INSTALL.md#installation)
+- [Usage](https://github.com/Spydr06/CSpydr/blob/main/INSTALL.md#usage)
+
 ## Compatability
 
 **Supported Operating Systems:**
