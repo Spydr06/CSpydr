@@ -1,0 +1,153 @@
+import "str.csp";
+
+namespace std {
+    namespace fmt {
+        #[ 
+            format strings with given arguments
+            format arguments:
+            "%%" => '%'
+            "%i" => insert an i32
+            "%u" => insert an u32
+            "%l" => insert an i64
+            "%o" => insert an i64 in octal form
+            "%x" => insert an u64 in hexadecimal form
+            "%p" => insert a pointer/memory address (&void or u64)
+            "%c" => insert a character
+            "%C" => insert a literal character (prints escape codes as text)
+            "%s" => insert a string
+            "%S" => insert a literal string (prints escape codes as text)
+            "%n" => return a null character immediately
+            "%e" => insert an "Error" type from the VAList as &Error
+            "%E" => insert the current error set at std::error::__static::__error
+        ]#
+
+        fn format(fmt: &const char, args: ...): &char
+            <- va_format(fmt, &args);
+
+        fn va_format(fmt: &const char, args: &VAList): &char
+        {
+            using string;
+            let str = str!{};
+            do {
+                error::new(std::Errno::NILPTR, "`fmt` is nil");
+                <- str;
+            } unless fmt;
+
+            for ; (*fmt) != '\0'; fmt++; {
+                if (*fmt) == '%' {
+                    fmt++;
+                    
+                    let r = __internal::fmt(fmt, &str, args);
+                    if r ret r;
+                }
+                else
+                    &str `append` *fmt;
+            }
+
+            <- str;
+        }
+
+        namespace __internal {
+            fn fmt_literal_char(c: char, str: &String) {
+                using string;
+                match c {
+                    '\a' => concat(str, "\\a");
+                    '\b' => concat(str, "\\b");
+                    '\t' => concat(str, "\\t");
+                    '\v' => concat(str, "\\v");
+                    '\n' => concat(str, "\\n");
+                    '\r' => concat(str, "\\r");
+                    '\f' => concat(str, "\\f");
+                    '\'' => concat(str, "\\'");
+                    '\"' => concat(str, "\\");
+                    '\\' => concat(str, "\\\\");
+                    '\0' => concat(str, "\\0");
+                    _ => append(str, c);
+                }
+            }
+
+            fn fmt_literal_string(s: &const char, str: &String) {
+                for let i = 0; i < len s; i++; {
+                    fmt_literal_char(s[i], str);
+                }
+            }
+
+            fn fmt(fmt: &const char, str: &String, args: &VAList): &char {
+                using string;
+
+                let buf: char 'c[100];
+                match *fmt {
+                    '%' => append(str, *fmt);
+                    'i' => {
+                        c_str::from_int(va_arg!{args, i32}, buf, 10);
+                        concat(str, buf);
+                    }
+                    'u' => {
+                        c_str::from_uint(va_arg!{args, u32}, buf, 10);
+                        concat(str, buf);
+                    }
+                    'l' => {
+                        c_str::from_int(va_arg!{args, i64}, buf, 10);
+                        concat(str, buf);
+                    }
+                    'o' => {
+                        c_str::from_int(va_arg!{args, i64}, buf, 8);
+                        concat(str, buf);
+                    }
+                    'x' => {
+                        c_str::from_uint(va_arg!{args, u64}, buf, 16);
+                        concat(str, buf);
+                    }
+                    'p' => { # pointer
+                        c_str::from_uint(va_arg!{args, &void}: u64, buf, 16);
+                        concat(str, "0x");
+                        concat(str, buf);
+                    }
+                    'c' => append(str, va_arg!{args, char}); # char
+                    'C' => {
+                        let c = va_arg!{args, char};
+                        fmt_literal_char(c, str);
+                    }
+                    's' => {
+                        let arg = va_arg!{args, &char};
+                        if arg
+                            concat(str, arg);
+                        else
+                            concat(str, "(nil)");
+                    }
+                    'S' => {
+                        let arg = va_arg!{args, &char};
+                        if arg
+                            fmt_literal_string(arg, str);
+                        else
+                            concat(str, "(nil)");
+                    }
+                    'n' => {
+                        free(*str);
+                        <- str!{"\0"};
+                    }
+                    'e' => {
+                        let err = va_arg!{args, &Error};
+                        concat(str, error::str(err.kind));
+                        
+                        if err.msg {
+                            concat(str, ": ");
+                            concat(str, err.msg);
+                        }
+                    }
+                    'E' => {
+                        let err = error::current();
+                        concat(str, error::str(err.kind));
+                        if err.msg {
+                            concat(str, ": ");
+                            concat(str, err.msg);
+                        }
+                    }
+                    _ => {}
+                }
+
+                <- nil;
+            }
+        }
+    }
+}

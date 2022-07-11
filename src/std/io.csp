@@ -2,6 +2,7 @@ import "syscall.csp";
 import "str.csp";
 import "types.csp";
 import "utils.csp";
+import "fmt.csp";
 
 macro stdin  {0}
 macro stdout {1}
@@ -203,9 +204,9 @@ namespace std {
 
         fn vfprintf(fd: i32, fmt: &const char, args: &VAList): i32
         {
-            using string;
+            using std::fmt;
 
-            with formatted = va_format(fmt, args)
+            with formatted = va_format(fmt, args): &void
                 write(fd, formatted);
             
             <- 0;

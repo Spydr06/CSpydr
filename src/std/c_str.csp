@@ -12,9 +12,7 @@ namespace std {
 
         fn strlen(str: &const char): std::usize
         {
-            let length: usize = 0;
-            while str[length] != nil length++;
-            <- length;
+            <- len str;
         }
         
         fn strnlen(s: &const char, n: usize): std::usize

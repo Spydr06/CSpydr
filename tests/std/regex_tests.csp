@@ -44,7 +44,7 @@ fn test_regex(t: &std::Testing)
         RegexTest::{"[^\\s]+", "abc def",      3, true },
         RegexTest::{"[^fc]+", "abc def",       2, true },
         RegexTest::{"[^d\\sf]+", "abc def",    3, true },
-        #RegexTest::{"\n", "abc\ndef",          1, true },
+        RegexTest::{"\n", "abc\ndef",          1, true },
         #RegexTest::{"b.\\s*\n", "aa\r\nbb\r\ncc\r\n\r\n", 3, true},
         #RegexTest::{".*c", "abcabc",           6, true },
         #RegexTest::{".+c", "abcabc",           6, true },
@@ -95,10 +95,10 @@ fn test_regex(t: &std::Testing)
             if result.index != -1
                 assert(t, result.length == expectedlen, "[%i/%l] result.length (%i) != expectedlen (%i)", i + 1, len tests, result.length, expectedlen);
             if result.length != expectedlen || result.index == -1
-                std::io::printf("\t(\"%s\")", regex);
+                std::io::printf("\t(\"%S\")", regex);
         }
         else
-            assert(t, result.index == -1, "result.index != -1, [%i/%l] `%s` matched `%s` unexpectedly", i + 1, len tests, tests[i].regex, tests[i].matchstr);
+            assert(t, result.index == -1, "result.index != -1, [%i/%l] `%S` matched `%S` unexpectedly", i + 1, len tests, tests[i].regex, tests[i].matchstr);
         
         if PRINT_SUCCESSFUL_REGEX_TESTS && ((should_pass && result.index != -1) || (!should_pass && result.index == -1)) {
             using std::io::color;

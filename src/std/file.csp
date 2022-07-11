@@ -5,6 +5,7 @@ import "utils.csp";
 import "c_str.csp";
 import "error.csp";
 import "str.csp";
+import "fmt.csp";
 
 namespace std {
     type File: struct {
@@ -80,9 +81,9 @@ namespace std {
 
         fn vwritef(file: &File, fmt: &const char, args: &VAList): i64
         {
-            using string;
+            using std::fmt;
             let written = -1;
-            with formatted = va_format(fmt, args)
+            with formatted = va_format(fmt, args): &void
                 written = syscall::write(file.desc, formatted, c_str::strlen(formatted));
             
             if written == -1
