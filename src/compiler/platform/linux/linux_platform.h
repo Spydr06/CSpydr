@@ -3,8 +3,10 @@
 
 #if defined(__linux__) || defined (__linux)
 
+#define _XOPEN_SOURCE 500
 #include <stdlib.h>
 #include <linux/limits.h>
+#undef  _XOPEN_SOURCE
 #include <stdbool.h>
 #include "../../util.h"
 

@@ -1,20 +1,27 @@
 #if defined(__linux__) || defined (__linux)
-#define _XOPEN_SOURCE 500
 
 #include "linux_platform.h"
 #include "io/log.h"
 
-#include <libgen.h>
+#define __USE_XOPEN2K8 1
 #include <string.h>
+#undef  __USE_XOPEN2K8
+
+#define _XOPEN_SOURCE 500
+
+#include <libgen.h>
 #include <unistd.h>
+#include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <ftw.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <ftw.h>
+
+#undef  _XOPEN_SOURCE
 
 char* get_absolute_path(char* relative_path) 
 {

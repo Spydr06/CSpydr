@@ -155,4 +155,5 @@ char* get_cached_file_path(char* buffer, const char* filename, const char* filee
     strcat(buffer, filename);
     if(fileextension)
         strcat(buffer, fileextension);
+    return buffer;
 }

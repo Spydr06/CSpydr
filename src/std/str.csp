@@ -47,7 +47,7 @@ macro to_str(v) {
 
 namespace std {
     type String: &char;
-    operator
+
     namespace string {
         type StringData: struct {
             alloc: u64,

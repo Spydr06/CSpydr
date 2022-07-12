@@ -7,7 +7,7 @@ File_T* init_file(List_T* lines, const char* path)
     File_T* file = malloc(sizeof(File_T));
 
     file->lines = lines;
-    file->path = path;
+    file->path = (char*) path;
     file->num_lines = file->lines->size;
     file->short_path = NULL;
     file->file_no = 0;

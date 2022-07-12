@@ -85,7 +85,7 @@ fn display(window: &glfw::GLFWwindow)
         glMatrixMode(GL_PROJECTION_MATRIX!);
         glLoadIdentity();
 
-        gluPerspective(60: f64, window_w: f64 / (window_h: f64): f64, 0.1: f64, 100: f64);
+        gluPerspective(60: f64, window_w: f64 / (window_h: f64), 0.1: f64, 100: f64);
 
         glMatrixMode(GL_MODELVIEW_MATRIX!);
         glTranslatef(0.0, 0.0, -5.0);
