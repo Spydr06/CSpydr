@@ -1,8 +1,0 @@
-import "std.csp";
-
-fn main(): i32 {
-    using std, process;
-
-    kill(getpid(), 1);
-    <- 0;
-}
