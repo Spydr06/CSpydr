@@ -84,6 +84,7 @@ install_manifest.txt
 CMakeFiles/
 compile_commands.json
 cmake_install.cmake
+CMakeDoxyfile.in
 
 # Output directory
 bin/
