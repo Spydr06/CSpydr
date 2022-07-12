@@ -96,6 +96,7 @@ namespace cspydr {
         SEMICOLON,
         UNDERSCORE,
         DOLLAR,
+        AT,
         STATIC_MEMBER,
         POW_2,
         POW_3,

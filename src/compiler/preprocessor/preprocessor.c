@@ -1,5 +1,6 @@
 #include "preprocessor.h"
 #include "config.h"
+#include "list.h"
 #include "mem/mem.h"
 #include "stdmacros.h"
 #include "lexer/lexer.h"
@@ -10,7 +11,11 @@
 #include "timer/timer.h"
 #include "io/log.h"
 #include "io/io.h"
+#include "util.h"
 
+#include <dirent.h>
+#include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -402,6 +407,16 @@ finalize:
 // Macro expansion
 //
 
+static bool concatenateable(Token_T* tok) {
+    switch(tok->type) {
+        case TOKEN_ID:
+        case TOKEN_INT:
+            return true;
+        default:
+            return token_is_keyword(tok->type);
+    }
+}
+
 static void expand_macro_call(Preprocessor_T* pp, MacroCall_T call, List_T* src_list, List_T* dest_list)
 {
     if(pp->macro_call_depth++ > global.max_macro_call_depth)
@@ -453,6 +468,26 @@ static void expand_macro_call(Preprocessor_T* pp, MacroCall_T call, List_T* src_
             default:
                 list_push(dest_list, tok);
                 break;
+        }
+
+        // handle situations where an identifier should be concatenated
+        Token_T *at, *id;
+        if(dest_list->size >= 3 &&
+            (at = dest_list->items[dest_list->size - 2])->type == TOKEN_AT &&
+            (id = dest_list->items[dest_list->size - 3])->type == TOKEN_ID
+        ){
+            Token_T* current = dest_list->items[dest_list->size - 1];
+            if(!concatenateable(current)) {
+                throw_error(ERR_SYNTAX_ERROR, current, "cannot concatenate token `%s` to identifier using `@`", current->value);
+                continue;
+            }
+
+            list_pop(dest_list);
+            list_pop(dest_list);
+
+            u64 prev_size = sizeof(Token_T) + strlen(id->value) * sizeof(char);
+            dest_list->items[dest_list->size - 1] = id = mem_realloc(id, prev_size + (strlen(current->value) + 1) * sizeof(char));
+            strcat(id->value, current->value);
         }
     }
 }

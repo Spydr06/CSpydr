@@ -4,8 +4,10 @@
 #include "token.h"
 
 #include "io/log.h"
+#include "util.h"
 
 #include <ctype.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -107,6 +109,7 @@ const struct {
     {"²", TOKEN_POW_2},
     {"³", TOKEN_POW_3},
     {"$", TOKEN_DOLLAR},
+    {"@", TOKEN_AT},
     {"`", TOKEN_INFIX_CALL},
     {NULL, TOKEN_EOF}   // the last one has to be null as an indicator for the end of the array
 };  
@@ -477,4 +480,13 @@ static Token_T* lexer_get_symbol(Lexer_T* lexer)
     }
     // satisfy -Wall
     return NULL;
+}
+
+bool token_is_keyword(TokenType_T type)
+{
+    for(size_t i = 0; keywords[i].str; i++) {
+        if(keywords[i].type == type)
+            return true;
+    }
+    return false;
 }

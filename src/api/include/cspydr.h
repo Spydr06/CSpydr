@@ -115,6 +115,7 @@ enum CSPYDR_TOKEN_TYPE {
     CSPYDR_TOKEN_SEMICOLON,    // ;
     CSPYDR_TOKEN_UNDERSCORE,   // _
     CSPYDR_TOKEN_DOLLAR,       // $
+    CSPYDR_TOKEN_AT,           // @
 
     CSPYDR_TOKEN_STATIC_MEMBER,// ::
 

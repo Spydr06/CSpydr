@@ -4,6 +4,9 @@
 #include "io/log.h"
 #include "list.h"
 #include "hashmap.h"
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
 
 static List_T* allocs = NULL;
 static List_T* lists = NULL;
@@ -55,8 +58,24 @@ retry_malloc:
     }
 
     list_push(allocs, ptr);
+    memset(ptr, 0, size);
 
     return ptr;
+}
+
+void* mem_realloc(void* ptr, size_t size)
+{
+    if(!allocs)
+        allocs = init_list();
+    
+    for(size_t i = 0; i < allocs->size; i++) {
+        if(allocs->items[i] == ptr) {
+            allocs->items[i] = realloc(allocs->items[i], size);
+            return allocs->items[i];
+        }
+    }
+
+    return mem_malloc(size);
 }
 
 void mem_add_ptr(void* ptr)
