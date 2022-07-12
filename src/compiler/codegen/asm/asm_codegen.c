@@ -1024,7 +1024,7 @@ static void asm_copy_struct_reg(ASMCodegenData_T* cg)
     }
     else
     {
-        asm_println(cg, "  mov $0, %%rax");
+        asm_println(cg, "  xor %%rax, %%rax");
         for(i32 i = MIN(8, ty->size) - 1; i >= 0; i--)
         {
             asm_println(cg, "  shl $8, %%rax");
@@ -1047,7 +1047,7 @@ static void asm_copy_struct_reg(ASMCodegenData_T* cg)
         {
             char* reg1 = (gp == 0) ? "%al" : "%dl";
             char* reg2 = (gp == 0) ? "%rax" : "%rdx";
-            asm_println(cg, "  mov $0, %s", reg2);
+            asm_println(cg, " xor %s, %s", reg2, reg2);
             for(i32 i = MIN(16, ty->size) - 1; i >= 8; i--)
             {
                 asm_println(cg, "  shl $8, %s", reg2);
@@ -1425,7 +1425,7 @@ static void asm_gen_inline_strlen(ASMCodegenData_T* cg)
 {
     asm_println(cg, "  mov %%rax, %%rdi");
     asm_println(cg, "  mov $-1, %%rcx");
-    asm_println(cg, "  mov $0, %%eax");
+    asm_println(cg, "  xor %%eax, %%eax");
     asm_println(cg, "  cld");
     asm_println(cg, "  repne scasb");
     asm_println(cg, "  xor $-1, %%rcx");
@@ -1500,7 +1500,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_println(cg, "  mov $%d, %%rax", node->int_val);
             return;
         case ND_NIL:
-            asm_println(cg, "  mov $0, %%rax");
+            asm_println(cg, "  xor %%rax, %%rax");
             return;
         
         case ND_SIZEOF:
@@ -1773,7 +1773,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_println(cg, "  mov $1, %%rax");
             asm_println(cg, "  jmp .L.end.%ld", c);
             asm_println(cg, ".L.false.%ld:", c);
-            asm_println(cg, "  mov $0, %%rax");
+            asm_println(cg, "  xor %%rax, %%rax");
             asm_println(cg, ".L.end.%ld:", c);
             cg->cur_count = pc;
         } return;
@@ -1788,7 +1788,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_gen_expr(cg, node->right);
             asm_cmp_zero(cg, node->right->data_type);
             asm_println(cg, "  jne .L.true.%ld", c);
-            asm_println(cg, "  mov $0, %%rax");
+            asm_println(cg, "  xor %%rax, %%rax");
             asm_println(cg, "  jmp .L.end.%ld", c);
             asm_println(cg, ".L.true.%ld:", c);
             asm_println(cg, "  mov $1, %%rax");
@@ -2097,7 +2097,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_MOD:
             if(unsigned_type(node->data_type))
             {
-                asm_println(cg, "  mov $0, %s", dx);
+                asm_println(cg, "  xor %s, %s", dx, dx);
                 asm_println(cg, "  div %s", di);
             }
             else
@@ -2167,7 +2167,7 @@ static void asm_init_zero(ASMCodegenData_T* cg, ASTObj_T* var)
 {
     asm_println(cg, "  mov $%d, %%rcx", var->data_type->size);
     asm_println(cg, "  lea %d(%%rbp), %%rdi", var->offset);
-    asm_println(cg, "  mov $0, %%al");
+    asm_println(cg, "  xor %%al, %%al");
     asm_println(cg, "  rep stosb");
 }
 
