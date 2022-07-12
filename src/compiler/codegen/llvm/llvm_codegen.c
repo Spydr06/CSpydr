@@ -265,6 +265,7 @@ static LLVMValueRef gen_global_initializer(LLVMCodegenData_T* cg, ASTNode_T* nod
         case ND_ARRAY:
         case ND_STRUCT:
             throw_error(ERR_CODEGEN, node->tok, "not implemented");
+            break;
 
         default:
             throw_error(ERR_CODEGEN, node->tok, "cannot generate relocation for `%s` (%d)", node->tok->value, node->kind);

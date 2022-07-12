@@ -28,8 +28,3 @@ char* token_to_str(Token_T* token)
 
     return buffer;
 }
-
-bool is_keyword(TokenType_T type)
-{
-    
-}

@@ -945,6 +945,7 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
                 asm_gen_expr(cg, node);
                 return;
             }
+            // fall through
         case ND_LAMBDA:
         case ND_ARRAY:
         case ND_STRUCT:
@@ -974,7 +975,7 @@ static bool asm_has_flonum(ASTType_T* ty, i32 lo, i32 hi, i32 offset)
     }
     else if(ty->kind == TY_C_ARRAY || ty->kind == TY_ARRAY)
     {
-        for(size_t i = 0; i < ty->size / ty->base->size; i++)
+        for(size_t i = 0; i < (size_t)(ty->size / ty->base->size); i++)
             if(!asm_has_flonum(ty->base, lo, hi, offset + ty->base->size * i))
                 return false;
         return true;
@@ -1062,7 +1063,7 @@ static void asm_copy_struct_mem(ASMCodegenData_T* cg, ASTNode_T* val)
     ASTType_T* ty = cg->current_fn->return_type;
     asm_println(cg, "  mov %d(%%rbp), %%rdi", cg->current_fn->return_ptr->offset);
 
-    for(u32 i = 0; i < ty->size; i++)
+    for(i32 i = 0; i < ty->size; i++)
     {
         asm_println(cg, "  mov %d(%%rax), %%dl", i);
         asm_println(cg, "  mov %%dl, %d(%%rdi)", i);
@@ -1085,7 +1086,7 @@ static void asm_copy_ret_buffer(ASMCodegenData_T* cg, ASTObj_T* var)
     }
     else
     {
-        for(u32 i = 0; i < MIN(8, ty->size); i++)
+        for(i32 i = 0; i < MIN(8, ty->size); i++)
         {
             asm_println(cg, "  mov %%al, %d(%%rbp)", var->offset + i);
             asm_println(cg, "  shr $8, %%rax");
@@ -1107,7 +1108,7 @@ static void asm_copy_ret_buffer(ASMCodegenData_T* cg, ASTObj_T* var)
         {
             char* reg1 = gp == 0 ? "%al" : "%dl";
             char* reg2 = gp == 0 ? "%rax" : "%rdx";
-            for(u32 i = 8; i < MIN(16, ty->size); i++) 
+            for(i32 i = 8; i < MIN(16, ty->size); i++) 
             {
                 asm_println(cg, "  mov %s, %d(%%rbp)", reg1, var->offset + i);
                 asm_println(cg, "  shr $8, %s", reg2);
@@ -1174,14 +1175,14 @@ static void asm_store(ASMCodegenData_T* cg, ASTType_T *ty) {
         case TY_ARRAY:
         case TY_C_ARRAY:
             if(ty->size % 8 == 0)
-                for(size_t i = 0; i < ty->size; i += 8) {
-                    asm_println(cg, "  mov %lu(%%rax), %%r8", i);
-                    asm_println(cg, "  mov %%r8, %lu(%%rdi)", i);
+                for(i32 i = 0; i < ty->size; i += 8) {
+                    asm_println(cg, "  mov %d(%%rax), %%r8", i);
+                    asm_println(cg, "  mov %%r8, %d(%%rdi)", i);
                 }
             else
-                for(size_t i = 0; i < ty->size; i++) {
-                    asm_println(cg, "  mov %lu(%%rax), %%r8b", i);
-                    asm_println(cg, "  mov %%r8b, %lu(%%rdi)", i);
+                for(i32 i = 0; i < ty->size; i++) {
+                    asm_println(cg, "  mov %d(%%rax), %%r8b", i);
+                    asm_println(cg, "  mov %%r8b, %d(%%rdi)", i);
                 }
             return;
         case TY_F32:
@@ -1534,6 +1535,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                             asm_gen_inline_strlen(cg);
                             break;
                         }
+                        // fall through
 
                     default:
                         throw_error(ERR_CODEGEN, node->tok, "`len` operator not implemented for this data type");
@@ -1841,7 +1843,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
 
             if(node->data_type->kind != TY_VOID && node->data_type->size > 16)
                 asm_pop(cg, argreg64[gp++]);
-            for(i64 i = 0; i < node->args->size; i++)
+            for(u64 i = 0; i < node->args->size; i++)
             {
                 ASTNode_T* arg = node->args->items[i];
                 ASTType_T* ty = unpack(arg->data_type);

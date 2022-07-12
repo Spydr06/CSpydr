@@ -84,6 +84,7 @@ void gen_relocation(ASTNode_T* node, size_t target_size, u8* buffer)
                 gen_relocation(node->referenced_obj->value, target_size, buffer);
                 break;
             }
+            // fall through
 
         default:
             throw_error(ERR_CODEGEN, node->tok, "cannot generate relocation for `%s` (%d)", node->tok->value, node->kind);

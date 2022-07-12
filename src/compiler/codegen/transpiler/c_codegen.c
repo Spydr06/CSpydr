@@ -558,6 +558,7 @@ static void c_gen_asm(CCodegenData_T* cg, ASTNode_T* node)
                         case '|':
                         case '}':
                             print(cg, "%%");
+                            // fall through
                         default:
                             print(cg, "%c", arg->str_val[j]);
                     }

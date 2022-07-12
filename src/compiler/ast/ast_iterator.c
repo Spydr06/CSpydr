@@ -81,6 +81,7 @@ static void ast_obj(const ASTIteratorList_T* list, ASTObj_T* obj, va_list custom
         case OBJ_GLOBAL:
             if(!list->iterate_only_objs)
                 ast_node(list, obj->value, custom_args);
+            // fall through
         case OBJ_LOCAL:
             ast_id(list, true, obj->id, custom_args);
             ast_type(list, obj->data_type, custom_args);
@@ -148,6 +149,7 @@ static void ast_node(const ASTIteratorList_T* list, ASTNode_T* node, va_list cus
         case ND_PIPE:
             ast_node(list, node->left, custom_args);
             ast_node(list, node->right, custom_args);
+            // fall through
         case ND_HOLE:
             if(node->data_type) 
                 ast_type(list, node->data_type, custom_args);

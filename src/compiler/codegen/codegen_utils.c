@@ -117,7 +117,7 @@ char* find_gcc_libpath(void)
         "/usr/lib/gcc/x86_64-redhat-linux/*/crtbegin.o"  // Fedora
     };
 
-    for(i32 i = 0; i < sizeof(paths) / sizeof(*paths); i++)
+    for(u64 i = 0; i < sizeof(paths) / sizeof(*paths); i++)
     {
         char* path = find_file(paths[i]);
         if(path)

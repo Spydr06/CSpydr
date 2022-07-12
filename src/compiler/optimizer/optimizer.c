@@ -114,6 +114,7 @@ void remove_dead_code(ASTProg_T* ast)
 
             case ND_INDEX:
                 list_push(node_stack, stack_top->expr);
+                // fall through
             case ND_INC:
             case ND_DEC:
             case ND_CAST:
@@ -130,6 +131,7 @@ void remove_dead_code(ASTProg_T* ast)
                 stack_top->exit_fn->referenced = true;
                 if(stack_top->exit_fn->kind == OBJ_FUNCTION && !stack_top->exit_fn->is_extern)
                         list_push(node_stack, stack_top->exit_fn->body);
+                // fall through
             case ND_TERNARY:
             case ND_IF:
                 list_push(node_stack, stack_top->condition);
@@ -146,6 +148,7 @@ void remove_dead_code(ASTProg_T* ast)
             case ND_CASE:
             case ND_WHILE:
                 list_push(node_stack, stack_top->condition);
+                // fall through
             case ND_LOOP:
             case ND_CASE_TYPE:
                 list_push(node_stack, stack_top->body);

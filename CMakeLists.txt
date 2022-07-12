@@ -14,7 +14,7 @@ if (MSVC)
     add_compile_options(/W4)
     set(NO_LLVM 1)
 else()
-    add_compile_options(-Wall)
+    add_compile_options(-Wall -Wextra -Wno-unused-parameter)
 endif()
 
 # library source

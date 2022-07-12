@@ -91,9 +91,13 @@ static ASTNode_T* parse_inline_asm(Parser_T* p);
 static ASTNode_T* parse_float_lit(Parser_T* p);
 static ASTNode_T* parse_char_lit(Parser_T* p);
 static ASTNode_T* parse_bool_lit(Parser_T* p);
-static ASTNode_T* parse_str_lit(Parser_T* p, bool keep_inline);
 static ASTNode_T* parse_nil_lit(Parser_T* p);
 static ASTNode_T* parse_closure(Parser_T* p);
+
+static ASTNode_T* parse_str_lit(Parser_T* p, bool keep_inline);
+static ASTNode_T* _parse_str_lit(Parser_T* p) {
+    return  parse_str_lit(p, false);
+}
 
 static ASTNode_T* parse_array_lit(Parser_T* p);
 static ASTNode_T* parse_struct_lit(Parser_T* p, ASTNode_T* id);
@@ -146,7 +150,7 @@ static struct {
     [TOKEN_TRUE]     = {parse_bool_lit, NULL, LOWEST},
     [TOKEN_FALSE]    = {parse_bool_lit, NULL, LOWEST},
     [TOKEN_CHAR]     = {parse_char_lit, NULL, LOWEST},
-    [TOKEN_STRING]   = {(PrefixParseFn_T) parse_str_lit, NULL, LOWEST},
+    [TOKEN_STRING]   = {_parse_str_lit, NULL, LOWEST},
     [TOKEN_BANG]     = {parse_unary, NULL, LOWEST},
     [TOKEN_MINUS]    = {parse_unary, parse_num_op, MINUS},
     [TOKEN_LPAREN]   = {parse_closure, parse_call, CALL}, 
@@ -1667,6 +1671,7 @@ static ASTNode_T* parse_id(Parser_T* p)
         case TOKEN_STATIC_MEMBER:
             if(parser_peek(p, 1)->type == TOKEN_LBRACE)
                 return parse_struct_lit(p, id);
+            // fall through
         default:
             return id;
     }

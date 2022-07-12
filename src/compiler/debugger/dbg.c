@@ -50,8 +50,8 @@ static const char help_text[] =
 
 static char prompt[BUFSIZ];
 static bool running;
-const static char* src_file;
-const static char* bin_file;
+static const char* src_file;
+static const char* bin_file;
 
 static inline bool prefix(const char *pre, const char *str)
 {

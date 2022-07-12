@@ -105,6 +105,7 @@ u64 const_u64(ASTNode_T* node)
         case ND_ID:
             if(node->referenced_obj && node->referenced_obj->kind == OBJ_GLOBAL && node->referenced_obj->is_constant)
                 return const_u64(node->referenced_obj->value);
+            // fall through
         default:
             throw_error(ERR_CONSTEXPR, node->tok, "`%s` is not a compile-time constant", node->tok->value);
             return 0;
@@ -196,6 +197,7 @@ i64 const_i64(ASTNode_T* node)
         case ND_ID:
             if(node->referenced_obj && node->referenced_obj->kind == OBJ_GLOBAL && node->referenced_obj->is_constant)
                 return const_i64(node->referenced_obj->value);
+            // fall through
         default:
             throw_error(ERR_CONSTEXPR, node->tok, "`%s` is not a compile-time constant", node->tok->value);
             return 0;
