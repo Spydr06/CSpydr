@@ -127,7 +127,7 @@ static void typecheck_explicit_cast(ASTNode_T* cast, va_list args)
     // Buffer for warnings and errors
     char buf1[BUFSIZ] = {};
 
-    if(types_equal(cast->left->data_type, cast->data_type))
+    if(types_equal(cast->left->data_type, cast->data_type) && !cast->data_type->no_warnings)
     {
         throw_error(ERR_TYPE_CAST_WARN, cast->tok, "unnecessary type cast: expression is already of type `%s`",
             ast_type_to_str(buf1, cast->data_type, LEN(buf1))

@@ -1806,6 +1806,7 @@ static void typeof_type(ASTType_T* typeof_type, va_list args)
         throw_error(ERR_TYPE_ERROR, typeof_type->num_indices_node->tok, "could not resolve data type");
     
     *typeof_type = *found;
+    typeof_type->no_warnings = true;
 }
 
 static void array_type(ASTType_T* a_type, va_list args)

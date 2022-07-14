@@ -278,6 +278,7 @@ struct AST_TYPE_STRUCT
             bool is_fn        : 1;
             bool is_union     : 1;
             bool is_variadic  : 1;
+            bool no_warnings  : 1;
         };
         u8 flags;
     };
