@@ -1,0 +1,163 @@
+import "memory.csp";
+import "algorithm.csp";
+
+macro hashmap(key_type, val_type) {
+    (struct {
+        pairs: &struct {
+            key: (key_type),
+            val: (val_type)
+        },
+        data: ::std::hashmap::Data,
+    })
+}
+
+macro hashmap_init(key_type, val_type) {
+    (::std::hashmap::init(&({
+            nil, ::std::hashmap::Data::{}
+        }: struct {
+            pairs: &struct {
+                key: (key_type),
+                val: (val_type)
+            },
+            data: ::std::hashmap::Data
+        }),
+        sizeof (key_type),
+        sizeof (val_type),
+         type::((key_type) == &char) || type::((key_type) == &const char)
+    ): &struct {
+        pairs: &struct {
+            key: (key_type),
+            val: (val_type)
+        },
+        data: ::std::hashmap::Data
+    })
+}
+
+macro hashmap_init(map) {
+    (::std::hashmap::init((map), 
+        sizeof typeof (map).pairs.key, 
+        sizeof typeof (map).pairs.val,
+        type::((typeof (map).pairs.key) == &char) || type::((typeof (map).pairs.key) == &const char)
+    ): typeof (map))
+}
+
+macro hashmap_free(map) {
+    (::std::hashmap::free((map)))
+}
+
+macro hashmap_put(map, _key, _val) {
+    (::std::hashmap::put((map), &{
+        (_key): typeof (map).pairs.key, 
+        (_val): typeof (map).pairs.val
+    }))
+}
+
+macro hashmap_get(map, _key) {
+    (::std::hashmap::get((map), &{(_key): typeof (map).pairs.key}): typeof &(map).pairs.val |>
+        if $ == nil => 
+            (0: typeof (map).pairs.val)
+        else
+            *$
+    )
+}
+
+namespace std {
+    namespace hashmap {
+        type Data: struct {
+            alloc: u64,
+            size: u64,
+            ksize: u16,
+            vsize: u16,
+            use_str_hashing: bool
+        };
+
+        type Template: struct {
+            pairs: &u8,
+            data: Data,
+        };
+
+        const HASHMAP_INIT_SIZE: i32 = 32;
+        const HASHMAP_MULTIPLIER: i32 = 2;
+
+        fn init(map: &Template, ksize: u64, vsize: u64, key_is_str: bool): &Template {
+            map.data = Data::{
+                0, 0,
+                ksize, vsize,
+                key_is_str
+            };
+
+            allocate(map);
+            <- map;
+        }
+
+        fn allocate(map: &Template) {
+            map.data.alloc = ((map.data.ksize + map.data.vsize) * HASHMAP_INIT_SIZE);
+            map.pairs = mem::alloc(map.data.alloc);
+        }
+
+        fn free(map: &Template) {
+            mem::free(map.pairs);
+            map.data.alloc = 0;
+        }
+
+        fn has_space(map: &Template): bool {
+            <- map.data.size < map.data.alloc / (map.data.ksize + map.data.vsize);
+        }
+
+        fn grow(map: &Template) {
+            if has_space(map)
+                ret;
+
+            let old_alloc = map.data.alloc;
+            let old_pairs = map.pairs;
+
+            map.data.alloc *= HASHMAP_MULTIPLIER;
+            map.pairs = mem::alloc(map.data.alloc);
+
+            rehash(map, old_alloc, old_pairs);
+        
+            mem::free(old_pairs);
+        }
+
+        fn rehash(map: &Template, old_alloc: u64, old_pairs: &u8) {
+            for let ptr = old_pairs; ptr < old_pairs + old_alloc; 
+                ptr += ((map.data.ksize + map.data.vsize): u64); {
+                if !mem::is_zero(ptr, map.data.ksize + map.data.vsize) {
+                    let new = find_pair(map, ptr);
+                    mem::copy(new, ptr, map.data.ksize + map.data.vsize);
+                }
+            }
+        }
+
+        fn calc_index(map: &Template, key: &u8): u64 {
+            <- (if map.data.use_str_hashing =>
+                    algorithm::hash_string(*(key: &&const char))
+                else 
+                    algorithm::hash_bytes(key, map.data.ksize)
+                ) & (map.data.alloc / (map.data.ksize + map.data.vsize) - 1);
+        }
+
+        fn find_pair(map: &Template, key: &u8): &u8 {
+            let index = calc_index(map, key);
+
+            <- &map.pairs[index * (map.data.ksize + map.data.vsize)];
+        }
+
+        fn put(map: &Template, pair: &u8) {
+            let key = pair;                  # pair.key (0 offset)
+            let val = pair + (map.data.ksize: u64); # pair.val (sizeof key offset)
+
+            map.data.size++;
+            grow(map); # grow if needed
+
+            let addr = find_pair(map, key);
+            if addr {
+                mem::copy(addr, pair, map.data.ksize + map.data.vsize);
+            }
+        }
+
+        fn get(map: &Template, key: &u8): &u8 {
+            <- find_pair(map, key) |> if $ == nil => $ else $ + (map.data.ksize: u64);
+        }
+    }
+}

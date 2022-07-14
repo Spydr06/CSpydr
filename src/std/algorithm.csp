@@ -1,0 +1,24 @@
+namespace std {
+    namespace algorithm {
+        fn hash_bytes(data: &const u8, size: u64): u64 {
+            let hash: u64 = 0;
+
+            for let i: u64 = 0; i < size; i++; {
+                hash += *data;
+                data++;
+                hash += (hash << 10);
+                hash ^= (hash >> 6);
+            }
+
+            hash += (hash << 3);
+            hash ^= (hash >> 11);
+            hash ^= (hash << 15);
+
+            <- hash;
+        }
+
+        fn hash_string(str: &const char): u64 {
+            <- hash_bytes(str, len str);
+        }
+    }
+}

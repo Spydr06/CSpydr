@@ -1,0 +1,28 @@
+import "std.csp";
+
+fn main(): i32 {
+    using std;
+
+    {
+        let map = hashmap_init!{i32, i32}; # initialize a hashmap with key type i32 and value type i32
+
+        hashmap_put!(map, 1, 11); # put value 11 for key 1
+        hashmap_put!(map, 2, 12); # put value 12 for key 2
+        io::printf("%i\n", hashmap_get!(map, 1)); # get value with key 1
+
+        hashmap_free!(map); # free memory
+    }
+
+    {
+        let map = hashmap_init!{&char, i32}; # initialize a hashmap with key type &char and value type i32
+
+        hashmap_put!(map, "hello", 3); # put value 3 for key 'hello'
+        io::printf("%i\n", 
+            hashmap_get!(map, "hello") # get value with key 'hello'
+        );
+
+        hashmap_free!(map); # free memory
+    }
+
+    <- 0;
+}

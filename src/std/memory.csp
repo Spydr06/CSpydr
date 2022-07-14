@@ -166,5 +166,14 @@ namespace std {
             let y: &const u8 = b;
             <- (x <= y && x + n > y) || (y <= x && y + n > x);
         }
+
+        fn is_zero(a: &const void, size: usize): bool {
+            let bytes = a: &const u8;
+            for let i = 0; i < size; i++; {
+                if bytes[i] != 0
+                    <- false;
+            }
+            <- true;
+        }
     }
 }
