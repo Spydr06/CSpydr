@@ -20,5 +20,48 @@ namespace std {
         fn hash_string(str: &const char): u64 {
             <- hash_bytes(str, len str);
         }
+
+        fn hton_16(n: u16): u16 
+        {
+            let u: union {i: i32, c: i8};
+            u.i = 1;
+            <- if u.c != 0 => bswap_16(n) else n;
+        }
+
+        fn hton_32(n: u32): u32
+        {
+            let u: union {i: i32, c: i8};
+            u.i = 1;
+            <- if u.c != 0 => bswap_32(n) else n;
+        }
+
+        fn ntoh_16(n: u16): u16 
+        {
+            let u: union {i: i32, c: i8};
+            u.i = 1;
+            <- if u.c != 0 => bswap_16(n) else n;
+        }
+
+        fn ntoh_32(n: u32): u32
+        {
+            let u: union {i: i32, c: i8};
+            u.i = 1;
+            <- if u.c != 0 => bswap_32(n) else n;
+        }
+
+        fn bswap_16(x: u16): u16
+        {
+            <- x << 8 | x >> 8;
+        }
+
+        fn bswap_32(x: u32): u32
+        {
+            <- x >> 24 | x >> 8 & 0xff00 | x << 8 & 0xff0000 | x << 24;
+        }
+
+        fn bswap_64(x: u64): u64
+        {
+            <- bswap_32(x) << 32 | bswap_32(x >> 32);
+        }
     }
 }

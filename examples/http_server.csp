@@ -21,9 +21,9 @@ fn main(): i32
     # Construct local address structure
     let address = SockAddrIn :: {
         system::AF_INET,
-        net::htons(PORT!),
+        algorithm::hton_16(PORT!),
         Address :: { 
-            net::htonl(net::INADDR_LOOPBACK)
+            algorithm::hton_32(net::INADDR_LOOPBACK)
         }
     };
 

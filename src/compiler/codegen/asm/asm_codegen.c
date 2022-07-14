@@ -1174,16 +1174,14 @@ static void asm_store(ASMCodegenData_T* cg, ASTType_T *ty) {
         case TY_STRUCT:
         case TY_ARRAY:
         case TY_C_ARRAY:
-            if(ty->size % 8 == 0)
-                for(i32 i = 0; i < ty->size; i += 8) {
-                    asm_println(cg, "  mov %d(%%rax), %%r8", i);
-                    asm_println(cg, "  mov %%r8, %d(%%rdi)", i);
-                }
-            else
-                for(i32 i = 0; i < ty->size; i++) {
-                    asm_println(cg, "  mov %d(%%rax), %%r8b", i);
-                    asm_println(cg, "  mov %%r8b, %d(%%rdi)", i);
-                }
+            for(i32 i = 0; i < ty->size / 8; i++) {
+                asm_println(cg, "  mov %d(%%rax), %%r8", i * 8);
+                asm_println(cg, "  mov %%r8, %d(%%rdi)", i * 8);
+            }
+            for(i32 i = 0; i < ty->size % 8; i++) {
+                asm_println(cg, "  mov %d(%%rax), %%r8b", i + ty->size / 8);
+                asm_println(cg, "  mov %%r8b, %d(%%rdi)", i + ty->size / 8);
+            }
             return;
         case TY_F32:
             asm_println(cg, "  movss %%xmm0, (%%rdi)");

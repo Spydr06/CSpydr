@@ -17,6 +17,7 @@ fn main(): i32 {
         let map = hashmap_init!{&char, i32}; # initialize a hashmap with key type &char and value type i32
 
         hashmap_put!(map, "hello", 3); # put value 3 for key 'hello'
+        hashmap_put!(map, "world", 4); # put value 4 for key 'world'
         io::printf("%i\n", 
             hashmap_get!(map, "hello") # get value with key 'hello'
         );
