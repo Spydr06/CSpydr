@@ -1484,30 +1484,51 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_println(cg, "  movq %%rax, %%xmm0");
         } return;
         case ND_INT:
-            asm_println(cg, "  mov $%d, %%rax", node->int_val);
+            if(node->int_val)
+                asm_println(cg, "  mov $%d, %%rax", node->int_val);
+            else
+                asm_println(cg, "  xor %%rax, %%rax");
             return;
         case ND_BOOL:   
-            asm_println(cg, "  mov $%d, %%rax", node->bool_val);
+            if(node->bool_val)
+                asm_println(cg, "  mov $%d, %%rax", node->bool_val);
+            else
+                asm_println(cg, "  xor %%rax, %%rax");
             return;
         case ND_LONG:
-            asm_println(cg, "  mov $%ld, %%rax", node->long_val);
+            if(node->long_val)
+                asm_println(cg, "  mov $%ld, %%rax", node->long_val);
+            else
+                asm_println(cg, "  xor %%rax, %%rax");
             return;
         case ND_ULONG:
-            asm_println(cg, "  mov $%lu, %%rax", node->ulong_val);
+            if(node->ulong_val)
+                asm_println(cg, "  mov $%lu, %%rax", node->ulong_val);
+            else
+                asm_println(cg, "  xor %%rax, %%rax");
             return;
         case ND_CHAR:
-            asm_println(cg, "  mov $%d, %%rax", node->int_val);
+            if(node->int_val)
+                asm_println(cg, "  mov $%d, %%rax", node->int_val);
+            else
+                asm_println(cg, "  xor %%rax, %%rax");
             return;
         case ND_NIL:
             asm_println(cg, "  xor %%rax, %%rax");
             return;
         
         case ND_SIZEOF:
-            asm_println(cg, "  mov $%d, %%rax", node->the_type->size);
+            if(node->the_type->size)
+                asm_println(cg, "  mov $%d, %%rax", node->the_type->size);
+            else
+                asm_println(cg, "  xor %%rax, %%rax");
             return;
         
         case ND_ALIGNOF:
-            asm_println(cg, "  mov $%d, %%rax", node->the_type->align);
+            if(node->the_type->align)
+                asm_println(cg, "  mov $%d, %%rax", node->the_type->align);
+            else
+                asm_println(cg, "  xor %%rax, %%rax");
             return;
         
         case ND_LEN:
