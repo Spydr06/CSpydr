@@ -13,7 +13,7 @@ namespace std {
     namespace thread {
         fn create(func: const fn(&Thread), userdata: &void): &std::Thread
         {
-            let thread: &Thread = mem::alloc(sizeof Thread);
+            let thread: &Thread = memory::alloc(sizeof Thread);
             thread.userdata = userdata;
 
             using libc, pthread;
@@ -49,11 +49,11 @@ namespace std {
             unless t;
 
             if t.running {
-                using libc::pthread, mem;
+                using libc::pthread, memory;
                 pthread_join(t.pt, nil);
             }
 
-            #mem::free(t);
+            #memory::free(t);
             <- error::none();
         }
         [exit_fn("join": &std::Thread)]

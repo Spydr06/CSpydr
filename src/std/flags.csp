@@ -1,6 +1,6 @@
 import "error.csp";
 import "io.csp";
-import "str.csp";
+import "string.csp";
 
 namespace std {
     type Flag: struct {

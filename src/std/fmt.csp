@@ -1,4 +1,5 @@
-import "str.csp";
+import "string.csp";
+import "error.csp";
 
 namespace std {
     namespace fmt {

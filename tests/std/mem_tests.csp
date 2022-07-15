@@ -3,7 +3,7 @@
 # --------------------------#
 
 fn mem_test_alloc(t: &std::Testing) {
-    using std::testing, std::mem;
+    using std::testing, std::memory;
 
     let unfreed = unfreed_allocs;
     let ptr: &u8 = alloc(10);
@@ -17,7 +17,7 @@ fn mem_test_alloc(t: &std::Testing) {
 }
 
 fn mem_test_free(t: &std::Testing) {
-    using std::testing, std::mem;
+    using std::testing, std::memory;
 
     let unfreed = unfreed_allocs;
     let ptr: &u8 = alloc(10);
@@ -28,7 +28,7 @@ fn mem_test_free(t: &std::Testing) {
 }
 
 fn mem_test_calloc(t: &std::Testing) {
-    using std::testing, std::mem;
+    using std::testing, std::memory;
 
     let ptr: &u8 = calloc(2, 5);
     
@@ -43,7 +43,7 @@ fn mem_test_calloc(t: &std::Testing) {
 }
 
 fn mem_test_realloc(t: &std::Testing) {
-    using std::testing, std::mem;
+    using std::testing, std::memory;
 
     let ptr: &u8 = alloc(5);
 

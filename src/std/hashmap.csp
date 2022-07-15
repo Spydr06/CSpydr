@@ -23,7 +23,7 @@ macro hashmap_init(key_type, val_type) {
         }),
         sizeof (key_type),
         sizeof (val_type),
-         type::((key_type) == &char) || type::((key_type) == &const char)
+        type::((key_type) == &char) || type::((key_type) == &const char)
     ): &struct {
         pairs: &struct {
             key: (key_type),
@@ -92,11 +92,11 @@ namespace std {
 
         fn allocate(map: &Template) {
             map.data.alloc = ((map.data.ksize + map.data.vsize) * HASHMAP_INIT_SIZE);
-            map.pairs = mem::alloc(map.data.alloc);
+            map.pairs = memory::alloc(map.data.alloc);
         }
 
         fn free(map: &Template) {
-            mem::free(map.pairs);
+            memory::free(map.pairs);
             map.data.alloc = 0;
         }
 
@@ -112,19 +112,19 @@ namespace std {
             let old_pairs = map.pairs;
 
             map.data.alloc *= HASHMAP_MULTIPLIER;
-            map.pairs = mem::alloc(map.data.alloc);
+            map.pairs = memory::alloc(map.data.alloc);
 
             rehash(map, old_alloc, old_pairs);
         
-            mem::free(old_pairs);
+            memory::free(old_pairs);
         }
 
         fn rehash(map: &Template, old_alloc: u64, old_pairs: &u8) {
             for let ptr = old_pairs; ptr < old_pairs + old_alloc; 
                 ptr += ((map.data.ksize + map.data.vsize): u64); {
-                if !mem::is_zero(ptr, map.data.ksize + map.data.vsize) {
+                if !memory::is_zero(ptr, map.data.ksize + map.data.vsize) {
                     let new = find_pair(map, ptr);
-                    mem::copy(new, ptr, map.data.ksize + map.data.vsize);
+                    memory::copy(new, ptr, map.data.ksize + map.data.vsize);
                 }
             }
         }
@@ -152,7 +152,7 @@ namespace std {
 
             let addr = find_pair(map, key);
             if addr {
-                mem::copy(addr, pair, map.data.ksize + map.data.vsize);
+                memory::copy(addr, pair, map.data.ksize + map.data.vsize);
             }
         }
 

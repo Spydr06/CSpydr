@@ -32,7 +32,7 @@ macro vec_remove(addr, pos) {
 
 # macro to copy a vector
 macro vec_copy(addr) {
-    (::std::vec::__internal_copy((addr): &void, sizeof typeof *(addr)): typeof (addr));
+    (::std::vec::__internal_copy((addr): &void, sizeof typeof *(addr)): typeof (addr))
 }
 
 # macro to iterate over every index of a vector
@@ -58,9 +58,11 @@ namespace std {
             buff: u8 'c[0]
         };
 
+        const VECTOR_MULTIPLIER: i32 = 2;
+
         fn init(): &void 
         {
-            let vec_data: &VecData = mem::alloc(sizeof VecData);
+            let vec_data: &VecData = memory::alloc(sizeof VecData);
             vec_data.alloc = 0;
             vec_data.size = 0;
 
@@ -69,7 +71,7 @@ namespace std {
 
         fn free(vec: &void) 
         {
-            mem::free(get_data(vec));
+            memory::free(get_data(vec));
         }
 
         fn get_data(vec: &void): &VecData 
@@ -93,9 +95,9 @@ namespace std {
             if v_data.alloc == 0
                 new_alloc = 1;
             else
-                new_alloc = v_data.alloc * 2;
+                new_alloc = v_data.alloc * VECTOR_MULTIPLIER;
             
-            let new_v_data: &VecData = mem::realloc(v_data, (sizeof VecData) + new_alloc * type_size);
+            let new_v_data: &VecData = memory::realloc(v_data, (sizeof VecData) + new_alloc * type_size);
             new_v_data.alloc = new_alloc;
 
             <- new_v_data;
@@ -128,7 +130,7 @@ namespace std {
                 *addr = (v_data.buff: &void);
             }
 
-            mem::move(&(v_data.buff[(pos + 1) * type_size]),
+            memory::move(&(v_data.buff[(pos + 1) * type_size]),
                     &(v_data.buff[pos * type_size]),
                     (v_data.size - pos) * type_size);
 
@@ -140,7 +142,7 @@ namespace std {
         {
             let v_data = get_data(vec);
             # todo: index validation
-            mem::move(&(v_data.buff[pos * type_size]),
+            memory::move(&(v_data.buff[pos * type_size]),
                     &(v_data.buff[(pos + length) * type_size]),
                     (v_data.size - pos - length) * type_size);
             v_data.size = (v_data.size - length);
@@ -156,9 +158,9 @@ namespace std {
             let v_data = get_data(vec);
             let size = v_data.size;
             let alloc_size = sizeof(VecData) + size * type_size;
-            let copy: &VecData = mem::alloc(alloc_size);
+            let copy: &VecData = memory::alloc(alloc_size);
             
-            mem::copy(copy, v_data, alloc_size);
+            memory::copy(copy, v_data, alloc_size);
             <- &copy.buff;
         }
 

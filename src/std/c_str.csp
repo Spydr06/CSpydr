@@ -21,7 +21,7 @@ namespace std {
         # similar to c_str::copy
         fn copy(dest: &char, src: &const char)
         {
-            mem::move(dest, src, strlen(src));
+            memory::move(dest, src, strlen(src));
         }
 
         fn strcpy(dest: &char, src: &const char)

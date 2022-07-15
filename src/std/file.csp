@@ -4,7 +4,7 @@ import "option.csp";
 import "utils.csp";
 import "c_str.csp";
 import "error.csp";
-import "str.csp";
+import "string.csp";
 import "fmt.csp";
 
 namespace std {
@@ -23,7 +23,7 @@ namespace std {
 
         fn open(path: &const char, mode: u8): &std::File
         {
-            let file: &File = mem::alloc(sizeof File);
+            let file: &File = memory::alloc(sizeof File);
             file.mode = mode;
             file.offset = 0;
             
@@ -53,7 +53,7 @@ namespace std {
 
         fn fopen(fd: i32): &std::File
         {
-            let file: &File = mem::alloc(sizeof File);
+            let file: &File = memory::alloc(sizeof File);
             file.mode = 0;
             file.offset = 0;
             file.desc = fd;
@@ -123,7 +123,7 @@ namespace std {
             unless file;
             if syscall::close(file.desc) == -1
                 <- error::new(std::Errno::IO, "could not close file");
-            mem::free(file);
+            memory::free(file);
 
             <- error::none();
         }

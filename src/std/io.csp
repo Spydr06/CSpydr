@@ -1,5 +1,5 @@
 import "syscall.csp";
-import "str.csp";
+import "string.csp";
 import "types.csp";
 import "utils.csp";
 import "fmt.csp";
@@ -239,7 +239,7 @@ namespace std {
         fn write_int(fd: i32, int: i64)
         {
             let buf: char 'c[32];
-            mem::zero(buf, sizeof char * len buf);
+            memory::zero(buf, sizeof char * len buf);
 
             c_str::from_int(int, buf, 10);
             write(fd, buf);

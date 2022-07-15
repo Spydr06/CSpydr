@@ -3,11 +3,11 @@ import "types.csp";
 import "utils.csp";
 
 # macros for quick access
-macro alloc(size) { (::std::mem::alloc(size)) }
-macro realloc(src, size) { (::std::mem::realloc(src, size)) }
-macro free(ptr) { (::std::mem::free(ptr)) }
-macro make(_type) { (::std::mem::alloc(sizeof(_type)): &(_type)) }
-macro make(_type, _len) { (::std::mem::alloc(sizeof(_type) * _len): &(_type)) }
+macro alloc(size) { (::std::memory::alloc(size)) }
+macro realloc(src, size) { (::std::memory::realloc(src, size)) }
+macro free(ptr) { (::std::memory::free(ptr)) }
+macro make(_type) { (::std::memory::alloc(sizeof(_type)): &(_type)) }
+macro make(_type, _len) { (::std::memory::alloc(sizeof(_type) * _len): &(_type)) }
 
 # actual memory allocator implementation
 namespace std {
@@ -53,7 +53,7 @@ namespace std {
         DONTNEED
     };
 
-    namespace mem {
+    namespace memory {
         let unfreed_allocs: u64 = 0;
 
         const MMAP_FAILED: &void = -1;

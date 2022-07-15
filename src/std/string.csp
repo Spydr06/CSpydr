@@ -60,13 +60,13 @@ namespace std {
             let str_data: &StringData;
 
             if value == nil {
-                str_data = mem::alloc(sizeof StringData);
+                str_data = memory::alloc(sizeof StringData);
                 str_data.alloc = 1;
                 str_data.size = 0;
             }
             else {
                 let v_len = c_str::strlen(value);
-                str_data = mem::alloc(sizeof StringData + v_len + 1);
+                str_data = memory::alloc(sizeof StringData + v_len + 1);
                 str_data.alloc = v_len;
                 str_data.size = v_len;
                 
@@ -77,14 +77,14 @@ namespace std {
 
         fn init_sized(size: u64): ::std::String
         {
-            let str_data: &StringData = mem::alloc(sizeof StringData + size + 1);
+            let str_data: &StringData = memory::alloc(sizeof StringData + size + 1);
             str_data.alloc = size + 1;
             <- &(str_data.buff[0]);
         }
 
         fn free(str: std::String) 
         {
-            mem::free(get_data(str));
+            memory::free(get_data(str));
         } 
         [exit_fn("free": std::String)]
 
@@ -106,7 +106,7 @@ namespace std {
 
             str_data.alloc = str_data.alloc + src_len;
             str_data.size = str_data.size + src_len;
-            str_data = mem::realloc(str_data, sizeof StringData + str_data.alloc + 1);
+            str_data = memory::realloc(str_data, sizeof StringData + str_data.alloc + 1);
             c_str::copy(&(str_data.buff[str_len]), src);
 
             str_data.buff[str_len + src_len] = '\0';
@@ -120,7 +120,7 @@ namespace std {
             str_data.size++;
 
             if(!has_space(str_data))
-                str_data = mem::realloc(str_data, sizeof StringData + (str_data.alloc *= 2) + 1);
+                str_data = memory::realloc(str_data, sizeof StringData + (str_data.alloc *= 2) + 1);
             str_data.buff[str_data.size - 1] = c;
             str_data.buff[str_data.size] = '\0';
             *dest = &(str_data.buff[0]);
@@ -191,14 +191,14 @@ namespace std {
             if to - from < 0 || to - from >= size(str)
                  ret nil;
 
-            let ch_arr: &char = mem::alloc((to - from + 2) * sizeof char);
+            let ch_arr: &char = memory::alloc((to - from + 2) * sizeof char);
             for let i: i64 = from; i < to; i++; {
                 ch_arr[i - from] = str[i];
             }
             #ch_arr[from - to] = '\0';
             
             let sub_str = init(ch_arr);
-            mem::free(ch_arr);
+            memory::free(ch_arr);
             <- sub_str;
         }
 

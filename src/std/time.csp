@@ -1,6 +1,6 @@
 import "types.csp";
 import "syscall.csp";
-import "str.csp";
+import "string.csp";
 
 namespace std {
     type TimeVal: i64;
@@ -65,7 +65,7 @@ namespace std {
                 if(fmt[i] == '{' && fmt[i + 1] != 0 && fmt[i + 2] == '}')
                 {
                    let c: char 'c[32];
-                   mem::zero(c, sizeof char * len c);
+                   memory::zero(c, sizeof char * len c);
                    match fmt[(i += 2) - 1]
                    {
                         'Y' => { # Year

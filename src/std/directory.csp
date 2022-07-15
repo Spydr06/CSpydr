@@ -49,7 +49,7 @@ namespace std {
                 error::new(std::Errno::NOTDIR, "");
                 <- nil;
             } unless S_ISDIR!(st.mode);
-            do ret 0 unless dir = mem::calloc(1, sizeof Directory);
+            do ret 0 unless dir = memory::calloc(1, sizeof Directory);
 
             fcntl2(fd, io::F_SETFD, io::FD_CLOEXEC);
             dir.fd = fd;
@@ -71,7 +71,7 @@ namespace std {
             do {
                 syscall::close(fd);
                 <- nil;
-            } unless dir = mem::calloc(1, sizeof Directory);
+            } unless dir = memory::calloc(1, sizeof Directory);
 
             dir.fd = fd;
             <- dir;
@@ -80,7 +80,7 @@ namespace std {
         fn close(dir: &Directory): i32 
         {
             let return = syscall::close(dir.fd);
-            mem::free(dir);
+            memory::free(dir);
             <- return;
         }
         [exit_fn("close": &std::Directory)]
