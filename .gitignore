@@ -102,3 +102,7 @@ src/std/std.csp
 *.sln
 *.vcxproj
 *.filters
+
+# Ninja files
+.ninja_*
+build.ninja
