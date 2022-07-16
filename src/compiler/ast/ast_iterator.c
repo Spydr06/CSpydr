@@ -303,6 +303,12 @@ static void ast_node(const ASTIteratorList_T* list, ASTNode_T* node, va_list cus
                 ast_node(list, node->expr, custom_args);
             ast_node(list, node->body, custom_args);
             break;
+        
+        case ND_FOR_RANGE:
+            ast_node(list, node->left, custom_args);
+            ast_node(list, node->right, custom_args);
+            ast_node(list, node->body, custom_args);
+            break;
 
         case ND_MATCH:
             ast_node(list, node->condition, custom_args);

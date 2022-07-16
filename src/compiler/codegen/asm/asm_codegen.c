@@ -64,6 +64,8 @@ static char* argreg16[] = {"%di", "%si", "%dx", "%cx", "%r8w", "%r9w"};
 static char* argreg32[] = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d"};
 static char* argreg64[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
 static char call_reg[] = "%r10";
+static char range_reg_2[] = "%r13";
+static char range_reg_1[] = "%r14";
 static char pipe_reg[] = "%r15";
 
 // The table for type casts
@@ -2281,6 +2283,41 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             cg->cur_cnt_id = pcnt;
         } return;
     
+        case ND_FOR_RANGE:
+        {
+            u64 pc = cg->cur_count;
+            u64 pbrk = cg->cur_brk_id;
+            u64 pcnt = cg->cur_cnt_id;
+            u64 c = cg->cur_brk_id 
+                  = cg->cur_count 
+                  = cg->max_count++;
+
+            asm_gen_expr(cg, node->left);
+            asm_push(cg);
+            asm_gen_expr(cg, node->right);
+            asm_println(cg, "  mov %%rax, %%rdx");
+            asm_pop(cg, "%rdi");
+            
+            asm_println(cg, ".L.begin.%lu:", c);
+            asm_println(cg, "  cmp %%rdx, %%rdi");
+            asm_println(cg, "  jge .L.break.%lu", c);
+
+            asm_println(cg, "  push %%rdi");
+            asm_println(cg, "  push %%rdx");
+            asm_gen_stmt(cg, node->body);
+            asm_println(cg, "  pop %%rdx");
+            asm_println(cg, "  pop %%rdi");
+            
+            asm_println(cg, ".L.continue.%lu:", c);
+            asm_println(cg, "  inc %%rdi");
+            asm_println(cg, "  jmp .L.begin.%lu", c);
+            asm_println(cg, ".L.break.%lu:", c);
+
+            cg->cur_count = pc;
+            cg->cur_brk_id = pbrk;
+            cg->cur_cnt_id = pcnt;        
+        } return;
+
         case ND_WHILE:
         {
             u64 pc = cg->cur_count;

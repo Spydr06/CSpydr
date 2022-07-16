@@ -12,6 +12,7 @@
 #include "utils.h"
 #include "codegen/codegen_utils.h"
 #include "ast/ast_iterator.h"
+#include "ast/types.h"
 
 #define GET_VALIDATOR(va) Validator_T* v = va_arg(va, Validator_T*)
 
@@ -26,6 +27,7 @@ static void typecheck_array_lit(ASTNode_T* a_lit, va_list args);
 static void typecheck_struct_lit(ASTNode_T* a_lit, va_list args);
 static void typecheck_inc(ASTNode_T* inc, va_list args);
 static void typecheck_dec(ASTNode_T* dec, va_list args);
+static void typecheck_for_range(ASTNode_T* loop, va_list args);
 
 static const ASTIteratorList_T iterator = {
     .obj_start_fns = {
@@ -41,7 +43,8 @@ static const ASTIteratorList_T iterator = {
         [ND_ARRAY] = typecheck_array_lit,
         [ND_STRUCT] = typecheck_struct_lit,
         [ND_INC] = typecheck_inc,
-        [ND_DEC] = typecheck_dec
+        [ND_DEC] = typecheck_dec,
+        [ND_FOR_RANGE] = typecheck_for_range,
     }
 };
 
@@ -68,6 +71,12 @@ static void typecheck_call(ASTNode_T* call, va_list args)
     size_t expected_arg_num = call_type->arg_types->size;
     for(size_t i = 0; i < MIN(expected_arg_num, call->args->size); i++)
         call->args->items[i] = typecheck_arg_pass(call_type->arg_types->items[i], call->args->items[i]);
+}
+
+static void typecheck_for_range(ASTNode_T* loop, va_list args)
+{
+    loop->left = implicit_cast(loop->left->tok, loop->left, (ASTType_T*) primitives[TY_I64]);
+    loop->right = implicit_cast(loop->right->tok, loop->right, (ASTType_T*) primitives[TY_I64]);
 }
 
 static void typecheck_assignment(ASTNode_T* assignment, va_list args)

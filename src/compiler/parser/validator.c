@@ -63,6 +63,7 @@ static void block_end(ASTNode_T* block, va_list args);
 static void return_end(ASTNode_T* ret, va_list args);
 static void for_start(ASTNode_T* _for, va_list args);
 static void for_end(ASTNode_T* _for, va_list args);
+static void for_range_end(ASTNode_T* _for, va_list args);
 static void match_type_end(ASTNode_T* match, va_list args);
 static void using_end(ASTNode_T* using, va_list args);
 static void with_start(ASTNode_T* with, va_list args);
@@ -133,6 +134,7 @@ static const ASTIteratorList_T main_iterator_list =
         [ND_BLOCK] = block_end,
         [ND_RETURN] = return_end,
         [ND_FOR] = for_end,
+        [ND_FOR_RANGE] = for_range_end,
         [ND_MATCH_TYPE] = match_type_end,
         [ND_USING] = using_end,
         [ND_WITH] = with_end,
@@ -697,6 +699,8 @@ static bool stmt_returns_value(ASTNode_T* node)
                 
                 return cases_return == node->cases->size && stmt_returns_value(node->default_case->body);
             }
+        case ND_FOR_RANGE:
+            return stmt_returns_value(node->body);
         default: 
             return false;
     }
@@ -927,6 +931,20 @@ static void for_end(ASTNode_T* _for, va_list args)
     end_scope(v);
 }
 
+static void for_range_end(ASTNode_T* _for, va_list args)
+{
+    GET_VALIDATOR(args);
+    ASTType_T* left = expand_typedef(v, _for->left->data_type);
+
+    char buf[BUFSIZ] = {'\0'};
+    if(!is_integer(left))
+        throw_error(ERR_TYPE_ERROR_UNCR, _for->left->tok, "expression of range-based for loop expected to be integer, got %s", ast_type_to_str(buf, left, LEN(buf)));
+
+    ASTType_T* right = expand_typedef(v, _for->right->data_type);
+    if(!is_integer(right))
+            throw_error(ERR_TYPE_ERROR_UNCR, _for->right->tok, "expression of range-based for loop expected to be integer, got %s", ast_type_to_str(buf, right, LEN(buf)));
+}
+
 static void match_type_end(ASTNode_T* match, va_list args)
 {
     for(size_t i = 0; i < match->cases->size; i++)
@@ -942,7 +960,6 @@ static void match_type_end(ASTNode_T* match, va_list args)
 
     if(match->default_case)
         match->body = match->default_case->body;
-
 }
 
 static void using_end(ASTNode_T* using, va_list args)

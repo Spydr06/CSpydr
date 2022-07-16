@@ -1259,6 +1259,19 @@ static ASTNode_T* parse_while(Parser_T* p, bool needs_semicolon)
     return loop;
 }
 
+static ASTNode_T* parse_for_range(Parser_T* p, ASTNode_T* stmt, bool needs_semicolon)
+{
+    stmt->kind = ND_FOR_RANGE;
+    parser_consume(p, TOKEN_RANGE, "expect `..` after first for loop expression");
+
+    stmt->left = stmt->init_stmt->expr;
+    stmt->right = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+
+    stmt->body = parse_stmt(p, needs_semicolon);
+
+    return stmt;
+}
+
 static ASTNode_T* parse_for(Parser_T* p, bool needs_semicolon)
 {
     ASTNode_T* loop = init_ast_node(ND_FOR, p->tok);
@@ -1273,10 +1286,22 @@ static ASTNode_T* parse_for(Parser_T* p, bool needs_semicolon)
 
     if(!tok_is(p, TOKEN_SEMICOLON))
     {
-        ASTNode_T* init_stmt = parse_stmt(p, true);
-        if(init_stmt->kind != ND_EXPR_STMT)
-            throw_error(ERR_SYNTAX_ERROR, init_stmt->tok, "can only have expression-like statements in for-loop initializer");
-        loop->init_stmt = init_stmt;
+        if(tok_is(p, TOKEN_LET))
+        {
+            ASTNode_T* init_stmt = parse_stmt(p, true);
+            if(init_stmt->kind != ND_EXPR_STMT)
+                throw_error(ERR_SYNTAX_ERROR, init_stmt->tok, "can only have expression-like statements in for-loop initializer");
+            loop->init_stmt = init_stmt;
+        }
+        else {
+            ASTNode_T* init_stmt = init_ast_node(ND_EXPR_STMT, p->tok);
+            init_stmt->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+            loop->init_stmt = init_stmt;
+
+            if(tok_is(p, TOKEN_RANGE))
+                return parse_for_range(p, loop, needs_semicolon);
+            parser_consume(p, TOKEN_SEMICOLON, "expect `;` after for-loop initializer");
+        }
     } 
     else
         parser_advance(p);

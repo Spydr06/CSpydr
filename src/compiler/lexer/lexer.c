@@ -105,6 +105,7 @@ const struct {
     {"::", TOKEN_STATIC_MEMBER},
     {":", TOKEN_COLON},
     {"...", TOKEN_VA_LIST},
+    {"..", TOKEN_RANGE},
     {".", TOKEN_DOT},
     {"²", TOKEN_POW_2},
     {"³", TOKEN_POW_3},

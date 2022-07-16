@@ -86,6 +86,7 @@ enum CSPYDR_TOKEN_TYPE {
     CSPYDR_TOKEN_PIPE,         // |>
     CSPYDR_TOKEN_REF,          // &
     CSPYDR_TOKEN_TILDE,        // ~
+    CSPYDR_TOKEN_RANGE,        // ..
     CSPYDR_TOKEN_VA_LIST,      // ...
 
     CSPYDR_TOKEN_INC,          // ++
@@ -260,6 +261,7 @@ enum CSPYDR_AST_NODE_KIND_ENUM {
     CSPYDR_ND_LOOP,          // loop {}
     CSPYDR_ND_WHILE,         // while x {}
     CSPYDR_ND_FOR,           // for let i: i32 = 0; i < x; i++ {}
+    CSPYDR_ND_FOR_RANGE,     // for x..y {}
     CSPYDR_ND_MATCH,         // match x {}
     CSPYDR_ND_MATCH_TYPE,    // match (type) T {}
     CSPYDR_ND_CASE,          // x => {} !!only in match statements!!
