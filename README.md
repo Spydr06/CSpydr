@@ -118,6 +118,8 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 Please make sure to update the unit tests as appropriate.
 
+**View CONTRIBUTING.md for more information**
+
 ## License
 CSpydr is licensed under the [MIT License](https://mit-license.org/)
 
