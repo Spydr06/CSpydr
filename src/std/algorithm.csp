@@ -3,7 +3,7 @@ namespace std {
         fn hash_bytes(data: &const u8, size: u64): u64 {
             let hash: u64 = 0;
 
-            for let i: u64 = 0; i < size; i++; {
+            for 0..size {
                 hash += *data;
                 data++;
                 hash += (hash << 10);
