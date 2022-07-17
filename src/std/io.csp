@@ -255,6 +255,8 @@ namespace std {
             
         }
 
+        fn sync() syscall::sync();
+
         [ignore_unused("*")]
     }
 }

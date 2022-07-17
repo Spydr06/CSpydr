@@ -1,0 +1,14 @@
+import "std.csp";
+
+fn main(): i32 {
+    using std;
+    let t = time::get();
+
+    std::timer::do_each(1000, || => {
+        with time_str = fmt::time("%D.%M.%Y %h:%m:%s", t) {
+            io::puts(time_str);
+        }
+    });
+    
+    <- 0;
+}

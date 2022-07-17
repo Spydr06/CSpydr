@@ -20,12 +20,12 @@ namespace std {
             "%n" => return a null character immediately
             "%e" => insert an "Error" type from the VAList as &Error
             "%E" => insert the current error set at std::error::__static::__error
+            "%t" => inserts a formatted time string
         ]#
-
-        fn format(fmt: &const char, args: ...): &char
+        fn format(fmt: &const char, args: ...): std::String
             <- va_format(fmt, &args);
 
-        fn va_format(fmt: &const char, args: &VAList): &char
+        fn va_format(fmt: &const char, args: &VAList): std::String
         {
             using string;
             let str = str!{};
@@ -40,6 +40,40 @@ namespace std {
                     
                     let r = __internal::fmt(fmt, &str, args);
                     if r ret r;
+                }
+                else
+                    &str `append` *fmt;
+            }
+
+            <- str;
+        }
+
+        #[ 
+            format timepoints with given time format
+            format arguments:
+            "%%" => '%'
+            "%Y" => year
+            "%M" => month
+            "%D" => day
+            "%h" => hour
+            "%m" => minute
+            "%s" => second
+            "%u" => unix seconds (seconds since Jan 1st 1970)
+        ]#
+        fn time(fmt: &const char, time: Time): std::String
+        {
+            using string;
+            let str = str!(nil);
+            do {
+                error::new(std::Errno::NILPTR, "`fmt` is nil");
+                <- str;
+            } unless fmt;
+
+            for ; (*fmt) != '\0'; fmt++; {
+                if (*fmt) == '%' {
+                    fmt++;
+                    
+                    __internal::fmt_time(fmt, &str, &time);
                 }
                 else
                     &str `append` *fmt;
@@ -73,7 +107,7 @@ namespace std {
                 }
             }
 
-            fn fmt(fmt: &const char, str: &String, args: &VAList): &char {
+            fn fmt(fmt: &const char, str: &String, args: &VAList): std::String {
                 using string;
 
                 let buf: char 'c[100];
@@ -144,10 +178,46 @@ namespace std {
                             concat(str, err.msg);
                         }
                     }
+                    't' => {
+                        let time_fmt = va_arg!{args, &const char};
+                        if time_fmt
+                            with f = time(time_fmt, std::time::get())
+                                concat(str, f);
+                            else {}
+                        else
+                            concat(str, "(nil)");
+                    }
                     _ => {}
                 }
 
                 <- nil;
+            }
+
+            fn fmt_time(fmt: &const char, str: &String, time: &Time) {
+                using c_str;
+                let buf: char 'c[100];
+                match *fmt {
+                    '%' => string::append(str, *fmt);
+                    'Y' => from_uint(time.year, buf, 10);
+                    'M' => uint_two_digits(time.month, buf);
+                    'D' => uint_two_digits(time.day, buf);
+                    'h' => uint_two_digits(time.hour, buf);
+                    'm' => uint_two_digits(time.minute, buf);
+                    's' => uint_two_digits(time.second, buf);
+                    _ => {}
+                }
+
+                if buf[0] != 0 {
+                    string::concat(str, buf);
+                }
+            }
+
+            fn uint_two_digits(u: u64, buf: &char) {
+                if u < 10 {
+                    *buf = '0';
+                   buf++;
+                }
+                c_str::from_uint(u, buf, 10);
             }
         }
     }

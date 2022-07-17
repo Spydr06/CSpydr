@@ -517,6 +517,18 @@ namespace std {
         fn fchmod(fd: i32, mode: mode_t): i32
             syscall!(Syscall::FCHMOD, fd, mode);
         
+        fn sync()
+            syscall!(Syscall::SYNC);
+        
+        fn clock_gettime(clk_id: Clock, ts: &TimeSpec): i32
+            syscall!(Syscall::CLOCK_GETTIME, clk_id, ts);
+        
+        fn clock_settime(clk_id: Clock, ts: &const TimeSpec): i32
+            syscall!(Syscall::CLOCK_SETTIME, clk_id, ts);
+
+        fn gettimeofday(ts: &TimeSpec, n: i32): i32
+            syscall!(Syscall::GETTIMEOFDAY, ts, n);
+
         [no_return("*")] # every function in this scope will not return anything via the `ret` statement.
     }
 }

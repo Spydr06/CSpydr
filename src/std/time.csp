@@ -3,10 +3,18 @@ import "syscall.csp";
 import "string.csp";
 
 namespace std {
-    type TimeVal: i64;
+    type TimeVal: struct {
+        tv_sec: i64,
+        tv_usec: i64
+    };
+
+    type TimeSpec: struct {
+        tv_sec: i64,
+        tv_nsec: i64
+    };
 
     type Time: struct {
-        unix_secs: TimeVal,
+        ts: TimeVal,
         year: u16,  # 2022 (0 to 65535)
         month: u8,  # 02   (1 to 12)
         day: u8,    # 07   (1 to 31)
@@ -15,28 +23,24 @@ namespace std {
         second: u8  # 36   (0 to 59)
     };
 
-    type TimeSpec: struct {
-        tv_sec: TimeVal,
-        tv_nsec: i64
-    };
+    type Clock: i32;
 
     namespace time {
-        fn get(buf: &Time)
+        fn get(): Time
         {
-            let t = unix::secs();
-            if t <= 0 ret; # negative values are not supported for now
+            let time = Time::{clock::get_time_of_day()};
+            let t = time.ts.tv_sec;
 
-            buf.unix_secs = t;
-            buf.second = ((t % 60): u8);
+            time.second = t % 60;
             t /= 60;
-            buf.minute = t % 60;
+            time.minute = t % 60;
             t /= 60;
-            buf.hour = t % 24;
+            time.hour = t % 24;
             t /= 24;
 
-            let a = ((4 * t + 102032) / 146097 + 15): u32;
-            let b = (t + 2442113 + a - a / 4): u32;
-            let c = ((20 * b - 2442) / 7305): u32;
+            let a = (4 * t + 102032) / 146097 + 15;
+            let b = t + 2442113 + a - a / 4;
+            let c = (20 * b - 2442) / 7305;
             let d = b - 365 * c - c / 4;
             let e = d * 1000 / 30601;
             let f = d - e * 30 - e * 601 / 1000;
@@ -50,63 +54,65 @@ namespace std {
                 e -= 13;
             }
 
-            buf.year = c;
-            buf.month = e;
-            buf.day = f;
-        }
+            time.year = c;
+            time.month = e;
+            time.day = f;
 
-        # formats a string like "{h}:{m}:{s} on {D}.{M}.{Y}" to "10:12:36 on 07.02.2022" using a given timepoint
-        fn format(fmt: const &char, time: &Time): std::String
-        {
-            let buf = str!(nil);
-
-            for let i: usize = 0; fmt[i] != 0; i++;
-            {
-                if(fmt[i] == '{' && fmt[i + 1] != 0 && fmt[i + 2] == '}')
-                {
-                   let c: char 'c[32];
-                   memory::zero(c, sizeof char * len c);
-                   match fmt[(i += 2) - 1]
-                   {
-                        'Y' => { # Year
-                            c_str::from_uint(time.year, c, 10);
-                        }
-                        'M' => { # Month
-                            c_str::from_uint(time.month, c, 10);
-                        }
-                        'D' => { # Day
-                            c_str::from_uint(time.day, c, 10);
-                        }
-                        'h' => { # hour
-                            c_str::from_uint(time.hour, c, 10);
-                        }
-                        'm' => { # minute
-                            c_str::from_uint(time.month, c, 10);
-                        }
-                        's' => { # second
-                            c_str::from_uint(time.second, c, 10);
-                        }
-                        'u' => { # unix time
-                            c_str::from_int(time.unix_secs, c, 10);
-                        }
-                        _ => ret nil; # error: undefined format
-                   }
-
-                   concat!(buf, c);
-                }
-                else
-                {
-                    let c: u16 = fmt[i] << 8 | '\0';
-                    concat!(buf, &c: &char);
-                }
-            }
-            <- buf;
+            <- time;
         }
 
         namespace unix {
             fn secs(): std::TimeVal
             {
                 <- syscall::time(nil);
+            }
+        }
+    }
+
+    namespace clock {
+        const REALTIME: i32 = 0;
+
+        fn get_time_of_day(): TimeVal {
+            let ts = TimeSpec::{};
+            get_time(REALTIME, &ts);
+            <- TimeVal::{ts.tv_sec, ts.tv_nsec / 1000};
+        }
+
+        fn get_time(clk_id: Clock, ts: &TimeSpec): std::Errno {
+            let r = syscall::clock_gettime(clk_id, ts);
+            if r == -Errno::NOSYS {
+                if clk_id == REALTIME {
+                    syscall::gettimeofday(ts, 0);
+                    ts.tv_nsec *= 1000;
+                    <- 0;
+                } 
+                else
+                    r = -Errno::INVAL;
+            }
+            <- r;
+        }
+
+        fn set_time(clk_id: Clock, ts: &const TimeSpec): i32 {
+            <- syscall::clock_settime(clk_id, ts);
+        }
+    }
+
+    namespace timer {
+        fn nanosleep(req: &const TimeSpec, rem: &TimeSpec) {
+            syscall::nanosleep(req, rem);
+        }
+
+        fn delay(millis: i64): TimeSpec {
+            let req = TimeSpec::{millis / 1_000, (millis % 1000) * 1000};
+            let rem = TimeSpec::{};
+            syscall::nanosleep(&req, &rem);
+            <- rem;
+        }
+
+        fn do_each(millis: u64, func: fn) {
+            loop {
+                func();
+                delay(millis);
             }
         }
     }
