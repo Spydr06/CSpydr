@@ -58,8 +58,8 @@ i32 subprocess(const char* p_name, char* const* p_arg, bool print_exit_msg)
 
     if(pid == 0 && execvp(p_name, p_arg) == -1)
     {
-        LOG_ERROR_F("error executing %s\n", p_name);
-        return -1;
+        LOG_ERROR_F("error executing %s: %s\n", p_name, strerror(errno));
+        exit(-1);
     }
 
     i32 pid_status;

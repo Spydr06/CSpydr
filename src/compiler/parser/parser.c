@@ -21,12 +21,14 @@
 #include "globals.h"
 #include "optimizer/constexpr.h"
 #include "timer/timer.h"
+#include "codegen/transpiler/c_codegen.h"
 
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
 #include <float.h>
+#include<unistd.h> 
 #include <errno.h>
 
 typedef struct PARSER_STRUCT
@@ -562,6 +564,67 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, Li
         }
         throw_error(ERR_SYNTAX_ERROR, p->tok, "could not find function `%s` in current scope", value);
     }
+#ifdef CSPYDR_LINUX
+    else if(streq(field->value, "cc"))
+    {
+        char* abs_path = get_absolute_path(p->tok->source->path);
+        char* working_dir = get_path_from_file(abs_path);
+        if(!global.silent) 
+            LOG_OK_F(COLOR_BOLD_CYAN "  Command" COLOR_RESET "    \"%s %s\"\n", cc, value);
+
+        List_T* args = init_list();
+        list_push(args, cc);
+        
+        char* ch = strtok(value, " ");
+        while(ch != NULL)
+        {
+            list_push(args, ch);
+            ch = strtok(NULL, " ");
+        }
+
+        char current_dir[FILENAME_MAX];
+        getcwd(current_dir, LEN(current_dir));
+        chdir(working_dir);
+        
+        i32 exit_code = subprocess(cc, (char* const*) args->items, false);
+        if(exit_code)
+            throw_error(ERR_MISC, parser_peek(p, -1), "command %s %s failed with exit code %d", cc, value, exit_code);
+
+        chdir(current_dir);
+        free_list(args);
+        free(abs_path);
+    }
+    else if(streq(field->value, "copy"))
+    {
+        char* from = value;
+        parser_consume(p, TOKEN_ARROW, "expect `=>` after first copy file");
+        char* to = p->tok->value;
+        parser_consume(p, TOKEN_STRING, "expect string literal after `=>`");
+
+        if(!global.silent) 
+            LOG_OK_F(COLOR_BOLD_CYAN "  Command" COLOR_RESET "    \"cp -r %s %s\"\n", from, to);
+
+        char* abs_path = get_absolute_path(p->tok->source->path);
+        char* working_dir = get_path_from_file(abs_path);
+        char current_dir[FILENAME_MAX];
+        getcwd(current_dir, LEN(current_dir));
+        chdir(working_dir);
+
+        char* const args[] = {
+            "cp",
+            "-r",
+            from,
+            to,
+            NULL
+        };
+        i32 exit_code = subprocess(args[0], args, false);
+        if(exit_code)
+            throw_error(ERR_MISC, parser_peek(p, -1), "copy failed with exit code %d", exit_code);
+
+        chdir(current_dir);
+        free(abs_path);
+    }
+#endif
     else
         throw_error(ERR_SYNTAX_WARNING, field, "undefined compiler directive `%s`", field->value);
 }

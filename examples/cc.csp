@@ -1,0 +1,6 @@
+[cc("-c assets/test.c")]
+[copy("test.o" => "assets/test.o")]
+
+fn main(): i32 {
+    <- 0;
+}
