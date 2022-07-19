@@ -1652,11 +1652,6 @@ static ASTNode_T* parse_defer(Parser_T* p, bool needs_semicolon)
     parser_consume(p, TOKEN_DEFER, "expect `defer` for defer statement");
 
     defer->body = parse_stmt(p, needs_semicolon);
-    if(!p->cur_fn->deferred) {
-        p->cur_fn->deferred = init_list(); 
-        mem_add_list(p->cur_fn->deferred);
-    }
-    list_push(p->cur_fn->deferred, defer->body);
     
     return defer;
 }

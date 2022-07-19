@@ -164,7 +164,7 @@ static void asm_store_fp(ASMCodegenData_T* cg, i32 r, i32 offset, i32 sz);
 static void asm_store_gp(ASMCodegenData_T* cg, i32 r, i32 offset, i32 sz);
 static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node);
 static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node);
-static void asm_gen_lambda(ASMCodegenData_T* cg, ASTNode_T* lambda);
+static void asm_gen_lambda(ASMCodegenData_T* cg, ASTObj_T* lambda);
 static void asm_load(ASMCodegenData_T* cg, ASTType_T *ty);
 
 void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast)
@@ -764,7 +764,7 @@ static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs)
                 break;
             
             case OBJ_LAMBDA:
-                asm_gen_lambda(cg, obj->body);
+                asm_gen_lambda(cg, obj);
                 break;
 
             default:
@@ -2505,7 +2505,13 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
                 asm_gen_stmt(cg, node->body);
             return;
         
-        case ND_DEFER: // ignore
+        case ND_DEFER:
+            if(!cg->current_fn->deferred) {
+                cg->current_fn->deferred = init_list(); 
+                mem_add_list(cg->current_fn->deferred);
+            }
+            list_push(cg->current_fn->deferred, node->body);
+            return;
         case ND_USING: // ignore
             return;
 
@@ -2556,8 +2562,9 @@ static void asm_store_gp(ASMCodegenData_T* cg, i32 r, i32 offset, i32 sz)
     }
 }
 
-static void asm_gen_lambda(ASMCodegenData_T* cg, ASTNode_T* lambda)
+static void asm_gen_lambda(ASMCodegenData_T* cg, ASTObj_T* lambda_obj)
 {
+    ASTNode_T* lambda = lambda_obj->body;
     char* prev_fn_name = cg->current_fn_name;
     char lambda_name[BUFSIZ] = {};
     sprintf(lambda_name, "lambda.%ld", lambda->long_val);
@@ -2610,9 +2617,13 @@ static void asm_gen_lambda(ASMCodegenData_T* cg, ASTNode_T* lambda)
         }
     }
 
+    ASTObj_T* prev = cg->current_fn;
+    cg->current_fn = lambda_obj; 
     asm_gen_stmt(cg, lambda->body);
+    cg->current_fn = prev;
 
     asm_println(cg, ".L.return.%s:", lambda_name);
+    asm_gen_defer(cg, lambda_obj->deferred);
     asm_println(cg, "  pop %%rbp");
     asm_println(cg, "  ret");
 
