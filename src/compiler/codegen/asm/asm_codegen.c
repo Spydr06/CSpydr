@@ -605,6 +605,31 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
     }
 }
 
+static void asm_push(ASMCodegenData_T* cg) 
+{
+    asm_println(cg, "  push %%rax");
+    cg->depth++;
+}
+
+static void asm_pop(ASMCodegenData_T* cg, char *arg) 
+{
+    asm_println(cg, "  pop %s", arg);
+    cg->depth--;
+}
+
+static void asm_gen_defer(ASMCodegenData_T* cg, List_T* deferred) 
+{
+    if(!deferred || deferred->size == 0)
+        return;
+    
+    asm_push(cg);
+    for(size_t i = 0; i < deferred->size; i++)
+    {
+        asm_gen_stmt(cg, deferred->items[i]);
+    }
+    asm_pop(cg, "%rax");
+}
+
 static void asm_gen_function(ASMCodegenData_T* cg, ASTObj_T* obj)
 {
     char* fn_name = asm_gen_identifier(obj->id);
@@ -715,6 +740,7 @@ static void asm_gen_function(ASMCodegenData_T* cg, ASTObj_T* obj)
 
     // epilogue
     asm_println(cg, ".L.return.%s:", fn_name);
+    asm_gen_defer(cg, obj->deferred);
     asm_println(cg, "  mov %%rbp, %%rsp");
     asm_println(cg, "  pop %%rbp");
     asm_println(cg, "  ret");
@@ -775,18 +801,6 @@ static i32 get_type_id(ASTType_T *ty) {
         default:
             return U64;
     }
-}
-
-static void asm_push(ASMCodegenData_T* cg) 
-{
-    asm_println(cg, "  push %%rax");
-    cg->depth++;
-}
-
-static void asm_pop(ASMCodegenData_T* cg, char *arg) 
-{
-    asm_println(cg, "  pop %s", arg);
-    cg->depth--;
 }
 
 static void asm_pushf(ASMCodegenData_T* cg) 
@@ -2491,6 +2505,7 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
                 asm_gen_stmt(cg, node->body);
             return;
         
+        case ND_DEFER: // ignore
         case ND_USING: // ignore
             return;
 

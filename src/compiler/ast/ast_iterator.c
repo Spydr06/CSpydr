@@ -322,6 +322,10 @@ static void ast_node(const ASTIteratorList_T* list, ASTNode_T* node, va_list cus
         case ND_RETURN:
             ast_node(list, node->return_val, custom_args);
             break;
+        
+        case ND_DEFER:
+            ast_node(list, node->body, custom_args);
+            break;
 
         case ND_DO_UNLESS:
         case ND_DO_WHILE:

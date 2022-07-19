@@ -85,6 +85,7 @@
 #define ND_WITH CSPYDR_ND_WITH
 #define ND_STRUCT_MEMBER CSPYDR_ND_STRUCT_MEMBER
 #define ND_ASM CSPYDR_ND_ASM
+#define ND_DEFER CSPYDR_ND_DEFER
 #define ND_KIND_LEN CSPYDR_ND_KIND_LEN
 
 #define TY_I8 CSPYDR_TY_I8
@@ -324,6 +325,7 @@ struct AST_OBJ_STRUCT
     ASTNode_T* value;
     List_T* args;
     List_T* objs;
+    List_T* deferred;
 
     // functions
     ASTType_T* return_type;

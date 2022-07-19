@@ -155,6 +155,7 @@ enum CSPYDR_TOKEN_TYPE {
     CSPYDR_TOKEN_WITH,         // with
     CSPYDR_TOKEN_DO,           // do
     CSPYDR_TOKEN_UNLESS,       // unless
+    CSPYDR_TOKEN_DEFER,        // defer
 
     CSPYDR_TOKEN_CURRENT_FN,   // special token for the __func__! macro
 
@@ -276,6 +277,7 @@ enum CSPYDR_AST_NODE_KIND_ENUM {
     CSPYDR_ND_USING,         // using x::y
     CSPYDR_ND_WITH,          // with x = y {}
     CSPYDR_ND_STRUCT_MEMBER, // struct members
+    CSPYDR_ND_DEFER,         // defer {}
 
     CSPYDR_ND_ASM, // inline assembly
 

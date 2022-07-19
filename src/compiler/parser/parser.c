@@ -1646,6 +1646,21 @@ static ASTNode_T* parse_do(Parser_T* p, bool needs_semicolon)
     return do_stmt;
 }
 
+static ASTNode_T* parse_defer(Parser_T* p, bool needs_semicolon)
+{
+    ASTNode_T* defer = init_ast_node(ND_DEFER, p->tok);
+    parser_consume(p, TOKEN_DEFER, "expect `defer` for defer statement");
+
+    defer->body = parse_stmt(p, needs_semicolon);
+    if(!p->cur_fn->deferred) {
+        p->cur_fn->deferred = init_list(); 
+        mem_add_list(p->cur_fn->deferred);
+    }
+    list_push(p->cur_fn->deferred, defer->body);
+    
+    return defer;
+}
+
 static ASTNode_T* parse_stmt(Parser_T* p, bool needs_semicolon)
 {
 
@@ -1683,6 +1698,8 @@ static ASTNode_T* parse_stmt(Parser_T* p, bool needs_semicolon)
             return parse_break(p, needs_semicolon);
         case TOKEN_CONTINUE:
             return parse_continue(p, needs_semicolon);
+        case TOKEN_DEFER:
+            return parse_defer(p, needs_semicolon);
         case TOKEN_SEMICOLON:   // skip random semicolons in the code
         case TOKEN_NOOP:
             {
