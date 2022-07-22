@@ -131,7 +131,7 @@ namespace std {
                                     io::eprintf("%sExpect <integer> after `%s`.%s\n", &RED[0], arg, &RESET[0]);
                                     <- error::new(std::Errno::INVAL, "expected int");
                                 }
-                                let int = c_str::atol(argv[i]);
+                                let int = c_str::to_i64(argv[i]);
                                 flags[j].func(int: &void);
                             }
                             _ => {}

@@ -8,27 +8,19 @@ macro ptr(x, ty) {
     ((x): &(ty))
 }
 
-macro each(i, lo, hi) 
-{
+macro each(i, lo, hi) {
     let i = lo; i < hi; i++
 }
 
-macro range(lo, hi)
-{
+macro range(lo, hi) {
     let i = lo; i < hi; i++
 }
 
-macro xor_swap(a, b)
-{
-    {
-        (a) ^= (b);
-        (b) ^= (a);
-        (a) ^= (b);
-    }
+macro xor_swap(a, b) {
+    ((a) ^= (b) |> (b) ^= (a) |> (a) ^= (b))
 }
 
-macro swap(a, b)
-{
+macro swap(a, b) {
     {
         let __swap_tmp = (a);
         (a) = (b);
@@ -36,44 +28,35 @@ macro swap(a, b)
     }
 }
 
-macro ttos(ty)
-{
-    ((type) __to_str(ty))
+macro ttos(ty) {
+    (type::__to_str(ty))
 }
 
 # checks if the bit of v at position p is 1
-macro check_bit(v, p)
-{
+macro check_bit(v, p) {
     ((v) & ((1: u64) << (p)))
 }
 
 # toggles the bit of v at position v
-macro toggle_bit(v, p)
-{
+macro toggle_bit(v, p) {
     ((v) ^= ((1: u64) << (p)))
 }
 
 # sets the bit of v at position p to x
-macro set_bit(v, p, x)
-{
+macro set_bit(v, p, x) {
     ((v) ^= ((-(x)) ^ (v)) & ((1: u64) << (p)))
 }
 
-macro va_arg(ap, ty)
-{
-    (
-        *((
-            if type::reg_class(ty) == 0
-                => ::std::va::__gp((ap), sizeof (ty), alignof (ty))
-            else if type::reg_class(ty) == 1
-                => ::std::va::__fp((ap), sizeof (ty), alignof (ty))
-            else ::std::va::__mem((ap), sizeof (ty), alignof (ty))
-        ): &(ty))
-    )
+macro va_arg(ap, ty) {
+    (*((if type::reg_class(ty) == 0
+            => ::std::va::__gp((ap), sizeof (ty), alignof (ty))
+        else if type::reg_class(ty) == 1
+            => ::std::va::__fp((ap), sizeof (ty), alignof (ty))
+        else ::std::va::__mem((ap), sizeof (ty), alignof (ty))
+    ): &(ty)))
 }
 
-macro va_copy(dest, src)
-{
+macro va_copy(dest, src) {
     (::std::va::copy((dest), (src)))
 }
 

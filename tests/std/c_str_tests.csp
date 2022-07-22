@@ -89,7 +89,7 @@ fn c_str_test_strstr(t: &std::Testing) {
     using std::testing;
 
     let haystack = "hello, world!";
-    let needle = "hello";
+    let needle = "world";
 
     assert(t, std::c_str::strstr(haystack, needle) != nil, "std::c_str::strstr(haystack, needle) == nil");
     assert(t, std::c_str::strstr(haystack, "hallo") == nil, "std::c_str::strstr(haystack, \"hallo\") != nil");
@@ -231,8 +231,12 @@ fn c_str_test_from_bool(t: &std::Testing) {
 
 fn c_str_test_atoi(t: &std::Testing) {
     using std::testing;
-    # TODO
-    skip(t);
+    
+    let int = std::c_str::to_i32("1234");
+    assert(t, int == 1234, "int != 1234, got %i", int);
+
+    int = std::c_str::to_i64("-987");
+    assert(t, int == -789, "int != -987, got %i", int);
 }
 
 fn c_str_test_atol(t: &std::Testing) {

@@ -491,33 +491,13 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
 static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var)
 {
     ASTNode_T* value = var->value;
+    size_t target_size = var->data_type->size;
+    u8* buffer = calloc(target_size, sizeof(u8));
+    gen_relocation(value, target_size, buffer);
+    for(size_t i = 0; i < target_size; i++) 
+        asm_println(cg, "  .byte %d", (int) buffer[i]);
     
-    if(value->kind == ND_STR) 
-    {   
-        // for array types, we have to emit the array length before the string
-        ASTType_T* ty = unpack(var->data_type);
-        if(ty->kind == TY_ARRAY) 
-        {
-            u8 len_buffer[sizeof(u64)] = {0};
-            memcpy(len_buffer, &ty->base->size, sizeof(len_buffer));
-            for(size_t i = 0; i < sizeof(u64); i++)
-                asm_println(cg, "  .byte %d", (int) len_buffer[i]);
-        }
-
-        asm_println(cg, "  .ascii \"%s\\0\"", value->str_val);
-    }
-    else
-    {
-        size_t target_size = var->data_type->size;
-        u8* buffer = calloc(target_size, sizeof(u8));
-
-        gen_relocation(value, target_size, buffer);
-
-        for(size_t i = 0; i < target_size; i++) 
-            asm_println(cg, "  .byte %d", (int) buffer[i]);
-        
-        free(buffer);
-    }
+    free(buffer);
 }
 
 static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)

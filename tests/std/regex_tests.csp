@@ -5,7 +5,7 @@ type RegexTest: struct {
     should_pass: bool,
 };
 
-const PRINT_SUCCESSFUL_REGEX_TESTS: bool = true;
+const PRINT_SUCCESSFUL_REGEX_TESTS: bool = false;
 
 fn test_regex(t: &std::Testing)
 {

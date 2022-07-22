@@ -17,6 +17,7 @@
 #include "globals.h"
 #include "typechecker.h"
 
+#include <ctype.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -1616,6 +1617,11 @@ static void string_lit(ASTNode_T* str, va_list args)
                 case '\'':
                 case '\\':  
                 case '0':
+                    continue;
+                
+                case 'x':
+                    if(!isxdigit(str->str_val[++i]) || !isxdigit(str->str_val[++i]))
+                        throw_error(ERR_SYNTAX_ERROR_UNCR, str->tok, "invalid escape sequence `\\x%c%c`, chars after `\\x` must be hexadecimal digits", str->str_val[i - 1], str->str_val[i]);
                     continue;
 
                 default:

@@ -45,13 +45,8 @@ namespace std {
 
         fn strncat(dest: &char, src: &const char, n: usize): &char
         {
-            let a = dest;
-            dest += strlen(dest);
-            while n && *src {
-                n--;
-                *dest++ = *src++;
-            }
-            <- a;
+            strncpy(dest + strlen(dest), src, n);
+            <- dest;
         }
 
         fn strcmp(l: &const char, r: &const char): i32
@@ -76,16 +71,22 @@ namespace std {
 
         fn strstr(str: &char, substr: &char): &char
         {
-            let size: usize = strlen(substr);
-            let ref = substr;
+            let compare = |a: &const char, b: &const char| bool => {
+                while *a && *b {
+                    if *a != *b
+                        <- false;
+                    a++;
+                    b++;
+                }
+                <- *b == '\0';
+            };
 
-            while (*str) != 0 && (*ref) != 0 {
-                if (*str)++ == (*ref) ref++;
-                if (*ref) == 0 ret str - size;
-                if (size == (ref - substr)) 
-                    ref = substr;
+            while *str {
+                if *str == *substr && compare(str, substr) {
+                    <- str;
+                }
+                str++;
             }
-
             <- nil;
         }
 
@@ -337,23 +338,29 @@ namespace std {
             <- str;
         }
 
-        fn atoi(s: &const char): i32
+        fn to_i32(s: &const char): i32
         {
             let n = 0;
             let neg = false;
             while character::isspace(*s)
                 s++;
             match *s {
-                '-' => { neg = true; s++; }
+                '-' => { 
+                    neg = true; 
+                    s++; 
+                }
                 '+' => s++;
+                _ => {}
             }
 
+            io::printf("%s\n", s);
+
             while character::isdigit(*s)
-                n = 10 * n + (*(s++) - '0');
+                n = 10 * n - (*s++ - '0');
             <- if neg => n else -n;
         }
 
-        fn atol(s: &const char): i64
+        fn to_i64(s: &const char): i64
         {
             let n: i64 = 0;
             let neg = false;
@@ -362,6 +369,7 @@ namespace std {
             match *s {
                 '-' => { neg = true; s++; }
                 '+' => s++;
+                _ => {}
             }
 
             while character::isdigit(*s)
