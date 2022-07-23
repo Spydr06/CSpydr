@@ -109,9 +109,9 @@ $ cspc --help
 
 ## Editor support
 
-CSpydr currently only supports Visual Studio Code, since thats the code editor I personally use for developing. I will add support for other editors later on.
+Editor support is found in the **[editor/](https://github.com/Spydr06/CSpydr/tree/main/editors)** subdirectory.
 
-Check out the Visual Studio Code extension [here](https://github.com/spydr06/cspydr-vscode-extension).
+Currently, only [Visual Studio Code](https://code.visualstudio.com/) is supported.
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
