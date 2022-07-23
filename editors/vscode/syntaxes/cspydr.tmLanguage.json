@@ -863,8 +863,39 @@
 			]
 		},
 		"char": {
-			"name": "string.quoted.single.cspydr",
-			"match": "'([^';]|[\\\\].)'"
+			
+			"patterns": [
+				{
+					"name": "string.quoted.single.cspydr",
+					"match": "(')(.)(')",
+					"captures": {
+						"1": {
+							"name": "punctuation.begin.quote.single.cspydr"
+						},
+						"2": {
+							"name": "string.quoted.single.cspydr"
+						},
+						"3": {
+							"name": "punctuation.end.quote.single.cspydr"
+						}
+					}
+				},
+				{
+					"name": "string.quoted.single.cspydr",
+					"match": "(')(\\\\.)(')",
+					"captures": {
+						"1": {
+							"name": "punctuation.begin.quote.single.cspydr"
+						},
+						"2": {
+							"name": "constant.character.escape.cspydr"
+						},
+						"3": {
+							"name": "punctuation.end.quote.single.cspydr"
+						}
+					}
+				}
+			]
 		},
 		"constant": {
 			"patterns": [
