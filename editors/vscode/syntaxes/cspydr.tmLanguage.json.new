@@ -1,0 +1,47 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "CSpydr",
+    "scopeName": "source.csp",
+    "variables": {
+        "ident": "[A-Za-z_][A-Za-z_0-9]*"
+    },
+
+	"patterns": [
+		{ "include": "#base" }
+	],
+	"repository": {
+        "base": {
+            "patterns": [
+                { "include": "#comments" },
+                { "include": "#macro-invoke" },
+                { "include": "#pre-directives" }
+            ]
+        },
+
+		"comments": {
+			"patterns": [
+                {
+                    "name": "comment.block.cspydr",
+                    "begin": "#\\[",
+                    "end": "]#"
+			    },
+                {
+                    "name": "comment.line.cspydr",
+                    "begin": "#",
+                    "end": "(\r\n|\n)"
+                }
+            ]
+		},
+
+        "pre-directives": {
+            "patterns": [
+                
+            ]
+        },
+
+        "macro-invoke": {
+            "name": "entity.name.function.macro.cspydr",
+            "match": "[0-9a-zA-Z_]+!"
+        }
+	}
+}

@@ -1,0 +1,129 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "CSpydr",
+	"patterns": [
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#operators"
+		},
+		{
+			"include": "#numbers"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#block_comments"
+		},
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#typenames"
+		}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [
+				{
+					"name": "keyword.control.cspydr",
+					"match": "\\b(defer|do|unless|if|loop|while|for|break|continue|ret|<-|match|asm|else|noop|with)\\b"
+				},
+				{
+					"name": "entity.name.type.cspydr",
+					"match": "\\b(typeof|struct|enum|union|i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|f80|bool|char|void|usize)\\b"
+				},
+				{
+					"name": "keyword.other.cspydr",
+					"match": "\\b(fn|let|type|import|macro|namespace|extern|using)\\b"
+				},
+				{
+					"name": "storage.modifier.cspydr",
+					"match": "\\b(const|of)\\b"
+				},
+				{
+					"name": "keyword.operator.cspydr",
+					"match": "\\b(sizeof|alignof|len)\\b"
+				},
+				{
+					"name": "constant.other.cspydr",
+					"match": "\\b(true|false|nil|²|³|self)\\b"
+				}
+			]
+		},
+		"constants": {
+			"patterns": [{
+				"name": "constant.language.cspydr",
+				"match": "\\b(__line__|__func__|__file__)\\b"
+			}]
+		},
+		"operators": {
+			"patterns": [{
+				"name": "keyword.operator.cspydr",
+				"match": "([+*/%=!~&<|>:.\\^]|[-])"
+			}]	
+		},
+		"comments": {
+			"name": "comment.line.cspydr",
+			"begin": "#",
+			"end": "(\r\n|\n)",
+			"patterns": [{
+				"name": "comment.line.cspydr",
+				"match": "\\\\."	
+			}]
+		},
+		"block_comments": {
+			"name": "comment.block.cspydr",
+			"begin": "#\\[",
+			"end": "]#",
+			"patterns": [{
+				"name": "comment.block.cspydr",
+				"match": "\\\\."
+			}]
+		},
+		"numbers": {
+			"name": "constant.numeric.cspydr",
+			"patterns": [
+				{
+					"name": "constant.numeric",
+					"match": "(0x[0-9a-fA-F_]+|0b[0-1_]+|0o[0-7_]|((?<![a-zA-Z0-9_])[0-9]+))"
+				}
+			]
+		},
+		"strings": {
+			"patterns": [
+				{
+					"name": "string.quoted.double.cspydr",
+					"match": "\".+\""
+				},
+				{
+					"name": "string.quoted.cspydr",
+					"match": "'([^';]|[\\\\].)'"
+				}
+			]
+		},
+		"typenames": {
+			"patterns": [
+				{
+					"name": "entity.name.function.cspydr",
+					"match": "[0-9a-zA-Z_]+!"
+				},
+				{
+					"name": "entity.name.function.cspydr",
+					"match": "([0-9a-zA-Z_]+)(?=\\()"
+				},
+				{
+					"name": "entity.name.function.cspydr",
+					"match": "`.+`"
+				},
+				{
+					"name":"entity.name.function.cspydr",
+					"match": "$[0-9a-zA-Z_]+"
+				}
+			]
+		}
+	},
+	"scopeName": "source.csp"
+}
