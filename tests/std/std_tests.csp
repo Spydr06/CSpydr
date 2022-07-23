@@ -51,6 +51,12 @@ fn main(): i32 {
         Test::{mem_test_free, "mem.csp std::mem::free()"},
         Test::{mem_test_calloc, "mem.csp std::mem::calloc()"},
         Test::{mem_test_realloc, "mem.csp std::mem::realloc()"},
+        Test::{mem_test_copy, "mem.csp std::mem::copy()"},
+        Test::{mem_test_eq, "mem.csp std::mem::eq()"},
+        Test::{mem_test_set, "mem.csp std::mem::set()"},
+        Test::{mem_test_zero, "mem.csp std::mem::zero()"},
+        Test::{mem_test_ptr_overlap, "mem.csp std::mem::ptr_overlap()"},
+        Test::{mem_test_is_zero, "mem.csp std::mem::is_zero()"},
 
         # regex.csp
         Test::{test_regex, "regex.csp"},

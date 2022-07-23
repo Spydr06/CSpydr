@@ -62,3 +62,69 @@ fn mem_test_realloc(t: &std::Testing) {
 
     free(ptr);
 }
+
+fn mem_test_copy(t: &std::Testing) {
+    using std::testing, std::memory;
+
+    let x = [3, 1, 4, 1, 5];
+    let y: &i32 = calloc(sizeof i32, 5);
+
+    let err = copy(y, &x[0], sizeof i32 * 5);
+    assert_false(t, err, "err != 0, got %i");
+    assert(t, y[0] == x[0], "y[0] != 3, got %i", y[0]);
+    assert(t, y[1] == x[1], "y[1] != 1, got %i", y[1]);
+    assert(t, y[2] == x[2], "y[2] != 4, got %i", y[2]);
+    assert(t, y[3] == x[3], "y[3] != 1, got %i", y[3]);
+    assert(t, y[4] == x[4], "y[4] != 5, got %i", y[4]);
+}
+
+fn mem_test_eq(t: &std::Testing) {
+    using std::testing, std::memory;
+
+    let x = [1, 2, 3, 4, 5];
+    let y = [1, 2, 3, 4, 5];
+    let z = [3, 1, 4];
+
+    assert(t, eq(&x, &y, sizeof x), "eq(&x, &y, sizeof x) != true");
+    assert_false(t, eq(&x, &z, sizeof z), "eq() != false");
+}
+
+fn mem_test_set(t: &std::Testing) {
+    using std::testing, std::memory;
+
+    let x: &u8 = alloc(10);
+    set(x, 7, 10);
+    for let i = 0; i < 10; i++; {
+        assert(t, x[i] == 7, "x[%i] != 7", i);
+    }
+}
+
+fn mem_test_zero(t: &std::Testing) {
+    using std::testing, std::memory;
+
+    let x = [1, 2, 3, 4, 5];
+    zero(&x[0], 5 * sizeof i32);
+    for let i = 0; i < len x; i++; {
+        assert(t, x[i] == 0, "x[%i] != 0", i);
+    }
+}
+
+fn mem_test_ptr_overlap(t: &std::Testing) {
+    using std::testing, std::memory;
+
+    let a = 10: &void;
+    let b = 12: &void;
+
+    assert(t, ptr_overlap(a, b, 3), "ptr_overlap != true");
+    assert_false(t, ptr_overlap(a, b, 1), "ptr_overlap != false");
+}
+
+fn mem_test_is_zero(t: &std::Testing) {
+    using std::testing, std::memory;
+
+    let x = [0, 0, 0, 0];
+
+    assert(t, is_zero(&x[0], 4 * sizeof i32), "is_zero != true");
+    x[3] = 3;
+    assert_false(t, is_zero(&x[0], 4 * sizeof i32), "is_zero != false");
+}
