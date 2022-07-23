@@ -871,13 +871,13 @@
 			"patterns": [
 				{
 					"name": "string.quoted.single.cspydr",
-					"match": "(')(.)(')",
+					"match": "(')(\\\\.)(')",
 					"captures": {
 						"1": {
 							"name": "punctuation.begin.quote.single.cspydr"
 						},
 						"2": {
-							"name": "string.quoted.single.cspydr"
+							"name": "constant.character.escape.cspydr"
 						},
 						"3": {
 							"name": "punctuation.end.quote.single.cspydr"
@@ -886,13 +886,13 @@
 				},
 				{
 					"name": "string.quoted.single.cspydr",
-					"match": "(')(\\\\.)(')",
+					"match": "(')(.)(')",
 					"captures": {
 						"1": {
 							"name": "punctuation.begin.quote.single.cspydr"
 						},
 						"2": {
-							"name": "constant.character.escape.cspydr"
+							"name": "string.quoted.single.cspydr"
 						},
 						"3": {
 							"name": "punctuation.end.quote.single.cspydr"

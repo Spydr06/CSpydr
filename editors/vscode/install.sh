@@ -8,6 +8,11 @@ VSCODE_EXTENSION_DIR="$HOME/.vscode-oss/extensions/cspydr"
 
 pushd $SCRIPT_DIR
 
+if [[ -d $VSCODE_EXTENSION_DIR ]]
+then
+    rm -vrf $VSCODE_EXTENSION_DIR
+fi
+
 mkdir -vp $VSCODE_EXTENSION_DIR
 cp -vr ./* $VSCODE_EXTENSION_DIR
 
