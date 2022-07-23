@@ -123,10 +123,10 @@ const char version_text[] = COLOR_BOLD_YELLOW "** THE CSPYDR PROGRAMMING LANGUAG
                           "\n"
                           "For more information type -i; for help type -h.\n";
 
-const struct { 
-    char* as_str; 
+const struct {
+    char* as_str;
     Action_T ac;
-} action_table[] = 
+} action_table[] =
 {
     {"build", AC_BUILD},
     {"run",   AC_RUN},
@@ -138,7 +138,7 @@ static void evaluate_info_flags(char* argv)
 {
     char csp_build[32];
     get_cspydr_build(csp_build);
-    
+
     if(streq(argv, "-h") || streq(argv, "--help"))
         printf(help_text, usage_text, __CSP_DEFAULT_MAX_MACRO_CALL_DEPTH, get_home_directory());
     else if(streq(argv, "-i") || streq(argv, "--info"))

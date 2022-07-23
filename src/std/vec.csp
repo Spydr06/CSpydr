@@ -38,7 +38,7 @@ macro vec_copy(addr) {
 # macro to iterate over every index of a vector
 macro vec_foreach(addr, i, v, code) {
     {
-        for let i: u64 = 0; i < ::std::vec::size(addr); i++; {
+        for let i = 0; i < ::std::vec::size(addr); i++; {
             let v = addr[i];
             code;
         }
