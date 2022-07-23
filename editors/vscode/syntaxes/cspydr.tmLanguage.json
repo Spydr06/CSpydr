@@ -49,6 +49,10 @@
 					]
 				},
 				{
+					"name": "storage.type.va-list.cspydr",
+					"match":"(\\.\\.\\.)"
+				},
+				{
 					"name": "storage.modifier.const.cspydr",
 					"match": "\\bconst\\b"
 				},
