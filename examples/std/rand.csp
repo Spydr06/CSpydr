@@ -4,7 +4,7 @@ fn main(): i32 {
     using std;
     random::seed(time::unix::secs());
 
-    for let i = 0; i < 100; i++; {
+    for 0..100 {
         io::printf("%l\n", random::rand() % 10);
     }
 

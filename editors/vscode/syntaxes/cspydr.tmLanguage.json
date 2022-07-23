@@ -25,6 +25,9 @@
 		},
 		{
 			"include": "#variable-definition"
+		},
+		{
+			"include": "#macro-call"
 		}
 	],
 	"repository": {
@@ -32,6 +35,9 @@
 			"patterns": [
 				{
 					"include": "#comment"
+				},
+				{
+					"include": "#macro-call"
 				},
 				{
 					"name": "storage.type.pointer.cspydr",
@@ -641,6 +647,48 @@
 				}
 			]
 		},
+		"macro-call": {
+			"patterns": [
+				{
+					"name": "meta.index.macro.cspydr",
+					"match": "\\b((?:\\w|_)(?:\\w|_|[0-9])*)(!)",
+					"captures": {
+					  	"1": {
+							"name": "entity.name.function.call.cspydr"
+					  	},
+						"2": {
+							"name": "entity.name.function.call.cspydr"
+						}
+					}
+				},
+				{
+					"name": "meta.call.cspydr",
+					"begin": "\\b((?:\\w|_)(?:\\w|_|[0-9])*)(!)\\s*(\\()",
+					"beginCaptures": {
+						"1": {
+							"name": "entity.name.function.call.cspydr"
+						},
+						"2": {
+							"name": "entity.name.function.call.cspydr"
+						},
+						"3": {
+							"name": "punctuation.begin.paren.cspydr"
+						}
+					},
+					"end": "(\\))",
+					"endCaptures": {
+						"1": {
+							"name": "punctuation.end.paren.cspydr"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#all-parameter-list"
+						}
+					]
+				}
+			]
+		},
 		"statements": {
 			"patterns": [
 				{
@@ -671,7 +719,7 @@
 			"patterns": [
 				{
 					"name": "meta.control.cspydr",
-					"match": "\\b(if|else|while|for|loop|do|defer|match|unless|asm)\\b(?=.*?(?:\\{|$))",
+					"match": "\\b(if|else|while|for|loop|do|defer|match|unless|asm|with)\\b(?=.*?(?:\\{|$))",
 					"captures": {
 						"1": {
 							"name": "keyword.control.block.cspydr"
@@ -760,6 +808,9 @@
 				},
 				{
 					"include": "#number"
+				},
+				{
+					"include": "#macro-call"
 				},
 				{
 					"include": "#call"
@@ -959,15 +1010,12 @@
 		},
 		"call": {
 			"name": "meta.call.cspydr",
-			"begin": "\\b((?:\\w|_)(?:\\w|_|[0-9])*)(!)?\\s*(\\()",
+			"begin": "\\b((?:\\w|_)(?:\\w|_|[0-9])*)\\s*(\\()",
 			"beginCaptures": {
 				"1": {
 					"name": "entity.name.function.call.cspydr"
 				},
 				"2": {
-					"name": "entity.name.function.call.cspydr"
-				},
-				"3": {
 					"name": "punctuation.begin.paren.cspydr"
 				}
 			},
@@ -1018,6 +1066,20 @@
 				}
 			]
 		},
+		"all-parameter-list": {
+			"patterns": [
+				{
+					"name": "punctuation.comma.cspydr",
+					"match": "(,)"
+				},
+				{
+					"include": "#types"
+				},
+				{
+					"include": "#expressions"
+				}
+			]
+		},
 		"indexing": {
 			"patterns": [
 				{
@@ -1046,18 +1108,6 @@
           			  	  	"name": "punctuation.double-colon.cspydr"
           			  	}
           			}
-				},
-				{
-					"name": "meta.index.macro.cspydr",
-					"match": "\\b((?:\\w|_)(?:\\w|_|[0-9])*)(!)",
-					"captures": {
-					  	"1": {
-							"name": "entity.name.function.call.cspydr"
-					  	},
-						"2": {
-							"name": "entity.name.function.call.cspydr"
-						}
-					}
 				},
 				{
 					"name": "meta.index.other.cspydr",
