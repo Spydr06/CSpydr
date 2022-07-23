@@ -25,9 +25,6 @@
 		},
 		{
 			"include": "#variable-definition"
-		},
-		{
-			"include": "#types"
 		}
 	],
 	"repository": {
@@ -36,19 +33,6 @@
 				{
 					"include": "#comment"
 				},
-				{
-					"include": "#primitives"
-				},
-				{
-					"include": "#modified-types"
-				},
-				{
-					"include": "#other-types"
-				}
-			]
-		},
-		"primitives": {
-			"patterns": [
 				{
 					"name": "storage.type.pointer.cspydr",
 					"match": "(&)",
@@ -85,6 +69,9 @@
 					},
 					"patterns": [
 						{
+							"include": "#comment"
+						},
+						{
 							"include": "#member-list"
 						}
 					]
@@ -107,6 +94,9 @@
 						}
 					},
 					"patterns": [
+						{
+							"include": "#comment"
+						},
 						{
 							"include": "#enum-members"
 						}
@@ -180,21 +170,44 @@
 							"include": "#type-list"
 						}
 					]
-				}
-			]
-		},
-		"modified-types": {
-			"patterns": [
+				},
 				{
-					"match": "\\b(?:[a-zA-Z]|_)(?:\\w|_|[0-9])*\\s*(::)",
-					"captures": {
-					  	"1": {
-							"name": "entity.name.namespace.cspydr"
-					  	},
-					  	"2": {
+					"name": "meta.type.array.cspydr",
+					"begin": "(\\'[cC])?\\s*(\\[)",
+					"beginCaptures": {
+						"1": {
+							"name": "storage.modifier.c-array.cspydr"
+						},
+						"2": {
+							"name": "punctuation.begin.bracket.cspydr"
+						}
+					},
+					"end": "(\\])",
+					"endCaptures": {
+						"1": {
+							"name": "punctuation.end.bracket.cspydr"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#expressions"
+						}
+					]
+				},
+				{
+					"name": "meta.index.namespace.cspydr",
+          			"match": "(::)?\\s*((?:\\w|_)(?:\\w|_|[0-9])*)\\s*(::)",
+          			"captures": {
+						"1": {
 							"name": "punctuation.double-colon.cspydr"
-					  	}
-					}
+					  	},
+          			  	"2": {
+          			  		"name": "entity.name.namespace.cspydr"
+          			  	},
+          			  	"3": {
+          			  	  	"name": "punctuation.double-colon.cspydr"
+          			  	}
+          			}
 				},
 				{
 					"name": "meta.type.closure.cspydr",
@@ -229,12 +242,12 @@
 							"include": "#expressions"
 						}
 					]
+				},
+				{
+					"name": "entity.name.type.cspydr",
+					"match": "\\b(?:\\w|_)(?:\\w|_|[0-9])*\\b"
 				}
 			]
-		},
-		"other-types": {
-			"name": "entity.name.type.cspydr",
-			"match": "\\b(?:\\w|_)(?:\\w|_|[0-9])*\\b"
 		},
 		"type-list": {
 			"patterns": [
@@ -478,13 +491,16 @@
 			"patterns": [
 				{
 					"name": "meta.variable.definition.cspydr",
-					"match": "\\b(let|const)\\s+((?:\\w|_)(?:\\w|_|[0-9])*)",
+					"match": "\\b(let|const)\\s+((?:\\w|_)(?:\\w|_|[0-9])*)\\s*(=)?",
 					"captures": {
 						"1": {
 							"name": "keyword.let.cspydr"
 						},
 						"2": {
 							"name": "variable.other.cspydr"
+						},
+						"3": {
+							"name": "keyword.operator.assignment.cspydr"
 						}
 					}
 				},
@@ -492,16 +508,13 @@
 					"name": "meta.variable.definition.type.cspydr",
 					"begin": "(?<=(let|const).*?)(:)",
 					"beginCaptures": {
-						"1": {
+						"2": {
 							"name": "punctuation.colon.cspydr"
 						}
 					},
 					"end": "((\\=)|(\\;))",
 					"endCaptures": {
 						"1": {
-							"name": "punctuation.operator.assignment.cspydr"
-						},
-						"2": {
 							"name": "punctuation.semicolon.cspydr"
 						}
 					},
@@ -658,7 +671,7 @@
 			"patterns": [
 				{
 					"name": "meta.control.cspydr",
-					"match": "\\b(if|else|while|for|loop|do|defer|match)\\b(?=.*?(?:\\{|$))",
+					"match": "\\b(if|else|while|for|loop|do|defer|match|unless|asm)\\b(?=.*?(?:\\{|$))",
 					"captures": {
 						"1": {
 							"name": "keyword.control.block.cspydr"
@@ -682,7 +695,7 @@
 					"begin": "\\b(using)\\b",
 					"beginCaptures": {
 						"1": {
-							"name": "keyword.using.cspydr"
+							"name": "keyword.control.using.cspydr"
 						}
 					},
 					"end": "(;)",
@@ -749,9 +762,6 @@
 					"include": "#number"
 				},
 				{
-					"include": "#operators"
-				},
-				{
 					"include": "#call"
 				},
 				{
@@ -759,6 +769,9 @@
 				},
 				{
 					"include": "#indexing"
+				},
+				{
+					"include": "#operators"
 				},
 				{
 					"include": "#closure"
@@ -857,7 +870,7 @@
 		"operators": {
 			"patterns": [
 				{
-					"name": "keyword.operator.ternary.cspydr",
+					"name": "keyword.control.ternary.cspydr",
 					"match": "\\b(if|else)\\b"
 				},
 				{
@@ -884,7 +897,7 @@
 				},
 				{
 					"name": "keyword.operator.arithmetic.cspydr",
-					"match": "(\\+|\\-|\\*|\\/|\\^|\\~)(=)?"
+					"match": "(\\+|\\-|\\*|\\/|\\^|\\~|%)(=)?"
 				},
 				{
 					"name": "keyword.operator.bitwise.cspydr",
@@ -897,6 +910,10 @@
 				{
 					"name": "keyword.operator.range.cspydr",
 					"match": "(\\.\\.)"
+				},
+				{
+					"name": "punctuation.comma.cspydr",
+					"match": "(,)"
 				}
 			]
 		},
@@ -942,12 +959,15 @@
 		},
 		"call": {
 			"name": "meta.call.cspydr",
-			"begin": "\\b((?:\\w|_)(?:\\w|_|[0-9])*)\\s*(\\()",
+			"begin": "\\b((?:\\w|_)(?:\\w|_|[0-9])*)(!)?\\s*(\\()",
 			"beginCaptures": {
 				"1": {
 					"name": "entity.name.function.call.cspydr"
 				},
 				"2": {
+					"name": "entity.name.function.call.cspydr"
+				},
+				"3": {
 					"name": "punctuation.begin.paren.cspydr"
 				}
 			},
@@ -1028,12 +1048,36 @@
           			}
 				},
 				{
+					"name": "meta.index.macro.cspydr",
+					"match": "\\b((?:\\w|_)(?:\\w|_|[0-9])*)(!)",
+					"captures": {
+					  	"1": {
+							"name": "entity.name.function.call.cspydr"
+					  	},
+						"2": {
+							"name": "entity.name.function.call.cspydr"
+						}
+					}
+				},
+				{
 					"name": "meta.index.other.cspydr",
 					"match": "\\b((?:\\w|_)(?:\\w|_|[0-9])*)\\b",
 					"captures": {
 					  	"1": {
 							"name": "variable.other.cspydr"
-					  	}
+					  	},
+						"2": {
+							"name": "variable.other.cspydr"
+						}
+					}
+				},
+				{
+					"name": "meta.index.other.cspydr",
+					"match": "(\\.)",
+					"captures": {
+						"1": {
+							"name": "punctuation.period.cspydr"
+						}
 					}
 				}
 			]
