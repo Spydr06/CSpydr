@@ -87,15 +87,18 @@ fn test_regex(t: &std::Testing)
         let should_pass = tests[i].should_pass;
         let expectedlen = tests[i].expectedlen;
 
-        let result = std::regex::matches(regex, matchstr);
+        let pattern = std::regex::compile(regex);
+        let result = std::regex::match_pattern(pattern, matchstr);
 
         if should_pass {
             assert(t, result.index != -1, "[%i/%l] result.index == -1, test didn't match as expected", i + 1, len tests);
             
             if result.index != -1
                 assert(t, result.length == expectedlen, "[%i/%l] result.length (%i) != expectedlen (%i)", i + 1, len tests, result.length, expectedlen);
-            if result.length != expectedlen || result.index == -1
-                std::io::printf("\t(\"%S\")", regex);
+            if result.length != expectedlen || result.index == -1 {
+                std::io::printf("\t(\"%S\")\n", regex);
+                std::regex::print(pattern);
+            }
         }
         else
             assert(t, result.index == -1, "result.index != -1, [%i/%l] `%S` matched `%S` unexpectedly", i + 1, len tests, tests[i].regex, tests[i].matchstr);

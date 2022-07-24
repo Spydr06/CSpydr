@@ -617,7 +617,7 @@
 							"match": "\\b((?:\\w|_)(?:\\w|_|[0-9])*)\\s*($|(,)|(?:(?=\\))))",
 							"captures": {
 								"1": {
-									"name": "function.parameter.cspydr"
+									"name": "variable.parameter.cspydr"
 								},
 								"2": {
 									"name": "punctuation.comma.cspydr"
@@ -956,12 +956,22 @@
 		"operators": {
 			"patterns": [
 				{
-					"name": "keyword.control.ternary.cspydr",
-					"match": "\\b(if|else)\\b"
+					"name": "keyword.control.block.cspydr",
+					"match": "\\b(if|else)",
+					"captures": {
+						"1": {
+							"name": "keyword.control.block.cspydr"
+						}
+					}
 				},
 				{
-					"name": "keyword.operator.len.cspydr",
-					"match": "\\b(len)\\b"
+					"name": "keyword.control.block.cspydr",
+					"match": "\\b(len)",
+					"captures": {
+						"1": {
+							"name": "keyword.control.block.cspydr"
+						}
+					}
 				},
 				{
 					"include": "#cast"

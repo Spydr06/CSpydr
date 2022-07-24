@@ -1600,7 +1600,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_ADD:
             if(unpack(node->left->data_type)->base && unpack(node->right->data_type)->base)
                 throw_error(ERR_SYNTAX_ERROR, node->tok, "cannot add two pointer types together");
-            if(unpack(node->left->data_type)->base)
+            if(ptr_type(node->left->data_type))
             {
                 // if we add a number to a pointer, multiply the second argument with the base type size
                 // a + b -> a + b * sizeof *a
@@ -1620,7 +1620,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             break;
         
         case ND_SUB:
-            if(unpack(node->left->data_type)->base && is_integer(node->right->data_type))
+            if(ptr_type(node->left->data_type) && is_integer(node->right->data_type))
             {
                 // if we subtract a number from a pointer, multiply the second argument with the base type size
                 // a - b -> a - b * sizeof *a
@@ -1640,7 +1640,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
 
                 node->right = &new_right;
             }
-            else if(unpack(node->left->data_type)->base && unpack(node->left->data_type)->base && !node->bool_val)
+            else if(ptr_type(node->left->data_type) && ptr_type(node->left->data_type) && !node->bool_val)
             {
                 // if both subtraction arguments are pointers, return the number of elements in between
                 // a - b -> (a - b) / sizeof *a

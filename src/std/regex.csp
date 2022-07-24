@@ -106,7 +106,7 @@ namespace std {
             <- &compiled[0];
         }
 
-        fn match_pattern(pattern: &Regex, text: &const char): RegexMatch
+        fn match_pattern(pattern: &Regex, text: &const char): std::RegexMatch
         {
             if pattern == nil
                 <- RegexMatch::{-1, 0};
@@ -292,7 +292,7 @@ namespace std {
                     RegexKind::NOT_ALPHA =>      ret !isalpha(c);
                     RegexKind::WHITESPACE =>     ret isspace(c);
                     RegexKind::NOT_WHITESPACE => ret !isspace(c);
-                    _ =>                         ret p.u.ch == c;
+                    _ =>                        ret p.u.ch == c;
                 }
             }
 
@@ -304,9 +304,10 @@ namespace std {
                     text++;
                     (*matchlength)++;
                 }
-                while text >= prepoint {
-                    if match_pattern(pattern, text--, matchlength)
+                while text > prepoint || text == prepoint {
+                    if match_pattern(pattern, text, matchlength)
                         <- true;
+                    text -= (1: &void);
                     (*matchlength)--;
                 }
                 *matchlength = prelen;

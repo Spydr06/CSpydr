@@ -138,11 +138,14 @@ namespace std {
 
         fn equal(a: &const char, b: &const char): bool
         {
-            if a == b ret true;
-            
+            if a == b
+                <- true;
+            if !a || !b 
+                <- false;
+
             let length = c_str::strlen(a);
             if length != c_str::strlen(b) 
-                ret false;
+                <- false;
 
             for let i: u64 = 0; i < length; i++;
                 if a[i] != b[i] ret false;

@@ -12,6 +12,7 @@ namespace std {
             "%l" => insert an i64
             "%o" => insert an i64 in octal form
             "%x" => insert an u64 in hexadecimal form
+            "%b" => insert a boolean
             "%p" => insert a pointer/memory address (&void or u64)
             "%c" => insert a character
             "%C" => insert a literal character (prints escape codes as text)
@@ -132,6 +133,9 @@ namespace std {
                     'x' => {
                         c_str::from_uint(va_arg!{args, u64}, buf, 16);
                         concat(str, buf);
+                    }
+                    'b' => {
+                        concat(str, va_arg!{args, bool} |> if $ => "true" else "false");
                     }
                     'p' => { # pointer
                         c_str::from_uint(va_arg!{args, &void}: u64, buf, 16);

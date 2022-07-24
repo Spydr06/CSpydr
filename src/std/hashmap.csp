@@ -61,6 +61,10 @@ macro hashmap_get(map, _key) {
     )
 }
 
+macro hashmap_size_mod(map, val) {
+    ((val) & ((map).data.alloc / ((map).data.ksize + (map).data.vsize) - 1))
+}
+
 namespace std {
     namespace hashmap {
         type Data: struct {
@@ -123,24 +127,40 @@ namespace std {
             for let ptr = old_pairs; ptr < old_pairs + old_alloc; 
                 ptr += ((map.data.ksize + map.data.vsize): u64); {
                 if !memory::is_zero(ptr, map.data.ksize + map.data.vsize) {
-                    let new = find_pair(map, ptr);
+                    let new = find_pair(map, ptr, true);
                     memory::copy(new, ptr, map.data.ksize + map.data.vsize);
                 }
             }
         }
 
         fn calc_index(map: &Template, key: &u8): u64 {
-            <- (if map.data.use_str_hashing =>
+            <- hashmap_size_mod!(map, 
+                if map.data.use_str_hashing =>
                     algorithm::hash_string(*(key: &&const char))
                 else 
                     algorithm::hash_bytes(key, map.data.ksize)
-                ) & (map.data.alloc / (map.data.ksize + map.data.vsize) - 1);
+            );
         }
 
-        fn find_pair(map: &Template, key: &u8): &u8 {
+        fn find_pair(map: &Template, key: &u8, find_empty: bool): &u8 {
             let index = calc_index(map, key);
+            io::printf(">> %l\n", index);
 
-            <- &map.pairs[index * (map.data.ksize + map.data.vsize)];
+            # linear probing
+            for 0..(map.data.alloc / map.data.ksize + (map).data.vsize) {
+                let pair = &map.pairs[index * (map.data.ksize + map.data.vsize)];
+                
+                if memory::eq(key, pair, map.data.ksize) || (map.data.use_str_hashing && string::equal(*(key: &&const char), *(pair: &&const char)))
+                    <- pair;
+
+                if memory::is_zero(pair, map.data.ksize)
+                    <- if find_empty => pair else nil: &u8;
+                
+                index = hashmap_size_mod!(map, index + 1);
+                io::printf("> %l\n", index);
+            }
+
+            <- nil;
         }
 
         fn put(map: &Template, pair: &u8) {
@@ -150,14 +170,14 @@ namespace std {
             map.data.size++;
             grow(map); # grow if needed
 
-            let addr = find_pair(map, key);
+            let addr = find_pair(map, key, true);
             if addr {
                 memory::copy(addr, pair, map.data.ksize + map.data.vsize);
             }
         }
 
         fn get(map: &Template, key: &u8): &u8 {
-            <- find_pair(map, key) |> if $ == nil => $ else $ + (map.data.ksize: u64);
+            <- find_pair(map, key, false) |> if $ == nil => $ else $ + (map.data.ksize: u64);
         }
     }
 }

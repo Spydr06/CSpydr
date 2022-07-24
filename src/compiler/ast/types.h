@@ -18,7 +18,7 @@
 #define F80_S  10
 #define CHAR_S 1
 #define BOOL_S 1
-#define VOID_S 8
+#define VOID_S 1
 #define PTR_S  8
 #define ENUM_S 4
 
