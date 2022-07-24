@@ -144,7 +144,6 @@ namespace std {
 
         fn find_pair(map: &Template, key: &u8, find_empty: bool): &u8 {
             let index = calc_index(map, key);
-            io::printf(">> %l\n", index);
 
             # linear probing
             for 0..(map.data.alloc / map.data.ksize + (map).data.vsize) {
@@ -157,7 +156,6 @@ namespace std {
                     <- if find_empty => pair else nil: &u8;
                 
                 index = hashmap_size_mod!(map, index + 1);
-                io::printf("> %l\n", index);
             }
 
             <- nil;
