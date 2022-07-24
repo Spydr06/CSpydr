@@ -188,6 +188,9 @@ namespace std {
             <- c;
         }
 
+        fn newline()
+            syscall::write(stdout, "\n", 1);
+
         fn close(fd: i32)
         {
             syscall::close(fd); # error handling

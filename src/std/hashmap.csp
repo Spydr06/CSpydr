@@ -1,5 +1,6 @@
 import "memory.csp";
 import "algorithm.csp";
+import "vec.csp";
 
 macro hashmap(key_type, val_type) {
     (struct {
@@ -61,8 +62,20 @@ macro hashmap_get(map, _key) {
     )
 }
 
+macro hashmap_keys(map) {
+    (::std::hashmap::keys((map)): &typeof (map).pairs.key)
+}
+
+macro hashmap_values(map) {
+    (::std::hashmap::values((map)): &typeof (map).pairs.val)
+}
+
 macro hashmap_size_mod(map, val) {
     ((val) & ((map).data.alloc / ((map).data.ksize + (map).data.vsize) - 1))
+}
+
+macro hashmap_num_allocated(map) {
+    ((map).data.alloc / ((map).data.ksize + (map).data.vsize))
 }
 
 namespace std {
@@ -146,7 +159,7 @@ namespace std {
             let index = calc_index(map, key);
 
             # linear probing
-            for 0..(map.data.alloc / map.data.ksize + (map).data.vsize) {
+            for 0..hashmap_num_allocated!(map) {
                 let pair = &map.pairs[index * (map.data.ksize + map.data.vsize)];
                 
                 if memory::eq(key, pair, map.data.ksize) || (map.data.use_str_hashing && string::equal(*(key: &&const char), *(pair: &&const char)))
@@ -176,6 +189,28 @@ namespace std {
 
         fn get(map: &Template, key: &u8): &u8 {
             <- find_pair(map, key, false) |> if $ == nil => $ else $ + (map.data.ksize: u64);
+        }
+
+        fn keys(map: &Template): &u8 {
+            let v = vec!{u8};
+
+            for let i: u64 = 0; i < map.data.alloc; i += (map.data.ksize + map.data.vsize); {
+                if !memory::is_zero(&map.pairs[i], map.data.ksize)
+                    memory::copy(vec::__internal_add(&v, map.data.ksize), &map.pairs[i], map.data.ksize);
+            }
+
+            <- v;
+        }
+
+        fn values(map: &Template): &u8 {
+            let v = vec!{u8};
+
+            for let i: u64 = 0; i < map.data.alloc; i += (map.data.ksize + map.data.vsize); {
+                if !memory::is_zero(&map.pairs[i], map.data.ksize)
+                    memory::copy(vec::__internal_add(&v, map.data.vsize), &map.pairs[i] + map.data.ksize, map.data.vsize);
+            }
+
+            <- v;
         }
     }
 }

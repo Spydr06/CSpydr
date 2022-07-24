@@ -10,6 +10,12 @@ fn main(): i32 {
         hashmap_put!(map, 2, 12); # put value 12 for key 2
         io::printf("%i\n", hashmap_get!(map, 1)); # get value with key 1
 
+        let keys = hashmap_keys!(map);
+        for let i = 0; i < vec::size(keys); i++; {
+            io::printf("%i ", keys[i]);
+        }
+        io::newline();
+
         hashmap_free!(map); # free memory
     }
 
