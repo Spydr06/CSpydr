@@ -616,15 +616,23 @@ static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
     {
         case 0:
             // ()
+            v->ast->mfk = MFK_NO_ARGS;
             return;
         
         case 1:
             // check the types of the one argument (&&char)
             {
                 ASTType_T* arg_type = expand_typedef(v, ((ASTObj_T*) main_fn->args->items[0])->data_type);
-                if(arg_type->kind != TY_PTR || !arg_type->base ||arg_type->base->kind != TY_PTR || !arg_type->base->base || arg_type->base->base->kind != TY_CHAR)
+                /*if(arg_type->kind == TY_VLA && arg_type->base && arg_type->base->kind == TY_PTR && arg_type->base->base && arg_type->base->base->kind == TY_CHAR)
                 {
-                    throw_error(ERR_TYPE_ERROR_UNCR, ((ASTObj_T*) main_fn->args->items[0])->tok, "expect argument of function `main` to be `&&char`");
+                    v->ast->mfk = MFK_ARGS_ARRAY;
+                }
+                else*/ if(arg_type->kind == TY_PTR && arg_type->base && arg_type->base->kind == TY_PTR && arg_type->base->base && arg_type->base->base->kind != TY_CHAR)
+                {
+                    v->ast->mfk = MFK_ARGV_PTR;
+                }
+                else {
+                    throw_error(ERR_TYPE_ERROR_UNCR, ((ASTObj_T*) main_fn->args->items[0])->tok, "expect argument of function `main` to be `&&char` or `&char[]`");
                     return;
                 }
             } break;
@@ -645,6 +653,7 @@ static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
                     throw_error(ERR_TYPE_ERROR_UNCR, ((ASTObj_T*) main_fn->args->items[1])->tok, "expect second argument of function `main` to be `&&char`");
                     return;
                 }
+                v->ast->mfk = MFK_ARGC_ARGV_PTR;
             } break;
 
         default:
@@ -1422,7 +1431,7 @@ static void anonymous_struct_lit(ASTNode_T* s_lit)
 {
     if(!s_lit->args->size)
     {
-        throw_error(ERR_TYPE_ERROR_UNCR, s_lit->tok, "cannot resolve data type of empty anonymous struct literal `{}`");
+        throw_error(ERR_TYPE_ERROR, s_lit->tok, "cannot resolve data type of empty anonymous struct literal `{}`");
         return;
     }
     ASTType_T* type = init_ast_type(TY_STRUCT, s_lit->tok);
@@ -1434,9 +1443,11 @@ static void anonymous_struct_lit(ASTNode_T* s_lit)
         if(arg->data_type)
         {
             ASTNode_T* member = init_ast_node(ND_STRUCT_MEMBER, arg->tok);
-            char buffer[100];
+            char buffer[100] = {0};
             sprintf(buffer, "_%ld", i);
-            member->id = init_ast_identifier(arg->tok, buffer);
+            char* buf_ptr = strdup(buffer);
+            mem_add_ptr(buf_ptr);
+            member->id = init_ast_identifier(arg->tok, buf_ptr);
             member->data_type = arg->data_type;
 
             list_push(type->members, member);

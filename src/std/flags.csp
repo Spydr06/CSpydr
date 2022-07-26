@@ -59,46 +59,36 @@ namespace std {
             };
         }
 
-        fn help(): Flag
+        fn help(desc: &const char): Flag
         {
             <- Flag::{
-                const |flags: const Flag[]| => {
-                    for let i = 0; i < len flags; i++; {
-                        let args: &char = "";
-                        match flags[i].kind {
-                            std::flag::Kind::STRING => args = " <string>";
-                            std::flag::Kind::BOOL =>   args = " [true|false]";
-                            std::flag::Kind::INT =>    args = " <integer>";
-                            _ => {}
-                        }
-
-                        std::io::printf("  %s%s: %s\n", flags[i].name, args, flags[i].desc);
-                    }
-                }: fn(&void),
+                nil: fn(&void),
                 "--help",
-                "display this help text.",
+                desc,
                 Kind::HELP
             };
         }
     }
 
     namespace flags {
-        fn parse(flags: const Flag[], argc: i32, argv: &&char): Error
+        fn parse(flags: const Flag[], argv: &&char, argc: i32): Error
         {
             for let i = 1; i < argc; i++; {
                 let arg = argv[i];
                 let matched = false;
 
                 for let j = 0; j < len flags; j++; {
-                    if string::equal(flags[j].name, arg) {
+                    let flg = flags[j];
+
+                    if string::equal(flg.name, arg) {
                         matched = true;
-                        
-                        match flags[j].kind {
+
+                        match flg.kind {
                             std::flag::Kind::DEFAULT => {
-                                flags[j].func(nil);
+                                flg.func(nil);
                             }
                             std::flag::Kind::HELP => {
-                                flags[j].func(flags: &void);
+                                __internal::handle_help(&flags[j], flags);
                             }
                             std::flag::Kind::STRING => {
                                 if (i += 1) >= argc {
@@ -106,7 +96,7 @@ namespace std {
                                     io::eprintf("%sExpect <string> after `%s`.%s\n", &RED[0], arg, &RESET[0]);
                                     <- error::new(std::Errno::INVAL, "expected string");
                                 }
-                                flags[j].func(argv[i]);
+                                flg.func(argv[i]);
                             }
                             std::flag::Kind::BOOL => {
                                 if (i += 1) >= argc {
@@ -123,7 +113,7 @@ namespace std {
                                     io::eprintf("%sExpect [true|false] after `%s`, got %s.%s\n", &RED[0], arg, argv[i], &RESET[0]);
                                     <- error::new(std::Errno::INVAL, "expected bool");
                                 }
-                                flags[j].func(bool_val: &void);
+                                flg.func(bool_val: &void);
                             }
                             std::flag::Kind::INT => {
                                 if (i += 1) >= argc {
@@ -132,7 +122,7 @@ namespace std {
                                     <- error::new(std::Errno::INVAL, "expected int");
                                 }
                                 let int = c_str::to_i64(argv[i]);
-                                flags[j].func(int: &void);
+                                flg.func(int: &void);
                             }
                             _ => {}
                         }
@@ -149,6 +139,30 @@ namespace std {
             }
 
             <- error::none();
+        }
+
+        namespace __internal {
+            fn handle_help(help_flag: &Flag, flags: const Flag[]) {
+                using io;
+                do 
+                    printf("%s\n", help_flag.desc) 
+                unless string::equal(help_flag.desc, "");
+
+
+                for let i = 0; i < len flags; i++; {
+                    let args: &char = "";
+                    match flags[i].kind {
+                        std::flag::Kind::STRING => args = " <string>";
+                        std::flag::Kind::BOOL =>   args = " [true|false]";
+                        std::flag::Kind::INT =>    args = " <integer>";
+                        _ => {}
+                    }
+                    if &flags[i] == help_flag
+                        printf("  %s:\tDisplays this help text.\n", flags[i].name);
+                    else
+                        printf("  %s%s:\t%s\n", flags[i].name, args, flags[i].desc);
+                }
+            }
         }
     }
 }

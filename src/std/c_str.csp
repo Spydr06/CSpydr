@@ -353,10 +353,10 @@ namespace std {
                 _ => {}
             }
 
-            io::printf("%s\n", s);
-
-            while character::isdigit(*s)
-                n = 10 * n - (*s++ - '0');
+            while character::isdigit(*s) {
+                n = 10 * n - (*s - '0');
+                s++;
+            }
             <- if neg => n else -n;
         }
 
@@ -372,8 +372,10 @@ namespace std {
                 _ => {}
             }
 
-            while character::isdigit(*s)
-                n = 10 * n - (*(s++) - '0');
+            while character::isdigit(*s) {
+                n = 10 * n - (*s - '0');
+                s++;
+            }
             <- if neg => n else -n;
         }
 

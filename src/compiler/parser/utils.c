@@ -1,7 +1,9 @@
 #include "utils.h"
 
+#include "ast/ast.h"
 #include "ast/ast_iterator.h"
 #include "ast/types.h"
+#include "lexer/token.h"
 #include "list.h"
 #include "globals.h"
 #include "mem/mem.h"
@@ -107,7 +109,7 @@ ASTNode_T* build_str_lit(Token_T* tok, char* str, bool allocate_global, List_T* 
         ASTNode_T* caller = init_ast_node(ND_ID, str_lit->tok);
         caller->id = ast_id;
         caller->referenced_obj = globl;
-        caller->data_type = globl->data_type;//(ASTType_T*) char_ptr_type;
+        caller->data_type = globl->data_type;
 
         return caller;
     }

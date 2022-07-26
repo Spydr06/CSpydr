@@ -236,7 +236,7 @@ fn c_str_test_atoi(t: &std::Testing) {
     assert(t, int == 1234, "int != 1234, got %i", int);
 
     int = std::c_str::to_i64("-987");
-    assert(t, int == -789, "int != -987, got %i", int);
+    assert(t, int == -987, "int != -987, got %i", int);
 }
 
 fn c_str_test_atol(t: &std::Testing) {

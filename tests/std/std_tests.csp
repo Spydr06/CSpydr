@@ -4,6 +4,13 @@ fn main(): i32 {
     using std::testing;
 
     let tests = [
+        # algorithm.csp
+        Test::{algorithm_test_hash_bytes, "algorithm.csp std::algorithm::hash_bytes()"},
+        Test::{algorithm_test_hash_string, "algorithm.csp std::algorithm::hash_string()"},
+        Test::{algorithm_test_hton, "algorithm.csp std::algorithm::hton_XX()"},
+        Test::{algorithm_test_ntoh, "algorithm.csp std::algorithm::ntoh_XX()"},
+        Test::{algorithm_test_bswap, "algorithm.csp std::algorithm::bswap_XX()"},
+
         # array.csp
         Test::{array_test_last, "array.csp last!()"},
         Test::{array_test_first, "array.csp first!()"},
@@ -66,6 +73,80 @@ fn main(): i32 {
     run_all(&t);
 
     <- 0;
+}
+
+# --------------------
+# algorithm.csp
+# --------------------
+
+fn algorithm_test_hash_bytes(t: &std::Testing) {
+    using std::testing;
+
+    let testdata = [
+        # a   b    a == b
+        {64,  64,  true },
+        {64,  63,  false},
+        {64,  65,  false},
+        {100, 100, true },
+        {0,   0,   true },
+        {1,   0,   false},
+        {0,   1,   false},
+        {1,   1,   true}
+    ];
+
+    for let i = 0; i < len testdata; i++; {
+        using std::algorithm;
+
+        let test = testdata[i];
+        let a = hash_bytes(&test._0, sizeof i32);
+        let b = hash_bytes(&test._1, sizeof i32);
+        
+        assert(t, (a == b) == test._2, "hash_bytes(%i) %c= hash_bytes(%i) unexpectedly",
+            test._0, if test._2 => '=' else '!', test._1 
+        );
+    }
+}
+
+fn algorithm_test_hash_string(t: &std::Testing) {
+    using std::testing;
+
+    let testdata = [
+        # input a         input b        a == b
+        {"hello": &char, "hello": &char, true },
+        {"hello": &char, "hallo": &char, false},
+        {"hallo": &char, "hello": &char, false},
+        {"hallo": &char, "hallo": &char, true },
+    ];
+
+    for let i = 0; i < len testdata; i++; {
+        using std::algorithm;
+
+        let test = testdata[i];
+        let a = hash_string(test._0);
+        let b = hash_string(test._1);
+
+        assert(t, (a == b) == test._2, "hash_string(%s) %c= hash_string(%s) unexpectedly",
+            test._0, if test._2 => '=' else '!', test._1
+        );
+    }
+}
+
+fn algorithm_test_hton(t: &std::Testing) {
+    using std::testing;
+
+    skip(t);
+}
+
+fn algorithm_test_ntoh(t: &std::Testing) {
+    using std::testing;
+
+    skip(t);
+}
+
+fn algorithm_test_bswap(t: &std::Testing) {
+    using std::testing;
+
+    skip(t);
 }
 
 # --------------------

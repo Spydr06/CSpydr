@@ -1,0 +1,31 @@
+import "std.csp";
+
+let v: &&char = nil;
+
+fn main(argc: i32, argv: &&char): i32 {
+    using std;
+    v = argv;
+
+    let fl = [
+        flag::new("-simple", "simple flag", || => {
+            io::puts("called -simple");
+        }),
+        flag::new_str("-str", "string flag", |str: &const char| => {
+            io::printf("called -str with value %s\n", str);
+        }),
+        flag::new_int("-int", "integer flag", |i: i64| => {
+            io::printf("called -int with value %l\n", i);
+        }),
+        flag::new_bool("-bool", "boolean flag", |b: bool| => {
+            io::printf("called -bool with value \"%b\" (%i)\n", b, b: i32);
+        }),
+        flag::help("flags.csp - A small CSpydr program to demonstrate the functions of the `std::flags` namespace of the standard library.")
+    ];
+
+    let err = flags::parse(fl, v, argc);
+    if err.kind != std::Errno::NONE {
+        io::eprintf("error parsing flags: %e\n", &err);
+    }
+
+    <- 0;
+}

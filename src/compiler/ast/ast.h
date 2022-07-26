@@ -124,6 +124,13 @@
 #define OBJ_LAMBDA CSPYDR_OBJ_LAMBDA
 #define OBJ_KIND_LEN CSPYDR_OBJ_KIND_LEN
 
+typedef enum MAIN_FUNCTION_KIND {
+    MFK_NO_ARGS,
+    MFK_ARGV_PTR,
+    MFK_ARGC_ARGV_PTR,
+    MFK_ARGS_ARRAY
+} MainFunctionKind_T;
+
 typedef enum CSPYDR_AST_NODE_KIND_ENUM ASTNodeKind_T;
 typedef enum CSPYDR_AST_OBJ_KIND_ENUM  ASTObjKind_T;
 typedef enum CSPYDR_AST_TYPE_KIND_ENUM ASTTypeKind_T;
@@ -355,6 +362,8 @@ typedef struct AST_PROG_STRUCT
     ASTObj_T* entry_point;
 
     List_T* objs;   // list of ASTObj_Ts
+
+    MainFunctionKind_T mfk;
 } ASTProg_T;
 
 ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok);

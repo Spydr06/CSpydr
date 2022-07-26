@@ -823,10 +823,10 @@
 					"include": "#infix-call"
 				},
 				{
-					"include": "#indexing"
+					"include": "#operators"
 				},
 				{
-					"include": "#operators"
+					"include": "#indexing"
 				},
 				{
 					"include": "#closure"
