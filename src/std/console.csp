@@ -1,0 +1,225 @@
+import "types.csp";
+import "error.csp";
+import "io.csp";
+
+macro CONSOLE_NCCS { 32 }
+
+namespace std { 
+    type Console: struct {
+        iflag:  std::console::Flag, # input mode flags
+        oflag:  std::console::Flag, # output mode flags
+        cflag:  std::console::Flag, # control mode flags
+        lflag:  std::console::Flag, # local mode flags
+        line:   std::console::CC,   # line discipline
+        cc:     std::console::CC'c[CONSOLE_NCCS!], # control characters
+        ispeed: std::console::Speed, # input speed
+        ospeed: std::console::Speed  # output speed
+    };
+
+    namespace console {
+        type Speed: u32;
+        type Flag: u32;
+        type CC: u8;
+
+        type WindowSize: struct {
+            row: u16,
+            col: u16,
+            xpixel: u16,
+            ypixel: u16
+        };
+
+        # CC chacracters
+        const VINTR: CC    = 0;
+        const VQUIT: CC    = 1;
+        const VERASE: CC   = 2;
+        const VKILL: CC    = 3;
+        const VEOF: CC     = 4;
+        const VTIME: CC    = 5;
+        const VMIN: CC     = 6;
+        const VSWTC: CC    = 7;
+        const VSTART: CC   = 8;
+        const VSTOP: CC    = 9;
+        const VSUSP: CC    = 10;
+        const VEOL: CC     = 11;
+        const VREPRINT: CC = 12;
+        const VDISCARD: CC = 13;
+        const VWERASE: CC  = 14;
+        const VLNEXT: CC   = 15;
+        const VEOL2: CC    = 16;
+
+        # iflags
+        const IGNBRK: Flag = 0o0001; # ignore break condition
+        const BRKINT: Flag = 0o0002; # signal interrupt on break
+        const IGNPAR: Flag = 0o0004; # ignore characters with parity errors
+        const PARMRK: Flag = 0o0010; # mark parity and framing errors
+        const INPCK: Flag  = 0o0020; # enable input parity check
+        const ISTRIP: Flag = 0o0040; # strip 8th bit off characters
+        const INLCR: Flag  = 0o0100; # map NL to CR on input
+        const IGNCR: Flag  = 0o0200; # ignore CR
+        const IGNNL: Flag  = 0o0400; # map CR to NL on input
+        const IUCLC: Flag  = 0o1000; # map uppercase characters to lowercase on input
+
+        const IXON: Flag    = 0o002000; # enable start/stop output control
+        const IXANY: Flag   = 0o004000; # enable any character to restart output
+        const IXOFF: Flag   = 0o010000; # enable start/stop input control
+        const IMAXBEL: Flag = 0o020000; # ring bell when input queue is full
+        const IUTF8: Flag   = 0o040000; # input is UTF8
+
+        # oflags
+        const OPOST: Flag  = 0o0001; # post-process output
+        const OLCUC: Flag  = 0o0002; # map lowercase characters to uppercase on output
+        const ONLCR: Flag  = 0o0004; # map NL to CR-NL on output
+        const ONRNL: Flag  = 0o0010; # map CR to NL on output
+        const ONLRET: Flag = 0o0040; # no CR output at column 0
+        const OFILL: Flag  = 0o0100; # use fill characters for delay
+        const OFDEL: Flag  = 0o0200; # fill is DEL
+
+        const VTDLY: Flag = 0o040000; # select vertical-tab delays
+        const VT0: Flag   = 0o000000; # vertical-tab delay type 0
+        const VT1: Flag   = 0o040000; # vertical-tab delay type 1
+
+        # cflag bit meaning
+        const B0: Flag     = 0o00; # hang up
+        const B50: Flag    = 0o01;
+        const B75: Flag    = 0o02;
+        const B110: Flag   = 0o03; 
+        const B134: Flag   = 0o04;
+        const B150: Flag   = 0o05;
+        const B200: Flag   = 0o06;
+        const B300: Flag   = 0o07;
+        const B600: Flag   = 0o10;
+        const B1200: Flag  = 0o11;
+        const B1800: Flag  = 0o12;
+        const B2400: Flag  = 0o13;
+        const B4800: Flag  = 0o14;
+        const B9600: Flag  = 0o15;
+        const B19200: Flag = 0o16;
+        const B38400: Flag = 0o17;
+
+        const EXTA: Flag = 0o16;
+        const EXTB: Flag = 0o17;
+
+        # clfags
+        const CSIZE: Flag  = 0o0060;
+        const CS5: Flag    = 0o0000;
+        const CS6: Flag    = 0o0020;
+        const CS7: Flag    = 0o0040;
+        const CS8: Flag    = 0o0060;
+        const CSTOPB: Flag = 0o0100;
+        const CREAD: Flag  = 0o0200;
+        const PARENB: Flag = 0o0400;
+        const PARODD: Flag = 0o1000;
+        const HUPCL: Flag  = 0o2000;
+        const CLOCAL: Flag = 0o4000;
+
+        const CBAUD: Speed = 0o010017;
+
+        # lflags
+        const ISIG: Flag   = 0o000001;
+        const ECHO: Flag   = 0o000010;
+        const ECHOE: Flag  = 0o000020;
+        const ECHOK: Flag  = 0o000040;
+        const ECHONL: Flag = 0o000100;
+        const NOFLSH: Flag = 0o000200;
+        const TOSTOP: Flag = 0o000400;
+        const IEXTEN: Flag = 0o100000;
+
+        const EXTPROC: Flag = 0o200000;
+
+        # tcflow() flags
+        const TCOOFF: Flag = 0;
+        const TCOON: Flag  = 1;
+        const TCIOFF: Flag = 2;
+        const TCION: Flag  = 3;
+
+        # tcflush() flags
+        const TCIFLUSH: Flag  = 0;
+        const TCOFLUSH: Flag  = 1;
+        const TCIOFLUSH: Flag = 2;
+
+        # tcsetattr() flags
+        const TCSANOW: Flag   = 0;
+        const TCSADRIAN: Flag = 1;
+        const TCSAFLUSH: Flag = 2;
+
+        fn get_output_speed(console: &Console): Speed 
+        {
+            <- console.cflag & CBAUD;
+        }
+
+        fn get_input_speed(console: &Console): Speed 
+        {
+            <- console.cflag & CBAUD;
+        }
+
+        fn set_output_speed(console: &Console, speed: Speed): i32 
+        {
+            if speed & ~CBAUD {
+                error::new(std::Errno::INVAL, "speed & ~CBAUD");
+                <- -1;
+            }
+
+            console.cflag &= ~CBAUD;
+            console.cflag |= speed;
+            <- 0;
+        }
+
+        fn set_input_speed(console: &Console, speed: Speed): i32
+        {
+            <- if speed != 0 => set_output_speed(console, speed) else 0;
+        }
+
+        fn get_attribute(fd: i32, console: &Console): i32
+        {
+            <- if io::ioctl(fd, io::TCGETS, console) == 0 => 0 else -1;
+        }
+
+        fn set_attribute(fd: i32, act: i32, console: &Console): i32
+        {
+            if act < 0 || act > 2 {
+                error::new(std::Errno::INVAL, "act < 0 || act > 2");
+                <- -1;
+            }
+
+            <- io::ioctl(fd, io::TCSETS + act, console);
+        }
+
+        fn get_window_size(fd: i32, winsize: &WindowSize): i32
+        {
+            <- syscall::ioctl(fd, io::TIOCGWINSZ, winsize: u64);
+        }
+
+        fn set_window_size(fd: i32, winsize: &const WindowSize): i32
+        {
+            <- syscall::ioctl(fd, io::TIOCSWINSZ, winsize: u64);
+        }
+
+        fn send_break(fd: i32, dur: i32): i32
+        {
+            <- io::ioctl(fd, io::TCSBRK, 0);
+        }
+        [ignore_unused("send_break")]
+
+        fn drain(fd: i32): i32
+        {
+            <- syscall::ioctl(fd, io::TCSBRK, 1);
+        }
+
+        fn flush(fd: i32, queue: i32): i32
+        {
+            <- io::ioctl(fd, io::TCFLSH, queue);
+        }
+
+        fn flow(fd: i32, action: i32): i32
+        {
+            <- io::ioctl(fd, io::TCXONC, action);
+        }
+
+        fn get_sid(fd: i32): pid_t {
+            let sid = 0;
+            if io::ioctl(fd, io::TIOCGSID, &sid) < 0
+                <- -1;
+            <- sid;
+        }
+    }
+}

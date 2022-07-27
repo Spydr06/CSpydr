@@ -168,7 +168,8 @@ namespace std {
         fn eputs(str: &const char) fputs(str, stderr!);
         fn eputc(c: char)          fputc(c, stderr!);
 
-        fn getc(): char ret fgetc(stdin!);
+        fn getc(): char 
+            ret fgetc(stdin!);
 
         fn fputs(str: &const char, fd: i32)
         {
@@ -248,17 +249,94 @@ namespace std {
             write(fd, buf);
         }
 
-        fn write_uint(fd: i32, uint: u64)
-        {
-
-        }
-
-        fn write_ptr(fd: i32, ptr: &void)
-        {
-            
-        }
-
         fn sync() syscall::sync();
+
+        const TCGETS: i32 		= 0x5401;
+        const TCSETS: i32 		= 0x5402;
+        const TCSETSW: i32    	= 0x5403;
+        const TCSETSF: i32    	= 0x5404;
+        const TCGETA: i32 		= 0x5405;
+        const TCSETA: i32 		= 0x5406;
+        const TCSETAW: i32    	= 0x5407;
+        const TCSETAF: i32      = 0x5408;
+        const TCSBRK: i32 		= 0x5409;
+        const TCXONC: i32 		= 0x540A;
+        const TCFLSH: i32 		= 0x540B;
+        const TIOCEXCL: i32   	= 0x540C;
+        const TIOCNXCL: i32   	= 0x540D;
+        const TIOCSCTTY: i32  	= 0x540E;
+        const TIOCGPGRP: i32  	= 0x540F;
+        const TIOCSPGRP: i32  	= 0x5410;
+        const TIOCOUTQ: i32   	= 0x5411;
+        const TIOCSTI: i32    	= 0x5412;
+        const TIOCGWINSZ: i32 	= 0x5413;
+        const TIOCSWINSZ: i32 	= 0x5414;
+        const TIOCMGET: i32   	= 0x5415;
+        const TIOCMBIS: i32   	= 0x5416;
+        const TIOCMBIC: i32   	= 0x5417;
+        const TIOCMSET: i32   	= 0x5418;
+        const TIOCGSOFTCAR: i32 = 0x5419;
+        const TIOCSSOFTCAR: i32 = 0x541A;
+        const FIONREAD: i32   	= 0x541B;
+        const TIOCINQ: i32    	= 0x541B;
+        const TIOCLINUX: i32  	= 0x541C;
+        const TIOCCONS: i32   	= 0x541D;
+        const TIOCGSERIAL: i32  = 0x541E;
+        const TIOCSSERIAL: i32  = 0x541F;
+        const TIOCPKT: i32    	= 0x5420;
+        const FIONBIO: i32    	= 0x5421;
+        const TIOCNOTTY: i32    = 0x5422;
+        const TIOCSETD: i32     = 0x5423;
+        const TIOCGETD: i32     = 0x5424;
+        const TCSBRKP: i32      = 0x5425; # Needed for POSIX tcsendbreak()
+        const TIOCSBRK: i32     = 0x5427; # BSD compatibility
+        const TIOCCBRK: i32     = 0x5428; # BSD compatibility
+        const TIOCGSID: i32     = 0x5429; # Return the session ID of FD
+        #...
+        const TIOCGRS485: i32  = 0x542E;
+        const TIOCSRS485: i32  = 0x542F;
+        const TCGETX: i32	   = 0x5432; # SYS5 TCGETX compatibility
+        const TCSETX: i32	   = 0x5433;
+        const TCSETXF: i32	   = 0x5434;
+        const TCSETXW: i32	   = 0x5435;
+        const TIOCVHANGUP: i32 = 0x5437;
+        #...
+        const FIONCLEX: i32        = 0x5450;
+        const FIOCLEX: i32         = 0x5451;
+        const FIOASYNC: i32        = 0x5452;
+        const TIOCSERCONFIG: i32   = 0x5453;
+        const TIOCSERGWILD: i32    = 0x5454;
+        const TIOCSERSWILD: i32    = 0x5455;
+        const TIOCGLCKTRMIOS: i32  = 0x5456;
+        const TIOCSLCKTRMIOS: i32  = 0x5457;
+        const TIOCSERGSTRUCT: i32  = 0x5458; # For debugging only
+        const TIOCSERGETLSR: i32   = 0x5459; # Get line status register
+        const TIOCSERGETMULTI: i32 = 0x545A; # Get multiport config
+        const TIOCSERSETMULTI: i32 = 0x545B; # Set multiport config
+
+        const TIOCMIWAIT: i32 =	0x545C;	# wait for a change on serial input line(s)
+        const TIOCGICOUNT: i32 = 0x545D; # read serial port __inline__ interrupt counts
+
+        # Used for packet mode
+        const TIOCPKT_DATA: i32		  = 0;
+        const TIOCPKT_FLUSHREAD: i32  = 1;
+        const TIOCPKT_FLUSHWRITE: i32 = 2;
+        const TIOCPKT_STOP: i32		  = 4;
+        const TIOCPKT_START: i32	  = 8;
+        const TIOCPKT_NOSTOP: i32	  = 16;
+        const TIOCPKT_DOSTOP: i32	  = 32;
+        const TIOCPKT_IOCTL: i32	  = 64;
+
+        const TIOCSER_TEMT: i32 = 0x01;
+
+        fn ioctl(fd: i32, req: i32, args: ...): i32
+        {
+            let ap: &VAList = &args;
+            let arg = va_arg!{ap, u64};
+
+            let r = syscall::ioctl(fd, req, arg);
+            <- r;
+        }
 
         [ignore_unused("*")]
     }

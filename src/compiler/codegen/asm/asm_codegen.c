@@ -1064,6 +1064,8 @@ static void asm_copy_struct_reg(ASMCodegenData_T* cg)
 static void asm_copy_struct_mem(ASMCodegenData_T* cg, ASTNode_T* val)
 {
     ASTType_T* ty = cg->current_fn->return_type;
+    assert(ty != NULL);
+    assert(cg->current_fn->return_ptr != NULL);
     asm_println(cg, "  mov %d(%%rbp), %%rdi", cg->current_fn->return_ptr->offset);
 
     for(i32 i = 0; i < ty->size; i++)

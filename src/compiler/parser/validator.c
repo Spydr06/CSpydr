@@ -731,6 +731,7 @@ static void fn_end(ASTObj_T* fn, va_list args)
     char buf[BUFSIZ];
     memset(buf, 0, LEN(buf));
 
+retry:
     switch(return_type->kind)
     {
         case TY_C_ARRAY:
@@ -748,6 +749,11 @@ static void fn_end(ASTObj_T* fn, va_list args)
                 fn->return_ptr->data_type->align = 8;
             }
             break;
+        
+       // case TY_UNDEF:
+       //     return_type = unpack(fn->return_type);
+       //     return_type = expand_typedef(v, fn->return_type);
+       //     goto retry;
 
         default:
             break;
