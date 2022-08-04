@@ -163,13 +163,13 @@ namespace std {
         }
 
         # finds a char in a string and returns the index of the first found char
-        fn find_char(str: String, c: char): std::Option
+        fn find_char(str: String, c: char): option!(std::usize)
         {
-            if !str ret none!();
+            if !str ret none!(usize);
             for let i: usize = 0; i < c_str::strlen(str); i++; {
                 if str[i] == c ret some!(i);
             }
-            <- none!();
+            <- none!(usize);
         }
 
         fn split(str: String, delim: String): &::std::String {

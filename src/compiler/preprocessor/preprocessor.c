@@ -425,6 +425,7 @@ static void expand_macro_call(Preprocessor_T* pp, MacroCall_T call, List_T* src_
     for(size_t i = 0; i < call.macro->replacing_tokens->size; i++)
     {
         Token_T* tok = call.macro->replacing_tokens->items[i];
+        tok->in_macro_expansion = true;
 
         switch(tok->type) {
             case TOKEN_ID:

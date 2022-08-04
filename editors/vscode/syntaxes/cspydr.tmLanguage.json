@@ -15,6 +15,9 @@
 			"include": "#typedef"
 		},
 		{
+			"include": "#extern-block"
+		},
+		{
 			"include": "#namespace"
 		},
 		{
@@ -199,6 +202,9 @@
 						}
 					},
 					"patterns": [
+						{
+							"include": "#macro-call"
+						},
 						{
 							"include": "#expressions"
 						}
@@ -494,6 +500,43 @@
 							"include": "$self"
 						}
 					]
+				}
+			]
+		},
+		"extern-block": {
+			"name": "meta.extern.cspydr",
+			"match": "\\b(extern)\\s+(\"[cC]\")?",
+			"captures": {
+				"1": {
+					"name": "keyword.extern.cspydr"
+				},
+				"2": {
+					"name": "constant.character.escape.cspydr"
+				}
+			},
+			"patterns": [
+				{
+					"name": "meta.extern-body.cspydr",
+					"begin": "(?<=extern.*?)\\{",
+					"beginCaptures": {
+						"1": {
+							"name": "punctuation.begin.brace.cspydr"
+						}
+					},
+					"end": "\\}",
+					"endCaptures": {
+						"1": {
+							"name": "punctuation.end.brace.cspydr"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#function"
+						}
+					]
+				},
+				{
+					"include": "#function"	
 				}
 			]
 		},
@@ -908,7 +951,7 @@
 					"name": "constant.language.cspydr"
 				},
 				{
-					"match": "(\\$)",
+					"match": "(\\\\$)",
 					"name": "constant.other.cspydr"
 				}
 			]
@@ -957,7 +1000,7 @@
 			"patterns": [
 				{
 					"name": "keyword.control.block.cspydr",
-					"match": "\\b(if|else)",
+					"match": "\\b(if|else)\\b",
 					"captures": {
 						"1": {
 							"name": "keyword.control.block.cspydr"
@@ -966,7 +1009,7 @@
 				},
 				{
 					"name": "keyword.control.block.cspydr",
-					"match": "\\b(len)",
+					"match": "\\b(len)\\b",
 					"captures": {
 						"1": {
 							"name": "keyword.control.block.cspydr"

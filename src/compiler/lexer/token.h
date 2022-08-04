@@ -123,6 +123,8 @@ typedef struct CSPYDR_TOKEN_STRUCT {
 
     File_T* source;
 
+    bool in_macro_expansion;
+
     char value[];
 } __attribute__((packed)) Token_T;
 

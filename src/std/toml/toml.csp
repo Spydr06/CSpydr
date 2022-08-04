@@ -1,0 +1,318 @@
+#[
+
+PORT OF THE TOMLC99 LIBRARY TO CSPYDR
+
+  MIT License
+  Copyright (c) CK Tan
+  https://github.com/cktan/tomlc99
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+]#
+
+[cc("-c toml.c -o toml.o -O2 -fPIC")]
+[link_obj("toml.o")]
+
+import "std.csp";
+import "libc/errno.csp";
+import "libc/stdio.csp";
+
+namespace toml {
+    type Table: void;
+    type Array: void;
+
+    type Timestamp: struct {
+        __buffer: struct { # internal. do not use.
+            year: i32, month: i32, day: i32,
+            hour: i32, minute: i32, second: i32, millisec: i32,
+            z: char'c[10]
+        },
+        year: &i32, month: &i32, day: &i32,
+        hour: &i32, minute: &i32, second: &i32, millisec: &i32,
+        z: &char
+    };
+
+    type Datum: struct {
+        ok: i32,
+        u: union {
+            ts: &Timestamp,
+            s: &char,
+            b: i32,
+            i: i64,
+            d: f64
+        }
+    };
+
+    type ArrayType: enum {
+        TABLE, ARRAY, VALUE, MIXED
+    };
+
+    type ValueType: enum {
+        INT, FLOAT, BOOL,
+        STRING, 
+        TIME, DATE, TIMESTAMP,
+        MIXED
+    };
+
+    namespace __internal {
+        extern "C" {
+            fn toml_parse_file(fp: &libc::FILE, errbuf: &char, errbufsz: i32): &toml::Table;
+            fn toml_parse(conf: &char, errbuf: &char, errbufsz: i32): &toml::Table;
+            fn toml_free(table: &Table);
+        }
+    }
+
+    fn parse_file(fp: &libc::FILE, errbuf: &char, errbufsz: u64): &toml::Table 
+    {
+        <- __internal::toml_parse_file(fp, errbuf, errbufsz);
+    }
+
+    fn parse(conf: &char, errbuf: &char, errbufsz: i32): &toml::Table
+    {
+        <- __internal::toml_parse(conf, errbuf, errbufsz);
+    }
+
+    fn free(table: &Table) 
+    {
+        __internal::toml_free(table);
+    }
+    [exit_fn("free": &toml::Table)]
+
+    namespace __internal {
+        extern "C" {
+            # array functions
+            fn toml_array_nelem(arr: &const Array): i32;
+            fn toml_string_at(arr: &const Array, idx: i32): toml::Datum;
+            fn toml_bool_at(arr: &const Array, idx: i32): toml::Datum;
+            fn toml_int_at(arr: &const Array, idx: i32): toml::Datum;
+            fn toml_double_at(arr: &const Array, idx: i32): toml::Datum;
+            fn toml_timestamp_at(arr: &const Array, idx: i32): toml::Datum;
+            fn toml_array_at(arr: &const Array, idx: i32): &toml::Array;
+            fn toml_table_at(arr: &const Array, idx: i32): &toml::Table;
+
+            # table functions
+            fn toml_key_in(tab: &const Table, keyidx: i32): &const char;
+            fn toml_key_exists(tab: &const Table, key: &const char): i32;
+            fn toml_string_in(tab: &const Table, key: &const char): toml::Datum;
+            fn toml_bool_in(tab: &const Table, key: &const char): toml::Datum;
+            fn toml_int_in(tab: &const Table, key: &const char): toml::Datum;
+            fn toml_double_in(tab: &const Table, key: &const char): toml::Datum;
+            fn toml_timestamp_in(tab: &const Table, key: &const char): toml::Datum;
+            fn toml_array_in(tab: &const Table, key: &const char): &toml::Array;
+            fn toml_table_in(tab: &const Table, key: &const char): &toml::Table;
+
+            fn toml_array_kind(arr: &const Array): char; # return the array kind: 't'able, 'a'rray, 'v'alue, 'm'ixed
+            fn toml_array_type(arr: &const Array): char; # for array kind 'v'alue, return the type of values: 'i'nt, 'b'ool, 's'tring, 't'ime, 'D'ate, 'T'imestamp, 'm'ixed, 0 if unknown
+
+            fn toml_table_nkval(tab: &const Table): i32;
+            fn toml_table_narr(tab: &const Table): i32;
+            fn toml_table_ntab(tab: &const Table): i32;
+            fn toml_table_key(tab: &const Table): &const char;
+
+            # misc
+            fn toml_utf8_to_ucs(orig: &const char, _len: i32, return: &i64): i32;
+            fn toml_ucs_to_utf8(code: i64, buf: &char);
+            fn toml_set_memutil(xxmalloc: const fn<&void>(u64), xxfree: const fn(&void));
+        }
+    }
+
+    # Array function wrappers
+
+    fn array_size(array: &const Array): u32 
+    {
+        <- __internal::toml_array_nelem(array);
+    }
+
+    fn array_get_string(array: &const Array, index: u32): &char 
+    {
+        let res = __internal::toml_string_at(array, index);
+        if !res.ok {
+            std::error::new(std::Errno::INVAL, "toml::__internal::toml_string_at() failed");
+            <- nil;
+        }
+
+        <- res.u.s;
+    }
+
+    fn array_get_bool(array: &const Array, index: u32): bool 
+    {
+        let res = __internal::toml_bool_at(array, index);
+        if !res.ok {
+            std::error::new(std::Errno::INVAL, "toml::__internal::toml_bool_at() failed");
+            <- false;
+        }
+
+        <- res.u.b;
+    }
+
+    fn array_get_int(array: &const Array, index: u32): i64 
+    {
+        let res = __internal::toml_int_at(array, index);
+        if !res.ok {
+            std::error::new(std::Errno::INVAL, "toml::__internal::toml_int_at() failed");
+            <- 0;
+        }
+
+        <- res.u.i;
+    }
+
+    fn array_get_float(array: &const Array, index: u32): f64 
+    {
+        let res = __internal::toml_double_at(array, index);
+        if !res.ok {
+            std::error::new(std::Errno::INVAL, "toml::__internal::toml_double_at() failed");
+            <- 0.0;
+        }
+
+        <- res.u.i;
+    }
+
+    fn array_get_timestamp(array: &const Array, index: u32): &toml::Timestamp 
+    {
+        let res = __internal::toml_timestamp_at(array, index);
+        if !res.ok {
+            std::error::new(std::Errno::INVAL, "toml::__internal::toml_timestamp_at() failed");
+            <- nil;
+        }
+
+        <- res.u.ts;
+    }
+
+    fn array_get_array(array: &const Array, index: u32): &toml::Array 
+    {
+        <- __internal::toml_array_at(array, index);
+    }
+
+    fn array_get_table(array: &const Array, index: u32): &toml::Table 
+    {
+        <- __internal::toml_table_at(array, index);
+    }
+
+    fn array_type(array: &const Array): toml::ArrayType 
+    {
+        match __internal::toml_array_kind(array) {
+            't' => ret toml::ArrayType::TABLE;
+            'a' => ret toml::ArrayType::ARRAY;
+            'v' => ret toml::ArrayType::VALUE;
+            _ => ret toml::ArrayType::MIXED;
+        }
+    }
+
+    fn array_value_type(array: &const Array): toml::ValueType 
+    {
+        match __internal::toml_array_type(array) {
+            'i' => ret toml::ValueType::INT;
+            'd' => ret toml::ValueType::FLOAT;
+            'b' => ret toml::ValueType::BOOL;
+            's' => ret toml::ValueType::STRING;
+            't' => ret toml::ValueType::TIME;
+            'D' => ret toml::ValueType::DATE;
+            'T' => ret toml::ValueType::TIMESTAMP;
+            _ => ret toml::ValueType::MIXED;
+        }
+    }
+
+    # Table function wrappers
+
+    fn table_get_key(table: &const Table, index: u32): &const char
+    {
+        <- __internal::toml_key_in(table, index);
+    }
+
+    fn table_key_exists(table: &const Table, key: &const char): bool
+    {
+        <- __internal::toml_key_exists(table, key);
+    }
+
+    fn table_get_string(table: &const Table, key: &const char): &char
+    {
+        let res = __internal::toml_string_in(table, key);
+        if res.ok
+            <- res.u.s;
+        else
+            <- nil;
+    }
+
+    fn table_get_bool(table: &const Table, key: &const char): option!(bool)
+    {
+        let res = __internal::toml_bool_in(table, key);
+        <- if res.ok != 0 => some!((res.u.b: bool)) else none!(bool);
+    }
+
+    fn table_get_int(table: &const Table, key: &const char): option!(i64)
+    {
+        let res = __internal::toml_int_in(table, key);
+        <- if res.ok != 0 => some!(res.u.i) else none!(i64);
+    }
+
+    fn table_get_float(table: &const Table, key: &const char): option!(f64)
+    {
+        let res = __internal::toml_double_in(table, key);
+        <- if res.ok != 0 => some!(res.u.d) else none!(f64);
+    }
+
+    fn table_get_timestamp(table: &const Table, key: &const char): option!(&toml::Timestamp)
+    {
+        let res = __internal::toml_timestamp_in(table, key);
+        <- if res.ok != 0 => some!(res.u.ts) else none!(&Timestamp);
+    }
+
+    fn table_get_array(table: &const Table, key: &const char): &toml::Array
+    {
+        <- __internal::toml_array_in(table, key);
+    }
+
+    fn table_get_table(table: &const Table, key: &const char): &toml::Table
+    {
+        <- __internal::toml_table_in(table, key);
+    }
+
+    fn table_size(table: &const Table): u32 
+    {
+        <- __internal::toml_table_nkval(table);
+    }
+
+    fn table_num_arrays(table: &const Table): u32
+    {
+        <- __internal::toml_table_narr(table);
+    }
+
+    fn table_num_tables(table: &const Table): u32
+    {
+        <- __internal::toml_table_ntab(table);
+    }
+
+    fn table_key(table: &const Table): &const char
+    {
+        <- __internal::toml_table_key(table);
+    }
+
+    # Misc function wrappers
+
+    fn utf8_to_ucs(str: &const char, return: &i64): i32
+    {
+        <- __internal::toml_utf8_to_ucs(str, len str, return);
+    }
+
+    fn ucs_to_utf8(code: i64, buf: &char): i32
+    {
+        <- __internal::toml_ucs_to_utf8(code, buf);
+    }
+
+    fn set_memutil(alloc_fn: const fn<&void>(u64), free_fn: const fn(&void))
+    {
+        __internal::toml_set_memutil(alloc_fn, free_fn);
+    }
+}

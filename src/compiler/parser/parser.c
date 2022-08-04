@@ -495,7 +495,16 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, Li
         list_push(global.linker_flags, link_flag);
     }
     else if(streq(field->value, "link_obj"))
-        list_push(global.linker_flags, value);
+    {
+        char* abs_path = get_absolute_path(p->tok->source->path);
+        char* working_dir = get_path_from_file(abs_path);
+
+        char* full_fp = mem_malloc((strlen(working_dir) + strlen(DIRECTORY_DELIMS) + strlen(value) + 2) * sizeof(char));
+        sprintf(full_fp, "%s" DIRECTORY_DELIMS "%s", working_dir, value);
+        list_push(global.linker_flags, full_fp);
+
+        free(abs_path);
+    }
     else if(streq(field->value, "no_return"))
     {
         bool all = streq("*", value);

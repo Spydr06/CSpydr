@@ -324,8 +324,13 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         if(global.linker_flags->size > 0)
         {
             LOG_OK(COLOR_RESET " (");
-            for(size_t i = 0; i < global.linker_flags->size; i++)
-                LOG_OK_F(COLOR_RESET "%s%s", (char*) global.linker_flags->items[i] + 2, global.linker_flags->size - i <= 1 ? ")" : ", ");
+            for(size_t i = 0; i < global.linker_flags->size; i++) 
+            {
+                char* lib = global.linker_flags->items[i];
+                if(lib[0] == '-' && lib[1] == 'l') {
+                    LOG_OK_F(COLOR_RESET "%s%s", (char*) lib + 2, global.linker_flags->size - i <= 1 ? ")" : ", ");
+                }
+            }
         }
         LOG_OK(COLOR_RESET "\n");
     }

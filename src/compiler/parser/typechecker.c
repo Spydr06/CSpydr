@@ -28,6 +28,7 @@ static void typecheck_struct_lit(ASTNode_T* a_lit, va_list args);
 static void typecheck_inc(ASTNode_T* inc, va_list args);
 static void typecheck_dec(ASTNode_T* dec, va_list args);
 static void typecheck_for_range(ASTNode_T* loop, va_list args);
+bool types_equal_strict(ASTType_T* a, ASTType_T* b);
 
 static const ASTIteratorList_T iterator = {
     .obj_start_fns = {
@@ -136,8 +137,12 @@ static void typecheck_explicit_cast(ASTNode_T* cast, va_list args)
     // Buffer for warnings and errors
     char buf1[BUFSIZ] = {};
 
-    if(types_equal(cast->left->data_type, cast->data_type) && !cast->data_type->no_warnings)
+    if(types_equal_strict(cast->left->data_type, cast->data_type) && !cast->data_type->no_warnings)
     {
+        //if((cast->left->tok && cast->left->tok->in_macro_expansion) ||
+        //    (cast->right->tok && cast->right->tok->in_macro_expansion))
+        //    return;   
+
         throw_error(ERR_TYPE_CAST_WARN, cast->tok, "unnecessary type cast: expression is already of type `%s`",
             ast_type_to_str(buf1, cast->data_type, LEN(buf1))
         );
@@ -226,6 +231,30 @@ static void typecheck_dec(ASTNode_T* dec, va_list args)
     char buf[BUFSIZ] = {'\0'};
     if(dec->data_type->is_constant)
         throw_error(ERR_TYPE_ERROR_UNCR, dec->tok, "cannot decrement constant type `%s`", ast_type_to_str(buf, dec->data_type, LEN(buf)));
+}
+
+bool types_equal_strict(ASTType_T* a, ASTType_T* b)
+{
+    if(!types_equal(a, b))
+        return false;
+    
+    switch(a->kind)
+    {
+        case TY_STRUCT:
+            for(size_t i = 0; i < a->members->size; i++)
+            {
+                ASTNode_T* am = a->members->items[i];
+                ASTNode_T* bm = b->members->items[i];
+                if(strcmp(am->id->callee, bm->id->callee) != 0)
+                    return false;
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    return true;
 }
 
 bool types_equal(ASTType_T* a, ASTType_T* b)

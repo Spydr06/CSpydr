@@ -156,7 +156,7 @@ namespace std {
             let __error: Error;
         }
 
-        fn new(kind: Errno, msg: &const char): Error {
+        fn new(kind: Errno, msg: &const char): std::Error {
             using __static;
 
             __error.kind = kind;

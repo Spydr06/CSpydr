@@ -1,0 +1,44 @@
+import "toml/toml.csp";
+
+macro TOML_FILE { "examples/assets/test.toml" }
+
+fn panic(msg: &const char)
+{
+    std::io::eputs(msg);
+    std::process::exit(0);
+}
+
+fn main(): i32 {
+    using std::io;
+    let errbuf: char'c[200];
+    
+    with fp = libc::fopen(TOML_FILE!, "r") {
+        with conf = toml::parse_file(fp, errbuf, len errbuf)
+        {
+            let server = toml::table_get_table(conf, "server");
+            if !server
+                panic("missing [server]");
+            
+            let host = toml::table_get_string(server, "host");
+            if !host
+                panic("missing server.host");
+                        
+            let ports = toml::table_get_array(server, "port");
+            if !ports
+                panic("missing server.port");
+            
+            printf("host: %s\nport: ", host);
+            for let i = 0; i < toml::array_size(ports); i++; {
+                let port = toml::array_get_int(ports, i);
+                printf("%l ", port);
+            }
+            newline();
+
+            libc::free(host);
+        }
+    }
+    else
+        eprintf("cannot open `%s`: `%s`\n", TOML_FILE!, libc::strerror(errno!));
+    
+    <- 0;
+}
