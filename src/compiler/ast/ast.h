@@ -176,8 +176,10 @@ struct AST_NODE_STRUCT
             ASTType_T* r_type;
         };
         
-        // condition for loop, match, case and if statements
-        ASTNode_T* condition;
+        union {
+            ASTNode_T* condition; // condition for loop, match, case and if statements
+            List_T* ids; // using statements, list of ASTIdentifier_Ts
+        };
     };
 
     union {
@@ -193,8 +195,7 @@ struct AST_NODE_STRUCT
             ASTNode_T* init_stmt;
         };
         
-        // block statement
-        List_T* stmts;  // list of ASTNode_Ts
+        List_T* stmts; // block statements, list of ASTNode_Ts
 
         // references
         ASTObj_T* called_obj;

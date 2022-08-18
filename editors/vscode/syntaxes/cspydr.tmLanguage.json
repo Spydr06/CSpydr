@@ -793,7 +793,7 @@
 							"name": "keyword.control.using.cspydr"
 						}
 					},
-					"end": "(;)",
+					"end": "(;)|(\\bfor)",
 					"endCaptures": {
 						"1": {
 							"name": "punctuation.semicolon.cspydr"
@@ -808,7 +808,7 @@
 									"name": "entity.name.namespace.cspydr"
 								}
 							},
-							"end": "$|(,)|(?:(?=;))",
+							"end": "$|(,)|(?:(?=(;|for)))",
 							"endCaptures": {
 								"1": {
 									"name": "punctuation.comma.cspydr"

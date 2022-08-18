@@ -108,7 +108,10 @@ static void ast_node(const ASTIteratorList_T* list, ASTNode_T* node, va_list cus
             break;
         
         case ND_USING:
-            ast_id(list, false, node->id, custom_args);
+            for(size_t i = 0; i < node->ids->size; i++)
+                ast_id(list, false, node->ids->items[i], custom_args);
+            if(node->body)
+                ast_node(list, node->body, custom_args);
             break;
     
         case ND_ID:

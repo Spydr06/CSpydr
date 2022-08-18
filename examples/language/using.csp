@@ -1,0 +1,8 @@
+import "io.csp";
+
+fn main(): i32 {
+    using std::io for {
+        puts("Hello, World");
+    }
+    <- 0;
+}

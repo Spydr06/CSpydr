@@ -1,6 +1,7 @@
 import "memory.csp";
 import "utils.csp";
 import "types.csp";
+import "character.csp";
 
 namespace std {
     namespace c_str {

@@ -2506,7 +2506,9 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             }
             list_push(cg->current_fn->deferred, node->body);
             return;
-        case ND_USING: // ignore
+        case ND_USING:
+            if(node->body)
+                asm_gen_stmt(cg, node->body);
             return;
 
         default:

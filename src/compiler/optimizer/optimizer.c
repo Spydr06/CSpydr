@@ -154,6 +154,11 @@ void remove_dead_code(ASTProg_T* ast)
                 list_push(node_stack, stack_top->body);
                 break;
 
+            case ND_USING:
+                if(stack_top->body)
+                    list_push(node_stack, stack_top->body);
+                break;
+
             case ND_FOR:
                 list_push(node_stack, stack_top->init_stmt);
                 list_push(node_stack, stack_top->condition);

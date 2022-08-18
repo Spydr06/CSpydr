@@ -66,6 +66,7 @@ static void for_start(ASTNode_T* _for, va_list args);
 static void for_end(ASTNode_T* _for, va_list args);
 static void for_range_end(ASTNode_T* _for, va_list args);
 static void match_type_end(ASTNode_T* match, va_list args);
+static void using_start(ASTNode_T* using, va_list args);
 static void using_end(ASTNode_T* using, va_list args);
 static void with_start(ASTNode_T* with, va_list args);
 static void with_end(ASTNode_T* with, va_list args);
@@ -127,6 +128,7 @@ static const ASTIteratorList_T main_iterator_list =
         [ND_WITH] = with_start,
         [ND_PIPE] = pipe_start,
         [ND_LAMBDA] = lambda_start,
+        [ND_USING] = using_start,
     },
 
     .node_end_fns = 
@@ -978,32 +980,47 @@ static void match_type_end(ASTNode_T* match, va_list args)
         match->body = match->default_case->body;
 }
 
+static void using_start(ASTNode_T* using, va_list args)
+{
+    GET_VALIDATOR(args);
+
+    if(using->body)
+        begin_scope(v, NULL);
+
+    for(size_t i = 0; i < using->ids->size; i++)
+    {
+        ASTIdentifier_T* id = using->ids->items[i];
+        ASTObj_T* found = search_identifier(v, v->current_scope, id);
+        if(!found)
+        {
+            throw_error(ERR_UNDEFINED_UNCR, id->tok, "using undefined namespace `%s`", id->callee);
+            return;
+        }
+
+        if(found->kind != OBJ_NAMESPACE)
+        {
+            throw_error(ERR_UNDEFINED_UNCR, id->tok, "`%s` is a %s, can only have namespaces for `using`", id->callee, obj_kind_to_str(found->kind));
+            return;
+        }
+
+        for(size_t i = 0; i < found->objs->size; i++)
+        {
+            ASTObj_T* obj = found->objs->items[i];
+            if(hashmap_put(v->current_scope->objs, obj->id->callee, obj) == EEXIST)
+            {
+                throw_error(ERR_REDEFINITION_UNCR, id->tok, "namespace `%s` is trying to implement a %s `%s`, \nwhich is already defined in this scope", found->id->callee, obj_kind_to_str(obj->kind), obj->id->callee);
+                continue;
+            }
+        }
+    }
+}
+
 static void using_end(ASTNode_T* using, va_list args)
 {
     GET_VALIDATOR(args);
 
-    ASTObj_T* found = search_identifier(v, v->current_scope, using->id);
-    if(!found)
-    {
-        throw_error(ERR_UNDEFINED_UNCR, using->id->tok, "using undefined namespace `%s`", using->id->callee);
-        return;
-    }
-    
-    if(found->kind != OBJ_NAMESPACE)
-    {
-        throw_error(ERR_UNDEFINED_UNCR, using->id->tok, "`%s` is a %s, can only have namespaces for `using`", using->id->callee, obj_kind_to_str(found->kind));
-        return;
-    }
-
-    for(size_t i = 0; i < found->objs->size; i++)
-    {
-        ASTObj_T* obj = found->objs->items[i];
-        if(hashmap_put(v->current_scope->objs, obj->id->callee, obj) == EEXIST)
-        {
-            throw_error(ERR_REDEFINITION_UNCR, using->tok, "namespace `%s` is trying to implement a %s `%s`, \nwhich is already defined in this scope", found->id->callee, obj_kind_to_str(obj->kind), obj->id->callee);
-            continue;
-        }
-    }
+    if(using->body)
+        end_scope(v);
 }
 
 static void with_start(ASTNode_T* with, va_list args)
