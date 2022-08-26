@@ -10,6 +10,8 @@
 #endif
 
 #include <stdbool.h>
+#include <stdio.h>
+
 #include "util.h"
 #include "list.h"
 #include "config.h"
@@ -58,6 +60,14 @@ __CSP_GLOBAL struct {
 
     // timesteps recorded by `timer/timer.c`
     List_T* timesteps;
+
+    // debugger state
+    struct {
+        char prompt[BUFSIZ];
+        bool running;
+        char* bin_file;
+        char* src_file;
+    } debugger;
 } global;
 
 __CSP_GLOBAL void globals_exit_hook(void);
