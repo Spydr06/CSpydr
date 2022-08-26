@@ -1,0 +1,13 @@
+import "std.csp";
+
+type Number: struct {
+    int: i32
+};
+
+fn main(): i32 {
+    let a = Number::{ 3 };
+    let b = Number::{ 2 };
+    std::io::printf("%i + %i = %i\n", a, b, a.int + b.int);
+
+    <- 0;
+}

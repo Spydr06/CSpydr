@@ -68,6 +68,8 @@ __CSP_GLOBAL struct {
         char* bin_file;
         char* src_file;
         pid_t loaded;
+
+        List_T* breakpoints;
     } debugger;
 } global;
 

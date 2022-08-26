@@ -1,4 +1,5 @@
 #include "dbg.h"
+#include "debugger/breakpoint.h"
 #include "io/log.h"
 #include "globals.h"
 #include "toolchain.h"
@@ -10,6 +11,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #define PROMPT_FMT COLOR_MAGENTA "%s" COLOR_RESET " [%s%d" COLOR_RESET "] >>"
@@ -24,6 +26,7 @@ static void handle_clear(const char* input);
 static void handle_current(const char* input);
 static void handle_load(const char* input);
 static void handle_unload(const char* input);
+static void handle_continue(const char* input);
 static void handle_breakpoint(const char* input);
 
 static int 
@@ -45,6 +48,7 @@ static const struct {
     {"current", handle_current, &TRUE,                   "Display the current debug target"},
     {"load",    handle_load,    &TRUE,                   "Load any executable for step-through debugging"},
     {"unload",  handle_unload,  &global.debugger.loaded, "Unload a loaded executable"},
+    {"cont",   handle_continue, &global.debugger.loaded, "Continue executing a loaded executable"},
     {"brk", handle_breakpoint,  &global.debugger.loaded, "Set a breakpoint in loaded executable"},
     {NULL, NULL, NULL, NULL}
 };
@@ -67,7 +71,7 @@ static inline bool prefix(const char *pre, const char *str)
     return strncmp(pre, str, strlen(pre)) == 0;
 }
 
-static void debug_info(const char* fmt, ...)
+void debug_info(const char* fmt, ...)
 {
     fprintf(stdout, INFO_FMT);
 
@@ -79,7 +83,7 @@ static void debug_info(const char* fmt, ...)
     fprintf(stdout, "\n");
 }
 
-static void debug_error(const char* fmt, ...)
+void debug_error(const char* fmt, ...)
 {
     fprintf(stderr, ERROR_FMT);
     
@@ -102,6 +106,8 @@ void debug_repl(const char* src, const char* bin)
 
     sprintf(global.debugger.prompt, PROMPT_FMT, global.exec_name, COLOR_BOLD_GREEN, 0);
 
+    global.debugger.breakpoints = init_list();
+
     while(global.debugger.running)
     {
         printf("%s ", global.debugger.prompt);
@@ -113,6 +119,7 @@ void debug_repl(const char* src, const char* bin)
 
         if(!strlen(input))
             continue;
+        
 
         for(size_t i = 0; cmds[i].cmd; i++)
         {
@@ -127,6 +134,10 @@ void debug_repl(const char* src, const char* bin)
     skip:
         sprintf(global.debugger.prompt, PROMPT_FMT, global.exec_name, global.last_exit_code ? COLOR_BOLD_RED : COLOR_BOLD_GREEN, global.last_exit_code);
     }
+
+    for(size_t i = 0; i < global.debugger.breakpoints->size; i++)
+        free_breakpoint(global.debugger.breakpoints->items[i]);
+    free_list(global.debugger.breakpoints);
 }
 
 static void handle_exit(const char* input)
@@ -256,6 +267,41 @@ static void handle_unload(const char* input)
     global.debugger.loaded = 0;
 }
 
+static void handle_continue(const char* input)
+{
+    if(!global.debugger.loaded)
+    {
+       debug_error("`cont` is only available if an executable is loaded.");
+        return; 
+    }
+
+    ptrace(PTRACE_CONT, global.debugger.loaded, NULL, NULL);
+
+    i32 wait_status,
+        options = 0;
+    waitpid(global.debugger.loaded, &wait_status, options);
+
+    if(WIFEXITED(wait_status))
+    {
+        i32 exit_code = WEXITSTATUS(wait_status);
+        debug_info("Process %d terminated with exit code %s%d" COLOR_RESET, global.debugger.loaded, exit_code ? COLOR_BOLD_RED : COLOR_BOLD_GREEN, exit_code);
+        goto process_exited;
+    }
+    else if(WIFSIGNALED(wait_status))
+    {
+        debug_info("Process %d was killed by signal %s.", global.debugger.loaded, strsignal(WTERMSIG(wait_status)));
+        goto process_exited;
+    }
+    else if(WIFSTOPPED(wait_status))
+    {
+        debug_info("Process %d was stopped by signal %s.", global.debugger.loaded, strsignal(WSTOPSIG(wait_status)));
+    }
+
+    return;
+process_exited:
+    global.debugger.loaded = 0;
+}
+
 static void handle_breakpoint(const char* input)
 {
     if(!global.debugger.loaded) 
@@ -264,5 +310,25 @@ static void handle_breakpoint(const char* input)
         return;
     }
 
-    
+    char* args = strdup(input);
+    strtok(args, " "); // skip `brk`
+
+    char* addr_str = strtok(NULL, " ");
+    if(!addr_str)
+    {
+        debug_error("`brk` expects 1 argument, got 0");
+        goto fail;
+    }
+
+    if(addr_str[0] != '0' || addr_str[1] != 'x')
+    {
+        debug_error("Address does not match `0x[0-9a-fA-F]+`");
+        goto fail;
+    }
+
+    intptr_t addr = strtol(addr_str, NULL, 16);
+    set_breakpoint_at_address(addr);
+
+fail:
+    free(args);
 }
