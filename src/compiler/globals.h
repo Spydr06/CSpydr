@@ -67,6 +67,7 @@ __CSP_GLOBAL struct {
         bool running;
         char* bin_file;
         char* src_file;
+        pid_t loaded;
     } debugger;
 } global;
 

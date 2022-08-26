@@ -5,12 +5,16 @@
 #include "platform/platform_bindings.h"
 
 #include <stdarg.h>
+#include <sys/ptrace.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #define PROMPT_FMT COLOR_MAGENTA "%s" COLOR_RESET " [%s%d" COLOR_RESET "] >>"
-#define ERROR_FMT COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " "
+#define ERROR_FMT  COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " "
+#define INFO_FMT   COLOR_BOLD_WHITE "[Info]" COLOR_RESET " "
 
 static void handle_exit(const char* input);
 static void handle_comp(const char* input);
@@ -19,25 +23,29 @@ static void handle_help(const char* input);
 static void handle_clear(const char* input);
 static void handle_current(const char* input);
 static void handle_load(const char* input);
+static void handle_unload(const char* input);
+static void handle_breakpoint(const char* input);
 
-static bool 
+static int 
     TRUE = true, 
     FALSE = false;
 
 static const struct {
     char* cmd;
     void (*fn)(const char* input);
-    bool* enabled;
+    int* enabled;
     const char* description;
 } cmds[] = 
 {
-    {"help",    handle_help,    &TRUE, "Display this help text"},
-    {"exit",    handle_exit,    &TRUE, "Exit the debugger"},
-    {"clear",   handle_clear,   &TRUE, "Clear the screen"},
-    {"comp",    handle_comp,    &TRUE, "Recompile the current source files"},
-    {"run",     handle_run,     &TRUE, "Run the current executable"},
-    {"current", handle_current, &TRUE, "Display the current debug target"},
-    {"load",    handle_load,    &TRUE, "Load any executable for step-through debugging"},
+    {"help",    handle_help,    &TRUE,                   "Display this help text"},
+    {"exit",    handle_exit,    &TRUE,                   "Exit the debugger"},
+    {"clear",   handle_clear,   &TRUE,                   "Clear the screen"},
+    {"comp",    handle_comp,    &TRUE,                   "Recompile the current source files"},
+    {"run",     handle_run,     &TRUE,                   "Run the current executable"},
+    {"current", handle_current, &TRUE,                   "Display the current debug target"},
+    {"load",    handle_load,    &TRUE,                   "Load any executable for step-through debugging"},
+    {"unload",  handle_unload,  &global.debugger.loaded, "Unload a loaded executable"},
+    {"brk", handle_breakpoint,  &global.debugger.loaded, "Set a breakpoint in loaded executable"},
     {NULL, NULL, NULL, NULL}
 };
 
@@ -59,6 +67,18 @@ static inline bool prefix(const char *pre, const char *str)
     return strncmp(pre, str, strlen(pre)) == 0;
 }
 
+static void debug_info(const char* fmt, ...)
+{
+    fprintf(stdout, INFO_FMT);
+
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stdout, fmt, ap);
+    va_end(ap);
+
+    fprintf(stdout, "\n");
+}
+
 static void debug_error(const char* fmt, ...)
 {
     fprintf(stderr, ERROR_FMT);
@@ -74,7 +94,7 @@ static void debug_error(const char* fmt, ...)
 void debug_repl(const char* src, const char* bin)
 {
     if(!global.silent)
-        LOG_INFO(COLOR_BOLD_WHITE "[Info]" COLOR_RESET " Started debug session; for help, type `help`.\n");
+        debug_info("Started debug session; for help, type `help`.");
 
     global.debugger.running = true;
     global.debugger.src_file = (char*) src;
@@ -175,22 +195,74 @@ static void handle_current(const char* input)
 
 static void handle_load(const char* input)
 {
+    if(global.debugger.loaded)
+    {
+        debug_error("An executable is already loaded, please unload first. (pid %d)", global.debugger.loaded);
+        return;
+    }
+
     char* args = strdup(input);
     strtok(args, " ");
 
     char* exec = strtok(NULL, " ");
+    List_T* exec_args = init_list();
+    list_push(exec_args, exec);
     if(!exec) {
         debug_error("Command `lock` requires at least one argument, got 0.");
         goto fail;
     }
 
-    char* arg;
-    while((arg = strtok(NULL, " ")) != NULL) {
-        printf("args: %s\n", arg);
+    for(char* arg; (arg = strtok(NULL, " ")); )
+        list_push(exec_args, arg);
+    list_push(exec_args, 0);
+
+    // load the executable
+    pid_t pid = fork();
+    if(pid == 0)
+    {
+        // child process
+        ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+        execv(exec, (char* const*) exec_args->items);
+    }
+    else if(pid > 0)
+    {
+        global.debugger.loaded = pid;
+        if(!global.silent)
+            debug_info("Loaded executable `%s` with pid `%d`.", exec, pid);
+    }
+    else 
+    {
+        debug_error("Failed to fork process, got pid `%d` in return.", pid);
+        goto fail;
     }
 
-    // TODO: implement
-
 fail:
+    free_list(exec_args);
     free(args);
+}
+
+static void handle_unload(const char* input)
+{
+    if(!global.debugger.loaded)
+    {
+        debug_error("No executable is currently loaded.");
+        return;
+    }
+
+    kill(global.debugger.loaded, SIGKILL);
+    if(!global.silent)
+        debug_info("Killed process with pid %d.", global.debugger.loaded);
+    
+    global.debugger.loaded = 0;
+}
+
+static void handle_breakpoint(const char* input)
+{
+    if(!global.debugger.loaded) 
+    {
+        debug_error("`brk` is only available if an executable is loaded.");
+        return;
+    }
+
+    
 }
