@@ -17,5 +17,6 @@ void breakpoint_enable(Breakpoint_T* brk);
 void breakpoint_disable(Breakpoint_T* brk);
 
 Breakpoint_T* set_breakpoint_at_address(intptr_t addr);
+void disable_breakpoint_at_address(intptr_t addr);
 
 #endif

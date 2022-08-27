@@ -52,7 +52,7 @@ static const struct {
     {"load",    handle_load,    &TRUE,                   "Load any executable for step-through debugging"},
     {"unload",  handle_unload,  &global.debugger.loaded, "Unload a loaded executable"},
     {"cont",   handle_continue, &global.debugger.loaded, "Continue executing a loaded executable"},
-    {"brk", handle_breakpoint,  &global.debugger.loaded, "Set a breakpoint in loaded executable"},
+    {"brk", handle_breakpoint,  &global.debugger.loaded, "Set/Unset breakpoints in loaded executable"},
     {"register", handle_register, &global.debugger.loaded, "Read and modify registers"},
     {NULL, NULL, NULL, NULL}
 };
@@ -81,6 +81,19 @@ static const char register_help_text[] =
     COLOR_BOLD_WHITE "  dump                    " COLOR_RESET " | Print all register values\n"
     COLOR_BOLD_WHITE "  read " COLOR_RESET "[register]          | Read value from register\n"
     COLOR_BOLD_WHITE "  write " COLOR_RESET "[register] [value] | Write value to register\n"
+    "\n";
+
+static const char brk_help_text[] =
+    COLOR_BOLD_MAGENTA " ** The CSpydr interactive debug shell **\n" COLOR_RESET
+    "\n"
+    "%s * " COLOR_BOLD_WHITE "brk" COLOR_RESET " - Set/Unset breakpoints in loaded executable\n"
+    COLOR_BLACK "(This command is only available if an executable is loaded.)\n" COLOR_RESET
+    "\n"
+    COLOR_BOLD_WHITE "Available subcommands:\n"
+    "  help    " COLOR_RESET "   | Display this help text\n"
+    COLOR_BOLD_WHITE "  list " COLOR_RESET "      | List all breakpoints\n"
+    COLOR_BOLD_WHITE "  add " COLOR_RESET "[addr] | Add a breakpoint at a given address\n"
+    COLOR_BOLD_WHITE "  rm " COLOR_RESET "[addr]  | Remove a breakpoint from an address\n"
     "\n";
 
 static inline bool prefix(const char *pre, const char *str)
@@ -342,33 +355,91 @@ process_exited:
 
 static void handle_breakpoint(const char* input)
 {
-    if(!global.debugger.loaded) 
-    {
-        debug_error("`brk` is only available if an executable is loaded.");
-        return;
-    }
 
     char* args = strdup(input);
     strtok(args, " "); // skip `brk`
 
-    char* addr_str = strtok(NULL, " ");
-    if(!addr_str)
+    char* subcommand = strtok(NULL, " ");
+    if(!subcommand)
     {
         debug_error("`brk` expects 1 argument, got 0");
-        goto fail;
+        goto end;
     }
 
-    if(addr_str[0] != '0' || addr_str[1] != 'x')
+    if(strcmp(subcommand, "help") == 0)
+        fprintf(OUTPUT_STREAM, brk_help_text, global.debugger.loaded ? COLOR_GREEN : COLOR_RED);
+    else if(!global.debugger.loaded) 
     {
-        debug_error("Address does not match `0x[0-9a-fA-F]+`");
-        goto fail;
+        debug_error("`brk` is only available if an executable is loaded.");
+        return;
+    }
+    else if(strcmp(subcommand, "list") == 0)
+    {
+        debug_info("Currently set breakpoints:");
+        if(global.debugger.breakpoints->size == 0)
+        {
+            fprintf(OUTPUT_STREAM, "  <none>\n\n");
+            goto end;
+        }
+
+        for(size_t i = 0; i < global.debugger.breakpoints->size; i++)
+        {
+            Breakpoint_T* b = global.debugger.breakpoints->items[i];
+            fprintf(OUTPUT_STREAM, "%s * " COLOR_RESET "0x%016lx\n", b->enabled ? COLOR_GREEN : COLOR_RED, b->addr);
+        }
+        fprintf(OUTPUT_STREAM, "\n");
+
+        goto end;
+    }
+    else if(strcmp(subcommand, "rm") == 0)
+    {
+        char* addr_str = strtok(NULL, " ");
+        if(!addr_str)
+        {
+            debug_error("`brk rm` expects address value");
+            goto end;
+        }
+
+        if(strcmp(addr_str, "*") == 0)
+        {
+            for(size_t i = 0; i < global.debugger.breakpoints->size; i++)
+            {
+                Breakpoint_T* b = global.debugger.breakpoints->items[i];
+                if(b->enabled)
+                    breakpoint_disable(b);
+            }
+            goto end;
+        }
+
+        if(addr_str[0] != '0' || addr_str[1] != 'x')
+        {
+            debug_error("Address does not match `0x[0-9a-fA-F]+`");
+            goto end;
+        }
+
+        intptr_t addr = strtol(addr_str, NULL, 16);
+        disable_breakpoint_at_address(addr);
+    }
+    else if(strcmp(subcommand, "add") == 0)
+    {
+        char* addr_str = strtok(NULL, " ");
+        if(!addr_str)
+        {
+            debug_error("`brk add` expects address value");
+            goto end;
+        }
+
+        if(addr_str[0] != '0' || addr_str[1] != 'x')
+        {
+            debug_error("Address does not match `0x[0-9a-fA-F]+`");
+            goto end;
+        }
+
+        intptr_t addr = strtol(addr_str, NULL, 16);
+        set_breakpoint_at_address(addr);
     }
 
-    intptr_t addr = strtol(addr_str, NULL, 16);
-    
-    set_breakpoint_at_address(addr);
-
-fail:
+end:
     free(args);
 }
 

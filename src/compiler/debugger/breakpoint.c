@@ -27,7 +27,7 @@ void breakpoint_enable(Breakpoint_T* brk)
     ptrace(PTRACE_POKEDATA, brk->pid, brk->addr, int3);
     brk->enabled = true;
     if(!global.silent)
-        debug_info("Enabled breakpoint at address 0x%08x", brk->addr);
+        debug_info("Enabled breakpoint at address 0x%016lx", brk->addr);
 }
 
 void breakpoint_disable(Breakpoint_T* brk)
@@ -38,14 +38,54 @@ void breakpoint_disable(Breakpoint_T* brk)
 
     brk->enabled = false;
     if(!global.silent)
-        debug_info("Disabled breakpoint at address %p", brk->addr);
+        debug_info("Disabled breakpoint at address 0x%016lx", brk->addr);
 }
 
 Breakpoint_T* set_breakpoint_at_address(intptr_t addr)
 {
-    Breakpoint_T* brk = init_breakpoint(addr);
-    breakpoint_enable(brk);
-    list_push(global.debugger.breakpoints, brk);
+    Breakpoint_T* found = NULL;
+    for(size_t i = 0; i < global.debugger.breakpoints->size; i++)
+    {
+        Breakpoint_T* b = global.debugger.breakpoints->items[i];
+        if(b->addr == addr) 
+        {
+            found = b;
+            break;
+        }
+    }
 
-    return brk;
+    if(found)
+    {
+        if(!found->enabled)
+            breakpoint_enable(found);
+
+        return found;
+    }
+    else
+    {
+        Breakpoint_T* brk = init_breakpoint(addr);
+        breakpoint_enable(brk);
+        list_push(global.debugger.breakpoints, brk);
+
+        return brk;
+    }
+}
+
+void disable_breakpoint_at_address(intptr_t addr)
+{
+    Breakpoint_T* found = NULL;
+    for(size_t i = 0; i < global.debugger.breakpoints->size; i++)
+    {
+        Breakpoint_T* b = global.debugger.breakpoints->items[i];
+        if(b->addr == addr) 
+        {
+            found = b;
+            break;
+        }
+    }
+
+    if(found)
+        breakpoint_disable(found);
+    else
+        debug_error("No breakpoint enabled at address 0x%016lx.\n", addr);
 }
