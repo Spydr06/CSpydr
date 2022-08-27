@@ -1,9 +1,11 @@
 #include "dbg.h"
 #include "debugger/breakpoint.h"
 #include "io/log.h"
+#include "io/io.h"
 #include "globals.h"
 #include "toolchain.h"
 #include "platform/platform_bindings.h"
+#include "register.h"
 
 #include <stdarg.h>
 #include <sys/ptrace.h>
@@ -28,6 +30,7 @@ static void handle_load(const char* input);
 static void handle_unload(const char* input);
 static void handle_continue(const char* input);
 static void handle_breakpoint(const char* input);
+static void handle_register(const char* input);
 
 static int 
     TRUE = true, 
@@ -50,6 +53,7 @@ static const struct {
     {"unload",  handle_unload,  &global.debugger.loaded, "Unload a loaded executable"},
     {"cont",   handle_continue, &global.debugger.loaded, "Continue executing a loaded executable"},
     {"brk", handle_breakpoint,  &global.debugger.loaded, "Set a breakpoint in loaded executable"},
+    {"register", handle_register, &global.debugger.loaded, "Read and modify registers"},
     {NULL, NULL, NULL, NULL}
 };
 
@@ -59,12 +63,25 @@ static const char help_text_header[] =
     "\n"
     COLOR_BOLD_WHITE "Available commands:\n" COLOR_RESET;
 static const char help_cmd_fmt[] = "%s * " COLOR_BOLD_WHITE "%s" COLOR_RESET "%*s| %s\n";
-static const char help_text_footer [] = "\n"
+static const char help_text_footer[] = "\n"
     COLOR_BOLD_WHITE "Prompt symbols:\n" COLOR_RESET
     "  \"" COLOR_MAGENTA "cspc" COLOR_RESET " [" COLOR_BOLD_GREEN "x" COLOR_RESET "] >>\"\n"
     COLOR_MAGENTA "    ^ " COLOR_BLUE "   ^~ exit code of the last command executed\n"
     COLOR_MAGENTA "    └~ path to the compiler executable\n" COLOR_RESET;
 static const i32 max_help_cmd_len = 10;
+
+static const char register_help_text[] = 
+    COLOR_BOLD_MAGENTA " ** The CSpydr interactive debug shell **\n" COLOR_RESET
+    "\n"
+    "%s * " COLOR_BOLD_WHITE "register" COLOR_RESET " - Read and modify registers\n"
+    COLOR_BLACK "(This command is only available if an executable is loaded.)\n" COLOR_RESET
+    "\n"
+    COLOR_BOLD_WHITE "Available subcommands:\n"
+    "  help                    " COLOR_RESET " | Display this help text\n"
+    COLOR_BOLD_WHITE "  dump                    " COLOR_RESET " | Print all register values\n"
+    COLOR_BOLD_WHITE "  read " COLOR_RESET "[register]          | Read value from register\n"
+    COLOR_BOLD_WHITE "  write " COLOR_RESET "[register] [value] | Write value to register\n"
+    "\n";
 
 static inline bool prefix(const char *pre, const char *str)
 {
@@ -142,6 +159,14 @@ void debug_repl(const char* src, const char* bin)
 
 static void handle_exit(const char* input)
 {
+    if(global.debugger.loaded)
+    {
+        if(question("An Executable is still loaded,\ninferior process `%d` will be killed.\n\nQuit anyway?", global.debugger.loaded))
+            handle_unload(input);
+        else
+            return;
+    }
+
     global.debugger.running = false;
 }
 
@@ -285,16 +310,29 @@ static void handle_continue(const char* input)
     {
         i32 exit_code = WEXITSTATUS(wait_status);
         debug_info("Process %d terminated with exit code %s%d" COLOR_RESET, global.debugger.loaded, exit_code ? COLOR_BOLD_RED : COLOR_BOLD_GREEN, exit_code);
+        global.last_exit_code = exit_code;
         goto process_exited;
     }
     else if(WIFSIGNALED(wait_status))
     {
         debug_info("Process %d was killed by signal %s.", global.debugger.loaded, strsignal(WTERMSIG(wait_status)));
+        global.last_exit_code = WTERMSIG(wait_status);
         goto process_exited;
     }
     else if(WIFSTOPPED(wait_status))
     {
-        debug_info("Process %d was stopped by signal %s.", global.debugger.loaded, strsignal(WSTOPSIG(wait_status)));
+        i32 stop_sig = WSTOPSIG(wait_status);
+        switch(stop_sig)
+        {
+            case SIGTRAP:
+                debug_info("Process %d hit breakpoint %d.", global.debugger.loaded, 0x0 /* TODO: determine breakpoint */);
+                global.last_exit_code = 0;
+                break;
+            default:
+                debug_info("Process %d was stopped by signal %s.", global.debugger.loaded, strsignal(WSTOPSIG(wait_status)));
+                global.last_exit_code = WSTOPSIG(wait_status);
+                goto process_exited;
+        }
     }
 
     return;
@@ -327,8 +365,77 @@ static void handle_breakpoint(const char* input)
     }
 
     intptr_t addr = strtol(addr_str, NULL, 16);
+    
     set_breakpoint_at_address(addr);
 
 fail:
     free(args);
+}
+
+static void handle_register(const char* input)
+{
+    char* args = strdup(input);
+    strtok(args, " "); // skip `register`
+
+    char* subcommand = strtok(NULL, " ");
+    if(!subcommand)
+    {
+        debug_error("`register` expects one argument of [help, dump, read, write]");
+        goto fail;
+    }
+
+    if(strcmp(subcommand, "help") == 0)
+        fprintf(OUTPUT_STREAM, register_help_text, global.debugger.loaded ? COLOR_GREEN : COLOR_RED);
+    else if(!global.debugger.loaded) 
+    {
+        debug_error("`register` is only available if an executable is loaded.");
+        goto fail;
+    }
+    else if(strcmp(subcommand, "dump") == 0)
+        dump_registers();
+    else if(strcmp(subcommand, "read") == 0)
+    {
+        char* reg = strtok(NULL, " ");
+        if(!reg) 
+        {
+            debug_error("`register read` expects register name");
+            goto fail;
+        }
+
+        printf("%s %016lx\n", reg, get_register_value(global.debugger.loaded, get_register_from_name(reg)));
+    }
+    else if(strcmp(subcommand, "write") == 0)
+    {
+        char* reg = strtok(NULL, " ");
+        if(!reg)
+        {
+            debug_error("`register write` expects register name");
+            goto fail;
+        }
+
+        char* val_str = strtok(NULL, " ");
+        if(!reg)
+        {
+            debug_error("`register write %s` expects value to write");
+            goto fail;
+        }
+
+        if(val_str[0] != '0' || val_str[1] != 'x')
+        {
+            debug_error("Value does not match `0x[0-9a-fA-F]+`");
+            goto fail;
+        }
+
+        u64 val = strtoul(val_str, NULL, 16);
+
+        set_register_value(global.debugger.loaded, get_register_from_name(reg), val);
+    }
+    else 
+    {
+        debug_error("Unknown `register` subcommand `%s`, expect one of [help, dump, read, write].\n        Use `register help` to get help on this command.");
+        goto fail;
+    }
+
+fail:
+    free(args);    
 }

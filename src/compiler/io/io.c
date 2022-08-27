@@ -11,6 +11,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdarg.h>
 #include <errno.h>
 
 File_T* read_file(const char* path)
@@ -111,13 +112,17 @@ void print_buffer(u8* buffer, size_t size)
     fprintf(OUTPUT_STREAM, "\n" COLOR_RESET);
 }
 
-bool question(const char* question)
+bool question(const char* question, ...)
 {
     char answer = '\0';
     while(answer != 'y' && answer != 'Y' &&
         answer != 'n' && answer != 'N')
     {
-        fprintf(OUTPUT_STREAM, "%s" COLOR_RESET " [" COLOR_BOLD_GREEN "y" COLOR_RESET "/" COLOR_BOLD_RED "n" COLOR_RESET "]: ", question);
+        va_list ap;
+        va_start(ap, question);
+        vfprintf(OUTPUT_STREAM, question, ap);
+        va_end(ap);
+        fprintf(OUTPUT_STREAM, COLOR_RESET " [" COLOR_BOLD_GREEN "y" COLOR_RESET "/" COLOR_BOLD_RED "n" COLOR_RESET "]: ");
         answer = getchar();
     }
 

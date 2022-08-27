@@ -18,7 +18,7 @@ bool file_is_executable(char* file);
 
 void print_buffer(u8* buffer, size_t size);
 
-bool question(const char* question);
+bool question(const char* question, ...);
 void clear_cache(void);
 char* get_cache_dir(char* buffer);
 char* get_cached_file_path(char* buffer, const char* filename, const char* fileextension);
