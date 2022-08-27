@@ -15,6 +15,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <errno.h>
 
 #define PROMPT_FMT COLOR_MAGENTA "%s" COLOR_RESET " [%s%d" COLOR_RESET "] >>"
 #define ERROR_FMT  COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " "
@@ -31,6 +32,7 @@ static void handle_unload(const char* input);
 static void handle_continue(const char* input);
 static void handle_breakpoint(const char* input);
 static void handle_register(const char* input);
+static void handle_memory(const char* input);
 
 static int 
     TRUE = true, 
@@ -54,6 +56,7 @@ static const struct {
     {"cont",   handle_continue, &global.debugger.loaded, "Continue executing a loaded executable"},
     {"brk", handle_breakpoint,  &global.debugger.loaded, "Set/Unset breakpoints in loaded executable"},
     {"register", handle_register, &global.debugger.loaded, "Read and modify registers"},
+    {"memory",  handle_memory,  &global.debugger.loaded, "Read and modify program memory"},
     {NULL, NULL, NULL, NULL}
 };
 
@@ -94,6 +97,18 @@ static const char brk_help_text[] =
     COLOR_BOLD_WHITE "  list " COLOR_RESET "      | List all breakpoints\n"
     COLOR_BOLD_WHITE "  add " COLOR_RESET "[addr] | Add a breakpoint at a given address\n"
     COLOR_BOLD_WHITE "  rm " COLOR_RESET "[addr]  | Remove a breakpoint from an address\n"
+    "\n";
+
+static const char memory_help_text[] =
+    COLOR_BOLD_MAGENTA " ** The CSpydr interactive debug shell **\n" COLOR_RESET
+    "\n"
+    "%s * " COLOR_BOLD_WHITE "memory" COLOR_RESET " - Read and modify program memory\n"
+    COLOR_BLACK "(This command is only available if an executable is loaded.)\n" COLOR_RESET
+    "\n"
+    COLOR_BOLD_WHITE "Available subcommands:\n"
+    "  help                   " COLOR_RESET " | Display this help text\n"
+    COLOR_BOLD_WHITE "  read " COLOR_RESET "[address]          | Read value at memory at address\n"
+    COLOR_BOLD_WHITE "  write " COLOR_RESET "[address] [value] | Write value to memory at address\n"
     "\n";
 
 static inline bool prefix(const char *pre, const char *str)
@@ -208,15 +223,27 @@ static void handle_run(const char* input)
     global.last_exit_code = subprocess(args[0], (char* const*) args, false);
 }
 
-/*
-    COLOR_GREEN " * " COLOR_RESET "help     | display this help text\n"
-    COLOR_GREEN " * " COLOR_RESET "exit     | exit the debugger\n"
-    COLOR_GREEN " * " COLOR_RESET "clear    | clear the screen\n"
-    COLOR_GREEN " * " COLOR_RESET "run      | run the current executable\n"
-    COLOR_GREEN " * " COLOR_RESET "comp     | recompile the current executable\n"
-    COLOR_GREEN " * " COLOR_RESET "current  | display the current debug target\n"
-    COLOR_GREEN " * "
-*/
+static u64 hex_value_arg(const char* cmd_name)
+{
+    errno = 0;
+
+    char* val_str = strtok(NULL, " ");
+    if(!val_str)
+    {
+        debug_error("Command `%s` expects value argument.");
+        errno = EIO;
+        return 0;
+    }
+
+    if(val_str[0] != '0' || val_str[1] != 'x')
+    {
+        debug_error("Value argument `%s` does not match `0x[0-9a-fA-F]+`", val_str);
+        errno = EINVAL;
+        return 0;
+    }
+
+    return strtoul(val_str, NULL, 16);
+}
 
 static void handle_help(const char* input)
 {
@@ -278,6 +305,9 @@ static void handle_load(const char* input)
         global.debugger.loaded = pid;
         if(!global.silent)
             debug_info("Loaded executable `%s` with pid `%d`.", exec, pid);
+        
+        for(size_t i = 0; i < global.debugger.breakpoints->size; i++)
+            ((Breakpoint_T*) global.debugger.breakpoints->items[i])->enabled = false;
     }
     else 
     {
@@ -305,6 +335,48 @@ static void handle_unload(const char* input)
     global.debugger.loaded = 0;
 }
 
+static inline u64 debugger_get_pc(void) 
+{
+    return get_register_value(global.debugger.loaded, REG_RIP);
+}
+
+static inline void debugger_set_pc(u64 pc)
+{
+    set_register_value(global.debugger.loaded, REG_RIP, pc);
+}
+
+static void wait_for_signal(void)
+{
+    i32 wait_status, options = 0;
+    waitpid(global.debugger.loaded, &wait_status, options);
+}
+
+static void step_over_breakpoint(void)
+{
+    u64 possible_breakpoint_location = debugger_get_pc() - 1;
+
+    if(global.debugger.breakpoints->size)
+    {
+        Breakpoint_T* bp = find_breakpoint(possible_breakpoint_location);
+
+        if(bp && bp->enabled)
+        {
+            u64 prev_instruction_addr = possible_breakpoint_location;
+            debugger_set_pc(prev_instruction_addr);
+
+            bool silent = global.silent;
+            global.silent = true;
+            
+            breakpoint_disable(bp);
+            ptrace(PTRACE_SINGLESTEP, global.debugger.loaded, NULL, NULL);
+            wait_for_signal();
+            breakpoint_enable(bp);
+
+            global.silent = silent;
+        }
+    }
+}
+
 static void handle_continue(const char* input)
 {
     if(!global.debugger.loaded)
@@ -313,6 +385,7 @@ static void handle_continue(const char* input)
         return; 
     }
 
+    step_over_breakpoint();
     ptrace(PTRACE_CONT, global.debugger.loaded, NULL, NULL);
 
     i32 wait_status,
@@ -338,7 +411,7 @@ static void handle_continue(const char* input)
         switch(stop_sig)
         {
             case SIGTRAP:
-                debug_info("Process %d hit breakpoint %d.", global.debugger.loaded, 0x0 /* TODO: determine breakpoint */);
+                debug_info("Process %d hit breakpoint 0x%016lx.", global.debugger.loaded, debugger_get_pc() - 1);
                 global.last_exit_code = 0;
                 break;
             default:
@@ -422,20 +495,10 @@ static void handle_breakpoint(const char* input)
     }
     else if(strcmp(subcommand, "add") == 0)
     {
-        char* addr_str = strtok(NULL, " ");
-        if(!addr_str)
-        {
-            debug_error("`brk add` expects address value");
+        u64 addr = hex_value_arg("bkr add");
+        if(errno)
             goto end;
-        }
 
-        if(addr_str[0] != '0' || addr_str[1] != 'x')
-        {
-            debug_error("Address does not match `0x[0-9a-fA-F]+`");
-            goto end;
-        }
-
-        intptr_t addr = strtol(addr_str, NULL, 16);
         set_breakpoint_at_address(addr);
     }
 
@@ -484,20 +547,9 @@ static void handle_register(const char* input)
             goto fail;
         }
 
-        char* val_str = strtok(NULL, " ");
-        if(!reg)
-        {
-            debug_error("`register write %s` expects value to write");
+        u64 val = hex_value_arg("register write <reg>");
+        if(errno)
             goto fail;
-        }
-
-        if(val_str[0] != '0' || val_str[1] != 'x')
-        {
-            debug_error("Value does not match `0x[0-9a-fA-F]+`");
-            goto fail;
-        }
-
-        u64 val = strtoul(val_str, NULL, 16);
 
         set_register_value(global.debugger.loaded, get_register_from_name(reg), val);
     }
@@ -509,4 +561,64 @@ static void handle_register(const char* input)
 
 fail:
     free(args);    
+}
+
+static inline u64 debugger_read_memory(u64 address)
+{
+    return ptrace(PTRACE_PEEKDATA, global.debugger.loaded, address, NULL);
+}
+
+static inline void debugger_write_memory(u64 address, u64 value)
+{
+    ptrace(PTRACE_POKEDATA, global.debugger.loaded, address, value);
+}
+
+static void handle_memory(const char* input)
+{
+    char* args = strdup(input);
+    strtok(args, " "); // skip `register`
+
+    char* subcommand = strtok(NULL, " ");
+    if(!subcommand)
+    {
+        debug_error("`memory` expects one argument of [help, read, write]");
+        goto fail;
+    }
+
+    if(strcmp(subcommand, "help") == 0)
+        fprintf(OUTPUT_STREAM, memory_help_text, global.debugger.loaded ? COLOR_GREEN : COLOR_RED);
+    else if(!global.debugger.loaded) 
+    {
+        debug_error("`memory` is only available if an executable is loaded.");
+        goto fail;
+    }
+    else if(strcmp(subcommand, "read") == 0)
+    {
+        u64 addr = hex_value_arg("memory read");
+        if(errno)
+            goto fail;
+        
+        fprintf(OUTPUT_STREAM, "0x%016lx: 0x%016lx\n", addr, debugger_read_memory(addr));
+    }
+    else if(strcmp(subcommand, "write") == 0)
+    {
+        u64 addr = hex_value_arg("memory write");
+        if(errno)
+            goto fail;
+        
+        u64 value = hex_value_arg("memory write <addr>");
+        if(errno)
+            goto fail;
+        
+        fprintf(OUTPUT_STREAM, "0x%016lx: 0x%016lx -> 0x%016lx\n", addr, debugger_read_memory(addr), value);
+        debugger_write_memory(addr, value);
+    }
+    else 
+    {
+        debug_error("Unknown `memory` subcommand `%s`, expect one of [help, read, write].\n        Use `memory help` to get help on this command.");
+        goto fail;
+    }
+
+fail:
+    free(args);
 }

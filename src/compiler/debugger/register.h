@@ -3,6 +3,7 @@
 
 #include <util.h>
 #include <stdlib.h>
+#include <globals.h>
 
 typedef enum REGISTER_ENUM
 {

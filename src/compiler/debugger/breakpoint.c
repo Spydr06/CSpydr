@@ -2,6 +2,7 @@
 
 #include <sys/ptrace.h>
 #include "dbg.h"
+#include "debugger/register.h"
 
 Breakpoint_T* init_breakpoint(intptr_t addr)
 {
@@ -41,18 +42,21 @@ void breakpoint_disable(Breakpoint_T* brk)
         debug_info("Disabled breakpoint at address 0x%016lx", brk->addr);
 }
 
-Breakpoint_T* set_breakpoint_at_address(intptr_t addr)
+Breakpoint_T* find_breakpoint(intptr_t addr)
 {
-    Breakpoint_T* found = NULL;
     for(size_t i = 0; i < global.debugger.breakpoints->size; i++)
     {
         Breakpoint_T* b = global.debugger.breakpoints->items[i];
         if(b->addr == addr) 
-        {
-            found = b;
-            break;
-        }
+            return b;
     }
+
+    return NULL;
+}
+
+Breakpoint_T* set_breakpoint_at_address(intptr_t addr)
+{
+    Breakpoint_T* found = find_breakpoint(addr);
 
     if(found)
     {
@@ -73,16 +77,7 @@ Breakpoint_T* set_breakpoint_at_address(intptr_t addr)
 
 void disable_breakpoint_at_address(intptr_t addr)
 {
-    Breakpoint_T* found = NULL;
-    for(size_t i = 0; i < global.debugger.breakpoints->size; i++)
-    {
-        Breakpoint_T* b = global.debugger.breakpoints->items[i];
-        if(b->addr == addr) 
-        {
-            found = b;
-            break;
-        }
-    }
+    Breakpoint_T* found = find_breakpoint(addr);
 
     if(found)
         breakpoint_disable(found);

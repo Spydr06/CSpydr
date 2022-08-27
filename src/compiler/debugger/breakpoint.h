@@ -18,5 +18,6 @@ void breakpoint_disable(Breakpoint_T* brk);
 
 Breakpoint_T* set_breakpoint_at_address(intptr_t addr);
 void disable_breakpoint_at_address(intptr_t addr);
+Breakpoint_T* find_breakpoint(intptr_t addr);
 
 #endif
