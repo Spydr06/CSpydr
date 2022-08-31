@@ -21,6 +21,8 @@
 #define ERROR_FMT  COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " "
 #define INFO_FMT   COLOR_BOLD_WHITE "[Info]" COLOR_RESET " "
 
+#define CSPYDR_DEBUGGER_HEADER COLOR_BOLD_MAGENTA " ** The CSpydr interactive debug shell **\n" COLOR_RESET
+
 static void handle_exit(const char* input);
 static void handle_comp(const char* input);
 static void handle_run(const char* input);
@@ -33,6 +35,7 @@ static void handle_continue(const char* input);
 static void handle_breakpoint(const char* input);
 static void handle_register(const char* input);
 static void handle_memory(const char* input);
+static void handle_sh(const char* input);
 
 static int 
     TRUE = true, 
@@ -42,31 +45,35 @@ static const struct {
     char* cmd;
     void (*fn)(const char* input);
     int* enabled;
+    bool enabled_when_true;
     const char* description;
 } cmds[] = 
 {
-    {"help",    handle_help,    &TRUE,                   "Display this help text"},
-    {"exit",    handle_exit,    &TRUE,                   "Exit the debugger"},
-    {"clear",   handle_clear,   &TRUE,                   "Clear the screen"},
-    {"comp",    handle_comp,    &TRUE,                   "Recompile the current source files"},
-    {"run",     handle_run,     &TRUE,                   "Run the current executable"},
-    {"current", handle_current, &TRUE,                   "Display the current debug target"},
-    {"load",    handle_load,    &TRUE,                   "Load any executable for step-through debugging"},
-    {"unload",  handle_unload,  &global.debugger.loaded, "Unload a loaded executable"},
-    {"cont",   handle_continue, &global.debugger.loaded, "Continue executing a loaded executable"},
-    {"brk", handle_breakpoint,  &global.debugger.loaded, "Set/Unset breakpoints in loaded executable"},
-    {"register", handle_register, &global.debugger.loaded, "Read and modify registers"},
-    {"memory",  handle_memory,  &global.debugger.loaded, "Read and modify program memory"},
-    {NULL, NULL, NULL, NULL}
+    {"help",    handle_help,    &TRUE,                   true, "Display this help text"},
+    {"exit",    handle_exit,    &TRUE,                   true,  "Exit the debugger"},
+    {"clear",   handle_clear,   &TRUE,                   true,  "Clear the screen"},
+    {"comp",    handle_comp,    &TRUE,                   true,  "Recompile the current source files"},
+    {"current", handle_current, &TRUE,                   true,  "Display the current debug target"},
+    {"sh",      handle_sh,      &TRUE,                   true,  "Run an external shell command"},
+    {"load",    handle_load,    &global.debugger.loaded, false, "Load any executable for step-through debugging"},
+    {"unload",  handle_unload,  &global.debugger.loaded, true,  "Unload a loaded executable"},
+    {"cont",   handle_continue, &global.debugger.loaded, true,  "Continue executing a loaded executable"},
+    {"brk", handle_breakpoint,  &global.debugger.loaded, true,  "Set/Unset breakpoints in loaded executable"},
+    {"register", handle_register, &global.debugger.loaded, true, "Read and modify registers"},
+    {"memory",  handle_memory,  &global.debugger.loaded, true,  "Read and modify program memory"},
+    {NULL, NULL, NULL, false, NULL}
 };
 
 static const char help_text_header[] = 
-    COLOR_BOLD_MAGENTA " ** The CSpydr interactive debug shell **\n" COLOR_RESET
+    CSPYDR_DEBUGGER_HEADER
     "Current debug target: `%s` (compiled from `%s`).\n"
     "\n"
     COLOR_BOLD_WHITE "Available commands:\n" COLOR_RESET;
 static const char help_cmd_fmt[] = "%s * " COLOR_BOLD_WHITE "%s" COLOR_RESET "%*s| %s\n";
 static const char help_text_footer[] = "\n"
+    COLOR_BOLD_WHITE "Tipp:" COLOR_RESET "\n"
+    "  Use `<command> help` to get more information on a specific command.\n"
+    "\n"
     COLOR_BOLD_WHITE "Prompt symbols:\n" COLOR_RESET
     "  \"" COLOR_MAGENTA "cspc" COLOR_RESET " [" COLOR_BOLD_GREEN "x" COLOR_RESET "] >>\"\n"
     COLOR_MAGENTA "    ^ " COLOR_BLUE "   ^~ exit code of the last command executed\n"
@@ -74,41 +81,52 @@ static const char help_text_footer[] = "\n"
 static const i32 max_help_cmd_len = 10;
 
 static const char register_help_text[] = 
-    COLOR_BOLD_MAGENTA " ** The CSpydr interactive debug shell **\n" COLOR_RESET
+    CSPYDR_DEBUGGER_HEADER
     "\n"
     "%s * " COLOR_BOLD_WHITE "register" COLOR_RESET " - Read and modify registers\n"
     COLOR_BLACK "(This command is only available if an executable is loaded.)\n" COLOR_RESET
     "\n"
     COLOR_BOLD_WHITE "Available subcommands:\n"
-    "  help                    " COLOR_RESET " | Display this help text\n"
+                     "  help                    " COLOR_RESET " | Display this help text\n"
     COLOR_BOLD_WHITE "  dump                    " COLOR_RESET " | Print all register values\n"
     COLOR_BOLD_WHITE "  read " COLOR_RESET "[register]          | Read value from register\n"
     COLOR_BOLD_WHITE "  write " COLOR_RESET "[register] [value] | Write value to register\n"
     "\n";
 
 static const char brk_help_text[] =
-    COLOR_BOLD_MAGENTA " ** The CSpydr interactive debug shell **\n" COLOR_RESET
+    CSPYDR_DEBUGGER_HEADER
     "\n"
     "%s * " COLOR_BOLD_WHITE "brk" COLOR_RESET " - Set/Unset breakpoints in loaded executable\n"
     COLOR_BLACK "(This command is only available if an executable is loaded.)\n" COLOR_RESET
     "\n"
     COLOR_BOLD_WHITE "Available subcommands:\n"
-    "  help    " COLOR_RESET "   | Display this help text\n"
+                     "  help    " COLOR_RESET "   | Display this help text\n"
     COLOR_BOLD_WHITE "  list " COLOR_RESET "      | List all breakpoints\n"
     COLOR_BOLD_WHITE "  add " COLOR_RESET "[addr] | Add a breakpoint at a given address\n"
     COLOR_BOLD_WHITE "  rm " COLOR_RESET "[addr]  | Remove a breakpoint from an address\n"
     "\n";
 
 static const char memory_help_text[] =
-    COLOR_BOLD_MAGENTA " ** The CSpydr interactive debug shell **\n" COLOR_RESET
+    CSPYDR_DEBUGGER_HEADER
     "\n"
     "%s * " COLOR_BOLD_WHITE "memory" COLOR_RESET " - Read and modify program memory\n"
     COLOR_BLACK "(This command is only available if an executable is loaded.)\n" COLOR_RESET
     "\n"
     COLOR_BOLD_WHITE "Available subcommands:\n"
-    "  help                   " COLOR_RESET " | Display this help text\n"
+                     "  help                   " COLOR_RESET " | Display this help text\n"
     COLOR_BOLD_WHITE "  read " COLOR_RESET "[address]          | Read value at memory at address\n"
     COLOR_BOLD_WHITE "  write " COLOR_RESET "[address] [value] | Write value to memory at address\n"
+    "\n";
+
+static const char load_help_text[] =
+    CSPYDR_DEBUGGER_HEADER
+    "\n"
+    "%s * " COLOR_BOLD_WHITE "load" COLOR_RESET " - Load any executable for step-through debugging\n"
+    COLOR_BLACK "(This command is only available if no executable is already loaded.)\n" COLOR_RESET
+    "\n"
+    COLOR_BOLD_WHITE "Available subcommands:\n"
+                     "  help        " COLOR_RESET " | Display this help text\n"
+    COLOR_BOLD_WHITE "  [executable]" COLOR_RESET " | Load this executable into memory for debugging\n"
     "\n";
 
 static inline bool prefix(const char *pre, const char *str)
@@ -200,6 +218,17 @@ static void handle_exit(const char* input)
 
 static void handle_comp(const char* input)
 {
+    bool was_loaded = global.debugger.loaded;
+    if(global.debugger.loaded)
+    {
+        if(question("An Executable is still loaded,\ninferior process `%d` will be killed.\n\nContinue anyway?", global.debugger.loaded))
+            handle_unload(input);
+        else
+            return;
+    }
+
+    fprintf(OUTPUT_STREAM, "\n");
+
     const char* args[] = {
         global.exec_name,
         "build",
@@ -209,18 +238,11 @@ static void handle_comp(const char* input)
     };
 
     global.last_exit_code = subprocess(args[0], (char* const*) args, false);
-}
 
-static void handle_run(const char* input)
-{
-    char local_executable[BUFSIZ] = {};
-    sprintf(local_executable, "." DIRECTORY_DELIMS "%s", global.debugger.bin_file);
-    const char* args[] = {
-        local_executable,
-        NULL        
-    };
+    fprintf(OUTPUT_STREAM, "\n");
 
-    global.last_exit_code = subprocess(args[0], (char* const*) args, false);
+    if(was_loaded)
+        handle_load(global.debugger.loaded_cmd);
 }
 
 static u64 hex_value_arg(const char* cmd_name)
@@ -245,12 +267,19 @@ static u64 hex_value_arg(const char* cmd_name)
     return strtoul(val_str, NULL, 16);
 }
 
+static bool is_enabled(int* enabled, bool enabled_when_true)
+{
+    return enabled_when_true 
+        ? *enabled ? true : false 
+        : *enabled ? false : true;
+}
+
 static void handle_help(const char* input)
 {
     printf(help_text_header, global.debugger.bin_file, global.debugger.src_file);
     for(size_t i = 0; cmds[i].cmd; i++)
         printf(help_cmd_fmt, 
-            *(cmds[i].enabled) ? COLOR_GREEN : COLOR_RED, 
+            is_enabled(cmds[i].enabled, cmds[i].enabled_when_true) ? COLOR_GREEN : COLOR_RED,
             cmds[i].cmd, 
             max_help_cmd_len - (i32) strlen(cmds[i].cmd), 
             "", 
@@ -269,22 +298,12 @@ static void handle_current(const char* input)
     printf("`%s` (compiled from `%s`).\n", global.debugger.bin_file, global.debugger.src_file);
 }
 
-static void handle_load(const char* input)
+static bool load_exec(char* exec)
 {
-    if(global.debugger.loaded)
-    {
-        debug_error("An executable is already loaded, please unload first. (pid %d)", global.debugger.loaded);
-        return;
-    }
-
-    char* args = strdup(input);
-    strtok(args, " ");
-
-    char* exec = strtok(NULL, " ");
     List_T* exec_args = init_list();
     list_push(exec_args, exec);
     if(!exec) {
-        debug_error("Command `lock` requires at least one argument, got 0.");
+        debug_error("Command `load` requires at least one argument, got 0.");
         goto fail;
     }
 
@@ -315,8 +334,42 @@ static void handle_load(const char* input)
         goto fail;
     }
 
+    return true;
+
 fail:
     free_list(exec_args);
+    return false;
+}
+
+static void handle_sh(const char* input)
+{
+    input += (uintptr_t) 3;
+    system(input);
+}
+
+static void handle_load(const char* input)
+{
+    if(global.debugger.loaded)
+    {
+        debug_error("An executable is already loaded, please unload first. (pid %d)", global.debugger.loaded);
+        return;
+    }
+
+   // if(global.debugger.loaded_cmd)
+   //     free(global.debugger.loaded_cmd);
+
+    global.debugger.loaded_cmd = strdup(input);
+    char* args = strdup(input);
+
+    strtok(args, " ");
+
+    char* exec = strtok(NULL, " ");
+
+    if(exec && strcmp(exec, "help") == 0)
+        fprintf(OUTPUT_STREAM, load_help_text, global.debugger.loaded ? COLOR_RED : COLOR_GREEN);
+    else
+        load_exec(exec);
+    
     free(args);
 }
 
@@ -500,6 +553,11 @@ static void handle_breakpoint(const char* input)
             goto end;
 
         set_breakpoint_at_address(addr);
+    }
+    else
+    {
+        debug_error("Unknown `brk` subcommand `%s`, expect one of [help, list, rm, add].\n        Use `register help` to get help on this command.");
+        goto end;
     }
 
 end:
