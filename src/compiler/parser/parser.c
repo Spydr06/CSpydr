@@ -2506,8 +2506,8 @@ static ASTNode_T* parse_pow_3(Parser_T* p, ASTNode_T* left)
 
 static ASTNode_T* parse_current_fn_token(Parser_T* p)
 {
-    p->tok->type = TOKEN_STRING,
-    p->tok = realloc(p->tok, sizeof(Token_T) + strlen(p->cur_fn->id->callee) + 1);
+    p->tok->type = TOKEN_STRING;
+    p->tok = mem_realloc(p->tok, sizeof(Token_T) + strlen(p->cur_fn->id->callee) + 1);
     strcpy(p->tok->value, p->cur_fn->id->callee);
 
     return parse_str_lit(p, false);

@@ -1,0 +1,116 @@
+# An implementation of a region-based arena memory manager
+
+import "types.csp";
+import "error.csp";
+import "assert.csp";
+import "memory.csp";
+import "libc/stdlib.csp";
+
+namespace std {
+    type ArenaBackend: enum {
+        MMAP = 0,
+        LIBC_MALLOC
+    };
+
+    type Arena: struct {
+        backend: const std::ArenaBackend, 
+        begin: &arena::Region,
+        end: &arena::Region
+    };
+
+    namespace arena {
+        type Region: struct {
+            next: &Region,
+            count: u64,
+            capacity: u64,
+            data: UIntPtr 'c[0]
+        };
+
+        const REGION_DEFAULT_CAPACITY: u64 = 8096;
+
+        fn new_region(backend: const ArenaBackend, capacity: u64): &std::arena::Region
+        {
+            let size_bytes = sizeof Region + sizeof UIntPtr * capacity;
+
+            let region: &Region = nil;
+            match backend {
+                std::ArenaBackend::LIBC_MALLOC => region = libc::malloc(size_bytes);
+                std::ArenaBackend::MMAP => region = memory::alloc(size_bytes);
+                _ => {
+                    error::new(std::Errno::INVAL, "Unknown ArenaBackend");
+                    <- nil;
+                }
+            }
+
+            assert!(region);
+
+            region.next = nil;
+            region.count = 0;
+            region.capacity = capacity;
+
+            <- region;
+        }
+
+        fn free_region(backend: const ArenaBackend, region: &Region): std::Error
+        {
+            match backend {
+                std::ArenaBackend::LIBC_MALLOC => libc::free(region);
+                std::ArenaBackend::MMAP => memory::free(region);
+                _ => ret error::new(std::Errno::INVAL, "Unknown ArenaBackend");
+            }
+
+            <- error::none();
+        }
+
+        fn alloc(a: &Arena, size_bytes: u64): &void
+        {
+            let size = (size_bytes + sizeof UIntPtr - 1) / sizeof UIntPtr;
+
+            if a.end == nil {
+                assert!(a.begin == nil);
+                let capacity = REGION_DEFAULT_CAPACITY;
+                if capacity < size
+                    capacity = size;
+                a.end = new_region(a.backend, capacity);
+                a.begin = a.end;
+            }
+
+            while a.end.count + size > a.end.capacity && a.end.next != nil
+                a.end = a.end.next;
+            
+            if a.end.count + size > a.end.capacity {
+                assert!(a.end.next == nil);
+                let capacity = REGION_DEFAULT_CAPACITY;
+                if capacity < size
+                    capacity = size;
+                a.end.next = new_region(a.backend, capacity);
+                a.end = a.end.next;
+            }
+
+            let result = &a.end.data[a.end.count];
+            a.end.count += size;
+            <- result;
+        }
+
+        fn reset(a: &Arena)
+        {
+            for let r = a.begin; r != nil; r = r.next;
+                r.count = 0;
+            
+            a.end = a.begin;
+        }
+
+        fn free(a: &Arena)
+        {
+            let r = a.begin;
+            while r != nil {
+                let r0 = r;
+                r = r.next;
+                free_region(a.backend, r0);
+            }
+
+            a.begin = nil;
+            a.end = nil;
+        }
+    }
+}

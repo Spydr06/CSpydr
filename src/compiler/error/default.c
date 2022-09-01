@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 static void print_current_fn(void) {
-    static ASTObj_T* last_fn; // remember the last function to eliminate duplication in multiple errors of the same function
+    static ASTObj_T* last_fn = NULL; // remember the last function to eliminate duplication in multiple errors of the same function
     if(global.current_fn && *global.current_fn && *global.current_fn != last_fn) 
     {
         char buf[BUFSIZ] = {};

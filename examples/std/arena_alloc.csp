@@ -1,0 +1,19 @@
+# a test program demonstrating the arena memory allocator found in arena.csp
+
+import "std.csp";
+
+fn main(): i32
+{
+    let arena = std::Arena::{};
+
+    # Allocate stuff in default_arena
+    std::arena::alloc(&arena, 64);
+    std::arena::alloc(&arena, 128);
+    std::arena::alloc(&arena, 256);
+    std::arena::alloc(&arena, 512);
+
+    # Free everything at once
+    std::arena::free(&arena);    
+
+    <- 0;
+}
