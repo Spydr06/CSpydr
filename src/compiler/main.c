@@ -108,6 +108,7 @@ const char help_text[] = "%s"
                        "      --cc [compiler]    | Sets the C compiler being used after transpiling (default: " DEFAULT_CC ")\n"
                        "  -S                     | Comple only; do not assemble or link\n"
                        "  -c                     | Compile and assemble, but do not link\n"
+                       "  -g -g0                 | Include/Exclude debug symbols in binary\n"
                        "  -0, --no-opt           | Disables all code optimization\n"
                        "      --set-mmcd [int]   | Sets the maximum macro call depth (default: %d) (unsafe: could cause stack overflow)\n"
                        "      --show-timings     | Shows the duration the different compiler stages took\n"
@@ -236,6 +237,10 @@ i32 main(i32 argc, char* argv[])
             global.do_link = global.do_assemble = false;
         else if(streq(arg, "-c"))
             global.do_link = false;
+        else if(streq(arg, "-g"))
+            global.embed_debug_info = true;
+        else if(streq(arg, "-g0"))
+            global.embed_debug_info = false;
         else if(streq(arg, "--cc"))
         {
             if(!argv[++i])

@@ -33,7 +33,8 @@ static void run(char* file);
 void compile(char* input_file, char* output_file, Action_T action)
 {
     try(global.main_error_exception) {
-        global.embed_debug_info = action == AC_DEBUG;
+        if(action == AC_DEBUG)
+            global.embed_debug_info = true;
         global.main_src_file = input_file;
 
         ASTProg_T ast = {};
