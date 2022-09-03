@@ -46,19 +46,19 @@ static const struct {
     const char* description;
 } cmds[] = 
 {
-    {"help",    handle_help,    &ALWAYS_TRUE,             true, "Display this help text"},
-    {"exit",    handle_exit,    &ALWAYS_TRUE,             true,  "Exit the debugger"},
-    {"clear",   handle_clear,   &ALWAYS_TRUE,             true,  "Clear the screen"},
-    {"comp",    handle_comp,    &ALWAYS_TRUE,             true,  "Recompile the current source files"},
-    {"current", handle_current, &ALWAYS_TRUE,             true,  "Display the current debug target"},
-    {"sh",      handle_sh,      &ALWAYS_TRUE,             true,  "Run an external shell command"},
-    {"load",    handle_load,    &global.debugger.loaded, false, "Load any executable for step-through debugging"},
-    {"unload",  handle_unload,  &global.debugger.loaded, true,  "Unload a loaded executable"},
-    {"cont",   handle_continue, &global.debugger.loaded, true,  "Continue executing a loaded executable"},
-    {"brk", handle_breakpoint,  &global.debugger.loaded, true,  "Set/Unset breakpoints in loaded executable"},
-    {"register", handle_register, &global.debugger.loaded, true, "Read and modify registers"},
-    {"memory",  handle_memory,  &global.debugger.loaded, true,  "Read and modify program memory"},
-    {NULL, NULL, NULL, false, NULL}
+    { "help",     handle_help,       &ALWAYS_TRUE,              true,  "Display this help text"                         },
+    { "exit",     handle_exit,       &ALWAYS_TRUE,              true,  "Exit the debugger"                              },
+    { "clear",    handle_clear,      &ALWAYS_TRUE,              true,  "Clear the screen"                               },
+    { "comp",     handle_comp,       &ALWAYS_TRUE,              true,  "Recompile the current source files"             },
+    { "current",  handle_current,    &ALWAYS_TRUE,              true,  "Display the current debug target"               },
+    { "sh",       handle_sh,         &ALWAYS_TRUE,              true,  "Run an external shell command"                  },
+    { "load",     handle_load,       &global.debugger.loaded,   false, "Load any executable for step-through debugging" },
+    { "unload",   handle_unload,     &global.debugger.loaded,   true,  "Unload a loaded executable"                     },
+    { "cont",     handle_continue,   &global.debugger.loaded,   true,  "Continue executing a loaded executable"         },
+    { "brk",      handle_breakpoint, &global.debugger.loaded,   true,  "Set/Unset breakpoints in loaded executable"     },
+    { "register", handle_register,   &global.debugger.loaded,   true,  "Read and modify registers"                      },
+    { "memory",   handle_memory,     &global.debugger.loaded,   true,  "Read and modify program memory"                 },
+    { NULL,       NULL,              NULL,                      false, NULL                                             }
 };
 
 static const char help_text_header[] = 
