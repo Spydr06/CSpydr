@@ -25,7 +25,6 @@
 
 static void handle_exit(const char* input);
 static void handle_comp(const char* input);
-static void handle_run(const char* input);
 static void handle_help(const char* input);
 static void handle_clear(const char* input);
 static void handle_current(const char* input);
@@ -37,9 +36,7 @@ static void handle_register(const char* input);
 static void handle_memory(const char* input);
 static void handle_sh(const char* input);
 
-static int 
-    TRUE = true, 
-    FALSE = false;
+static int ALWAYS_TRUE = true;
 
 static const struct {
     char* cmd;
@@ -49,12 +46,12 @@ static const struct {
     const char* description;
 } cmds[] = 
 {
-    {"help",    handle_help,    &TRUE,                   true, "Display this help text"},
-    {"exit",    handle_exit,    &TRUE,                   true,  "Exit the debugger"},
-    {"clear",   handle_clear,   &TRUE,                   true,  "Clear the screen"},
-    {"comp",    handle_comp,    &TRUE,                   true,  "Recompile the current source files"},
-    {"current", handle_current, &TRUE,                   true,  "Display the current debug target"},
-    {"sh",      handle_sh,      &TRUE,                   true,  "Run an external shell command"},
+    {"help",    handle_help,    &ALWAYS_TRUE,             true, "Display this help text"},
+    {"exit",    handle_exit,    &ALWAYS_TRUE,             true,  "Exit the debugger"},
+    {"clear",   handle_clear,   &ALWAYS_TRUE,             true,  "Clear the screen"},
+    {"comp",    handle_comp,    &ALWAYS_TRUE,             true,  "Recompile the current source files"},
+    {"current", handle_current, &ALWAYS_TRUE,             true,  "Display the current debug target"},
+    {"sh",      handle_sh,      &ALWAYS_TRUE,             true,  "Run an external shell command"},
     {"load",    handle_load,    &global.debugger.loaded, false, "Load any executable for step-through debugging"},
     {"unload",  handle_unload,  &global.debugger.loaded, true,  "Unload a loaded executable"},
     {"cont",   handle_continue, &global.debugger.loaded, true,  "Continue executing a loaded executable"},

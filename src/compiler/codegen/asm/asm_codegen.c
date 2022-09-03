@@ -303,8 +303,13 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
             asm_source_file,
             "-o",
             obj_file,
+            NULL,
             NULL
         };
+
+        if(cg->embed_file_locations)
+            args[LEN(args) - 2] = "-g";
+
         i32 exit_code = subprocess(args[0], (char* const*) args, false);
 
         if(exit_code != 0)
@@ -379,7 +384,7 @@ static void asm_gen_file_descriptors(ASMCodegenData_T* cg)
     for(size_t i = 0; i < cg->ast->imports->size; i++)
     {
         File_T* file = cg->ast->imports->items[i];
-        asm_println(cg, "  .file %d \"%s\"", file->file_no + 1, file->short_path ? file->short_path : file->path);
+        asm_println(cg, "  .file %d \"%s\"", file->file_no + 1, file->path);
     }
 }
 
@@ -638,6 +643,9 @@ static void asm_gen_function(ASMCodegenData_T* cg, ASTObj_T* obj)
     asm_println(cg, "  mov %%rsp, %%rbp");
     asm_println(cg, "  sub $%d, %%rsp", obj->stack_size);
     asm_println(cg, "  mov %%rsp, %d(%%rbp)", obj->alloca_bottom->offset);
+
+    if(cg->embed_file_locations)
+        asm_println(cg, "  .loc %d %d", obj->tok->source->file_no + 1, obj->tok->line + 1);
 
     // save arg registers if function is variadic
     if(is_variadic(obj->data_type))
@@ -1441,7 +1449,7 @@ static void asm_gen_inline_strlen(ASMCodegenData_T* cg)
 static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
 {
     if(node->tok && cg->embed_file_locations)
-        asm_println(cg, "  .loc %d %d", node->tok->source->file_no + 1, node->tok->line + 1);
+        asm_println(cg, "  .loc %d %d", node->tok->source->file_no + 1, node->tok->line);
     switch(node->kind)
     {
         case ND_NOOP:
@@ -2201,7 +2209,7 @@ static void asm_init_zero(ASMCodegenData_T* cg, ASTObj_T* var)
 static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
 {
     if(node->tok && cg->embed_file_locations)
-        asm_println(cg, "  .loc %d %d", node->tok->source->file_no + 1, node->tok->line + 1);
+        asm_println(cg, "  .loc %d %d", node->tok->source->file_no + 1, node->tok->line);
 
     switch(node->kind)
     {
