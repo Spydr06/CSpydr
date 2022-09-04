@@ -2472,7 +2472,9 @@ static ASTNode_T* parse_pow_2(Parser_T* p, ASTNode_T* left)
     if(global.ct == CT_TRANSPILE)
     {
         ASTNode_T* closure = init_ast_node(ND_CLOSURE, p->tok);
-        closure->expr = mult;
+        closure->exprs = init_list();
+        mem_add_list(closure->exprs); 
+        list_push(closure->exprs, mult);
         return closure;
     }
 
@@ -2494,7 +2496,9 @@ static ASTNode_T* parse_pow_3(Parser_T* p, ASTNode_T* left)
     if(global.ct == CT_TRANSPILE)
     {
         ASTNode_T* closure = init_ast_node(ND_CLOSURE, p->tok);
-        closure->expr = mult_a;
+        closure->exprs = init_list();
+        mem_add_list(closure->exprs); 
+        list_push(closure->exprs, mult_a);
         return closure;
     }
 
