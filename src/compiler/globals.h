@@ -55,6 +55,7 @@ __CSP_GLOBAL struct {
 
     List_T* compiler_flags;
     List_T* linker_flags;
+    u64 total_source_lines;
 
     Exception_T main_error_exception;
 

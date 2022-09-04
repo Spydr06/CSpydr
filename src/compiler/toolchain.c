@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "error/panic.h"
+#include "list.h"
 #include "optimizer/optimizer.h"
 #include "platform/platform_bindings.h"
 #include "mem/mem.h"
@@ -106,6 +107,17 @@ void compile(char* input_file, char* output_file, Action_T action)
     }
 }
 
+static u64 get_total_source_lines(List_T* files)
+{
+    u64 total_lines = 0;
+    for(size_t i = 0; files && i < files->size; i++)
+    {
+        File_T* file = files->items[i];
+        total_lines += file->lines->size;
+    }
+    return total_lines;
+}
+
 static void generate_ast(ASTProg_T* ast, char* path, bool silent)
 {
     List_T* files = init_list();
@@ -115,6 +127,8 @@ static void generate_ast(ASTProg_T* ast, char* path, bool silent)
     
     ast->imports = files;
     mem_add_list(files);
+
+    global.total_source_lines = get_total_source_lines(files);
 }
 
 static void transpile_c(ASTProg_T* ast, char* target, bool print_c, bool silent)
