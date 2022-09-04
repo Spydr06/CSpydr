@@ -1653,6 +1653,7 @@ static ASTNode_T* parse_using(Parser_T* p, bool needs_semicolon)
     parser_consume(p, TOKEN_USING, "expect `using`");
 
     using->ids = init_list();
+    mem_add_list(using->ids);
 
     if(tok_is(p, TOKEN_COMMA))
         throw_error(ERR_SYNTAX_ERROR, p->tok, "expect identifier after `using`");
