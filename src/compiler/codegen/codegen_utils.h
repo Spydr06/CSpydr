@@ -8,7 +8,7 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 u64 hash_64(const char* key);
-char* gen_identifier(ASTIdentifier_T* id, const char* prefix, bool prefix_at_start);
+char* gen_identifier(ASTIdentifier_T* id, const char* combiner, const char* prefix);
 bool is_integer(ASTType_T *ty);
 bool is_flonum(ASTType_T *ty);
 bool is_numeric(ASTType_T *ty);
@@ -20,5 +20,7 @@ bool is_variadic(ASTType_T* ty);
 ASTType_T* unpack(ASTType_T* ty);
 bool should_emit(ASTObj_T* obj);
 bool ptr_type(ASTType_T* ty);
+
+void link_obj(const char* target, char* obj_file, bool silent);
 
 #endif

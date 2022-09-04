@@ -302,6 +302,7 @@ struct AST_TYPE_STRUCT
 
         // enums, structs
         List_T* members;    // list of ASTNode_Ts
+        ASTObj_T* referenced_obj;
     };
 
     u64 num_indices;
@@ -326,6 +327,7 @@ struct AST_OBJ_STRUCT
             bool is_entry_point : 1;
             bool no_return      : 1;
             bool ignore_unused  : 1;
+            bool generated      : 1;
         };
         u8 flags;
     };

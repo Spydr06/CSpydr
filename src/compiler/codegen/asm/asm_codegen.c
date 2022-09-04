@@ -207,7 +207,8 @@ static void asm_println(ASMCodegenData_T* cg, char* fmt, ...)
     va_list va;
     va_start(va, fmt);
     vfprintf(cg->code_buffer, fmt, va);
-    va_end(va);    fprintf(cg->code_buffer, "\n");
+    va_end(va);    
+    fputc('\n', cg->code_buffer);
 }
 
 static void write_code(ASMCodegenData_T* cg, const char* target, bool cachefile)
@@ -289,9 +290,8 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
     get_cached_file_path(asm_source_file, target, ".s");
 
     char obj_file[BUFSIZ] = {'\0'};
-    if(global.do_link) {
+    if(global.do_link)
         get_cached_file_path(obj_file, target, ".o");
-    }
     else
         sprintf(obj_file, "%s.o", target);
 
@@ -319,62 +319,14 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         }
     }
 
-    if(!global.do_link) 
-        return;
-    
     // run the linker
-    if(!cg->silent)
-    {
-        LOG_OK_F(COLOR_BOLD_BLUE "  Linking    " COLOR_RESET "%s", target);
-        if(global.linker_flags->size > 0)
-        {
-            LOG_OK(COLOR_RESET " (");
-            for(size_t i = 0; i < global.linker_flags->size; i++) 
-            {
-                char* lib = global.linker_flags->items[i];
-                if(lib[0] == '-' && lib[1] == 'l') {
-                    LOG_OK_F(COLOR_RESET "%s%s", (char*) lib + 2, global.linker_flags->size - i <= 1 ? ")" : ", ");
-                }
-            }
-        }
-        LOG_OK(COLOR_RESET "\n");
-    }
-
-    {
-        List_T* args = init_list();
-        list_push(args, DEFAULT_LINKER);
-        list_push(args, "-o");
-        list_push(args, (void*) target);
-        list_push(args, "-m");
-        list_push(args, "elf_x86_64");
-        list_push(args, "-L/usr/lib64");
-        list_push(args, "-L/lib64");
-        list_push(args, "-L/usr/lib");
-        list_push(args, "-L/lib");
-    
-        for(size_t i = 0; i < global.linker_flags->size; i++)
-            list_push(args, global.linker_flags->items[i]);
-    
-        list_push(args, "-dynamic-linker");
-        list_push(args, "/lib64/ld-linux-x86-64.so.2");
-        list_push(args, obj_file);
-        list_push(args, NULL);
-    
-    
-        i32 exit_code = subprocess((char*) args->items[0], (char* const*) args->items, false);
-        if(exit_code != 0)
-        {
-            LOG_ERROR_F("error linking code. (exit code %d)\n", exit_code);
-            throw(global.main_error_exception);
-        }
-    
-        free_list(args);
-    }
+    if(global.do_link) 
+        link_obj(target, obj_file, cg->silent);
 }
 
 static char* asm_gen_identifier(ASTIdentifier_T* id)
 {
-    char* str = gen_identifier(id, ".", false);
+    char* str = gen_identifier(id, ".", "");
     mem_add_ptr(str);
     return str;
 }

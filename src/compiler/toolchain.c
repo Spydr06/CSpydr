@@ -135,7 +135,7 @@ static void transpile_c(ASTProg_T* ast, char* target, bool print_c, bool silent)
 {
     CCodegenData_T cg;
     init_c_cg(&cg, ast);
-    cg.print_c = print_c;
+    cg.print = print_c;
     cg.silent = silent;
     c_gen_code(&cg, target);
 

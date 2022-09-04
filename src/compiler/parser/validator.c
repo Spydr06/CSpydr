@@ -1852,6 +1852,7 @@ static void undef_type(ASTType_T* u_type, va_list args)
     if(!found)
         throw_error(ERR_TYPE_ERROR, u_type->tok, "could not find data type named `%s`", u_type->id->callee);
     
+    u_type->referenced_obj = found;
     u_type->id->outer = found->id->outer;
     u_type->base = found->data_type;
 }

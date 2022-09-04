@@ -162,3 +162,50 @@ char* get_cached_file_path(char* buffer, const char* filename, const char* filee
         strcat(buffer, fileextension);
     return buffer;
 }
+
+int finsert (FILE* file, const char *buffer) 
+{
+    long int insert_pos = ftell(file);
+    if (insert_pos < 0) return insert_pos;
+
+    // Grow from the bottom
+    int seek_ret = fseek(file, 0, SEEK_END);
+    if (seek_ret) return seek_ret;
+    long int total_left_to_move = ftell(file);
+    if (total_left_to_move < 0) return total_left_to_move;
+
+    char move_buffer[1024];
+    unsigned long int amount_to_grow = strlen(buffer);
+    if (amount_to_grow >= sizeof(move_buffer)) return -1;
+
+    total_left_to_move -= insert_pos;
+
+    for(;;) {
+        u16 amount_to_move = sizeof(move_buffer);
+        if (total_left_to_move < amount_to_move) amount_to_move = total_left_to_move;
+
+        long int read_pos = insert_pos + total_left_to_move - amount_to_move;
+
+        seek_ret = fseek(file, read_pos, SEEK_SET);
+        if (seek_ret) return seek_ret;
+        fread(move_buffer, amount_to_move, 1, file);
+        if (ferror(file)) return ferror(file);
+
+        seek_ret = fseek(file, read_pos + amount_to_grow, SEEK_SET);
+        if (seek_ret) return seek_ret;
+        fwrite(move_buffer, amount_to_move, 1, file);
+        if (ferror(file)) return ferror(file);
+
+        total_left_to_move -= amount_to_move;
+
+        if (!total_left_to_move) break;
+
+    }
+
+    seek_ret = fseek(file, insert_pos, SEEK_SET);
+    if (seek_ret) return seek_ret;
+    fwrite(buffer, amount_to_grow, 1, file);
+    if (ferror(file)) return ferror(file);
+
+    return 0;
+}

@@ -9,14 +9,10 @@ extern char* cc_flags;
 typedef struct C_CODEGEN_DATA_STRUCT
 {
     ASTProg_T* ast;
-    ASTObj_T* current_fn;
-    ASTNode_T* current_lambda;
 
-    bool print_c;
+    bool print;
     bool silent;
-
-    char* c_file_path;
-
+    
     char* buf;
     size_t buf_len;
     FILE* code_buffer;
