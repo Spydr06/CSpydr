@@ -99,6 +99,10 @@ void remove_dead_code(ASTProg_T* ast)
                 break;
 
             case ND_CLOSURE:
+                for(size_t i = 0; i < stack_top->exprs->size; i++)
+                    list_push(node_stack, stack_top->exprs->items[i]);
+                break;
+
             case ND_LEN:
             case ND_EXPR_STMT:
                 list_push(node_stack, stack_top->expr);

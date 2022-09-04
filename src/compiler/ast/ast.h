@@ -196,6 +196,7 @@ struct AST_NODE_STRUCT
         };
         
         List_T* stmts; // block statements, list of ASTNode_Ts
+        List_T* exprs; // closures, list of ASTNode_Ts
 
         // references
         ASTObj_T* called_obj;

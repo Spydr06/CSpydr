@@ -1145,7 +1145,7 @@ static void identifier(ASTNode_T* id, va_list args)
 
 static void closure(ASTNode_T* closure, va_list args)
 {
-    closure->data_type = closure->expr->data_type;
+    closure->data_type = ((ASTNode_T*) closure->exprs->items[closure->exprs->size - 1])->data_type;
 }
 
 static void reference(ASTNode_T* ref, va_list args)
@@ -1395,7 +1395,7 @@ static void assignment_start(ASTNode_T* assign, va_list args)
 
 static ASTNode_T* expand_closure(ASTNode_T* cl)
 {
-    return cl->kind == ND_CLOSURE ? cl->expr : cl;
+    return cl->kind == ND_CLOSURE ? cl->exprs->items[cl->exprs->size - 1] : cl;
 }
 
 static void assignment_end(ASTNode_T* assign, va_list args)

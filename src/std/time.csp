@@ -80,14 +80,14 @@ namespace std {
 
         fn get_time(clk_id: Clock, ts: &TimeSpec): std::Errno {
             let r = syscall::clock_gettime(clk_id, ts);
-            if r == -Errno::NOSYS {
+            if r == -std::Errno::NOSYS {
                 if clk_id == REALTIME {
                     syscall::gettimeofday(ts, 0);
                     ts.tv_nsec *= 1000;
                     <- 0;
                 } 
                 else
-                    r = -Errno::INVAL;
+                    r = -std::Errno::INVAL;
             }
             <- r;
         }

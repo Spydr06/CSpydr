@@ -350,7 +350,7 @@ static inline bool parser_holes_enabled(Parser_T* p)
 static inline bool is_executable(ASTNode_T* n)
 {
     if(n->kind == ND_CLOSURE)
-        return is_executable(n->expr);
+        return is_executable(n->exprs->items[n->exprs->size - 1]);
     if(n->kind == ND_PIPE)
         return is_executable(n->right);
     if(n->kind == ND_TERNARY)
@@ -2362,24 +2362,20 @@ static ASTNode_T* parse_type_expr(Parser_T* p)
 
 static ASTNode_T* parse_closure(Parser_T* p)
 {
-    // if compiled to C, closures must be represented in the AST
-    if(global.ct == CT_TRANSPILE)
-    {
-        ASTNode_T* closure = init_ast_node(ND_CLOSURE, p->tok);
-        parser_consume(p, TOKEN_LPAREN, "expect `(` for closure");
-        closure->expr = parse_expr(p, LOWEST, TOKEN_RPAREN);
-        parser_consume(p, TOKEN_RPAREN, "expect `)` after closure");
+    ASTNode_T* closure = init_ast_node(ND_CLOSURE, p->tok);
+    parser_consume(p, TOKEN_LPAREN, "expect `(` to begin closure");
 
-        return closure;
-    }
-    else
-    {
-        parser_consume(p, TOKEN_LPAREN, "expect `(` for closure");
-        ASTNode_T* expr = parse_expr(p, LOWEST, TOKEN_RPAREN);
-        parser_consume(p, TOKEN_RPAREN, "expect `)` after closure");
+    closure->exprs = init_list();
+    mem_add_list(closure->exprs);
+    do {
+        list_push(closure->exprs, parse_expr(p, LOWEST, TOKEN_RPAREN));
+        if(!tok_is(p, TOKEN_RPAREN))
+            parser_consume(p, TOKEN_COMMA, "expect `)` or `,` after closure expression");
+    } while(!tok_is(p, TOKEN_EOF) && !tok_is(p, TOKEN_RPAREN));
 
-        return expr;
-    }
+    parser_consume(p, TOKEN_RPAREN, "expect `)` after closure expression");
+
+    return closure;
 }
 
 static ASTNode_T* parse_cast(Parser_T* p, ASTNode_T* left)

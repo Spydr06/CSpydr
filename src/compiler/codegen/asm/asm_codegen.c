@@ -881,7 +881,7 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
     switch(node->kind)
     {
         case ND_CLOSURE:
-            asm_gen_addr(cg, node->expr);
+            asm_gen_addr(cg, node->exprs->items[node->exprs->size - 1]);
             return;
 
         case ND_ID: 
@@ -1455,7 +1455,8 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_NOOP:
             return;
         case ND_CLOSURE:
-            asm_gen_expr(cg, node->expr);
+            for(size_t i = 0; i < node->exprs->size; i++)
+                asm_gen_expr(cg, node->exprs->items[i]);
             return;
         case ND_ASM:
             asm_print(cg, "  ");

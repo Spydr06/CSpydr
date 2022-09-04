@@ -166,7 +166,8 @@ static void ast_node(const ASTIteratorList_T* list, ASTNode_T* node, va_list cus
             break;
         
         case ND_CLOSURE:
-            ast_node(list, node->expr, custom_args);
+            for(size_t i = 0; i < node->exprs->size; i++)
+                ast_node(list, node->exprs->items[i], custom_args);
             if(node->data_type)
                 ast_type(list, node->data_type, custom_args);
             break;
