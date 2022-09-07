@@ -12,6 +12,7 @@ typedef struct C_CODEGEN_DATA_STRUCT
 
     bool print;
     bool silent;
+    u64 unique_id;
     
     char* buf;
     size_t buf_len;
