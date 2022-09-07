@@ -63,6 +63,7 @@ macro va_copy(dest, src) {
 namespace std {
     type VAList: std::va::Element;
 
+    [cfg("codegen_asm")]
     namespace va {
         type Element: struct {
             gp_offset: u32,
@@ -105,5 +106,10 @@ namespace std {
         {
             (*dest) = *src;
         }
+    }
+
+    [cfg("codegen_c")]
+    namespace va {
+        type Element: &void;
     }
 }

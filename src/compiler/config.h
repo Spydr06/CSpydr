@@ -5,6 +5,8 @@
 // basic options and settings for customizing the build of CSpydr
 //
 
+#include <stdbool.h>
+
 /////////////////////////////
 // Information and Socials //
 /////////////////////////////
@@ -69,5 +71,16 @@
 
 // use __attribute__((packed))
 #define CSPYDR_PACKED_STRUCTS
+
+////////////////////////////////////////////////////
+// language access to compiler config via [cfg()] //
+////////////////////////////////////////////////////
+
+typedef struct CONFIG_STRUCT {
+    const char* name;
+    bool (*set)(void);
+} Config_T;
+
+extern const Config_T configurations[];
 
 #endif

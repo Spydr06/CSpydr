@@ -573,6 +573,9 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, Li
         }
         throw_error(ERR_SYNTAX_ERROR, p->tok, "could not find function `%s` in current scope", value);
     }
+    else if(streq(field->value, "cfg"))
+    {   
+    }
 #ifdef CSPYDR_LINUX
     else if(streq(field->value, "cc"))
     {
@@ -638,6 +641,19 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, Li
         throw_error(ERR_SYNTAX_WARNING, field, "undefined compiler directive `%s`", field->value);
 }
 
+static bool handle_compiler_cfg(Parser_T* p, const char* field)
+{
+    for(size_t i = 0; configurations[i].name; i++)
+    {
+        const Config_T* cfg = &configurations[i];
+        if(strcmp(cfg->name, field) == 0)
+            return cfg->set();
+    }
+
+    throw_error(ERR_UNDEFINED_UNCR, p->tok, "undefined `cfg` directive `%s`", field);
+    return false;
+}
+
 static void parse_compiler_directives(Parser_T* p, List_T* obj_list)
 {
     parser_consume(p, TOKEN_LBRACKET, "expect `[` for compiler directive");
@@ -646,16 +662,33 @@ static void parse_compiler_directives(Parser_T* p, List_T* obj_list)
     parser_consume(p, TOKEN_ID, "expect compiler directive identifier");
     parser_consume(p, TOKEN_LPAREN, "expect `(` after identifier");
 
+    bool obj_after = false;
+    bool keep_obj = true;
     do {
         if(tok_is(p, TOKEN_COMMA))
             parser_advance(p);
         Token_T* tok = p->tok;
         parser_consume(p, TOKEN_STRING, "expect value as string");
-        eval_compiler_directive(p, field_token, tok->value, obj_list);
+        if(strcmp(field_token->value, "cfg") == 0)
+        {
+            obj_after = true;
+            if(!handle_compiler_cfg(p, tok->value))
+                keep_obj = false;
+        }
+        else
+            eval_compiler_directive(p, field_token, tok->value, obj_list);
     } while(tok_is(p, TOKEN_COMMA));
 
     parser_consume(p, TOKEN_RPAREN, "expect `)` after value");
     parser_consume(p, TOKEN_RBRACKET, "expect `]` after compiler directive");
+
+    if(obj_after)
+    {
+        u64 size_before = obj_list->size;
+        parse_obj(p, obj_list);
+        if(!keep_obj && size_before < obj_list->size)
+            list_pop(obj_list);
+    }
 }
 
 /////////////////////////////////
