@@ -58,8 +58,8 @@ char* gen_identifier(ASTIdentifier_T* id, const char* combiner, const char* pref
     }
     else
     {
-        new_c = calloc(strlen(id->callee) + strlen(combiner) + 1, sizeof(char));
-        strcat(new_c, combiner);
+        new_c = calloc(strlen(id->callee) + strlen(prefix) + 1, sizeof(char));
+        strcat(new_c, prefix);
         strcat(new_c, id->callee);
     }
 

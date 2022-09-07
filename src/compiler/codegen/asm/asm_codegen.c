@@ -326,7 +326,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
 
 static char* asm_gen_identifier(ASTIdentifier_T* id)
 {
-    char* str = gen_identifier(id, ".", "");
+    char* str = gen_identifier(id, ".", ".");
     mem_add_ptr(str);
     return str;
 }

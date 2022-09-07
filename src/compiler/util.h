@@ -37,6 +37,8 @@ bool is_http_url(const char* url);
 bool str_starts_with(const char *a, const char *b);
 bool str_ends_with(const char *s, const char *suffix);
 i64 align_to(i64 n, i64 align);
+char *str_replace(char *dest, const char *str1, const char *str2, const char *str3);
+u64 str_count_char(const char* s, char c);
 
 #if !defined(CSPYDR_PACKED_STRUCTS) || !defined(CSPYDR_GNU_LIBC)
     #define __attribute__(_)
