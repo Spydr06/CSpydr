@@ -128,6 +128,7 @@ static void ast_node(const ASTIteratorList_T* list, ASTNode_T* node, va_list cus
         case ND_CHAR:
         case ND_STR:
         case ND_NIL:
+        case ND_EXTERN_C_BLOCK:
             break;
         
         // x op y

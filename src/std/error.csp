@@ -184,7 +184,7 @@ namespace std {
             using __static;
             do
                 __error = none()
-            unless __error;
+            unless __error.kind;
             <- __error;
         }
 

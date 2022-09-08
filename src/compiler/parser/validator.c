@@ -106,6 +106,7 @@ static void lambda_start(ASTNode_T* lambda, va_list args);
 static void lambda_end(ASTNode_T* lambda, va_list args);
 static void string_lit(ASTNode_T* str, va_list args);
 static void char_lit(ASTNode_T* ch, va_list args);
+static void extern_c_block(ASTNode_T* block, va_list args);
 
 //types
 static void struct_type(ASTType_T* s_type, va_list args);
@@ -186,6 +187,7 @@ static const ASTIteratorList_T main_iterator_list =
         [ND_HOLE]    = hole,
         [ND_STR]  = string_lit,
         [ND_CHAR] = char_lit,
+        [ND_EXTERN_C_BLOCK] = extern_c_block,
     },
 
     .type_fns = 
@@ -773,8 +775,8 @@ retry:
     for(size_t i = 0; i < fn->args->size; i++)
     {
         ASTObj_T* arg = fn->args->items[i];
-        if(!arg->referenced && !fn->is_extern && !fn->ignore_unused)
-            throw_error(ERR_UNUSED, arg->tok, "unused function argument `%s`", arg->id->callee);
+        if(!arg->referenced && !fn->is_extern && !fn->ignore_unused && arg->id->callee[0] != '_')
+            throw_error(ERR_UNUSED, arg->tok, "unused function argument `%s`, prefix with `_` to disable this warning", arg->id->callee);
     }
 
     if(v->scope_depth == 1 && strcmp(fn->id->callee, "_start") == 0)
@@ -1051,6 +1053,12 @@ static void with_end(ASTNode_T* with, va_list args)
 static void expr_stmt(ASTNode_T* expr_stmt, va_list args)
 {
     expr_stmt->expr->result_ignored = expr_stmt->expr->kind == ND_ASSIGN;
+}
+
+static void extern_c_block(ASTNode_T* block, va_list args)
+{
+    if(global.ct != CT_TRANSPILE)
+        throw_error(ERR_SYNTAX_ERROR_UNCR, block->tok, "`extern \"C\"` statements are only supported with the C transpiler backend.\nUse `-t` to use this backend.");
 }
 
 // expressions
@@ -1587,6 +1595,7 @@ static void hole(ASTNode_T* hole, va_list args)
         throw_error(ERR_TYPE_ERROR_UNCR, hole->tok, "cannot resolve data type of pipe input expression");
     hole->data_type = v->current_pipe->left->data_type;
     hole->referenced_obj = v->current_pipe->left->referenced_obj;
+    hole->expr = v->current_pipe;
 }
 
 static void lambda_start(ASTNode_T* lambda, va_list args)

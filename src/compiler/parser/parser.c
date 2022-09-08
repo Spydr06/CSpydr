@@ -1516,8 +1516,10 @@ static ASTNode_T* parse_expr_stmt(Parser_T* p, bool needs_semicolon)
     ASTNode_T* stmt = init_ast_node(ND_EXPR_STMT, p->tok);
     stmt->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
 
-    if(!is_executable(stmt->expr))
+    if(!is_executable(stmt->expr)) {
+        printf("%d\n", stmt->expr->kind);
         throw_error(ERR_SYNTAX_ERROR, stmt->expr->tok, "cannot treat `%s` as a statement, expect function call, assignment or similar", stmt->expr->tok->value);
+    }
     if(needs_semicolon)
         parser_consume(p, TOKEN_SEMICOLON, "expect `;` after expression statement");
     return stmt;
@@ -1708,6 +1710,26 @@ static ASTNode_T* parse_using(Parser_T* p, bool needs_semicolon)
     return using;
 }
 
+static ASTNode_T* parse_extern_c_block(Parser_T* p, bool needs_semicolon)
+{
+    ASTNode_T* extern_block = init_ast_node(ND_EXTERN_C_BLOCK, p->tok);
+    parser_advance(p);
+
+    if(!tok_is(p, TOKEN_STRING))
+        throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect string literal", p->tok->value);
+    if(!streq(p->tok->value, "c") && !streq(p->tok->value, "C"))
+        throw_error(ERR_UNDEFINED, p->tok, "undefined `extern` mode `\"%s\"`, expect`\"C\"`", p->tok->value);
+    parser_advance(p);
+
+    parser_consume(p, TOKEN_LPAREN, "expect `(` after `extern \"C\"`");
+    extern_block->body = parse_str_lit(p, true);
+    parser_consume(p, TOKEN_RPAREN, "expect `)` after `extern \"C\" (\"...\"`");
+
+    parser_consume(p, TOKEN_SEMICOLON, "expect `;` after `extern \"C\"` block");
+
+    return extern_block;
+}
+
 static ASTNode_T* parse_stmt(Parser_T* p, bool needs_semicolon)
 {
 
@@ -1766,6 +1788,8 @@ static ASTNode_T* parse_stmt(Parser_T* p, bool needs_semicolon)
                 }
                 return noop;
             }
+        case TOKEN_EXTERN:
+            return parse_extern_c_block(p, needs_semicolon);
         default:
             return parse_expr_stmt(p, needs_semicolon);
     }

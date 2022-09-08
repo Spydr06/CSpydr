@@ -56,7 +56,7 @@ namespace std {
     namespace memory {
         let unfreed_allocs: u64 = 0;
 
-        const MMAP_FAILED: &void = -1;
+        const MMAP_FAILED: &void = (-1): &void;
         
         # TODO: implement correct values
         const IPC_CREAT: i32 = 0;

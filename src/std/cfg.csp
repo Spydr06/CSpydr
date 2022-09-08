@@ -1,0 +1,64 @@
+namespace std {
+    type Platform: enum {
+        LINUX,
+        WINDOWS,
+        MACOS
+    };
+
+    type Codegen: enum {
+        ASSEMBLY,
+        C
+    };
+
+    namespace cfg {
+        [cfg("linux")]
+        fn platform(): std::Platform {
+            <- std::Platform::LINUX;
+        }
+
+        [cfg("linux")]
+        fn platform_str(): &const char {
+            <- "linux";
+        }
+        
+        [cfg("windows")]
+        fn platform_str(): &const char {
+            <- "windows";
+        }
+
+        [cfg("windows")]
+        fn platform(): std::Platform {
+            <- std::Platform::WINDOWS;
+        }
+
+        [cfg("macos")]
+        fn platform_str(): &const char {
+            <- "macos";
+        }
+
+        [cfg("macos")]
+        fn platform(): std::Platform {
+            <- std::Platform::MACOS;
+        }
+
+        [cfg("codegen_asm")]
+        fn codegen(): std::Codegen {
+            <- std::Codegen::ASSEMBLY;
+        }
+
+        [cfg("codegen_asm")]
+        fn codegen_str(): &const char {
+            <- "asm";
+        }
+
+        [cfg("codegen_c")]
+        fn codegen(): std::Codegen {
+            <- std::Codegen::C;
+        }
+
+        [cfg("codegen_c")]
+        fn codegen_str(): &const char {
+            <- "c_codegen";
+        }
+    }
+}

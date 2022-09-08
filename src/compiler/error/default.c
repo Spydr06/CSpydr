@@ -20,6 +20,14 @@ static void print_current_fn(void) {
 
 void default_error_handler(ErrorType_T ty, Token_T* tok, const char* format, va_list args, bool is_error, const char* error_str)
 {
+    if(!tok)
+    {
+        LOG_ERROR(COLOR_BOLD_RED "[Error] " COLOR_RESET COLOR_RED);
+        fprintf(ERR_OUTPUT_STREAM,"%s", format);
+        LOG_ERROR("\n");
+        return;
+    }
+
     const char err_tmp1[] = COLOR_BOLD_WHITE "%s:%ld:%ld"    // file, line and character
                             COLOR_RESET " => %s[%s]"         // type of the error
                             COLOR_RESET ": ";                // before the error message

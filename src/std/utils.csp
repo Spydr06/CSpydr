@@ -1,4 +1,5 @@
 import "memory.csp";
+import "cfg.csp";
 
 macro ptr(x) {
     ((x): &void)
@@ -48,23 +49,20 @@ macro set_bit(v, p, x) {
 }
 
 macro va_arg(ap, ty) {
-    (*((if type::reg_class(ty) == 0
-            => ::std::va::__gp((ap), sizeof (ty), alignof (ty))
-        else if type::reg_class(ty) == 1
-            => ::std::va::__fp((ap), sizeof (ty), alignof (ty))
-        else ::std::va::__mem((ap), sizeof (ty), alignof (ty))
-    ): &(ty)))
+    (*(::std::va::get((ap), sizeof (ty), alignof (ty), type::reg_class(ty)): &(ty)))
 }
 
 macro va_copy(dest, src) {
     (::std::va::copy((dest), (src)))
 }
 
+macro C_VA_ARGS_SIZE { 24 }
+
 namespace std {
     type VAList: std::va::Element;
 
-    [cfg("codegen_asm")]
     namespace va {
+        [cfg("codegen_asm")]
         type Element: struct {
             gp_offset: u32,
             fp_offset: u32,
@@ -72,6 +70,7 @@ namespace std {
             reg_save_area: &void
         };
 
+        [cfg("codegen_asm")]
         fn __mem(ap: &Element, size: i32, align: i32): &void
         {
             let p: &void = ap.overflow_arg_area;
@@ -82,6 +81,7 @@ namespace std {
             <- p;
         }
 
+        [cfg("codegen_asm")]
         fn __gp(ap: &Element, size: i32, align: i32): &void
         {
             if ap.gp_offset >= 48
@@ -92,6 +92,7 @@ namespace std {
             <- r;
         }
 
+        [cfg("codegen_asm")]
         fn __fp(ap: &Element, size: i32, align: i32): &void
         {
             if ap.fp_offset >= 112
@@ -102,14 +103,97 @@ namespace std {
             <- r;
         }
 
+        [cfg("codegen_asm")]
         fn copy(dest: &Element, src: &Element)
         {
             (*dest) = *src;
         }
+
+        [cfg("codegen_asm")]
+        fn get(ap: &Element, size: i32, align: i32, reg_class: i32): &void
+        {
+            match reg_class {
+                0 => ret __gp(ap, size, align);
+                1 => ret __fp(ap, size, align);
+                _ => ret __mem(ap, size, align);
+            }
+        }
     }
 
-    [cfg("codegen_c")]
     namespace va {
-        type Element: &void;
+        [cfg("codegen_c")]
+        type Element: struct {
+            __data: u8[C_VA_ARGS_SIZE!]
+        };
+
+        [cfg("codegen_c")]
+        namespace __static {
+            let integer64: u64 = 0;
+            let float32: f32 = 0;
+            let float64: f64 = 0;
+            let float80: f80 = 0;
+        }
+
+        fn __gp(_ap: &Element, size: i32): &void
+        {
+            if size <= 4 {
+                extern "C"(
+                    "__csp_std_va___static_integer64 = va_arg(*(va_list*)__csp__ap, int);"
+                );
+            }
+            else {
+                extern "C"(
+                    "__csp_std_va___static_integer64 = va_arg(*(va_list*)__csp__ap, long);"
+                );
+            }
+
+            <- &__static::integer64;
+        }
+
+        fn __fp(_ap: &Element, size: i32): &void
+        {
+            match size {
+                sizeof f32 => {
+                    extern "C"(
+                        "__csp_std_va___static_float32 = (float) va_arg(*(va_list*)__csp__ap, double);"
+                    );
+                    <- &__static::float32;
+                }
+                sizeof f64 => {
+                    extern "C"(
+                        "__csp_std_va___static_float64 = va_arg(*(va_list*)__csp__ap, double);"
+                    );
+                    <- &__static::float64;
+                }
+                sizeof f80 => {
+                    extern "C"(
+                        "__csp_std_va___static_float80 = va_arg(*(va_list*)__csp__ap, long double);"
+                    );
+                    <- &__static::float80;
+                }
+                _ => ret nil;
+            }
+        }
+
+        fn __mem(_ap: &Element, _size: i32): &void
+        {
+            <- nil;
+        }
+
+        [cfg("codegen_c")]
+        fn get(ap: &Element, size: i32, _align: i32, reg_class: i32): &void
+        {
+            match reg_class {
+                0 => ret __gp(ap, size);
+                1 => ret __fp(ap, size);
+                _ => ret __mem(ap, size);
+            }
+        }
+
+        [cfg("codegen_c")]
+        fn copy(dest: &Element, src: &Element)
+        {
+            (*dest) = *src;
+        }
     }
 }

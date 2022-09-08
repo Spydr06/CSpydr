@@ -278,6 +278,7 @@ enum CSPYDR_AST_NODE_KIND_ENUM {
     CSPYDR_ND_WITH,          // with x = y {}
     CSPYDR_ND_STRUCT_MEMBER, // struct members
     CSPYDR_ND_DEFER,         // defer {}
+    CSPYDR_ND_EXTERN_C_BLOCK, // extern "C" {}
 
     CSPYDR_ND_ASM, // inline assembly
 

@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <inttypes.h>
 
 #include <codegen/asm/asm_codegen.h>
 #include <config.h>
@@ -13,6 +14,7 @@
 #include <io/io.h>
 #include "../codegen_utils.h"
 #include "ast/ast.h"
+#include "ast/ast_iterator.h"
 #include "error/error.h"
 #include "hashmap.h"
 #include "keywords.h"
@@ -23,8 +25,11 @@
 
 #define ID_PREFIX  "__csp_"
 #define MAIN_FN_ID ID_PREFIX "main"
+#define UNIQUE_ID_FMT "_unique_id_%04" PRIx64
 
 #define C_NUM_REGISTERS REG_RFLAGS
+
+#define GET_CG(args) CCodegenData_T* cg = va_arg(args, CCodegenData_T*)
 
 static void c_gen_typedefs(CCodegenData_T* cg, List_T* objs);
 static void c_gen_structs(CCodegenData_T* cg, List_T* objs);
@@ -36,6 +41,7 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* stmt);
 static void c_gen_type(CCodegenData_T* cg, ASTType_T* type);
 static void c_gen_typed_name(CCodegenData_T* cg, ASTIdentifier_T* id, ASTType_T* type);
 static void c_predefine_dependant_types(CCodegenData_T* cg, ASTType_T* type);
+static void c_gen_pipe_buffers(CCodegenData_T* cg);
 
 char* cc = DEFAULT_CC;
 char* cc_flags = DEFAULT_CC_FLAGS;
@@ -240,6 +246,7 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
 
     // generate the c code
     c_print(cg, "%s", c_header_text);
+    c_gen_pipe_buffers(cg);
     c_gen_typedefs(cg, cg->ast->objs);
     c_gen_structs(cg, cg->ast->objs);
     c_gen_globals(cg, cg->ast->objs);
@@ -466,19 +473,19 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* type)
     }
 }
 
-static void c_gen_typed_name(CCodegenData_T* cg, ASTIdentifier_T* id, ASTType_T* type)
+static void c_gen_typed_name_str(CCodegenData_T* cg, const char* id, ASTType_T* type)
 {
     switch(type->kind)
     {
         case TY_C_ARRAY:
             c_gen_type(cg, type->base);
             c_putc(cg, ' ');
-            c_print(cg, "%s", c_gen_identifier(id));
+            c_print(cg, "%s", id);
             c_print(cg, "[%lu]", type->num_indices);
             break;
         case TY_FN:
             c_gen_type(cg, type->base);
-            c_print(cg, "(*%s)(", c_gen_identifier(id));
+            c_print(cg, "(*%s)(", id);
             for(size_t i = 0; i < type->arg_types->size; i++)
             {
                 c_gen_type(cg, type->arg_types->items[i]);
@@ -490,9 +497,14 @@ static void c_gen_typed_name(CCodegenData_T* cg, ASTIdentifier_T* id, ASTType_T*
         default:
             c_gen_type(cg, type);
             c_putc(cg, ' ');
-            c_print(cg, "%s", c_gen_identifier(id));
+            c_print(cg, "%s", id);
             break;
     }
+}
+
+static inline void c_gen_typed_name(CCodegenData_T* cg, ASTIdentifier_T* id, ASTType_T* type)
+{
+    c_gen_typed_name_str(cg, c_gen_identifier(id), type);
 }
 
 static void c_gen_globals(CCodegenData_T* cg, List_T* objs)
@@ -595,7 +607,26 @@ static void c_gen_function(CCodegenData_T* cg, ASTObj_T* fn)
 {
     c_gen_function_declaration(cg, fn);
     c_println(cg, "{");
-    c_gen_stmt(cg, fn->body);
+
+    if(fn->va_area)
+    {
+        char* ap_id = c_gen_identifier(fn->va_area->id);
+
+        if(fn->args->size == 0)
+            throw_error(ERR_CODEGEN, fn->va_area->tok, "cannot have variadic function without at least one argument");
+        
+        ASTObj_T* last_arg = fn->args->items[fn->args->size - 1];
+        char* param_id = c_gen_identifier(last_arg->id);
+
+        c_println(cg, "va_list %s;\nva_start(%s, %s);", ap_id, ap_id, param_id);
+
+        c_gen_stmt(cg, fn->body);
+
+        c_println(cg, "va_end(%s);", ap_id);
+    }
+    else
+        c_gen_stmt(cg, fn->body);
+    
     c_println(cg, "}");
 }   
 
@@ -650,7 +681,7 @@ static char* c_detect_registers(CCodegenData_T* cg, const char* str, bool used_r
         }
     }
 
-    char* copy = calloc(strlen(str) + num_percent, sizeof(char));
+    char* copy = calloc(strlen(str) + num_percent + 1, sizeof(char));
     strcpy(copy, str);
 
     str_replace(copy, str, "%", "%%");
@@ -943,6 +974,16 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             c_gen_expr(cg, node->else_branch);
             c_putc(cg, ')');
             break;
+        case ND_PIPE:
+            c_print(cg, "(" UNIQUE_ID_FMT "=(", node->long_val);
+            c_gen_expr(cg, node->left);
+            c_print(cg, "),(");
+            c_gen_expr(cg, node->right);
+            c_print(cg, "))");
+            break;
+        case ND_HOLE:
+            c_print(cg, UNIQUE_ID_FMT, node->expr->long_val);
+            break;
 
         default:
             LOG_ERROR_F("expr gen for %d unimplemented.\n", node->kind);
@@ -950,9 +991,9 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
     }
 }
 
-static void c_init_zero(CCodegenData_T* cg, ASTObj_T* var)
+static void c_init_zero(CCodegenData_T* cg, ASTType_T* ty)
 {
-    switch(unpack(var->data_type)->kind)
+    switch(unpack(ty)->kind)
     {
     case TY_U8:
     case TY_I8:
@@ -989,13 +1030,39 @@ static void c_init_zero(CCodegenData_T* cg, ASTObj_T* var)
     }
 }
 
+static void c_gen_pipe_buffer(ASTNode_T* node, va_list custom_args)
+{
+    GET_CG(custom_args);
+
+    u64 uid = node->long_val = cg->unique_id++;
+
+    char unique_name[128] = {0};
+    sprintf(unique_name, UNIQUE_ID_FMT, uid);
+
+    c_gen_typed_name_str(cg, unique_name, node->left->data_type);
+    c_putc(cg, '=');
+    c_init_zero(cg, node->left->data_type);
+    c_println(cg, ";");
+}
+
+static void c_gen_pipe_buffers(CCodegenData_T* cg)
+{
+   ASTIteratorList_T iter = {
+       .node_end_fns = {
+           [ND_PIPE] = c_gen_pipe_buffer
+       }
+   };
+
+   ast_iterate(&iter, cg->ast, cg);
+}
+
 static void c_gen_local(CCodegenData_T* cg, ASTObj_T* var)
 {
     c_gen_typed_name(cg, var->id, var->data_type);
     if(!var->value)
     {
         c_putc(cg, '=');
-        c_init_zero(cg, var);
+        c_init_zero(cg, var->data_type);
     }
     c_println(cg, ";");
 }
@@ -1094,6 +1161,17 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
         break;
     
     case ND_FOR:    
+        if(node->locals->size > 0)
+        {
+            c_println(cg, "{");
+            for(size_t i = 0; i < node->locals->size; i++)
+            {
+                ASTObj_T* var = node->locals->items[i];
+                c_gen_typed_name(cg, var->id, var->data_type);
+                c_println(cg, ";");
+            }
+        }
+
         c_print(cg, "for(");
         
         if(node->init_stmt)
@@ -1113,16 +1191,19 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
         c_println(cg, "){");
         c_gen_stmt(cg, node->body);
         c_println(cg, "}");
+
+        if(node->locals->size > 0)
+            c_println(cg, "}");
         break;
 
     case ND_FOR_RANGE:
     {
         u64 low_id = cg->unique_id++, high_id = cg->unique_id++;
-        c_print(cg, "for(%s _unique_id_%04lux = ", c_primitive_types[TY_U64], low_id);
+        c_print(cg, "for(%s " UNIQUE_ID_FMT " = ", c_primitive_types[TY_U64], low_id);
         c_gen_expr(cg, node->left);
-        c_print(cg, ", _unique_id_%04lux = (%s)", high_id, c_primitive_types[TY_U64]);
+        c_print(cg, ", " UNIQUE_ID_FMT " = (%s)", high_id, c_primitive_types[TY_U64]);
         c_gen_expr(cg, node->right);
-        c_println(cg, "; _unique_id_%04lux < _unique_id_%04lux; _unique_id_%04lux++){", low_id, high_id, low_id);
+        c_println(cg, "; " UNIQUE_ID_FMT " < " UNIQUE_ID_FMT "; " UNIQUE_ID_FMT "++){", low_id, high_id, low_id);
         c_gen_stmt(cg, node->body);
         c_println(cg, "}");
     } break;
@@ -1130,14 +1211,14 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
     case ND_MATCH:
     {
         u64 uid = cg->unique_id;
-        c_print(cg, "{\n%s _unique_id_%04lux =", c_primitive_types[TY_U64], uid);
+        c_print(cg, "{\n%s " UNIQUE_ID_FMT " =", c_primitive_types[TY_U64], uid);
         c_gen_expr(cg, node->condition);
         c_println(cg, ";");
         
         for(size_t i = 0; i < node->cases->size; i++)
         {
             ASTNode_T* _case = node->cases->items[i];
-            c_print(cg, "%sif(_unique_id_%04lux == (", i == 0 ? "" : "else ", uid);
+            c_print(cg, "%sif(" UNIQUE_ID_FMT " == (", i == 0 ? "" : "else ", uid);
             c_gen_expr(cg, _case->condition);
             c_println(cg, ")){");
             c_gen_stmt(cg, _case->body);
@@ -1156,7 +1237,12 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
 
     case ND_WITH:
     {
-        c_gen_expr(cg, node->condition);
+        c_println(cg, "{");
+        c_gen_typed_name(cg, node->obj->id, node->obj->data_type);
+        c_putc(cg, '=');
+        c_gen_expr(cg, node->condition->right);
+        c_println(cg, ";");
+
         c_print(cg, ";\nif((");
         c_gen_expr(cg, node->condition->left);
         c_println(cg, ") != 0){");
@@ -1168,8 +1254,12 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
             c_gen_stmt(cg, node->else_branch);
         }
 
-        c_println(cg, "}");
+        c_println(cg, "}}");
     } break;
+
+    case ND_EXTERN_C_BLOCK:
+        c_println(cg, "%s", node->body->str_val);
+        break;
 
     case ND_NOOP:
         break;
