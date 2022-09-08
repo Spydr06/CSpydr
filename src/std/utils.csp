@@ -134,6 +134,7 @@ namespace std {
             let float80: f80 = 0;
         }
 
+        [cfg("codegen_c")]
         fn __gp(_ap: &Element, size: i32): &void
         {
             if size <= 4 {
@@ -150,6 +151,7 @@ namespace std {
             <- &__static::integer64;
         }
 
+        [cfg("codegen_c")]
         fn __fp(_ap: &Element, size: i32): &void
         {
             match size {
@@ -175,6 +177,7 @@ namespace std {
             }
         }
 
+        [cfg("codegen_c")]
         fn __mem(_ap: &Element, _size: i32): &void
         {
             <- nil;

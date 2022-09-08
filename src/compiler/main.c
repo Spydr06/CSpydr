@@ -277,9 +277,6 @@ i32 main(i32 argc, char* argv[])
             evaluate_info_flags(argv[i]);
     }
 
-    if(global.ct == CT_TRANSPILE)
-        LOG_WARN(COLOR_BOLD_YELLOW "[Warning]" COLOR_RESET COLOR_YELLOW " Compilation mode `transpile` is deprecated and will get removed eventually\n");
-
     compile(input_file, output_file, action);
 
     if(global.timer_enabled) {
