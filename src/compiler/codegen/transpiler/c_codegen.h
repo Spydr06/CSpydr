@@ -13,7 +13,9 @@ typedef struct C_CODEGEN_DATA_STRUCT
     bool print;
     bool silent;
     u64 unique_id;
-    ASTNode_T* current_block;
+    
+    HashMap_T* arrays;
+    List_T* blocks;
 
     char* buf;
     size_t buf_len;

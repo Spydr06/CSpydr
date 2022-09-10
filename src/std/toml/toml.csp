@@ -22,7 +22,7 @@ PORT OF THE TOMLC99 LIBRARY TO CSPYDR
   SOFTWARE.
 ]#
 
-[cc("-c toml.c -o toml.o -O2 -fPIC")]
+[cc("-c toml.c -o toml.o -O2 -fPIC -std=c99")]
 [link_obj("toml.o")]
 
 import "std.csp";

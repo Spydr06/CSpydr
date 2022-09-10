@@ -31,7 +31,6 @@ struct HASHMAP_STRUCT
 static inline size_t hashmap_calc_size(HashMap_T* map);
 static inline void hashmap_rehash(HashMap_T* map, size_t size);
 static inline HashPair_T* hashmap_find_pair(HashMap_T* map, char* key, bool find_empty);
-static inline size_t hashmap_default_hash(char* data);
 
 static size_t (*HASHMAP_HASH_FUNCTION)(char*) = hashmap_default_hash;
 
@@ -155,7 +154,7 @@ static inline void hashmap_rehash(HashMap_T* map, size_t size)
  * This is an implementation of the well-documented Jenkins one-at-a-time
  * hash function. See https://en.wikipedia.org/wiki/Jenkins_hash_function
  */
-static inline size_t hashmap_default_hash(char* data)
+size_t hashmap_default_hash(char* data)
 {
     size_t len = strlen(data);
     const u8* byte = (const u8*) data;
