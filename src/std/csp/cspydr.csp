@@ -1,4 +1,4 @@
-#[]
+#[
     LIBCSPC API HEADERS
     
     Copyright (c) 2021 - 2022 Spydr06
@@ -228,6 +228,8 @@ namespace cspydr {
         USING,
         WITH,
         STRUCT_MEMBER,
+        DEFER,
+        EXTERN_C_BLOCK,
         ASM,
         KIND_LEN
     };
