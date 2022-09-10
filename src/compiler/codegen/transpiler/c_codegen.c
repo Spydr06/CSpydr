@@ -247,10 +247,10 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
 
     // generate the c code
     c_print(cg, "%s", c_header_text);
-    c_gen_pipe_buffers(cg);
     c_gen_typedefs(cg, cg->ast->objs);
     c_gen_structs(cg, cg->ast->objs);
     c_gen_globals(cg, cg->ast->objs);
+    c_gen_pipe_buffers(cg);
     c_gen_function_definitions(cg, cg->ast->objs);
     c_gen_functions(cg, cg->ast->objs);
     c_println(cg, "%s", c_start_text[cg->ast->mfk]);
@@ -282,7 +282,7 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
             c_source_file,
             "-nostdlib",
             "-ffreestanding",
-            "-std=c2x",
+            "-std=c99",
             "-o",
             obj_file,
             NULL,
@@ -379,21 +379,43 @@ static void c_gen_struct(CCodegenData_T* cg, ASTType_T* type, const char* name)
     c_putc(cg, '}');
 }
 
+static void c_predefine_struct(CCodegenData_T* cg, ASTType_T* type)
+{
+    switch(type->kind)
+    {
+    case TY_ARRAY:
+    case TY_PTR:
+    case TY_VLA:
+        c_predefine_struct(cg, type->base);
+        break;
+    
+    case TY_FN:
+        for(size_t i = 0; i < type->arg_types->size; i++)
+            c_predefine_struct(cg, type->arg_types->items[i]);
+        c_predefine_struct(cg, type->base);
+        break;
+
+    case TY_UNDEF:
+        if(type->referenced_obj && type->referenced_obj->generated && type->base->kind == TY_STRUCT)
+        {
+            type->referenced_obj->generated = false;
+            c_gen_struct(cg, type->base, c_gen_identifier(type->id));
+            c_println(cg, ";");
+        }
+        break;
+
+    default:
+        break;
+    }
+}
+
 static void c_predefine_dependant_structs(CCodegenData_T* cg, ASTObj_T* obj)
 {
     ASTType_T* s_type = obj->data_type;
     for(size_t i = 0; i < s_type->members->size; i++)
     {
         ASTNode_T* member = s_type->members->items[i];
-        if(member->data_type->kind == TY_UNDEF && 
-            member->data_type->referenced_obj && 
-            member->data_type->referenced_obj->generated &&
-            member->data_type->base->kind == TY_STRUCT)
-        {
-            member->data_type->referenced_obj->generated = false;
-            c_gen_struct(cg, member->data_type->base, c_gen_identifier(member->data_type->id));
-            c_println(cg, ";");
-        }
+        c_predefine_struct(cg, member->data_type);
     }
 }
 
@@ -438,6 +460,11 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* type)
     case TY_PTR:
         c_gen_type(cg, type->base);
         c_putc(cg, '*');
+        break;
+    case TY_VLA:
+        c_print(cg, "struct { uint64_t __s; ");
+        c_gen_type(cg, type->base);
+        c_print(cg, " __v[]; }*");
         break;
     case TY_ARRAY:
         c_print(cg, "struct { uint64_t __s; ");
@@ -592,7 +619,7 @@ static void c_gen_function_definitions(CCodegenData_T* cg, List_T* objs)
         case OBJ_NAMESPACE:
             c_gen_function_definitions(cg, obj->objs);
             break;
-        case CSPYDR_OBJ_FUNCTION:
+        case OBJ_FUNCTION:
             if(!should_emit(obj))
                 continue;
             c_gen_function_declaration(cg, obj);
@@ -642,7 +669,7 @@ static void c_gen_functions(CCodegenData_T* cg, List_T* objs)
             c_gen_functions(cg, obj->objs);
             break;
         
-        case CSPYDR_OBJ_FUNCTION:
+        case OBJ_FUNCTION:
             if(obj->is_extern || !should_emit(obj))
                 continue;
             c_gen_function(cg, obj);
@@ -1073,7 +1100,11 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
     switch(node->kind)
     {
     case ND_BLOCK:
+    {
+        ASTNode_T* prev_block = cg->current_block;
+        cg->current_block = node;
         c_println(cg, "{");
+
         for(size_t i = 0; i < node->locals->size; i++)
         {
             ASTObj_T* local = node->locals->items[i];
@@ -1087,7 +1118,8 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
         }
 
         c_println(cg, "}");
-        break;
+        cg->current_block = prev_block;
+    } break;
 
     case ND_IF:
         c_print(cg, "if(");

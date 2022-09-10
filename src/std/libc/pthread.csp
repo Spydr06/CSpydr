@@ -62,7 +62,7 @@ namespace libc {
         __u: union {
             __i: i32 'c[10],
             __vi: i32 'c[10],
-            __p: &void 'c[5]
+            __p: (&void) 'c[5]
         }
     };
 
@@ -74,7 +74,7 @@ namespace libc {
         __u: union {
             __i: i32 'c[12],
             __vi: i32 'c[12],
-            __p: &void 'c[12 * sizeof i32 / sizeof &void]
+            __p: (&void) 'c[12 * sizeof i32 / sizeof &void]
         }
     };
 
@@ -86,7 +86,7 @@ namespace libc {
         __u: union {
             __i: i32 'c[14],
             __vi: i32 'c[14],
-            __p: &void 'c[7]
+            __p: (&void) 'c[7]
         }
     };
 

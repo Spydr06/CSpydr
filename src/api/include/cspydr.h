@@ -33,6 +33,13 @@ typedef struct CSPYDR_COMPILER_STRUCT CSpydrCompiler_T;
 extern CSpydrCompiler_T* csp_init_compiler();
 extern void csp_free_compiler(CSpydrCompiler_T* compiler);
 
+#ifdef __CSPYDR_INTERNAL_USE
+// Internal use only!
+#define CSPYDR_COMPILER_STATUS CompilerStatus_T
+#else
+#define CSPYDR_COMPILER_STATUS CSpydrCompilerStatus_T
+#endif
+
 typedef enum {
     COMPILER_NONE = 0,
     COMPILER_INIT,
@@ -40,138 +47,147 @@ typedef enum {
     COMPILER_OPTIMIZED,
     COMPILER_GENERATED,
     COMPILER_EXECUTED
-} CompilerStatus_T;
+} CSPYDR_COMPILER_STATUS;
 
-extern CompilerStatus_T csp_get_status(CSpydrCompiler_T* compiler);
-const char* csp_status_str(CompilerStatus_T status);
+extern CSPYDR_COMPILER_STATUS csp_get_status(CSpydrCompiler_T* compiler);
+const char* csp_status_str(CSPYDR_COMPILER_STATUS status);
+
+#ifdef __CSPYDR_INTERNAL_USE
+// Internal use only!
+#define CSPYDR_TOKEN(name) \
+    TOKEN_##name
+#else
+#define CSPYDR_TOKEN(name) \
+    CSPYDR_TOKEN_##name
+#endif
 
 enum CSPYDR_TOKEN_TYPE {
-    CSPYDR_TOKEN_ID,           // names, types, etc.
-    CSPYDR_TOKEN_MACRO_CALL,   // foo!
-    CSPYDR_TOKEN_INFIX_CALL,   // `
+    CSPYDR_TOKEN(ID),           // names, types, etc.
+    CSPYDR_TOKEN(MACRO_CALL),   // foo!
+    CSPYDR_TOKEN(INFIX_CALL),   // `
 
-    CSPYDR_TOKEN_INT,          // 0, 3, 5, etc.
-    CSPYDR_TOKEN_FLOAT,        // 4.2, 3.14, etc.
-    CSPYDR_TOKEN_CHAR,         // 'f'
-    CSPYDR_TOKEN_STRING,       // "foo"
+    CSPYDR_TOKEN(INT),          // 0, 3, 5, etc.
+    CSPYDR_TOKEN(FLOAT),        // 4.2, 3.14, etc.
+    CSPYDR_TOKEN(CHAR),         // 'f'
+    CSPYDR_TOKEN(STRING),       // "foo"
 
-    CSPYDR_TOKEN_TRUE,         // true
-    CSPYDR_TOKEN_FALSE,        // false
-    CSPYDR_TOKEN_NIL,          // nil
+    CSPYDR_TOKEN(TRUE),         // true
+    CSPYDR_TOKEN(FALSE),        // false
+    CSPYDR_TOKEN(NIL),          // nil
 
-    CSPYDR_TOKEN_LPAREN,       // (
-    CSPYDR_TOKEN_RPAREN,       // )
-    CSPYDR_TOKEN_LBRACE,       // {
-    CSPYDR_TOKEN_RBRACE,       // }
-    CSPYDR_TOKEN_LBRACKET,     // [
-    CSPYDR_TOKEN_RBRACKET,     // ]
+    CSPYDR_TOKEN(LPAREN),       // (
+    CSPYDR_TOKEN(RPAREN),       // )
+    CSPYDR_TOKEN(LBRACE),       // {
+    CSPYDR_TOKEN(RBRACE),       // }
+    CSPYDR_TOKEN(LBRACKET),     // [
+    CSPYDR_TOKEN(RBRACKET),     // ]
 
-    CSPYDR_TOKEN_GT,           // >
-    CSPYDR_TOKEN_LT,           // <
-    CSPYDR_TOKEN_EQ,           // ==
-    CSPYDR_TOKEN_NOT_EQ,       // !=
-    CSPYDR_TOKEN_GT_EQ,        // >=
-    CSPYDR_TOKEN_LT_EQ,        // <=
-    CSPYDR_TOKEN_BANG,         // !
+    CSPYDR_TOKEN(GT),           // >
+    CSPYDR_TOKEN(LT),           // <
+    CSPYDR_TOKEN(EQ),           // ==
+    CSPYDR_TOKEN(NOT_EQ),       // !=
+    CSPYDR_TOKEN(GT_EQ),        // >=
+    CSPYDR_TOKEN(LT_EQ),        // <=
+    CSPYDR_TOKEN(BANG),         // !
 
-    CSPYDR_TOKEN_PLUS,         // +
-    CSPYDR_TOKEN_MINUS,        // -
-    CSPYDR_TOKEN_STAR,         // *
-    CSPYDR_TOKEN_SLASH,        // /
-    CSPYDR_TOKEN_PERCENT,      // %
-    CSPYDR_TOKEN_ARROW,        // =>
-    CSPYDR_TOKEN_AND,          // &&
-    CSPYDR_TOKEN_OR,           // ||
-    CSPYDR_TOKEN_BIT_OR,       // |
-    CSPYDR_TOKEN_PIPE,         // |>
-    CSPYDR_TOKEN_REF,          // &
-    CSPYDR_TOKEN_TILDE,        // ~
-    CSPYDR_TOKEN_RANGE,        // ..
-    CSPYDR_TOKEN_VA_LIST,      // ...
+    CSPYDR_TOKEN(PLUS),         // +
+    CSPYDR_TOKEN(MINUS),        // -
+    CSPYDR_TOKEN(STAR),         // *
+    CSPYDR_TOKEN(SLASH),        // /
+    CSPYDR_TOKEN(PERCENT),      // %
+    CSPYDR_TOKEN(ARROW),        // =>
+    CSPYDR_TOKEN(AND),          // &&
+    CSPYDR_TOKEN(OR),           // ||
+    CSPYDR_TOKEN(BIT_OR),       // |
+    CSPYDR_TOKEN(PIPE),         // |>
+    CSPYDR_TOKEN(REF),          // &
+    CSPYDR_TOKEN(TILDE),        // ~
+    CSPYDR_TOKEN(RANGE),        // ..
+    CSPYDR_TOKEN(VA_LIST),      // ...
 
-    CSPYDR_TOKEN_INC,          // ++
-    CSPYDR_TOKEN_DEC,          // --
+    CSPYDR_TOKEN(INC),          // ++
+    CSPYDR_TOKEN(DEC),          // --
 
-    CSPYDR_TOKEN_ASSIGN,       // =
-    CSPYDR_TOKEN_ADD,          // +=
-    CSPYDR_TOKEN_SUB,          // -=
-    CSPYDR_TOKEN_MULT,         // *=
-    CSPYDR_TOKEN_DIV,          // /=
-    CSPYDR_TOKEN_MOD,          // %=
+    CSPYDR_TOKEN(ASSIGN),       // =
+    CSPYDR_TOKEN(ADD),          // +=
+    CSPYDR_TOKEN(SUB),          // -=
+    CSPYDR_TOKEN(MULT),         // *=
+    CSPYDR_TOKEN(DIV),          // /=
+    CSPYDR_TOKEN(MOD),          // %=
 
-    CSPYDR_TOKEN_XOR,          // ^
-    CSPYDR_TOKEN_XOR_ASSIGN,   // ^=
-    CSPYDR_TOKEN_LSHIFT,       // <<
-    CSPYDR_TOKEN_RSHIFT,       // >>
+    CSPYDR_TOKEN(XOR),          // ^
+    CSPYDR_TOKEN(XOR_ASSIGN),   // ^=
+    CSPYDR_TOKEN(LSHIFT),       // <<
+    CSPYDR_TOKEN(RSHIFT),       // >>
     
-    CSPYDR_TOKEN_LSHIFT_ASSIGN,// <<=
-    CSPYDR_TOKEN_RSHIFT_ASSIGN,// >>=
+    CSPYDR_TOKEN(LSHIFT_ASSIGN),// <<=
+    CSPYDR_TOKEN(RSHIFT_ASSIGN),// >>=
 
-    CSPYDR_TOKEN_BIT_AND_ASSIGN,// &=
-    CSPYDR_TOKEN_BIT_OR_ASSIGN, // |=
+    CSPYDR_TOKEN(BIT_AND_ASSIGN),// &=
+    CSPYDR_TOKEN(BIT_OR_ASSIGN), // |=
 
-    CSPYDR_TOKEN_COLON,        // :
-    CSPYDR_TOKEN_COMMA,        // ,
-    CSPYDR_TOKEN_DOT,          // .
-    CSPYDR_TOKEN_SEMICOLON,    // ;
-    CSPYDR_TOKEN_UNDERSCORE,   // _
-    CSPYDR_TOKEN_DOLLAR,       // $
-    CSPYDR_TOKEN_AT,           // @
+    CSPYDR_TOKEN(COLON),        // :
+    CSPYDR_TOKEN(COMMA),        // ,
+    CSPYDR_TOKEN(DOT),          // .
+    CSPYDR_TOKEN(SEMICOLON),    // ;
+    CSPYDR_TOKEN(UNDERSCORE),   // _
+    CSPYDR_TOKEN(DOLLAR),       // $
+    CSPYDR_TOKEN(AT),           // @
 
-    CSPYDR_TOKEN_STATIC_MEMBER,// ::
+    CSPYDR_TOKEN(STATIC_MEMBER),// ::
 
-    CSPYDR_TOKEN_POW_2,        // ²
-    CSPYDR_TOKEN_POW_3,        // ³
+    CSPYDR_TOKEN(POW_2),        // ²
+    CSPYDR_TOKEN(POW_3),        // ³
 
-    CSPYDR_TOKEN_C_ARRAY,      // 'c or 'C
+    CSPYDR_TOKEN(C_ARRAY),      // 'c or 'C
 
-    CSPYDR_TOKEN_IF,           // if
-    CSPYDR_TOKEN_ELSE,         // else
-    CSPYDR_TOKEN_LOOP,         // loop
-    CSPYDR_TOKEN_RETURN,       // ret
-    CSPYDR_TOKEN_MATCH,        // match
-    CSPYDR_TOKEN_FN,           // fn
-    CSPYDR_TOKEN_LET,          // let
-    CSPYDR_TOKEN_TYPE,         // type
-    CSPYDR_TOKEN_STRUCT,       // struct
-    CSPYDR_TOKEN_UNION,        // union
-    CSPYDR_TOKEN_ENUM,         // enum
-    CSPYDR_TOKEN_IMPORT,       // import
-    CSPYDR_TOKEN_EXTERN,       // extern
-    CSPYDR_TOKEN_MACRO,        // macro
-    CSPYDR_TOKEN_CONST,        // const
-    CSPYDR_TOKEN_NAMESPACE,    // namespace
-    CSPYDR_TOKEN_SIZEOF,       // sizeof
-    CSPYDR_TOKEN_TYPEOF,       // typeof
-    CSPYDR_TOKEN_ALIGNOF,      // alignof
-    CSPYDR_TOKEN_WHILE,        // while
-    CSPYDR_TOKEN_FOR,          // for
-    CSPYDR_TOKEN_CONTINUE,     // continue
-    CSPYDR_TOKEN_BREAK,        // break
-    CSPYDR_TOKEN_NOOP,         // noop
-    CSPYDR_TOKEN_LEN,          // len
-    CSPYDR_TOKEN_ASM,          // asm
-    CSPYDR_TOKEN_USING,        // using
-    CSPYDR_TOKEN_WITH,         // with
-    CSPYDR_TOKEN_DO,           // do
-    CSPYDR_TOKEN_UNLESS,       // unless
-    CSPYDR_TOKEN_DEFER,        // defer
+    CSPYDR_TOKEN(IF),           // if
+    CSPYDR_TOKEN(ELSE),         // else
+    CSPYDR_TOKEN(LOOP),         // loop
+    CSPYDR_TOKEN(RETURN),       // ret
+    CSPYDR_TOKEN(MATCH),        // match
+    CSPYDR_TOKEN(FN),           // fn
+    CSPYDR_TOKEN(LET),          // let
+    CSPYDR_TOKEN(TYPE),         // type
+    CSPYDR_TOKEN(STRUCT),       // struct
+    CSPYDR_TOKEN(UNION),        // union
+    CSPYDR_TOKEN(ENUM),         // enum
+    CSPYDR_TOKEN(IMPORT),       // import
+    CSPYDR_TOKEN(EXTERN),       // extern
+    CSPYDR_TOKEN(MACRO),        // macro
+    CSPYDR_TOKEN(CONST),        // const
+    CSPYDR_TOKEN(NAMESPACE),    // namespace
+    CSPYDR_TOKEN(SIZEOF),       // sizeof
+    CSPYDR_TOKEN(TYPEOF),       // typeof
+    CSPYDR_TOKEN(ALIGNOF),      // alignof
+    CSPYDR_TOKEN(WHILE),        // while
+    CSPYDR_TOKEN(FOR),          // for
+    CSPYDR_TOKEN(CONTINUE),     // continue
+    CSPYDR_TOKEN(BREAK),        // break
+    CSPYDR_TOKEN(NOOP),         // noop
+    CSPYDR_TOKEN(LEN),          // len
+    CSPYDR_TOKEN(ASM),          // asm
+    CSPYDR_TOKEN(USING),        // using
+    CSPYDR_TOKEN(WITH),         // with
+    CSPYDR_TOKEN(DO),           // do
+    CSPYDR_TOKEN(UNLESS),       // unless
+    CSPYDR_TOKEN(DEFER),        // defer
 
-    CSPYDR_TOKEN_CURRENT_FN,   // special token for the __func__! macro
+    CSPYDR_TOKEN(CURRENT_FN),   // special token for the __func__! macro
 
     // builtin functions used exclusively in type expressions
-    CSPYDR_TOKEN_BUILTIN_REG_CLASS,
-    CSPYDR_TOKEN_BUILTIN_IS_INT,
-    CSPYDR_TOKEN_BUILTIN_IS_UINT,
-    CSPYDR_TOKEN_BUILTIN_IS_FLOAT,
-    CSPYDR_TOKEN_BUILTIN_IS_POINTER,
-    CSPYDR_TOKEN_BUILTIN_IS_ARRAY,
-    CSPYDR_TOKEN_BUILTIN_IS_STRUCT,
-    CSPYDR_TOKEN_BUILTIN_IS_UNION,
-    CSPYDR_TOKEN_BUILTIN_TO_STR,
+    CSPYDR_TOKEN(BUILTIN_REG_CLASS),
+    CSPYDR_TOKEN(BUILTIN_IS_INT),
+    CSPYDR_TOKEN(BUILTIN_IS_UINT),
+    CSPYDR_TOKEN(BUILTIN_IS_FLOAT),
+    CSPYDR_TOKEN(BUILTIN_IS_POINTER),
+    CSPYDR_TOKEN(BUILTIN_IS_ARRAY),
+    CSPYDR_TOKEN(BUILTIN_IS_STRUCT),
+    CSPYDR_TOKEN(BUILTIN_IS_UNION),
+    CSPYDR_TOKEN(BUILTIN_TO_STR),
 
-    CSPYDR_TOKEN_ERROR, // error handling token
-    CSPYDR_TOKEN_EOF,   // end of file
+    CSPYDR_TOKEN(ERROR), // error handling token
+    CSPYDR_TOKEN(EOF),   // end of file
 };
 
 typedef enum CSPYDR_TOKEN_TYPE CSpydrTokenType_T;
@@ -184,155 +200,182 @@ uint32_t csp_token_get_position(CSpydrToken_T* tok);
 char* csp_token_get_value(CSpydrToken_T* tok);
 char* csp_token_get_file(CSpydrToken_T* tok);
 
+#ifdef __CSPYDR_INTERNAL_USE
+// Internal use only!
+#define CSPYDR_ND(name) \
+    ND_##name
+#else
+#define CSPYDR_ND(name) \
+    CSPYDR_ND_##name
+#endif
+
 enum CSPYDR_AST_NODE_KIND_ENUM {
-    CSPYDR_ND_NOOP,
+    CSPYDR_ND(NOOP),
 
     // identifiers
-    CSPYDR_ND_ID,      // x
+    CSPYDR_ND(ID),      // x
 
     // literals
-    CSPYDR_ND_INT,     // 0
-    CSPYDR_ND_LONG,
-    CSPYDR_ND_ULONG, 
-    CSPYDR_ND_FLOAT,   // 0.1
-    CSPYDR_ND_DOUBLE,
-    CSPYDR_ND_BOOL,    // true, false
-    CSPYDR_ND_CHAR,    // 'x'
-    CSPYDR_ND_STR,     // "..."
-    CSPYDR_ND_NIL,     // nil
+    CSPYDR_ND(INT),     // 0
+    CSPYDR_ND(LONG),
+    CSPYDR_ND(ULONG), 
+    CSPYDR_ND(FLOAT),   // 0.1
+    CSPYDR_ND(DOUBLE),
+    CSPYDR_ND(BOOL),    // true, false
+    CSPYDR_ND(CHAR),    // 'x'
+    CSPYDR_ND(STR),     // "..."
+    CSPYDR_ND(NIL),     // nil
 
-    CSPYDR_ND_ARRAY,   // [2, 4, ...]
-    CSPYDR_ND_STRUCT,  // {3, 4, ...}
+    CSPYDR_ND(ARRAY),   // [2, 4, ...]
+    CSPYDR_ND(STRUCT),  // {3, 4, ...}
 
     // operators
-    CSPYDR_ND_ADD,     // +
-    CSPYDR_ND_SUB,     // -
-    CSPYDR_ND_MUL,     // *
-    CSPYDR_ND_DIV,     // /
-    CSPYDR_ND_MOD,     // %
+    CSPYDR_ND(ADD),     // +
+    CSPYDR_ND(SUB),     // -
+    CSPYDR_ND(MUL),     // *
+    CSPYDR_ND(DIV),     // /
+    CSPYDR_ND(MOD),     // %
 
-    CSPYDR_ND_NEG,     // unary -
-    CSPYDR_ND_BIT_NEG, // unary ~
-    CSPYDR_ND_NOT,     // unary !
-    CSPYDR_ND_REF,     // unary &
-    CSPYDR_ND_DEREF,   // unary *
+    CSPYDR_ND(NEG),     // unary -
+    CSPYDR_ND(BIT_NEG), // unary ~
+    CSPYDR_ND(NOT),     // unary !
+    CSPYDR_ND(REF),     // unary &
+    CSPYDR_ND(DEREF),   // unary *
 
-    CSPYDR_ND_EQ,      // ==
-    CSPYDR_ND_NE,      // !=
-    CSPYDR_ND_GT,      // >
-    CSPYDR_ND_GE,      // >=
-    CSPYDR_ND_LT,      // <
-    CSPYDR_ND_LE,      // <=
+    CSPYDR_ND(EQ),      // ==
+    CSPYDR_ND(NE),      // !=
+    CSPYDR_ND(GT),      // >
+    CSPYDR_ND(GE),      // >=
+    CSPYDR_ND(LT),      // <
+    CSPYDR_ND(LE),      // <=
 
-    CSPYDR_ND_AND, // &&
-    CSPYDR_ND_OR,  // ||
+    CSPYDR_ND(AND), // &&
+    CSPYDR_ND(OR),  // ||
 
-    CSPYDR_ND_LSHIFT,  // <<
-    CSPYDR_ND_RSHIFT,  // >>
-    CSPYDR_ND_XOR,     // ^
-    CSPYDR_ND_BIT_OR,  // |
-    CSPYDR_ND_BIT_AND, // &
+    CSPYDR_ND(LSHIFT),  // <<
+    CSPYDR_ND(RSHIFT),  // >>
+    CSPYDR_ND(XOR),     // ^
+    CSPYDR_ND(BIT_OR),  // |
+    CSPYDR_ND(BIT_AND), // &
 
-    CSPYDR_ND_INC,     // ++
-    CSPYDR_ND_DEC,     // --
+    CSPYDR_ND(INC),     // ++
+    CSPYDR_ND(DEC),     // --
 
-    CSPYDR_ND_CLOSURE, // ()
-    CSPYDR_ND_ASSIGN,  // x = y
+    CSPYDR_ND(CLOSURE), // ()
+    CSPYDR_ND(ASSIGN),  // x = y
 
-    CSPYDR_ND_MEMBER,  // x.y
-    CSPYDR_ND_CALL,    // x(y, z)
-    CSPYDR_ND_INDEX,   // x[y]
-    CSPYDR_ND_CAST,    // x:i32
+    CSPYDR_ND(MEMBER),  // x.y
+    CSPYDR_ND(CALL),    // x(y, z)
+    CSPYDR_ND(INDEX),   // x[y]
+    CSPYDR_ND(CAST),    // x:i32
 
-    CSPYDR_ND_SIZEOF,  // sizeof x
-    CSPYDR_ND_ALIGNOF, // alignof x
+    CSPYDR_ND(SIZEOF),  // sizeof x
+    CSPYDR_ND(ALIGNOF), // alignof x
 
-    CSPYDR_ND_PIPE,    // x |> y
-    CSPYDR_ND_HOLE,    // $
-    CSPYDR_ND_LAMBDA,  // |x: i32| => {}
+    CSPYDR_ND(PIPE),    // x |> y
+    CSPYDR_ND(HOLE),    // $
+    CSPYDR_ND(LAMBDA),  // |x: i32| => {}
 
-    CSPYDR_ND_ELSE_EXPR, // x else y
+    CSPYDR_ND(ELSE_EXPR), // x else y
 
-    CSPYDR_ND_TYPE_EXPR, // type expressions like: "(type) T == U" or "(type) reg_class(T)"
+    CSPYDR_ND(TYPE_EXPR), // type expressions like: "(type) T == U" or "(type) reg_class(T)"
 
     // statements
-    CSPYDR_ND_BLOCK,         // {...}https://github.com/deter0/ActivateWindows2
-    CSPYDR_ND_IF,            // if x {}
-    CSPYDR_ND_TERNARY,       // if x => y <> z
-    CSPYDR_ND_LOOP,          // loop {}
-    CSPYDR_ND_WHILE,         // while x {}
-    CSPYDR_ND_FOR,           // for let i: i32 = 0; i < x; i++ {}
-    CSPYDR_ND_FOR_RANGE,     // for x..y {}
-    CSPYDR_ND_MATCH,         // match x {}
-    CSPYDR_ND_MATCH_TYPE,    // match (type) T {}
-    CSPYDR_ND_CASE,          // x => {} !!only in match statements!!
-    CSPYDR_ND_CASE_TYPE,     // i32 => {}
-    CSPYDR_ND_RETURN,        // ret x;
-    CSPYDR_ND_EXPR_STMT,     // "executable" expressions
-    CSPYDR_ND_BREAK,         // break;
-    CSPYDR_ND_CONTINUE,      // continue;
-    CSPYDR_ND_DO_UNLESS,     // do {} unless x;
-    CSPYDR_ND_DO_WHILE,      // do {} while x;
-    CSPYDR_ND_LEN,           // len x
-    CSPYDR_ND_USING,         // using x::y
-    CSPYDR_ND_WITH,          // with x = y {}
-    CSPYDR_ND_STRUCT_MEMBER, // struct members
-    CSPYDR_ND_DEFER,         // defer {}
-    CSPYDR_ND_EXTERN_C_BLOCK, // extern "C" {}
+    CSPYDR_ND(BLOCK),         // {...}https://github.com/deter0/ActivateWindows2
+    CSPYDR_ND(IF),            // if x {}
+    CSPYDR_ND(TERNARY),       // if x => y <> z
+    CSPYDR_ND(LOOP),          // loop {}
+    CSPYDR_ND(WHILE),         // while x {}
+    CSPYDR_ND(FOR),           // for let i: i32 = 0; i < x; i++ {}
+    CSPYDR_ND(FOR_RANGE),     // for x..y {}
+    CSPYDR_ND(MATCH),         // match x {}
+    CSPYDR_ND(MATCH_TYPE),    // match (type) T {}
+    CSPYDR_ND(CASE),          // x => {} !!only in match statements!!
+    CSPYDR_ND(CASE_TYPE),     // i32 => {}
+    CSPYDR_ND(RETURN),        // ret x;
+    CSPYDR_ND(EXPR_STMT),     // "executable" expressions
+    CSPYDR_ND(BREAK),         // break;
+    CSPYDR_ND(CONTINUE),      // continue;
+    CSPYDR_ND(DO_UNLESS),     // do {} unless x;
+    CSPYDR_ND(DO_WHILE),      // do {} while x;
+    CSPYDR_ND(LEN),           // len x
+    CSPYDR_ND(USING),         // using x::y
+    CSPYDR_ND(WITH),          // with x = y {}
+    CSPYDR_ND(STRUCT_MEMBER), // struct members
+    CSPYDR_ND(DEFER),         // defer {}
+    CSPYDR_ND(EXTERN_C_BLOCK), // extern "C" {}
 
-    CSPYDR_ND_ASM, // inline assembly
+    CSPYDR_ND(ASM), // inline assembly
 
-    CSPYDR_ND_KIND_LEN
+    CSPYDR_ND(KIND_LEN)
 };
+
+#ifdef __CSPYDR_INTERNAL_USE
+// Internal use only!
+#define CSPYDR_TY(name) \
+    TY_##name
+#else
+#define CSPYDR_TY(name) \
+    CSPYDR_TY_##name
+#endif
 
 enum CSPYDR_AST_TYPE_KIND_ENUM {
-    CSPYDR_TY_I8,      // i8
-    CSPYDR_TY_I16,     // i16
-    CSPYDR_TY_I32,     // i32
-    CSPYDR_TY_I64,     // i64
+    CSPYDR_TY(I8),      // i8
+    CSPYDR_TY(I16),     // i16
+    CSPYDR_TY(I32),     // i32
+    CSPYDR_TY(I64),     // i64
 
-    CSPYDR_TY_U8,      // u8
-    CSPYDR_TY_U16,     // u16
-    CSPYDR_TY_U32,     // u32
-    CSPYDR_TY_U64,     // u64
+    CSPYDR_TY(U8),      // u8
+    CSPYDR_TY(U16),     // u16
+    CSPYDR_TY(U32),     // u32
+    CSPYDR_TY(U64),     // u64
 
-    CSPYDR_TY_F32,     // f32
-    CSPYDR_TY_F64,     // f64
-    CSPYDR_TY_F80,     // f80
+    CSPYDR_TY(F32),     // f32
+    CSPYDR_TY(F64),     // f64
+    CSPYDR_TY(F80),     // f80
 
-    CSPYDR_TY_BOOL,    // bool
-    CSPYDR_TY_VOID,    // void
-    CSPYDR_TY_CHAR,    // char
+    CSPYDR_TY(BOOL),    // bool
+    CSPYDR_TY(VOID),    // void
+    CSPYDR_TY(CHAR),    // char
 
-    CSPYDR_TY_PTR,     // &x
-    CSPYDR_TY_ARRAY,   // x[y]
-    CSPYDR_TY_VLA,     // x[]
-    CSPYDR_TY_C_ARRAY, // x'c[y]
-    CSPYDR_TY_STRUCT,  // struct {}
-    CSPYDR_TY_ENUM,    // enum {}
+    CSPYDR_TY(PTR),     // &x
+    CSPYDR_TY(ARRAY),   // x[y]
+    CSPYDR_TY(VLA),     // x[]
+    CSPYDR_TY(C_ARRAY), // x'c[y]
+    CSPYDR_TY(STRUCT),  // struct {}
+    CSPYDR_TY(ENUM),    // enum {}
 
-    CSPYDR_TY_FN,      // fn(x): y
+    CSPYDR_TY(FN),      // fn(x): y
 
-    CSPYDR_TY_UNDEF,   // <identifier>
-    CSPYDR_TY_TYPEOF,  // typeof x
-    CSPYDR_TY_TEMPLATE, // template types temporarily used during parsing
+    CSPYDR_TY(UNDEF),   // <identifier>
+    CSPYDR_TY(TYPEOF),  // typeof x
+    CSPYDR_TY(TEMPLATE), // template types temporarily used during parsing
     
-    CSPYDR_TY_KIND_LEN
+    CSPYDR_TY(KIND_LEN)
 };
 
+#ifdef __CSPYDR_INTERNAL_USE
+// Internal use only!
+#define CSPYDR_OBJ(name) \
+    OBJ_##name
+#else
+#define CSPYDR_OBJ(name) \
+    CSPYDR_OBJ_##name
+#endif
+
 enum CSPYDR_AST_OBJ_KIND_ENUM {
-    CSPYDR_OBJ_GLOBAL,      // global variable
-    CSPYDR_OBJ_LOCAL,       // local variable
-    CSPYDR_OBJ_FUNCTION,    // function
-    CSPYDR_OBJ_FN_ARG,      // function argument
-    CSPYDR_OBJ_TYPEDEF,     // datatype definition
-    CSPYDR_OBJ_NAMESPACE,   // namespace
-    CSPYDR_OBJ_ENUM_MEMBER, // member of an `enum` data type
+    CSPYDR_OBJ(GLOBAL),      // global variable
+    CSPYDR_OBJ(LOCAL),       // local variable
+    CSPYDR_OBJ(FUNCTION),    // function
+    CSPYDR_OBJ(FN_ARG),      // function argument
+    CSPYDR_OBJ(TYPEDEF),     // datatype definition
+    CSPYDR_OBJ(NAMESPACE),   // namespace
+    CSPYDR_OBJ(ENUM_MEMBER), // member of an `enum` data type
 
     //! internal:
-    CSPYDR_OBJ_LAMBDA,      // lambda implementation used internally
+    CSPYDR_OBJ(LAMBDA),      // lambda implementation used internally
 
-    CSPYDR_OBJ_KIND_LEN
+    CSPYDR_OBJ(KIND_LEN)
 };
 
 typedef struct AST_NODE_STRUCT       CSpydrASTNode_T;

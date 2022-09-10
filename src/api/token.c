@@ -8,7 +8,7 @@ CSpydrToken_T* csp_new_token(CSpydrTokenType_T type, uint32_t line, uint32_t pos
 
 CSpydrTokenType_T csp_token_get_type(CSpydrToken_T* tok)
 {
-    return tok ? tok->type : CSPYDR_TOKEN_ERROR;
+    return tok ? tok->type : TOKEN_ERROR;
 }
 
 u32 csp_token_get_line(CSpydrToken_T* tok)

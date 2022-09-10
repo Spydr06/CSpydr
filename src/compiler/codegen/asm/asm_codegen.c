@@ -62,7 +62,7 @@ static const char* asm_start_text[] =
         "  .globl _start\n"
         "  .text\n"
         "_start:\n"
-        "  xorl %ebp, %ebp\n",
+        "  xorl %ebp, %ebp\n"
         "  popq %rdi\n"
         "  movq %rsp, %rsi\n",
         
