@@ -459,10 +459,8 @@ void parse(ASTProg_T* ast, List_T* files, bool is_silent)
 
     timer_stop();
 
-    timer_start("code validation");
     // check the ast for validity
     validate_ast(ast);
-    timer_stop();
 }
 
 /////////////////////////////////

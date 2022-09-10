@@ -16,6 +16,7 @@
 #include "parser/utils.h"
 #include "globals.h"
 #include "typechecker.h"
+#include "timer/timer.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -228,6 +229,8 @@ static const ASTIteratorList_T main_iterator_list =
 
 void validate_ast(ASTProg_T* ast)
 {
+    timer_start("code validation");
+
     // initialize the validator
     Validator_T v;
     init_validator(&v);
@@ -251,6 +254,8 @@ void validate_ast(ASTProg_T* ast)
         LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " mssing entrypoint; no `main` function declared.\n");
         global.emitted_errors++;
     }
+
+    timer_stop();
 
     // check all data types and create implicit casts when needed
     run_typechecker(ast, &v);

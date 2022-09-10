@@ -13,6 +13,7 @@
 #include "codegen/codegen_utils.h"
 #include "ast/ast_iterator.h"
 #include "ast/types.h"
+#include "timer/timer.h"
 
 #define GET_VALIDATOR(va) Validator_T* v = va_arg(va, Validator_T*)
 
@@ -51,7 +52,9 @@ static const ASTIteratorList_T iterator = {
 
 void run_typechecker(ASTProg_T* ast, Validator_T* v)
 {
+    timer_start("type checking");
     ast_iterate(&iterator, ast, v);
+    timer_stop();
 }
 
 static void set_fn(ASTObj_T* fn, va_list args)
