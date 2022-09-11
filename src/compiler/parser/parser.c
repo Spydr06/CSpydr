@@ -89,7 +89,6 @@ typedef enum
 
 static ASTNode_T* parse_id(Parser_T* p);
 static ASTNode_T* parse_int_lit(Parser_T* p);
-static ASTNode_T* parse_inline_asm(Parser_T* p);
 static ASTNode_T* parse_float_lit(Parser_T* p);
 static ASTNode_T* parse_char_lit(Parser_T* p);
 static ASTNode_T* parse_bool_lit(Parser_T* p);
@@ -146,7 +145,6 @@ static struct {
 } expr_parse_fns[TOKEN_EOF + 1] = {
     [TOKEN_ID]       = {parse_id, NULL, LOWEST},
     [TOKEN_INT]      = {parse_int_lit, NULL, LOWEST},
-    [TOKEN_ASM]      = {parse_inline_asm, NULL, LOWEST},
     [TOKEN_FLOAT]    = {parse_float_lit, NULL, LOWEST},
     [TOKEN_NIL]      = {parse_nil_lit, NULL, LOWEST},
     [TOKEN_TRUE]     = {parse_bool_lit, NULL, LOWEST},
@@ -1728,9 +1726,46 @@ static ASTNode_T* parse_extern_c_block(Parser_T* p, bool needs_semicolon)
     return extern_block;
 }
 
+static ASTNode_T* parse_inline_asm(Parser_T* p, bool needs_semicolon)
+{
+    ASTNode_T* asm_stmt = init_ast_node(ND_ASM, p->tok);
+    asm_stmt->args = init_list();
+    mem_add_list(asm_stmt->args);
+    parser_advance(p);
+
+    while(!tok_is(p, TOKEN_SEMICOLON))
+    {
+        switch (p->tok->type) {
+            case TOKEN_STRING:
+                list_push(asm_stmt->args, parse_str_lit(p, true));
+                break;
+            case TOKEN_INT:
+                list_push(asm_stmt->args, parse_int_lit(p));
+                break;
+            case TOKEN_REF:
+            {
+                parser_advance(p);
+                ASTNode_T* id = parse_id(p);
+                id->output = true;
+                list_push(asm_stmt->args, id);
+            } break;
+            case TOKEN_ID:
+            case TOKEN_STATIC_MEMBER:
+                list_push(asm_stmt->args, parse_id(p));
+                break;
+            default:
+                throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s` in `asm` statement", p->tok->value);
+        }
+    }
+
+    if(needs_semicolon)
+        parser_consume(p, TOKEN_SEMICOLON, "expect `;` after `asm` statement");
+
+    return asm_stmt;
+}
+
 static ASTNode_T* parse_stmt(Parser_T* p, bool needs_semicolon)
 {
-
     switch(p->tok->type)
     {
         case TOKEN_LBRACE:
@@ -1751,6 +1786,8 @@ static ASTNode_T* parse_stmt(Parser_T* p, bool needs_semicolon)
             return parse_with(p, needs_semicolon);
         case TOKEN_DO:
             return parse_do(p, needs_semicolon);
+        case TOKEN_ASM:
+            return parse_inline_asm(p, needs_semicolon);
         case TOKEN_CONST:
         case TOKEN_LET:
             {
@@ -1851,34 +1888,6 @@ static ASTNode_T* parse_id(Parser_T* p)
         default:
             return id;
     }
-}
-
-static ASTNode_T* parse_inline_asm(Parser_T* p)
-{
-    ASTNode_T* asm_stmt = init_ast_node(ND_ASM, p->tok);
-    asm_stmt->args = init_list();
-    mem_add_list(asm_stmt->args);
-    parser_advance(p);
-
-    while(!tok_is(p, TOKEN_SEMICOLON))
-    {
-        switch (p->tok->type) {
-            case TOKEN_STRING:
-                list_push(asm_stmt->args, parse_str_lit(p, true));
-                break;
-            case TOKEN_INT:
-                list_push(asm_stmt->args, parse_int_lit(p));
-                break;
-            case TOKEN_ID:
-            case TOKEN_STATIC_MEMBER:
-                list_push(asm_stmt->args, parse_id(p));
-                break;
-            default:
-                throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s` in `asm` statement", p->tok->value);
-        }
-    }
-
-    return asm_stmt;
 }
 
 static ASTNode_T* parse_int_lit(Parser_T* p)

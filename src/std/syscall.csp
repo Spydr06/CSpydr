@@ -67,6 +67,76 @@ macro syscall(id, rdi, rsi, rdx, r10, r8, r9)
         "syscall" 
 }
 
+macro syscall_r(r, id)
+{
+    asm "mov " id ", %rax;"
+        "syscall;"
+        "mov %rax, " &r
+}
+
+macro syscall_r(r, id, rdi)
+{
+    asm "mov " rdi ", %rdi;"
+        "mov " id  ", %rax;"
+        "syscall;"
+        "mov %rax, " &r 
+}
+
+macro syscall_r(r, id, rdi, rsi)
+{
+    asm "mov " rdi ", %rdi;"
+        "mov " rsi ", %rsi;"
+        "mov " id  ", %rax;"
+        "syscall;"
+        "mov %rax, " &r 
+}
+
+macro syscall_r(r, id, rdi, rsi, rdx)
+{
+    asm "mov " rdi ", %rdi;"
+        "mov " rsi ", %rsi;"
+        "mov " rdx ", %rdx;"
+        "mov " id  ", %rax;"
+        "syscall;"
+        "mov %rax, " &r 
+}
+
+macro syscall_r(r, id, rdi, rsi, rdx, r10)
+{
+    asm "mov " rdi ", %rdi;"
+        "mov " rsi ", %rsi;"
+        "mov " rdx ", %rdx;"
+        "mov " r10 ", %r10;"
+        "mov " id  ", %rax;"
+        "syscall;"
+        "mov %rax, " &r  
+}
+
+macro syscall_r(r, id, rdi, rsi, rdx, r10, r8)
+{
+    asm "mov " rdi ", %rdi;"
+        "mov " rsi ", %rsi;"
+        "mov " rdx ", %rdx;"
+        "mov " r10 ", %r10;"
+        "mov " r8  ", %r8;"
+        "mov " id  ", %rax;"
+        "syscall;"
+        "mov %rax, " &r  
+}
+
+macro syscall_r(r, id, rdi, rsi, rdx, r10, r8, r9)
+{
+    asm "mov " rdi ", %rdi;"
+        "mov " rsi ", %rsi;"
+        "mov " rdx ", %rdx;"
+        "mov " r10 ", %r10;"
+        "mov " r8  ", %r8;"
+        "mov " r9  ", %r9;"
+        "mov " id  ", %rax;"
+        "syscall;"
+        "mov %rax, " &r  
+}
+
 namespace std {
     type Syscall: enum {
         READ, WRITE, OPEN, CLOSE,
@@ -258,277 +328,624 @@ namespace std {
 
     namespace syscall {
         fn read(fd: i32, buf: &void, count: usize): ssize_t
-            syscall!(Syscall::READ, fd, buf, count);
+        {
+            let res: ssize_t;
+            syscall_r!(res, Syscall::READ, fd, buf, count);
+            <- res;
+        }
 
         fn write(fd: i32, buf: &const void, count: usize): ssize_t
-            syscall!(Syscall::WRITE, fd, buf, count);
+        {
+            let res: ssize_t;
+            syscall_r!(res, Syscall::WRITE, fd, buf, count);
+            <- res;
+        }
 
         fn open(pathname: &const char, flags: i32, mode: mode_t): i32
-            syscall!(Syscall::OPEN, pathname, flags, mode);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::OPEN, pathname, flags, mode);
+            <- res;
+        }
 
         fn close(fd: i32): i32
-            syscall!(Syscall::CLOSE, fd);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::CLOSE, fd);
+            <- res;
+        }
 
         fn stat(filename: &const char, buf: &Stat): i32
-            syscall!(Syscall::STAT, filename, buf);
+        {
+            let res: i64;
+            syscall_r!(res, res, Syscall::STAT, filename, buf);
+            <- res;
+        }
 
         fn fstat(fd: i32, buf: &Stat): i32
-            syscall!(Syscall::FSTAT, fd, buf);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::FSTAT, fd, buf);
+            <- res;
+        }
 
         fn lstat(path: &const char, buf: &Stat): i32
-            syscall!(Syscall::LSTAT, path, buf);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::LSTAT, path, buf);
+            <- res;
+        }
         
         fn poll(fds: &PollFd, nfds: nfds_t, timeout: i32): i32
-            syscall!(Syscall::POLL, fds, nfds, timeout);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::POLL, fds, nfds, timeout);
+            <- res;
+        }
 
         fn lseek(fd: i32, offset: Offset, whence: i32): Offset
-            syscall!(Syscall::LSEEK, fd, offset, whence);
+        {
+            let res: Offset;
+            syscall_r!(res, Syscall::LSEEK, fd, offset, whence);
+            <- res;
+        }
 
         fn mmap(addr: &void, length: usize, prot: i32, flags: i32, fd: i32, off: Offset): &void
-            syscall!(Syscall::MMAP, addr, length, prot, flags, fd, off);
+        {
+            let res: &void;
+            syscall_r!(res, Syscall::MMAP, addr, length, prot, flags, fd, off);
+            <- res;
+        }
 
         fn mprotect(addr: &void, length: usize, prot: i32): i32
-            syscall!(Syscall::MPROTECT, addr, length, prot);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::MPROTECT, addr, length, prot);
+            <- res;
+        }
 
         fn munmap(addr: &void, length: usize): i32
-            syscall!(Syscall::MUNMAP, addr, length);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::MUNMAP, addr, length);
+            <- res;
+        }
 
         fn brk(b: u64): i32
-            syscall!(Syscall::BRK, b);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::BRK, b);
+            <- res;
+        }
 
         fn rt_sigreturn(__unused: u64): i32
-            syscall!(Syscall::RT_SIGRETURN, __unused);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::RT_SIGRETURN, __unused);
+            <- res;
+        }
         
         fn ioctl(fd: i32, cmd: i32, arg: u64): i32
-            syscall!(Syscall::IOCTL, fd, cmd, arg);
+        {
+            let res: i64;
+            syscall_r!(res, res, Syscall::IOCTL, fd, cmd, arg);
+            <- res;
+        }
         
         fn pread64(fd: i32, buf: &void, count: usize, offset: Offset): ssize_t
-            syscall!(Syscall::PREAD64, fd, buf, count, offset);
+        {
+            let res: ssize_t;
+            syscall_r!(res, Syscall::PREAD64, fd, buf, count, offset);
+            <- res;
+        }
 
         fn pwrite64(fd: i32, buf: &void, count: usize, offset: Offset): ssize_t
-            syscall!(Syscall::PWRITE64, fd, buf, count, offset);
+        {
+            let res: ssize_t;
+            syscall_r!(res, Syscall::PWRITE64, fd, buf, count, offset);
+            <- res;
+        }
 
         fn readv(fd: i32, iov: &IOVec, iovcnt: i32): ssize_t
-            syscall!(Syscall::READV, fd, iov, iovcnt);
+        {
+            let res: ssize_t;
+            syscall_r!(res, Syscall::READV, fd, iov, iovcnt);
+            <- res;
+        }
         
         fn writev(fd: i32, iov: &IOVec, iovcnt: i32): ssize_t
-            syscall!(Syscall::WRITEV, fd, iov, iovcnt);
+        {
+            let res: ssize_t;
+            syscall_r!(res, Syscall::WRITEV, fd, iov, iovcnt);
+            <- res;
+        }
 
         fn access(pathname: &const char, mode: i32): i32
-            syscall!(Syscall::ACCESS, pathname, mode);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::ACCESS, pathname, mode);
+            <- res;
+        }
         
         fn pipe(pipefd: &i32): i32
-            syscall!(Syscall::PIPE, pipefd);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::PIPE, pipefd);
+            <- res;
+        }
 
         fn time(time: &TimeVal): std::TimeVal
-            syscall!(Syscall::TIME, time);
+        {
+            let res: TimeVal;
+            syscall_r!(res, Syscall::TIME, time);
+            <- res;
+        }
         
         fn shed_yield(): i32
-            syscall!(Syscall::SCHED_YIELD);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::SCHED_YIELD);
+            <- res;
+        }
         
         fn mremap(old_addr: &void, old_size: usize, new_size: usize, flags: i32): &void
-            syscall!(Syscall::MREMAP, old_addr, old_size, new_size, flags);
+        {
+            let res: &void;
+            syscall_r!(res, Syscall::MREMAP, old_addr, old_size, new_size, flags);
+            <- res;
+        }
         
         fn msync(addr: &void, length: usize, flags: i32): i32
-            syscall!(Syscall::MSYNC, addr, length, flags);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::MSYNC, addr, length, flags);
+            <- res;
+        }
         
         fn mincore(addr: &void, length: usize, vec: &u8): i32
-            syscall!(Syscall::MINCORE, addr, length, vec);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::MINCORE, addr, length, vec);
+            <- res;
+        }
         
         fn madvise(addr: &void, length: usize, advice: i32): i32
-            syscall!(Syscall::MADVISE, addr, length, advice);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::MADVISE, addr, length, advice);
+            <- res;
+        }
         
         fn shmget(key: key_t, size: usize, shmflg: i32): i32
-            syscall!(Syscall::SHMGET, key, size, shmflg);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::SHMGET, key, size, shmflg);
+            <- res;
+        }
         
         fn shmat(shmid: i32, shmaddr: &const void, shmflg: i32): &void
-            syscall!(Syscall::SHMAT, shmid, shmaddr, shmflg);
+        {
+            let res: &void;
+            syscall_r!(res, Syscall::SHMAT, shmid, shmaddr, shmflg);
+            <- res;
+        }
         
         fn dup(oldfd: i32): i32
-            syscall!(Syscall::DUP, oldfd);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::DUP, oldfd);
+            <- res;
+        }
 
         fn dup2(oldfd: i32, newfd: i32): i32
-            syscall!(Syscall::DUP2, oldfd, newfd);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::DUP2, oldfd, newfd);
+            <- res;
+        }
         
         fn pause(): i32
-            syscall!(Syscall::PAUSE);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::PAUSE);
+            <- res;
+        }
         
         fn nanosleep(req: &const TimeSpec, rem: &TimeSpec): i32
-            syscall!(Syscall::NANOSLEEP, req, rem);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::NANOSLEEP, req, rem);
+            <- res;
+        }
     
         fn alarm(seconds: u32): u32
-            syscall!(Syscall::ALARM, seconds);
+        {
+            let res: u32;
+            syscall_r!(res, Syscall::ALARM, seconds);
+            <- res;
+        }
         
         fn getpid(): pid_t
-            syscall!(Syscall::GETPID);
+        {
+            let res: pid_t;
+            syscall_r!(res, Syscall::GETPID);
+            <- res;
+        }
 
         fn sendfile(out_fd: i32, in_fd: i32, offset: &Offset, count: usize): ssize_t
-            syscall!(Syscall::SENDFILE, out_fd, in_fd, offset, count);
+        {
+            let res: ssize_t;
+            syscall_r!(res, Syscall::SENDFILE, out_fd, in_fd, offset, count);
+            <- res;
+        }
         
         fn socket(domain: i32, _type: i32, protocol: i32): i32
-            syscall!(Syscall::SOCKET, domain, _type, protocol);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::SOCKET, domain, _type, protocol);
+            <- res;
+        }
 
         fn accept(sockfd: i32, addr: &SockAddr, addrlen: &socklen_t): i32
-            syscall!(Syscall::ACCEPT, sockfd, addr, addrlen);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::ACCEPT, sockfd, addr, addrlen);
+            <- res;
+        }
 
-        fn sendto(sockfd: i32, buf: &const void, length: usize, flags: i32)
-            syscall!(Syscall::SENDTO, sockfd, buf, length, flags);
+        fn sendto(sockfd: i32, buf: &const void, length: usize, flags: i32): ssize_t
+        {
+            let res: ssize_t;
+            syscall_r!(res, Syscall::SENDTO, sockfd, buf, length, flags);
+            <- res;
+        }
 
         fn recvfrom(sockfd: i32, buf: &void, length: usize, flags: i32, src_addr: &SockAddr, addrlen: &socklen_t): ssize_t
-            syscall!(Syscall::RECVFROM, sockfd, buf, length, flags, src_addr, addrlen);
+        {
+            let res: ssize_t;
+            syscall_r!(res, Syscall::RECVFROM, sockfd, buf, length, flags, src_addr, addrlen);
+            <- res;
+        }
 
         # TODO: fn sendmsg(sockfd: i32, msg: &const msghdr, flags: i32);
         # TODO: fn recvmsg
 
         fn shutdown(sockfd: i32, how: i32): i32
-            syscall!(Syscall::SHUTDOWN, sockfd, how);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::SHUTDOWN, sockfd, how);
+            <- res;
+        }
         
         fn bind(sockfd: i32, addr: &const SockAddr, addrlen: socklen_t): i32
-            syscall!(Syscall::BIND, sockfd, addr, addrlen);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::BIND, sockfd, addr, addrlen);
+            <- res;
+        }
         
         fn listen(sockfd: i32, backlog: i32): i32
-            syscall!(Syscall::LISTEN, sockfd, backlog);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::LISTEN, sockfd, backlog);
+            <- res;
+        }
         
         fn getsockname(sockfd: i32, addr: &SockAddr, addrlen: &socklen_t): i32
-            syscall!(Syscall::GETSOCKNAME, sockfd, addr, addrlen);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::GETSOCKNAME, sockfd, addr, addrlen);
+            <- res;
+        }
 
         fn getpeername(sockfd: i32, addr: &SockAddr, addrlen: &socklen_t): i32
-            syscall!(Syscall::GETPEERNAME, sockfd, addr, addrlen);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::GETPEERNAME, sockfd, addr, addrlen);
+            <- res;
+        }
         
         fn socketpair(domain: i32, _type: i32, protocol: i32, sv: &i32): i32
-            syscall!(Syscall::SOCKETPAIR, domain, _type, protocol, sv);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::SOCKETPAIR, domain, _type, protocol, sv);
+            <- res;
+        }
 
         fn setsockopt(sockfd: i32, level: i32, optname: i32, optval: &const void, optlen: socklen_t): i32
-            syscall!(Syscall::SETSOCKOPT, sockfd, level, optname, optval, optlen);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::SETSOCKOPT, sockfd, level, optname, optval, optlen);
+            <- res;
+        }
         
         fn getsockopt(sockfd: i32, level: i32, optname: i32, optval: &void, optlen: &socklen_t): i32
-            syscall!(Syscall::GETSOCKOPT, sockfd, level, optname, optval, optlen);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::GETSOCKOPT, sockfd, level, optname, optval, optlen);
+            <- res;
+        }
         
         fn clone(func: fn<i32>(&void), stack: &void, flags: i32, arg: &void): i32 # TODO: expand with multiple versions when overloading is supported
-            syscall!(Syscall::CLONE, func, stack, flags, arg);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::CLONE, func, stack, flags, arg);
+            <- res;
+        }
         
         fn fork(): pid_t
-            syscall!(Syscall::FORK);
+        {
+            let res: pid_t;
+            syscall_r!(res, Syscall::FORK);
+            <- res;
+        }
         
         fn vfork(): pid_t
-            syscall!(Syscall::VFORK);
+        {
+            let res: pid_t;
+            syscall_r!(res, Syscall::VFORK);
+            <- res;
+        }
         
         fn execve(pathname: &const char, argv: &&const char, envp: &&const char): i32
-            syscall!(Syscall::EXECVE, pathname, argv, envp);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::EXECVE, pathname, argv, envp);
+            <- res;
+        }
 
         fn exit(status: i32)
             syscall!(Syscall::EXIT, status);
         
         fn wait4(pid: pid_t, wstatus: &i32, options: i32, arg: i32): pid_t
-            syscall!(Syscall::WAIT4, pid, wstatus, options, arg);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::WAIT4, pid, wstatus, options, arg);
+            <- res;
+        }
 
         fn kill(pid: pid_t, sig: i32): i32
-            syscall!(Syscall::KILL, pid, sig);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::KILL, pid, sig);
+            <- res;
+        }
         
         fn getppid(): pid_t
-            syscall!(Syscall::GETPPID);
+        {
+            let res: pid_t;
+            syscall_r!(res, Syscall::GETPPID);
+            <- res;
+        }
         
         fn uname(buf: &UTSName): i32
-            syscall!(Syscall::UNAME, buf);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::UNAME, buf);
+            <- res;
+        }
 
         fn semget(key: key_t, nsems: i32, semflg: i32): i32
-            syscall!(Syscall::SEMGET, key, nsems, semflg);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::SEMGET, key, nsems, semflg);
+            <- res;
+        }
         
         fn semop(semid: i32, sops: &sembuf, nsops: usize): i32
-            syscall!(Syscall::SEMOP, semid, sops, nsops);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::SEMOP, semid, sops, nsops);
+            <- res;
+        }
         
         fn semctl(semid: i32, semnum: i32, cmd: i32): i32
-            syscall!(Syscall::SEMCTL, semid, semnum, cmd);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::SEMCTL, semid, semnum, cmd);
+            <- res;
+        }
         
         fn shmdt(shmaddr: &const void): i32
-            syscall!(Syscall::SHMDT, shmaddr);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::SHMDT, shmaddr);
+            <- res;
+        }
         
         fn msgget(key: key_t, msgflg: i32): i32
-            syscall!(Syscall::MSGGET, key, msgflg);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::MSGGET, key, msgflg);
+            <- res;
+        }
 
         fn msgsnd(msqid: i32, msgp: &const void, msgsz: usize, msgflg: i32): i32
-            syscall!(Syscall::MSGSND, msqid, msgp, msgsz, msgflg);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::MSGSND, msqid, msgp, msgsz, msgflg);
+            <- res;
+        }
         
         fn msgrcv(msqid: i32, msgp: &void, msgsz: usize, msgtyp: i64, msgflg: i32): ssize_t
-            syscall!(Syscall::MSGRCV, msqid, msgp, msgsz, msgtyp, msgflg);
+        {
+            let res: ssize_t;
+            syscall_r!(res, Syscall::MSGRCV, msqid, msgp, msgsz, msgtyp, msgflg);
+            <- res;
+        }
         
         # TODO: msgctl
 
         fn fcntl(fd: i32, cmd: i32): i32
-            syscall!(Syscall::FCNTL, fd, cmd);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::FCNTL, fd, cmd);
+            <- res;
+        }
         
         fn fcntl2(fd: i32, cmd: i32, arg: i32): i32
-            syscall!(Syscall::FCNTL, fd, cmd, arg);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::FCNTL, fd, cmd, arg);
+            <- res;
+        }
 
         fn flock(fd: i32, operation: i32): i32
-            syscall!(Syscall::FLOCK, fd, operation);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::FLOCK, fd, operation);
+            <- res;
+        }
         
         fn fsync(fd: i32): i32
-            syscall!(Syscall::FSYNC, fd);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::FSYNC, fd);
+            <- res;
+        }
         
         fn fdatasync(fd: i32): i32
-            syscall!(Syscall::FDATASYNC, fd);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::FDATASYNC, fd);
+            <- res;
+        }
         
         fn truncate(path: &const char, length: Offset): i32
-            syscall!(Syscall::TRUNCATE, path, length);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::TRUNCATE, path, length);
+            <- res;
+        }
         
         fn ftruncate(fd: i32, length: Offset): i32
-            syscall!(Syscall::FTRUNCATE, fd, length);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::FTRUNCATE, fd, length);
+            <- res;
+        }
         
         fn getdents(fd: u32, dirp: &void, count: u32): i64
-            syscall!(Syscall::GETDENTS, fd, dirp, count);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::GETDENTS, fd, dirp, count);
+            <- res;
+        }
 
         fn getcwd(buf: &char, size: usize): &char
-            syscall!(Syscall::GETCWD, buf, size);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::GETCWD, buf, size);
+            <- res;
+        }
         
         fn chdir(path: &const char): i32
-            syscall!(Syscall::CHDIR, path);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::CHDIR, path);
+            <- res;
+        }
         
         fn fchdir(fd: i32): i32
-            syscall!(Syscall::FCHDIR, fd);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::FCHDIR, fd);
+            <- res;
+        }
         
         fn rename(oldpath: &const char, newpath: &const char): i32
-            syscall!(Syscall::RENAME, oldpath, newpath);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::RENAME, oldpath, newpath);
+            <- res;
+        }
         
         fn mkdir(pathname: &const char, mode: mode_t): i32
-            syscall!(Syscall::MKDIR, pathname, mode);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::MKDIR, pathname, mode);
+            <- res;
+
+        }
         
         fn rmdir(pathname: &const char): i32
-            syscall!(Syscall::RMDIR, pathname);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::RMDIR, pathname);
+            <- res;
+        }
         
         fn creat(pathname: &const char, mode: mode_t): i32
-            syscall!(Syscall::CREAT, pathname, mode);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::CREAT, pathname, mode);
+            <- res;
+        }
         
         fn link(oldpath: &const char, newpath: &const char): i32
-            syscall!(Syscall::LINK, oldpath, newpath);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::LINK, oldpath, newpath);
+            <- res;
+        }
         
         fn unlink(pathname: &const char): i32
-            syscall!(Syscall::UNLINK, pathname);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::UNLINK, pathname);
+            <- res;
+        }
         
         fn symlink(oldpath: &const char, newpath: &const char): i32
-            syscall!(Syscall::SYMLINK, oldpath, newpath);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::SYMLINK, oldpath, newpath);
+            <- res;
+        }
 
         fn readlink(path: &const char, buf: &char, bufsiz: usize): ssize_t
-            syscall!(Syscall::READLINK, path, buf, bufsiz);
+        {
+            let res: ssize_t;
+            syscall_r!(res, Syscall::READLINK, path, buf, bufsiz);
+            <- res;
+        }
         
         fn chmod(path: &const char, mode: mode_t): i32
-            syscall!(Syscall::CHMOD, path, mode);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::CHMOD, path, mode);
+            <- res;
+        }
         
         fn fchmod(fd: i32, mode: mode_t): i32
-            syscall!(Syscall::FCHMOD, fd, mode);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::FCHMOD, fd, mode);
+            <- res;
+        }
         
         fn sync()
             syscall!(Syscall::SYNC);
         
         fn clock_gettime(clk_id: Clock, ts: &TimeSpec): i32
-            syscall!(Syscall::CLOCK_GETTIME, clk_id, ts);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::CLOCK_GETTIME, clk_id, ts);
+            <- res;
+        }
         
         fn clock_settime(clk_id: Clock, ts: &const TimeSpec): i32
-            syscall!(Syscall::CLOCK_SETTIME, clk_id, ts);
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::CLOCK_SETTIME, clk_id, ts);
+            <- res;
+        }
 
         fn gettimeofday(ts: &TimeSpec, n: i32): i32
-            syscall!(Syscall::GETTIMEOFDAY, ts, n);
-
-        [no_return("*")] # every function in this scope will not return anything via the `ret` statement.
+        {
+            let res: i64;
+            syscall_r!(res, Syscall::GETTIMEOFDAY, ts, n);
+            <- res;
+        }
     }
 }

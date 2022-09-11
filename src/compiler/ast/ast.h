@@ -146,6 +146,7 @@ struct AST_NODE_STRUCT
 
     // assignment expression
     bool is_assigning    : 1;
+    bool output       : 1;
     bool is_initializing : 1;
     bool result_ignored  : 1;
 

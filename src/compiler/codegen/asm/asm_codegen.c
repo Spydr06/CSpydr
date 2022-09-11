@@ -1410,34 +1410,6 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             for(size_t i = 0; i < node->exprs->size; i++)
                 asm_gen_expr(cg, node->exprs->items[i]);
             return;
-        case ND_ASM:
-            asm_print(cg, "  ");
-            for(size_t i = 0; i < node->args->size; i++)
-            {
-                ASTNode_T* arg = node->args->items[i];
-                switch(arg->kind)
-                {
-                    case ND_STR:
-                        asm_print(cg, "%s",arg->str_val);
-                        break;
-                    case ND_INT:
-                        asm_print(cg, "$%d", arg->int_val);
-                        break;
-                    case ND_LONG:
-                        asm_print(cg, "$%ld", arg->long_val);
-                        break;
-                    case ND_ULONG:
-                        asm_print(cg, "$%lu", arg->ulong_val);
-                        break;
-                    case ND_ID:
-                        asm_gen_id_ptr(cg, arg);
-                        break;
-                    default:
-                        unreachable();
-                }
-            }
-            asm_print(cg, "\n");
-            return;
         case ND_FLOAT:
         {
             union { f32 f32; u32 u32; } u = { node->float_val };
@@ -2168,6 +2140,36 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
     {
         case ND_NOOP:
             return;
+        
+        case ND_ASM:
+        asm_print(cg, "  ");
+        for(size_t i = 0; i < node->args->size; i++)
+        {
+            ASTNode_T* arg = node->args->items[i];
+            switch(arg->kind)
+            {
+                case ND_STR:
+                    asm_print(cg, "%s",arg->str_val);
+                    break;
+                case ND_INT:
+                    asm_print(cg, "$%d", arg->int_val);
+                    break;
+                case ND_LONG:
+                    asm_print(cg, "$%ld", arg->long_val);
+                    break;
+                case ND_ULONG:
+                    asm_print(cg, "$%lu", arg->ulong_val);
+                    break;
+                case ND_ID:
+                    asm_gen_id_ptr(cg, arg);
+                    break;
+                default:
+                    unreachable();
+            }
+        }
+        asm_print(cg, "\n");
+        return;
+
         case ND_IF:
         {
             u64 pc = cg->cur_count;

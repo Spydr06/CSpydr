@@ -106,6 +106,7 @@ static const char c_header_text[] =
     "}\n"
     "\n";
 
+/*
 static const char* c_start_text[] = 
 {
 #define _START_HEADER             \
@@ -151,7 +152,7 @@ static const char* c_start_text[] =
         "  \"  call " MAIN_FN_ID "\\n\"\n"
         _START_EXIT
 };
-
+*/
 static char* c_primitive_types[TY_KIND_LEN] = {
     [TY_U8]  = "uint8_t",
     [TY_U16] = "uint16_t",
@@ -167,6 +168,25 @@ static char* c_primitive_types[TY_KIND_LEN] = {
     [TY_VOID] = "void",
     [TY_CHAR] = "char",
     [TY_BOOL] = "_Bool"
+};
+
+const char* c_start_text[] = {
+    [MFK_NO_ARGS] =
+        "int main(void){\n"
+        "  return __csp_main();\n"
+        "}\n",
+    [MFK_ARGV_PTR] =
+        "int main(int _, char** argv){\n"
+        "  return __csp_main(argv);\n"
+        "}\n",
+    [MFK_ARGC_ARGV_PTR] =
+        "int main(int argc, char** argv){\n"
+        "  return __csp_main(argc, argv);\n"
+        "}\n",
+    [MFK_ARGS_ARRAY] =
+        "int main(){\n"
+        "  return __csp_main();\n"
+        "}\n"
 };
 
 void init_c_cg(CCodegenData_T* cg, ASTProg_T* ast)
@@ -281,21 +301,40 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
         return;
     char c_source_file[BUFSIZ] = {'\0'};
     get_cached_file_path(c_source_file, target, ".c");
-
-    char obj_file[BUFSIZ] = {'\0'};
-    if(global.do_link) 
-        get_cached_file_path(obj_file, target, ".o");
-    else
-        sprintf(obj_file, "%s.o", target);
     
     // run the compiler
+    if(global.do_link)
     {
+        const char* args[] = {
+            cc,
+            c_source_file,
+            "-std=c99",
+            "-o",
+            target,
+            NULL,
+            NULL
+        };
+
+        if(global.embed_debug_info)
+            args[LEN(args) - 2] = "-g";
+        
+        i32 exit_code = subprocess(args[0], (char* const*) args, false);
+
+        if(exit_code != 0)
+        {
+            LOG_ERROR_F("error compiling code. (exit code %d)\n", exit_code);
+            throw(global.main_error_exception);
+        }
+    }
+    else
+    {
+        char obj_file[BUFSIZ] = {'\0'};
+        get_cached_file_path(obj_file, target, ".o");
+
         const char* args[] = {
             cc,
             "-c",
             c_source_file,
-            "-nostdlib",
-            "-ffreestanding",
             "-std=c99",
             "-o",
             obj_file,
@@ -314,10 +353,6 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
             throw(global.main_error_exception);
         }
     }
-
-    // run the linker
-    if(global.do_link)    
-        link_obj(target, obj_file, cg->silent);
 }
 
 static char* c_gen_identifier(ASTIdentifier_T* id)
@@ -892,7 +927,18 @@ static void c_gen_inline_asm(CCodegenData_T* cg, ASTNode_T* node)
 
     bool used_registers[C_NUM_REGISTERS] = {0};
 
-    size_t num_vars = 0;
+    size_t num_output_vars = 0;
+    for(size_t i = 0; i < node->args->size; i++)
+    {
+        ASTNode_T* arg = node->args->items[i];
+        if(arg->kind == ND_ID && arg->output)
+        {
+            num_output_vars++;
+        }
+    }
+
+    size_t output_var_counter = 0;
+    size_t num_input_vars = 0;
     for(size_t i = 0; i < node->args->size; i++)
     {
         ASTNode_T* arg = node->args->items[i];
@@ -919,7 +965,10 @@ static void c_gen_inline_asm(CCodegenData_T* cg, ASTNode_T* node)
                 c_print(cg, "\"$%lu\"", arg->ulong_val);
                 break;
             case ND_ID:
-                c_print(cg, "\"%%%lu\"", num_vars++);
+                if(arg->output)
+                    c_print(cg, "\"%%%lu\"", output_var_counter++);
+                else
+                    c_print(cg, "\"%%%lu\"", num_input_vars++ + num_output_vars);
                 break;
             default:
                 unreachable();
@@ -929,13 +978,22 @@ static void c_gen_inline_asm(CCodegenData_T* cg, ASTNode_T* node)
             c_putc(cg, ' ');
     }
 
-    c_print(cg, "\n  ::");
+    c_print(cg, "\n  :");
     for(size_t i = 0; i < node->args->size; i++)
     {
         ASTNode_T* arg = node->args->items[i];
-        if(arg->kind != ND_ID)
+        if(arg->kind != ND_ID || !arg->output)
             continue;
-        c_print(cg, "\"r\"((uint64_t)%s)%c", c_gen_identifier(arg->id), --num_vars ? ',' : '\n');
+        c_print(cg, "\"=r\"(%s)%c", c_gen_identifier(arg->id), --num_output_vars ? ',' : '\n');
+    }
+
+    c_putc(cg, ':');
+    for(size_t i = 0; i < node->args->size; i++)
+    {
+        ASTNode_T* arg = node->args->items[i];
+        if(arg->kind != ND_ID || arg->output)
+            continue;
+        c_print(cg, "\"r\"((uint64_t)%s)%c", c_gen_identifier(arg->id), --num_input_vars ? ',' : '\n');
     }
 
     c_print(cg, "  :");
@@ -1166,9 +1224,6 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             }
             c_putc(cg, ')');
         } break;
-        case ND_ASM:
-            c_gen_inline_asm(cg, node);
-            break;
         case ND_CLOSURE:
             c_putc(cg, '(');
             for(size_t i = 0; i < node->exprs->size; i++)
@@ -1313,6 +1368,11 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
 {
     switch(node->kind)
     {
+    case ND_ASM:
+        c_gen_inline_asm(cg, node);
+        c_println(cg, ";");
+        break;
+
     case ND_BLOCK:
     {
         list_push(cg->blocks, node);
