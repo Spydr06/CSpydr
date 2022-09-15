@@ -1,0 +1,8 @@
+import "libc/libc.csp";
+
+fn main(): i32 {
+    using libc;
+    printf("Hello, World\n");
+
+    <- 0;
+}

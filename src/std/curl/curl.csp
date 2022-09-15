@@ -129,7 +129,7 @@ macro CURLFINFOFLAG_KNOWN_HLINKCOUNT { (1<<7) }
 type curl_fileinfo: struct {
     filename: &char,
     filetype: curlfiletype,
-    time: std::time_t,
+    time: std::Time,
     perm: u32,
     uid: i32,
     gid: i32,
@@ -1938,7 +1938,7 @@ extern "C" {
     fn curl_slist_append(list: &curl_slist, new: const &char): &curl_slist;
     fn curl_slist_free_all(list: &curl_slist);
 
-    fn curl_getdate(p: const &char, unused: const &std::time_t): std::time_t;
+    fn curl_getdate(p: const &char, unused: const &std::Time): std::Time;
 }
 
 type curl_certinfo: struct {

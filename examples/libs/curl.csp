@@ -2,7 +2,7 @@ import "curl/curl.csp"; # curl library
 import "io.csp";        # for std::io::puts()
 
 # the weblink from which to pull the data
-let link: char[64] = "https://raw.githubusercontent.com/Spydr06/CSpydr/main/examples/assets/curl_test.txt";
+let link: char'c[100] = "https://raw.githubusercontent.com/Spydr06/CSpydr/main/examples/assets/curl_test.txt";
 
 # entry point
 fn main(): i32 {
@@ -15,8 +15,8 @@ fn main(): i32 {
     if handle {
         curl_easy_setopt(handle, curl::CURLoption::URL, &link[0]);
         curl_easy_setopt(handle, curl::CURLoption::WRITEFUNCTION, 
-            |ptr: &char, size: u64, nmemb: u64, stream: &void| u64 => {
-                puts(ptr);
+            const |ptr: &char, _size: u64, _nmemb: u64, _stream: &void| u64 => {
+                std::io::puts(ptr);
                 <- 0;
             });
 

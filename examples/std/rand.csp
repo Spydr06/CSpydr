@@ -2,7 +2,7 @@ import "std.csp";
 
 fn main(): i32 {
     using std;
-    random::seed(time::unix::secs());
+    random::seed(time::unix::secs().tv_sec);
 
     for 0..100 {
         io::printf("%l\n", random::rand() % 10);

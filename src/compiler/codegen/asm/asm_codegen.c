@@ -240,25 +240,6 @@ static void write_code(ASMCodegenData_T* cg, const char* target, bool cachefile)
     fclose(out);
 }
 
-static void get_platform(char* dest)
-{
-#if defined (__linux__) || defined(__linux)
-#if defined(__x86_64) || defined(__x86_64__)
-    strcpy(dest, "x86_64");
-#else
-    #warn "unsupported assembler platform"
-#endif
-    strcat(dest, "-linux");
-#if defined(__GNUC__) || defined(__gnu_linux__)
-    strcat(dest, "-gnu");
-#else
-    #warn "unsupported assembler platform"
-#endif
-#else
-    #warn "unsupported assembler platform"
-#endif
-}
-
 void asm_gen_code(ASMCodegenData_T* cg, const char* target)
 {
     char platform[1024] = { '\0' };

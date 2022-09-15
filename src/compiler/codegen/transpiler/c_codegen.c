@@ -1,6 +1,7 @@
 #include "c_codegen.h"
 
 #include <ctype.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
@@ -36,7 +37,7 @@ static void c_gen_structs(CCodegenData_T* cg, List_T* objs);
 static void c_gen_globals(CCodegenData_T* cg, List_T* objs);
 static void c_gen_function_definitions(CCodegenData_T* cg, List_T* objs);
 static void c_gen_functions(CCodegenData_T* cg, List_T* objs);
-static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* expr);
+static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node, bool with_casts);
 static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* stmt);
 static void c_gen_type(CCodegenData_T* cg, ASTType_T* type);
 static void c_gen_typed_name(CCodegenData_T* cg, ASTIdentifier_T* id, ASTType_T* type);
@@ -272,9 +273,11 @@ static void write_code(CCodegenData_T* cg, const char* target, bool cachefile)
 
 void c_gen_code(CCodegenData_T* cg, const char* target)
 {
+    char platform[1024] = { '\0' };
+    get_platform(platform);
     if(!cg->silent)
     {
-        LOG_OK(COLOR_BOLD_BLUE "  Generating" COLOR_BOLD_WHITE " C" COLOR_RESET " code\n");
+        LOG_OK_F(COLOR_BOLD_BLUE "  Generating" COLOR_BOLD_WHITE " C99" COLOR_RESET " for " COLOR_BOLD_WHITE "%s\n" COLOR_RESET, platform);
     }
 
     // generate the c code
@@ -305,20 +308,28 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
     // run the compiler
     if(global.do_link)
     {
+        if(!cg->silent)
+            print_linking_msg(target);
+
         const char* args[] = {
             cc,
             c_source_file,
             "-std=c99",
             "-o",
-            target,
-            NULL,
-            NULL
+            (char*) target,
+            "-Wno-builtin-declaration-mismatch", // disable warnings for "extern "C"" function declarations
         };
+        List_T* arg_list = init_list_with((void**) args, LEN(args));
 
         if(global.embed_debug_info)
-            args[LEN(args) - 2] = "-g";
+            list_push(arg_list, "-g");
         
-        i32 exit_code = subprocess(args[0], (char* const*) args, false);
+        for(size_t i = 0; i < global.linker_flags->size; i++)
+            list_push(arg_list, global.linker_flags->items[i]);
+        
+        list_push(arg_list, NULL);
+        
+        i32 exit_code = subprocess(arg_list->items[0], (char* const*) arg_list->items, false);
 
         if(exit_code != 0)
         {
@@ -362,10 +373,22 @@ static char* c_gen_identifier(ASTIdentifier_T* id)
     return str;
 }
 
+static void c_gen_array_typedef(ASTType_T* type, va_list custom_args);
+inline static void c_predefine_array(ASTType_T* type, ...)
+{
+    va_list ap;
+    va_start(ap, type);
+    c_gen_array_typedef(type, ap);
+    va_end(ap);
+}
+
 static void c_gen_typedef(CCodegenData_T* cg, ASTObj_T* obj)
 {
     if(obj->generated)
         return;
+
+    if(obj->data_type->kind == TY_ARRAY || obj->data_type->kind == TY_VLA)
+        c_predefine_array(obj->data_type, cg);
 
     char* callee = c_gen_identifier(obj->id);
     obj->generated = true;
@@ -493,24 +516,6 @@ static void c_gen_structs(CCodegenData_T* cg, List_T* objs)
     }
 }
 
-static const char* primitive_type_hashes[] = {
-    [TY_U8]  = "u8",
-    [TY_U16] = "u16",
-    [TY_U32] = "u32",
-    [TY_U64] = "u64",
-    [TY_I8]  = "i8",
-    [TY_I16] = "i16",
-    [TY_I32] = "i32",
-    [TY_I64] = "i64",
-    [TY_F32] = "f32",
-    [TY_F64] = "f64",
-    [TY_F80] = "f80",
-    [TY_CHAR] = "c",
-    [TY_VOID] = "v",
-    [TY_BOOL] = "b",
-    [TY_FN] = "f",
-};
-
 static void c_hash_array(char buffer[BUFSIZ], ASTType_T* type)
 {
     ast_type_to_str(buffer, type, BUFSIZ);
@@ -561,8 +566,8 @@ static void c_gen_array_types(CCodegenData_T* cg)
 
 static void c_gen_type(CCodegenData_T* cg, ASTType_T* type)
 {
-    if(type->is_constant)
-        c_print(cg, "const ");
+    //if(type->is_constant && type->kind != TY_FN)
+    //    c_print(cg, "const ");
 
     if(type->is_primitive && type->kind != TY_FN)
     {
@@ -685,7 +690,7 @@ static void c_gen_globals(CCodegenData_T* cg, List_T* objs)
                             continue;
                         char* id = c_gen_identifier(member->id);
                         c_print(cg, "int %s = ", id);
-                        c_gen_expr(cg, member->value);
+                        c_gen_expr(cg, member->value, false);
                         c_println(cg, ";");
                     }
             } break;
@@ -696,11 +701,11 @@ static void c_gen_globals(CCodegenData_T* cg, List_T* objs)
             {
                 if(obj->is_extern)
                     c_print(cg, "extern ");
-                c_gen_typed_name(cg, obj->id, obj->data_type);
+                c_gen_typed_name_str(cg, obj->is_extern ? obj->id->callee : c_gen_identifier(obj->id), obj->data_type);
                 if(obj->value)
                 {
                     c_print(cg, " = ");
-                    c_gen_expr(cg, obj->value);
+                    c_gen_expr(cg, obj->value, false);
                     c_println(cg, ";");
                 }
                 else
@@ -720,7 +725,7 @@ static void c_gen_function_declaration(CCodegenData_T* cg, ASTObj_T* obj)
         c_print(cg, "extern ");
     
     c_gen_type(cg, obj->return_type);
-    c_print(cg, " %s(", c_gen_identifier(obj->id));
+    c_print(cg, " %s(", obj->is_extern ? obj->id->callee : c_gen_identifier(obj->id));
     
     for(size_t i = 0; i < obj->args->size; i++)
     {
@@ -764,13 +769,18 @@ static void c_gen_lambda(ASTNode_T* node, va_list custom_args)
     u64 uid = node->long_val = cg->unique_id++;
 
     c_gen_type(cg, node->data_type->base);
-    c_print(cg, " " UNIQUE_ID_FMT "(void** __args,", uid);
-    for(size_t i = 0; i < node->args->size; i++)
+    c_print(cg, " " UNIQUE_ID_FMT "(void** __args", uid);
+    
+    if(node->args->size > 0)
     {
-        ASTObj_T* arg = node->args->items[i];
-        c_gen_typed_name(cg, arg->id, arg->data_type);
-        if(node->args->size - i > 1)
-            c_putc(cg, ',');
+        c_putc(cg, ',');
+        for(size_t i = 0; i < node->args->size; i++)
+        {
+            ASTObj_T* arg = node->args->items[i];
+            c_gen_typed_name(cg, arg->id, arg->data_type);
+            if(node->args->size - i > 1)
+                c_putc(cg, ',');
+        }
     }
     c_println(cg, "){");
 
@@ -1018,18 +1028,18 @@ static void c_gen_index(CCodegenData_T* cg, ASTNode_T* node)
         case TY_FN:
         case TY_C_ARRAY:
             c_print(cg, "(");
-            c_gen_expr(cg, node->left);
+            c_gen_expr(cg, node->left, true);
             c_print(cg, ")[");
-            c_gen_expr(cg, node->expr);
+            c_gen_expr(cg, node->expr, true);
             c_print(cg, "]");
             break;
         
         case TY_VLA:
         case TY_ARRAY:
             c_print(cg, "(");
-            c_gen_expr(cg, node->left);
+            c_gen_expr(cg, node->left, true);
             c_print(cg, ")%s__v[", ty == TY_ARRAY ? "." : "->");
-            c_gen_expr(cg, node->expr);
+            c_gen_expr(cg, node->expr, true);
             c_putc(cg, ']');
             break;
 
@@ -1038,7 +1048,7 @@ static void c_gen_index(CCodegenData_T* cg, ASTNode_T* node)
     }
 }
 
-static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
+static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node, bool with_casts)
 {
     switch(node->kind)
     {
@@ -1085,19 +1095,19 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
                     break;
                 case TY_ARRAY:
                     c_putc(cg, '(');
-                    c_gen_expr(cg, node->expr);
+                    c_gen_expr(cg, node->expr, true);
                     c_print(cg, ".__s)");
                     break;
                 case TY_VLA:
                     c_putc(cg, '(');
-                    c_gen_expr(cg, node->expr);
+                    c_gen_expr(cg, node->expr, true);
                     c_print(cg, "->__s)");
                     break;
                 case TY_PTR:
                     if(unpack(ty->base)->kind == TY_CHAR)
                     {
                         c_print(cg, "_inline_strlen(");
-                        c_gen_expr(cg, node->expr);
+                        c_gen_expr(cg, node->expr, true);
                         c_putc(cg, ')');
                         break;
                     }
@@ -1115,13 +1125,13 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
         case ND_REF:
         case ND_DEREF:
             c_print(cg, "(%s", op_symbols[node->kind]);
-            c_gen_expr(cg, node->right);
+            c_gen_expr(cg, node->right, true);
             c_putc(cg, ')');
             break;
         case ND_INC:
         case ND_DEC:
             c_putc(cg, '(');
-            c_gen_expr(cg, node->left);
+            c_gen_expr(cg, node->left, true);
             c_print(cg, "%s)", node->kind == ND_INC ? "++" : "--");
             break;
         case ND_ADD:
@@ -1144,29 +1154,29 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
         case ND_BIT_AND:
         case ND_ASSIGN:
             c_putc(cg, '(');
-            c_gen_expr(cg, node->left);
+            c_gen_expr(cg, node->left, true);
             c_print(cg, "%s", op_symbols[node->kind]);
-            c_gen_expr(cg, node->right);
+            c_gen_expr(cg, node->right, true);
             c_putc(cg, ')');
             break;
         case ND_ARRAY:
         {
             char buffer[BUFSIZ] = {0};
             c_hash_array(buffer, node->data_type);
-            c_print(cg, "(_array_%" PRIx64 "){%lu,{", (u64) hashmap_get(cg->arrays, buffer), unpack(node->data_type)->num_indices);
+            if(with_casts)
+                c_print(cg, "(_array_%" PRIx64 ")", (u64) hashmap_get(cg->arrays, buffer));
+            c_print(cg, "{%lu,{", (u64) unpack(node->data_type)->num_indices);
             for(size_t i = 0; i < node->args->size; i++)
             {
-                c_gen_expr(cg, node->args->items[i]);
+                c_gen_expr(cg, node->args->items[i], true);
                 if(node->args->size - i > 1)
                     c_putc(cg, ',');
             }
             c_print(cg, "}}");
         } break;
         case ND_STRUCT:
-            if(node->data_type->kind == TY_UNDEF)
-            {
+            if(node->data_type->kind == TY_UNDEF && with_casts)
                 c_print(cg, "(%s)", c_gen_identifier(node->data_type->id));
-            }
 
             if(node->args->size == 0)
             {
@@ -1177,19 +1187,26 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             c_putc(cg, '{');
             for(size_t i = 0; i < node->args->size; i++)
             {
-                c_gen_expr(cg, node->args->items[i]);
+                c_gen_expr(cg, node->args->items[i], true);
                 c_putc(cg, node->args->size - i > 1 ? ',' : '}');
             }
             break;
         case ND_CAST:
+            if(node->data_type->kind == TY_STRUCT)
+            {
+                // TODO: generate anonymous structs beforehand
+                c_gen_expr(cg, node->left, true);
+                break;
+            }
+
             c_print(cg, "((");
             c_gen_type(cg, node->data_type);
             c_putc(cg, ')');
-            c_gen_expr(cg, node->left);
+            c_gen_expr(cg, node->left, true);
             c_putc(cg, ')');
             break;
         case ND_ID:
-            c_print(cg, "%s", c_gen_identifier(node->id));
+            c_print(cg, "%s", node->referenced_obj && node->referenced_obj->is_extern ? node->id->callee : c_gen_identifier(node->id));
             break;
         case ND_CALL:
         {
@@ -1199,14 +1216,16 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
                 c_print(cg, "((");
                 c_gen_type(cg, call_type->base);
                 c_print(cg, "(*)(void**,...))");
-                c_gen_expr(cg, node->expr);
+                c_gen_expr(cg, node->expr, true);
                 c_print(cg, "->__fn)(");
-                c_gen_expr(cg, node->expr);
-                c_print(cg, "->__args,");
+                c_gen_expr(cg, node->expr, true);
+                c_print(cg, "->__args");
+                if(node->args->size > 0)
+                    c_putc(cg, ',');
             }
             else
             {
-                c_gen_expr(cg, node->expr);
+                c_gen_expr(cg, node->expr, true);
                 c_putc(cg, '(');
             }
             for(size_t i = 0; i < node->args->size; i++)
@@ -1218,7 +1237,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
                     c_gen_type(cg, arg_type);
                     c_putc(cg, ')');
                 }
-                c_gen_expr(cg, node->args->items[i]);
+                c_gen_expr(cg, node->args->items[i], true);
                 if(node->args->size - i > 1)
                     c_print(cg, ",");
             }
@@ -1228,7 +1247,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             c_putc(cg, '(');
             for(size_t i = 0; i < node->exprs->size; i++)
             {
-                c_gen_expr(cg, node->exprs->items[i]);
+                c_gen_expr(cg, node->exprs->items[i], true);
                 c_putc(cg, node->exprs->size - i > 1 ? ',' : ')');
             }
             break;
@@ -1237,25 +1256,25 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node)
             break;
         case ND_MEMBER:
             c_print(cg, "((");
-            c_gen_expr(cg, node->left);
+            c_gen_expr(cg, node->left, true);
             c_print(cg, ").");
-            c_gen_expr(cg, node->right);
+            c_gen_expr(cg, node->right, true);
             c_putc(cg, ')');
             break;
         case ND_TERNARY:
             c_print(cg, "((");
-            c_gen_expr(cg, node->condition);
+            c_gen_expr(cg, node->condition, true);
             c_print(cg, ")?");
-            c_gen_expr(cg, node->if_branch);
+            c_gen_expr(cg, node->if_branch, true);
             c_putc(cg, ':');
-            c_gen_expr(cg, node->else_branch);
+            c_gen_expr(cg, node->else_branch, true);
             c_putc(cg, ')');
             break;
         case ND_PIPE:
             c_print(cg, "(" UNIQUE_ID_FMT "=(", node->long_val);
-            c_gen_expr(cg, node->left);
+            c_gen_expr(cg, node->left, true);
             c_print(cg, "),(");
-            c_gen_expr(cg, node->right);
+            c_gen_expr(cg, node->right, true);
             c_print(cg, "))");
             break;
         case ND_HOLE:
@@ -1396,7 +1415,7 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
 
     case ND_IF:
         c_print(cg, "if(");
-        c_gen_expr(cg, node->condition);
+        c_gen_expr(cg, node->condition, true);
         c_println(cg, "){");
         c_gen_stmt(cg, node->if_branch);
         if(node->else_branch)
@@ -1415,7 +1434,7 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
     
     case ND_WHILE:
         c_print(cg, "while(");
-        c_gen_expr(cg, node->condition);
+        c_gen_expr(cg, node->condition, true);
         c_println(cg, "){");
         c_gen_stmt(cg, node->body);
         c_println(cg, "}");
@@ -1425,20 +1444,20 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
         c_println(cg, "do{");
         c_gen_stmt(cg, node->body);
         c_print(cg, "} while(");
-        c_gen_expr(cg, node->condition);
+        c_gen_expr(cg, node->condition, true);
         c_println(cg, ");");
         break;
     
     case ND_DO_UNLESS:
         c_print(cg, "if(!(");
-        c_gen_expr(cg, node->condition);
+        c_gen_expr(cg, node->condition, true);
         c_println(cg, ")){");
         c_gen_stmt(cg, node->body);
         c_println(cg, "}");
         break;
 
     case ND_EXPR_STMT:
-        c_gen_expr(cg, node->expr);
+        c_gen_expr(cg, node->expr, true);
         c_println(cg, ";");
         break;
 
@@ -1454,7 +1473,7 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
         if(node->return_val) 
         {
             c_print(cg, "return ");
-            c_gen_expr(cg, node->return_val);
+            c_gen_expr(cg, node->return_val, true);
             c_println(cg, ";");
         }
         else
@@ -1489,11 +1508,11 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
             c_putc(cg, ';');
 
         if(node->condition)
-            c_gen_expr(cg, node->condition);
+            c_gen_expr(cg, node->condition, true);
         c_putc(cg, ';');
         
         if(node->expr)
-            c_gen_expr(cg, node->expr);
+            c_gen_expr(cg, node->expr, true);
         c_println(cg, "){");
         c_gen_stmt(cg, node->body);
         c_println(cg, "}");
@@ -1506,9 +1525,9 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
     {
         u64 low_id = cg->unique_id++, high_id = cg->unique_id++;
         c_print(cg, "for(%s " UNIQUE_ID_FMT " = ", c_primitive_types[TY_U64], low_id);
-        c_gen_expr(cg, node->left);
+        c_gen_expr(cg, node->left, true);
         c_print(cg, ", " UNIQUE_ID_FMT " = (%s)", high_id, c_primitive_types[TY_U64]);
-        c_gen_expr(cg, node->right);
+        c_gen_expr(cg, node->right, true);
         c_println(cg, "; " UNIQUE_ID_FMT " < " UNIQUE_ID_FMT "; " UNIQUE_ID_FMT "++){", low_id, high_id, low_id);
         c_gen_stmt(cg, node->body);
         c_println(cg, "}");
@@ -1518,14 +1537,14 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
     {
         u64 uid = cg->unique_id;
         c_print(cg, "{\n%s " UNIQUE_ID_FMT " =", c_primitive_types[TY_U64], uid);
-        c_gen_expr(cg, node->condition);
+        c_gen_expr(cg, node->condition, true);
         c_println(cg, ";");
         
         for(size_t i = 0; i < node->cases->size; i++)
         {
             ASTNode_T* _case = node->cases->items[i];
             c_print(cg, "%sif(" UNIQUE_ID_FMT " == (", i == 0 ? "" : "else ", uid);
-            c_gen_expr(cg, _case->condition);
+            c_gen_expr(cg, _case->condition, true);
             c_println(cg, ")){");
             c_gen_stmt(cg, _case->body);
             c_println(cg, "}");
@@ -1546,11 +1565,11 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
         c_println(cg, "{");
         c_gen_typed_name(cg, node->obj->id, node->obj->data_type);
         c_putc(cg, '=');
-        c_gen_expr(cg, node->condition->right);
+        c_gen_expr(cg, node->condition->right, true);
         c_println(cg, ";");
 
         c_print(cg, ";\nif((");
-        c_gen_expr(cg, node->condition->left);
+        c_gen_expr(cg, node->condition->left, true);
         c_println(cg, ") != 0){");
         c_gen_stmt(cg, node->if_branch);
         

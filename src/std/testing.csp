@@ -42,7 +42,7 @@ namespace std {
             do {
                 error::new(std::Errno::NILPTR, "t.tests[idx] is nil");
                 <- TestExit::FAIL;
-            } unless test && test.func;
+            } unless test.func && test.func;
 
             t.errors = 0;
             t.current = idx;

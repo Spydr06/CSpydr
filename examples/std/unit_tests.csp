@@ -5,7 +5,7 @@ fn main(): i32 {
 
     let tests = [
         Test::{
-            const |t: &std::Testing| => {},
+            const |_t: &std::Testing| => {},
             "test one"
         },
         Test::{
@@ -18,7 +18,7 @@ fn main(): i32 {
         Test::{
             const |t: &std::Testing| => {
                 using std::testing;
-                skip();
+                skip(t);
             },
             "test three"
         },

@@ -9,6 +9,5 @@ macro ERANGE { 1 }
 
 namespace libc {
 extern "C" fn __errno_location(): &i32;
-extern "C" fn strerror(errno: i32): &const char;
 }
 macro errno() { (*::libc::__errno_location()) }

@@ -1,6 +1,8 @@
 #include "list.h"
 #include "config.h"
+#include "globals.h"
 
+#include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -19,6 +21,14 @@ List_T* init_list_sized(size_t size)
     list->allocated = size;
     list->items = calloc(list->allocated, sizeof(void*));
 
+    return list;
+}
+
+List_T* init_list_with(void** data, size_t size)
+{
+    List_T* list = init_list_sized(size);
+    for(size_t i = 0; i < size; i++)
+        list_push(list, ((void**) data)[i]);
     return list;
 }
 

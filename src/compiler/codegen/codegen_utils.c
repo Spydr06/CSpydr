@@ -159,24 +159,27 @@ bool ptr_type(ASTType_T* ty)
     return ty->kind == TY_PTR || ty->kind == TY_VLA;
 }
 
+void print_linking_msg(const char* target) 
+{
+    LOG_OK_F(COLOR_BOLD_BLUE "  Linking    " COLOR_RESET "%s", target);
+    if(global.linker_flags->size > 0)
+    {
+        LOG_OK(COLOR_RESET " (");
+        for(size_t i = 0; i < global.linker_flags->size; i++) 
+        {
+            char* lib = global.linker_flags->items[i];
+            if(lib[0] == '-' && lib[1] == 'l') {
+                LOG_OK_F(COLOR_RESET "%s%s", (char*) lib + 2, global.linker_flags->size - i <= 1 ? ")" : ", ");
+            }
+        }
+    }
+    LOG_OK(COLOR_RESET "\n");
+} 
+
 void link_obj(const char* target, char* obj_file, bool silent)
 {
     if(!silent)
-    {
-        LOG_OK_F(COLOR_BOLD_BLUE "  Linking    " COLOR_RESET "%s", target);
-        if(global.linker_flags->size > 0)
-        {
-            LOG_OK(COLOR_RESET " (");
-            for(size_t i = 0; i < global.linker_flags->size; i++) 
-            {
-                char* lib = global.linker_flags->items[i];
-                if(lib[0] == '-' && lib[1] == 'l') {
-                    LOG_OK_F(COLOR_RESET "%s%s", (char*) lib + 2, global.linker_flags->size - i <= 1 ? ")" : ", ");
-                }
-            }
-        }
-        LOG_OK(COLOR_RESET "\n");
-    }
+        print_linking_msg(target);
 
     {
         List_T* args = init_list();
@@ -208,4 +211,23 @@ void link_obj(const char* target, char* obj_file, bool silent)
     
         free_list(args);
     }
+}
+
+void get_platform(char* dest)
+{
+#if defined (__linux__) || defined(__linux)
+#if defined(__x86_64) || defined(__x86_64__)
+    strcpy(dest, "x86_64");
+#else
+    #warn "unsupported assembler platform"
+#endif
+    strcat(dest, "-linux");
+#if defined(__GNUC__) || defined(__gnu_linux__)
+    strcat(dest, "-gnu");
+#else
+    #warn "unsupported assembler platform"
+#endif
+#else
+    #warn "unsupported assembler platform"
+#endif
 }

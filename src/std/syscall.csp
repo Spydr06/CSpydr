@@ -567,7 +567,7 @@ namespace std {
         
         fn getpid(): pid_t
         {
-            let res: pid_t;
+            let res: i64;
             syscall_r!(res, Syscall::GETPID);
             <- res;
         }
@@ -675,14 +675,14 @@ namespace std {
         
         fn fork(): pid_t
         {
-            let res: pid_t;
+            let res: i64;
             syscall_r!(res, Syscall::FORK);
             <- res;
         }
         
         fn vfork(): pid_t
         {
-            let res: pid_t;
+            let res: i64;
             syscall_r!(res, Syscall::VFORK);
             <- res;
         }
@@ -713,7 +713,7 @@ namespace std {
         
         fn getppid(): pid_t
         {
-            let res: pid_t;
+            let res: i64;
             syscall_r!(res, Syscall::GETPPID);
             <- res;
         }
