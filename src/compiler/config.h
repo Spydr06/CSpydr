@@ -86,7 +86,11 @@
 #define ASM_FP_MAX 8
 
 // use __attribute__((packed))
-#define CSPYDR_PACKED_STRUCTS
+//#define CSPYDR_PACKED_STRUCTS
+#if !defined(CSPYDR_PACKED_STRUCTS) || !defined(CSPYDR_LIBC_GLIBC)
+    #define __attribute__(_)
+    #define __attribute(_)
+#endif
 
 const char* get_arch(void);
 const char* get_os(void);

@@ -269,7 +269,7 @@ i32 main(i32 argc, char* argv[])
                 LOG_ERROR_F("[Error] Expect STD path after %s.", arg);
                 exit(1);
             }
-            global.std_path = argv[i];
+            global.std_path = get_absolute_path(argv[i]);
         }
         else if(streq(arg, "--clear-cache"))
             global.clear_cache_after = true;
