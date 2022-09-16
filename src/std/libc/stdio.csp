@@ -2,10 +2,9 @@
 
 import "link.csp";
 
-
-#import "libc/stddef.csp";
-#import "libc/stdarg.csp";
-#import "libc/wchar.csp";
+import "libc/stddef.csp";
+import "libc/stdarg.csp";
+import "libc/wchar.csp";
 
 macro BUFSIZ { 8192 }
 
