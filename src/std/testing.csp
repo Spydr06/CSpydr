@@ -21,7 +21,7 @@ namespace std {
             OK, SKIP, FAIL
         };
 
-        fn new(tests: Test[]): std::Testing {
+        fn new(tests: Test[]): Testing {
             <- Testing::{
                 &tests
             };

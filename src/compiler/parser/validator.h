@@ -5,10 +5,10 @@
 #include "hashmap.h"
 
 // validator structs
-typedef struct VALIDATOR_SCOPE_STRUCT VScope_T;
-struct VALIDATOR_SCOPE_STRUCT
+typedef struct SCOPE_STRUCT Scope_T;
+struct SCOPE_STRUCT
 {
-    VScope_T* prev;
+    Scope_T* prev;
     HashMap_T* objs;
     ASTIdentifier_T* id;
 } __attribute__((packed));
@@ -17,8 +17,8 @@ typedef struct VALIDATOR_STRUCT
 {
     ASTProg_T* ast;
 
-    VScope_T* current_scope;
-    VScope_T* global_scope;
+    Scope_T* current_scope;
+    Scope_T* global_scope;
     ASTObj_T* current_function;
     ASTNode_T* current_pipe;
     bool main_function_found;

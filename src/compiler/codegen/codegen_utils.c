@@ -161,7 +161,7 @@ bool ptr_type(ASTType_T* ty)
 
 void print_linking_msg(const char* target) 
 {
-    LOG_OK_F(COLOR_BOLD_BLUE "  Linking    " COLOR_RESET "%s", target);
+    LOG_OK_F(COLOR_BOLD_BLUE "  Linking   " COLOR_RESET " %s", target);
     if(global.linker_flags->size > 0)
     {
         LOG_OK(COLOR_RESET " (");

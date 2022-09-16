@@ -324,6 +324,9 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
         if(global.embed_debug_info)
             list_push(arg_list, "-g");
         
+        if(global.optimize)
+            list_push(arg_list, "-O2");
+        
         for(size_t i = 0; i < global.linker_flags->size; i++)
             list_push(arg_list, global.linker_flags->items[i]);
         
@@ -1355,6 +1358,7 @@ static void c_gen_pipe_buffer(ASTNode_T* node, va_list custom_args)
     char unique_name[128] = {0};
     sprintf(unique_name, UNIQUE_ID_FMT, uid);
 
+    c_print(cg, "static ");
     c_gen_typed_name_str(cg, unique_name, node->left->data_type);
     c_putc(cg, '=');
     c_init_zero(cg, node->left->data_type);

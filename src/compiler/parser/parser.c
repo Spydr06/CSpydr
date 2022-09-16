@@ -578,7 +578,7 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, Li
         char* abs_path = get_absolute_path(p->tok->source->path);
         char* working_dir = get_path_from_file(abs_path);
         if(!global.silent) 
-            LOG_OK_F(COLOR_BOLD_CYAN "  Command" COLOR_RESET "    \"%s %s\"\n", cc, value);
+            LOG_OK_F(COLOR_BOLD_CYAN "  Command   " COLOR_RESET " \"%s %s\"\n", cc, value);
 
         List_T* args = init_list();
         list_push(args, cc);
@@ -1199,6 +1199,7 @@ static void parse_namespace(Parser_T* p, List_T* objs)
     parser_advance(p); // skip the "namespace" token
     ASTIdentifier_T* id = parse_simple_identifier(p);
 
+
     // if there is already a namespace with this name in the current scope, add the new objs to it rather than creating a new namespace
     ASTObj_T* namespace = find_namespace(objs, id->callee);
     if(!namespace)
@@ -1224,7 +1225,10 @@ static void parse_namespace(Parser_T* p, List_T* objs)
     parser_consume(p, TOKEN_RBRACE, "expect `}` at end of namespace");
 
     for(size_t i = 0; i < namespace->objs->size; i++)
-        ((ASTObj_T*) namespace->objs->items[i])->id->outer = namespace->id;
+    {
+        ASTObj_T* obj = namespace->objs->items[i];
+        obj->id->outer = namespace->id;
+    }
 }
 
 static void parse_obj(Parser_T* p, List_T* obj_list)
@@ -1232,27 +1236,29 @@ static void parse_obj(Parser_T* p, List_T* obj_list)
     switch(p->tok->type)
     {
         case TOKEN_TYPE:
-                list_push(obj_list, parse_typedef(p));
-                break;
-            case TOKEN_CONST:
-            case TOKEN_LET:
-                list_push(obj_list, parse_global(p));
-                break;
-            case TOKEN_FN:
-                list_push(obj_list, parse_fn(p));
-                break;
-            case TOKEN_EXTERN:  
-                parse_extern(p, obj_list);
-                break;
-            case TOKEN_NAMESPACE:
-                parse_namespace(p, obj_list);
-                break;
-            case TOKEN_LBRACKET:
-                parse_compiler_directives(p, obj_list);
-                break;
-            default:
-                throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect [import, type, let, const, fn]", p->tok->value);
+            list_push(obj_list, parse_typedef(p));
+            break;
+        case TOKEN_CONST:
+        case TOKEN_LET:
+            list_push(obj_list, parse_global(p));
+            break;
+        case TOKEN_FN:
+            list_push(obj_list, parse_fn(p));
+            break;
+        case TOKEN_EXTERN:  
+            parse_extern(p, obj_list);
+            break;
+        case TOKEN_NAMESPACE:
+            parse_namespace(p, obj_list);
+            break;
+        case TOKEN_LBRACKET:
+            parse_compiler_directives(p, obj_list);
+            break;
+        default:
+            throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect [import, type, let, const, fn]", p->tok->value);
     }
+
+    
 }
 
 /////////////////////////////////

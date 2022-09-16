@@ -264,12 +264,12 @@ void validate_ast(ASTProg_T* ast)
         panic();
 }
 
-static ASTObj_T* search_in_current_scope(VScope_T* scope, char* id)
+static ASTObj_T* search_in_current_scope(Scope_T* scope, char* id)
 {
     return hashmap_get(scope->objs, id);
 }
 
-static ASTObj_T* search_in_scope(VScope_T* scope, char* id)
+static ASTObj_T* search_in_scope(Scope_T* scope, char* id)
 {
     if(!scope)
         return NULL;
@@ -280,7 +280,7 @@ static ASTObj_T* search_in_scope(VScope_T* scope, char* id)
     return search_in_scope(scope->prev, id);
 }
 
-static ASTObj_T* search_identifier(Validator_T* v, VScope_T* scope, ASTIdentifier_T* id)
+static ASTObj_T* search_identifier(Validator_T* v, Scope_T* scope, ASTIdentifier_T* id)
 {
     if(!v || !scope || !id)
         return NULL;
@@ -344,7 +344,7 @@ static void begin_obj_scope(Validator_T* v, ASTIdentifier_T* id, List_T* objs)
 
 static inline void begin_scope(Validator_T* v, ASTIdentifier_T* id)
 {
-    VScope_T* scope = malloc(sizeof(VScope_T));
+    Scope_T* scope = malloc(sizeof(Scope_T));
     scope->objs = hashmap_init();
     scope->prev = v->current_scope;
     scope->id = id;
@@ -354,7 +354,7 @@ static inline void begin_scope(Validator_T* v, ASTIdentifier_T* id)
 
 static inline void end_scope(Validator_T* v)
 {
-    VScope_T* scope = v->current_scope;
+    Scope_T* scope = v->current_scope;
     v->current_scope = scope->prev;
     hashmap_free(scope->objs);
     free(scope);
@@ -601,15 +601,6 @@ static void id_use(ASTIdentifier_T* id, va_list args)
     }
 }
 
-static void gen_id_path(VScope_T* v, ASTIdentifier_T* id)
-{
-    if(!v || !v->id)
-        return;
-
-    id->outer = v->id;
-    gen_id_path(v->prev, id->outer);
-}
-
 // obj
 
 static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
@@ -770,8 +761,6 @@ retry:
 
     end_scope(v);
 
-    gen_id_path(v->current_scope, fn->id);
-
     if(return_type->kind != TY_VOID && !fn->is_extern && !fn->no_return && !stmt_returns_value(fn->body))
         throw_error(ERR_NORETURN, fn->tok, "function `%s` does not return a value", fn->id->callee);
 
@@ -812,9 +801,6 @@ static void typedef_start(ASTObj_T* tydef, va_list args)
 
 static void typedef_end(ASTObj_T* tydef, va_list args)
 {
-    GET_VALIDATOR(args);
-
-    gen_id_path(v->current_scope, tydef->id);
 }
 
 static void global_start(ASTObj_T* global, va_list args)
@@ -838,7 +824,6 @@ static void global_end(ASTObj_T* global, va_list args)
 
         global->data_type = global->value->data_type;
     }
-    gen_id_path(v->current_scope, global->id);
 
     ASTType_T* expanded = expand_typedef(v, global->data_type);
     
