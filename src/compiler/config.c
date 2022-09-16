@@ -1,7 +1,57 @@
 #include "config.h"
 #include "toolchain.h"
 
+#include <string.h>
+
 #include <globals.h>
+
+const char* get_arch(void)
+{
+#ifdef CSPYDR_ARCH_X86_64
+    return "x86_64";
+#elif defined(CSPYDR_ARCH_X86_32)
+    return "x86_32";
+#elif defined(CSPYDR_ARCH_ARM64)
+    return "arm64";
+#elif defined(CSPYDR_ARCH_MIPS)
+    return "mips";
+#else
+    return "unknown";
+#endif
+}
+
+const char* get_os(void)
+{
+#ifdef CSPYDR_LINUX
+    return "linux";
+#elif defined(CSPYDR_WINDOWS)
+    return "windows";
+#elif defined(CSPYDR_MACOS)
+    return "macos";
+#else
+    return "unknown";
+#endif
+}
+
+const char* get_libc(void)
+{
+#ifdef CSPYDR_LIBC_GLIBC
+    return "gnu";
+#else
+    return "unknown";
+#endif
+}
+
+void get_build(char* dest)
+{
+    memset(dest, 0, strlen(dest));
+    strcat(dest, get_arch());
+    strcat(dest, "-");
+    strcat(dest, get_os());
+    strcat(dest, "-");
+    strcat(dest, get_libc());
+}
+
 
 #ifdef CSPYDR_LINUX
     static bool linux_set(void) {

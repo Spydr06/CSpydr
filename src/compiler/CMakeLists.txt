@@ -3,6 +3,24 @@ include(GNUInstallDirs)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+find_package(Git)
+
+file(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/version.cmake
+"execute_process(
+    COMMAND ${GIT_EXECUTABLE} describe --always --dirty
+    OUTPUT_VARIABLE VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+configure_file(\${SRC} \${DST} @ONLY)
+")
+
+add_custom_target(
+    version
+    ${CMAKE_COMMAND} -D SRC=${CMAKE_CURRENT_SOURCE_DIR}/version.h.in
+                     -D DST=${CMAKE_CURRENT_SOURCE_DIR}/version.h
+                     -P ${CMAKE_CURRENT_SOURCE_DIR}/version.cmake    
+)
+
 # compiler gets treated as a library at first (without main.c)
 file(GLOB_RECURSE compiler_source *.c *.cpp *.cc *.c++)
 list(REMOVE_ITEM compiler_source "main.c")
@@ -12,6 +30,8 @@ set_target_properties(libcspc PROPERTIES
         LINKER_LANGUAGE C
         POSITION_INDEPENDENT_CODE ON
 )
+
+add_dependencies(libcspc version)
 
 if(${NO_LLVM})
         add_compile_definitions(CSPYDR_NO_LLVM)

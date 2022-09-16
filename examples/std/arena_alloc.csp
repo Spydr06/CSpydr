@@ -4,16 +4,17 @@ import "std.csp";
 
 fn main(): i32
 {
+    using std::arena;
     let arena = std::Arena::{};
 
     # Allocate stuff in default_arena
-    std::arena::alloc(&arena, 64);
-    std::arena::alloc(&arena, 128);
-    std::arena::alloc(&arena, 256);
-    std::arena::alloc(&arena, 512);
+    alloc(&arena, 64);
+    alloc(&arena, 128);
+    alloc(&arena, 256);
+    alloc(&arena, 512);
 
     # Free everything at once
-    std::arena::free(&arena);    
+    free(&arena);    
 
     <- 0;
 }

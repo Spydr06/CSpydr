@@ -212,22 +212,3 @@ void link_obj(const char* target, char* obj_file, bool silent)
         free_list(args);
     }
 }
-
-void get_platform(char* dest)
-{
-#if defined (__linux__) || defined(__linux)
-#if defined(__x86_64) || defined(__x86_64__)
-    strcpy(dest, "x86_64");
-#else
-    #warn "unsupported assembler platform"
-#endif
-    strcat(dest, "-linux");
-#if defined(__GNUC__) || defined(__gnu_linux__)
-    strcat(dest, "-gnu");
-#else
-    #warn "unsupported assembler platform"
-#endif
-#else
-    #warn "unsupported assembler platform"
-#endif
-}

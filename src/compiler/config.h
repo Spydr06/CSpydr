@@ -6,6 +6,7 @@
 //
 
 #include <stdbool.h>
+#include <stdlib.h>
 
 /////////////////////////////
 // Information and Socials //
@@ -27,16 +28,31 @@
 // default compiler settings //
 ///////////////////////////////
 
+#if defined(__x86_64__) || defined(_M_X64)
+#define CSPYDR_ARCH_X86_64 1
+#elif defined(i386) || defined(__i386__) || defined(__i386) || defined(_M_IX86)
+#define CSPYDR_ARCH_X86_32 1
+#elif #elif defined(__aarch64__) || defined(_M_ARM64)
+#define CSPYDR_ARCH_ARM64 1
+#elif defined(mips) || defined(__mips__) || defined(__mips)
+#define CSPYDR_ARCH_MIPS 1
+#else
+#define CSPYDR_ARCH_UNKNOWN 1
+#endif
+
 #if defined(__linux) || defined(__linux__)
     #define CSPYDR_LINUX 1
     #define DEFAULT_STD_PATH "/usr/share/cspydr/std"
-#else
-    #error "Your current platform is not supported by CSpydr"
+#elif defined(_WIN32) || defined(_WIN64)
+    #define CSPYDR_WINDOWS 1
+    #define DEFAULT_STD_PATH "C:\\Program Files\\cspydr\\std"
 #endif
-#if defined(__gnu_linux__) || defined(__GNUC__)
-    #define CSPYDR_GNU_LIBC 1
+
+#if defined(__GLIBC__)
+    #define CSPYDR_LIBC_GLIBC 1
 #else
-    #warn "Your current libc implementation is not yet supported and might lead to problems"
+    #define CSPYDR_LIBC_UNKNOWN
+    #warning "Your current libc implementation is not yet supported and might lead to problems"
 #endif
 
 #define LIST_INIT_SIZE 32
@@ -71,6 +87,11 @@
 
 // use __attribute__((packed))
 #define CSPYDR_PACKED_STRUCTS
+
+const char* get_arch(void);
+const char* get_os(void);
+const char* get_libc(void);
+void get_build(char* dest);
 
 ////////////////////////////////////////////////////
 // language access to compiler config via [cfg()] //

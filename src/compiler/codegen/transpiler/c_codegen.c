@@ -274,7 +274,7 @@ static void write_code(CCodegenData_T* cg, const char* target, bool cachefile)
 void c_gen_code(CCodegenData_T* cg, const char* target)
 {
     char platform[1024] = { '\0' };
-    get_platform(platform);
+    get_build(platform);
     if(!cg->silent)
     {
         LOG_OK_F(COLOR_BOLD_BLUE "  Generating" COLOR_BOLD_WHITE " C99" COLOR_RESET " for " COLOR_BOLD_WHITE "%s\n" COLOR_RESET, platform);
