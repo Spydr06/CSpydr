@@ -11,7 +11,7 @@
 
 static struct { const char* as_str; bool force_exit; bool is_error; } error_types[ERR_INTERNAL + 1] = {
     [ERR_SYNTAX_ERROR]      = {"syntax", true        , true},
-    [ERR_SYNTAX_ERROR_UNCR] = {"sytax", false        , true},
+    [ERR_SYNTAX_ERROR_UNCR] = {"syntax", false       , true},
     [ERR_SYNTAX_WARNING]    = {"warning", false      , false},
     [ERR_UNDEFINED]         = {"undef", true         , true},
     [ERR_UNDEFINED_UNCR]    = {"undef", false        , true},
