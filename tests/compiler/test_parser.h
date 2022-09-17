@@ -6,8 +6,6 @@
                      {"parsing complex main function", test_parsing_complex_main_func},   \
                      {"parsing binary operators", test_parsing_binary_operators}
 
-#include "passes.h"
-
 #define PARSER_TEST_FUNC(name, src, code)        \
     void name(void) {                            \
         global.silent = true;                    \

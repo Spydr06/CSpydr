@@ -70,6 +70,6 @@ char *str_replace(char *dest, const char *str1, const char *str2, const char *st
 u64 str_count_char(const char* s, char c)
 {
     u64 i = 0;
-    for (i=0; s[i]; s[i]=='.' ? i++ : *s++);
+    for (i=0; s[i]; s[i]=='.' ? (void) i++ : (void) *s++);
     return i;
 }
