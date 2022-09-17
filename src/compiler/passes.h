@@ -14,6 +14,7 @@ i32 optimizer_pass(ASTProg_T *ast);
 i32 transpiler_pass(ASTProg_T *ast);
 i32 asm_codegen_pass(ASTProg_T *ast);
 i32 serializer_pass(ASTProg_T *ast);
+i32 cleanup_pass(ASTProg_T* ast);
 
 #ifdef CSPYDR_USE_LLVM
     i32 llvm_codegen_pass(ASTProg_T* ast);

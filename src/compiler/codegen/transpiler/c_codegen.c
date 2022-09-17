@@ -206,6 +206,12 @@ void free_c_cg(CCodegenData_T* cg)
 {
     free(cg->buf);
     free_list(cg->blocks);
+
+    List_T* arrays = hashmap_keys(cg->arrays);
+    for(size_t i = 0; i < arrays->size; i++)
+        free(arrays->items[i]);
+    free_list(arrays);
+
     hashmap_free(cg->arrays);
 }
 
@@ -279,7 +285,7 @@ i32 transpiler_pass(ASTProg_T* ast)
     cg.silent = global.silent;
     
     c_gen_code(&cg, global.target);
-    free(cg.buf);
+    free_c_cg(&cg);
 
     return 0;
 }
@@ -329,7 +335,7 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
             c_source_file,
             "-std=c99",
             "-o",
-            (char*) target,
+            target,
             "-Wno-builtin-declaration-mismatch", // disable warnings for "extern "C"" function declarations
         };
         List_T* arg_list = init_list_with((void**) args, LEN(args));
@@ -352,6 +358,8 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
             LOG_ERROR_F("error compiling code. (exit code %d)\n", exit_code);
             throw(global.main_error_exception);
         }
+
+        free_list(arg_list);
     }
     else
     {

@@ -335,7 +335,8 @@ static bool load_exec(Debugger_T* dbg, char* exec)
         debug_error("Failed to fork process, got pid `%d` in return.", pid);
         goto fail;
     }
-
+    
+    free_list(exec_args);
     return true;
 
 fail:

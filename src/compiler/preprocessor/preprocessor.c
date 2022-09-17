@@ -114,13 +114,13 @@ static void free_import(Import_T* imp)
     free(imp);
 }
  
-void init_preprocessor(Preprocessor_T* pp)
+void init_preprocessor(Preprocessor_T* pp, ASTProg_T* ast)
 {
     pp->macros = init_list();
     pp->imports = init_list();
-    pp->tokens = init_list();
-    
-    pp->is_silent = false;
+    pp->tokens = ast->tokens;
+    pp->files = ast->files;
+    pp->is_silent = global.silent;
 
     define_std_macros(pp->macros);
 }
@@ -501,11 +501,7 @@ i32 preprocessor_pass(ASTProg_T* ast)
     timer_start("lexing import files");
 
     Preprocessor_T pp;
-    init_preprocessor(&pp);
-
-    pp.files = ast->files;
-    pp.tokens = ast->tokens;
-    pp.is_silent = global.silent;
+    init_preprocessor(&pp, ast);
 
     /**************************************
     * Stage 1: lex and import all files   *

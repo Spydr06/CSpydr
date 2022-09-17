@@ -3,6 +3,7 @@
 #include <string.h>
 #include <assert.h>
 
+#include "io/file.h"
 #include "passes.h"
 #include "lexer/lexer.h"
 #include "preprocessor/preprocessor.h"
@@ -59,6 +60,8 @@ static i32 construct_passes(Pass_T passes[])
             panic();
     }
 
+    push_pass(cleanup_pass);
+
 #undef push_pass
 
     return index;
@@ -67,7 +70,7 @@ static i32 construct_passes(Pass_T passes[])
 void compile(char* input_file, char* output_file)
 {
     global.read_main_file_on_init = true;
-    
+
     try(global.main_error_exception)
     {
         ASTProg_T ast = {};
@@ -103,6 +106,18 @@ i32 initialization_pass(ASTProg_T* ast)
         File_T* main_file = read_file(ast->main_file_path);
         list_push(ast->files, main_file);
     }
+
+    return 0;
+}
+
+i32 cleanup_pass(ASTProg_T *ast)
+{
+    for(size_t i = 0; i < ast->files->size; i++)
+    {
+        File_T* file = ast->files->items[i];
+        free_file(file);
+    }
+    free_list(ast->files);
 
     return 0;
 }

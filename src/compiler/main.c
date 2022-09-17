@@ -39,6 +39,7 @@
 #include <string.h>
 
 // compiler includes
+#include "mem/mem.h"
 #include "platform/linux/linux_platform.h"
 #include "timer/timer.h"
 #include "toolchain.h"
@@ -152,6 +153,7 @@ i32 main(i32 argc, char* argv[])
 {
     init_globals();
     atexit(globals_exit_hook);
+    atexit(mem_free);
 #ifdef CSPYDR_USE_LLVM
     atexit(llvm_exit_hook);
 #endif
