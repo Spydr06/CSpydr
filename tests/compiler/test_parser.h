@@ -1,22 +1,24 @@
 #include "ast/ast.h"
 #include "ast/types.h"
+#include "parser/parser.h"
+#include "preprocessor/preprocessor.h"
 #define PARSER_TESTS {"parsing simple main function", test_parsing_simple_main_func},    \
                      {"parsing complex main function", test_parsing_complex_main_func},   \
                      {"parsing binary operators", test_parsing_binary_operators}
 
-#include "lexer/token.h"
-#include "parser/parser.h"
+#include "passes.h"
 
-#define PARSER_TEST_FUNC(name, src, code) \
-void name(void) {                         \
-    File_T* file = get_file(1, src);      \
-    TEST_ASSERT(file != NULL);            \
-    List_T* files = init_list();          \
-    list_push(files, file);               \
-    ASTProg_T prog = {0};                 \
-    parse(&prog, files, true);            \
-    code                                  \
-}                                                                
+#define PARSER_TEST_FUNC(name, src, code)        \
+    void name(void) {                            \
+        global.silent = true;                    \
+        ASTProg_T prog = {0};                    \
+        initialization_pass(&prog);              \
+        list_push(prog.files, get_file(1, src)); \
+        lexer_pass(&prog);                       \
+        preprocessor_pass(&prog);                \
+        parser_pass(&prog);                      \
+        { code }                                 \
+    }                                                                
 
 PARSER_TEST_FUNC(test_parsing_simple_main_func, "fn main(): i32 { ret 0; }",
 {

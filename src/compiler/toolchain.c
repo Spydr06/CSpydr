@@ -3,6 +3,7 @@
 #include <string.h>
 #include <assert.h>
 
+#include "passes.h"
 #include "lexer/lexer.h"
 #include "preprocessor/preprocessor.h"
 #include "parser/parser.h"
@@ -18,8 +19,6 @@
 #ifdef CSPYDR_USE_LLVM
     #include "codegen/llvm/llvm_codegen.h"
 #endif
-
-static i32 initialization_pass(ASTProg_T* ast);
 
 static i32 construct_passes(Pass_T passes[])
 {
@@ -67,6 +66,8 @@ static i32 construct_passes(Pass_T passes[])
 
 void compile(char* input_file, char* output_file)
 {
+    global.read_main_file_on_init = true;
+    
     try(global.main_error_exception)
     {
         ASTProg_T ast = {};
@@ -92,13 +93,16 @@ void compile(char* input_file, char* output_file)
     }
 }
 
-static i32 initialization_pass(ASTProg_T* ast)
+i32 initialization_pass(ASTProg_T* ast)
 {
     init_ast_prog(ast, global.main_src_file, global.target);
     ast->files = init_list();
 
-    File_T* main_file = read_file(ast->main_file_path);
-    list_push(ast->files, main_file);
+    if(global.read_main_file_on_init)
+    {
+        File_T* main_file = read_file(ast->main_file_path);
+        list_push(ast->files, main_file);
+    }
 
     return 0;
 }

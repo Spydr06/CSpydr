@@ -6,18 +6,17 @@
 #include "parser/parser.h"
 #include "preprocessor/preprocessor.h"
 
-#define PREPROCESSOR_TEST_FUNC(name, src, code) void name(void) {        \
-    File_T* file = get_file(1, src);                                  \
-    TEST_ASSERT(file != NULL);                                           \
-    List_T* files = init_list();                                         \
-    list_push(files, file);                                              \
-    Lexer_T lex;                                                         \
-    init_lexer(&lex, file);                                              \
-    List_T* tokens = lex_and_preprocess_tokens(&lex, files, true);       \
-    TEST_ASSERT(tokens != NULL);                                         \
-    code                                                                 \
-    /*FIXME: free_ast_prog(prog);*/                                      \
-}   
+#define PREPROCESSOR_TEST_FUNC(name, src, code)  \
+    void name(void) {                            \
+        global.silent = true;                    \
+        ASTProg_T prog = {0};                    \
+        initialization_pass(&prog);              \
+        list_push(prog.files, get_file(1, src)); \
+        lexer_pass(&prog);                       \
+        preprocessor_pass(&prog);                \
+        List_T* tokens = prog.tokens;            \
+        { code }                                 \
+    }
 
 PREPROCESSOR_TEST_FUNC(test_preprocessing_simple_file, "fn main(): i32 {}",
     TEST_ASSERT(tokens->size == 9);

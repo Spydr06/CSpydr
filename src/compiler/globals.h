@@ -28,18 +28,19 @@ __CSP_GLOBAL struct {
 
     union {
         struct {
-            bool silent            : 1;
-            bool print_code        : 1;
-            bool optimize          : 1;
-            bool embed_debug_info  : 1;
-            bool from_json         : 1;
-            bool do_link           : 1;
-            bool do_assemble       : 1;
-            bool do_parsing        : 1;
-            bool timer_enabled     : 1;
-            bool clear_cache_after : 1;
+            bool silent                 : 1;
+            bool print_code             : 1;
+            bool optimize               : 1;
+            bool embed_debug_info       : 1;
+            bool from_json              : 1;
+            bool do_link                : 1;
+            bool do_assemble            : 1;
+            bool do_parsing             : 1;
+            bool timer_enabled          : 1;
+            bool clear_cache_after      : 1;
+            bool read_main_file_on_init : 1;
 
-            u8 __unused__ : 6;
+            u8 __unused__ : 5;
         };
         u16 flags;
     };
