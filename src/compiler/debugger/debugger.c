@@ -1,4 +1,4 @@
-#include "dbg.h"
+#include "debugger.h"
 #include "debugger/breakpoint.h"
 #include "io/log.h"
 #include "io/io.h"
@@ -23,43 +23,20 @@
 
 #define CSPYDR_DEBUGGER_HEADER COLOR_BOLD_MAGENTA " ** The CSpydr interactive debug shell **\n" COLOR_RESET
 
-static void handle_exit(const char* input);
-static void handle_comp(const char* input);
-static void handle_help(const char* input);
-static void handle_clear(const char* input);
-static void handle_current(const char* input);
-static void handle_load(const char* input);
-static void handle_unload(const char* input);
-static void handle_continue(const char* input);
-static void handle_breakpoint(const char* input);
-static void handle_register(const char* input);
-static void handle_memory(const char* input);
-static void handle_sh(const char* input);
+static void handle_exit       (Debugger_T* dbg, const char* input);
+static void handle_comp       (Debugger_T* dbg, const char* input);
+static void handle_help       (Debugger_T* dbg, const char* input);
+static void handle_clear      (Debugger_T* dbg, const char* input);
+static void handle_current    (Debugger_T* dbg, const char* input);
+static void handle_load       (Debugger_T* dbg, const char* input);
+static void handle_unload     (Debugger_T* dbg, const char* input);
+static void handle_continue   (Debugger_T* dbg, const char* input);
+static void handle_breakpoint (Debugger_T* dbg, const char* input);
+static void handle_register   (Debugger_T* dbg, const char* input);
+static void handle_memory     (Debugger_T* dbg, const char* input);
+static void handle_sh         (Debugger_T* dbg, const char* input);
 
 static int ALWAYS_TRUE = true;
-
-static const struct {
-    char* cmd;
-    void (*fn)(const char* input);
-    int* enabled;
-    bool enabled_when_true;
-    const char* description;
-} cmds[] = 
-{
-    { "help",     handle_help,       &ALWAYS_TRUE,              true,  "Display this help text"                         },
-    { "exit",     handle_exit,       &ALWAYS_TRUE,              true,  "Exit the debugger"                              },
-    { "clear",    handle_clear,      &ALWAYS_TRUE,              true,  "Clear the screen"                               },
-    { "comp",     handle_comp,       &ALWAYS_TRUE,              true,  "Recompile the current source files"             },
-    { "current",  handle_current,    &ALWAYS_TRUE,              true,  "Display the current debug target"               },
-    { "sh",       handle_sh,         &ALWAYS_TRUE,              true,  "Run an external shell command"                  },
-    { "load",     handle_load,       &global.debugger.loaded,   false, "Load any executable for step-through debugging" },
-    { "unload",   handle_unload,     &global.debugger.loaded,   true,  "Unload a loaded executable"                     },
-    { "cont",     handle_continue,   &global.debugger.loaded,   true,  "Continue executing a loaded executable"         },
-    { "brk",      handle_breakpoint, &global.debugger.loaded,   true,  "Set/Unset breakpoints in loaded executable"     },
-    { "register", handle_register,   &global.debugger.loaded,   true,  "Read and modify registers"                      },
-    { "memory",   handle_memory,     &global.debugger.loaded,   true,  "Read and modify program memory"                 },
-    { NULL,       NULL,              NULL,                      false, NULL                                             }
-};
 
 static const char help_text_header[] = 
     CSPYDR_DEBUGGER_HEADER
@@ -155,22 +132,52 @@ void debug_error(const char* fmt, ...)
     fprintf(stderr, "\n");
 }
 
+static void init_debugger(Debugger_T* dbg, const char* src, const char* bin)
+{
+    dbg->running = true;
+    dbg->src_file = (char*) src;
+    dbg->bin_file = (char*) bin;
+    dbg->breakpoints = init_list();
+    sprintf(dbg->prompt, PROMPT_FMT, global.exec_name, COLOR_BOLD_GREEN, 0);
+}
+
+static void free_debugger(Debugger_T* dbg)
+{
+    for(size_t i = 0; i < dbg->breakpoints->size; i++)
+        free_breakpoint(dbg->breakpoints->items[i]);
+    free_list(dbg->breakpoints);
+
+    if(dbg->loaded_cmd)
+        free(dbg->loaded_cmd);
+}
+
 void debug_repl(const char* src, const char* bin)
 {
     if(!global.silent)
         debug_info("Started debug session; for help, type `help`.");
 
-    global.debugger.running = true;
-    global.debugger.src_file = (char*) src;
-    global.debugger.bin_file = (char*) bin;
+    Debugger_T dbg = {0};
+    init_debugger(&dbg, src, bin);
 
-    sprintf(global.debugger.prompt, PROMPT_FMT, global.exec_name, COLOR_BOLD_GREEN, 0);
+    dbg.commands = (Command_T[]){
+        { "help",     handle_help,       &ALWAYS_TRUE,     true,  "Display this help text"                         },
+        { "exit",     handle_exit,       &ALWAYS_TRUE,     true,  "Exit the debugger"                              },
+        { "clear",    handle_clear,      &ALWAYS_TRUE,     true,  "Clear the screen"                               },
+        { "comp",     handle_comp,       &ALWAYS_TRUE,     true,  "Recompile the current source files"             },
+        { "current",  handle_current,    &ALWAYS_TRUE,     true,  "Display the current debug target"               },
+        { "sh",       handle_sh,         &ALWAYS_TRUE,     true,  "Run an external shell command"                  },
+        { "load",     handle_load,       &dbg.loaded,      false, "Load any executable for step-through debugging" },
+        { "unload",   handle_unload,     &dbg.loaded,      true,  "Unload a loaded executable"                     },
+        { "cont",     handle_continue,   &dbg.loaded,      true,  "Continue executing a loaded executable"         },
+        { "brk",      handle_breakpoint, &dbg.loaded,      true,  "Set/Unset breakpoints in loaded executable"     },
+        { "register", handle_register,   &dbg.loaded,      true,  "Read and modify registers"                      },
+        { "memory",   handle_memory,     &dbg.loaded,      true,  "Read and modify program memory"                 },
+        { NULL,       NULL,              NULL,             false, NULL                                             },
+    };
 
-    global.debugger.breakpoints = init_list();
-
-    while(global.debugger.running)
+    while(dbg.running)
     {
-        printf("%s ", global.debugger.prompt);
+        printf("%s ", dbg.prompt);
         fflush(stdout);
         
         char input[BUFSIZ] = {'\0'};
@@ -181,45 +188,43 @@ void debug_repl(const char* src, const char* bin)
             continue;
         
 
-        for(size_t i = 0; cmds[i].cmd; i++)
+        for(size_t i = 0; dbg.commands[i].cmd; i++)
         {
-            if(prefix(cmds[i].cmd, input))
+            if(prefix(dbg.commands[i].cmd, input))
             {
-                cmds[i].fn(input);
+                dbg.commands[i].fn(&dbg, input);
                 goto skip;
             }
         }
         debug_error("Unknown command `%s`.", input);
         global.last_exit_code = 1;
     skip:
-        sprintf(global.debugger.prompt, PROMPT_FMT, global.exec_name, global.last_exit_code ? COLOR_BOLD_RED : COLOR_BOLD_GREEN, global.last_exit_code);
+        sprintf(dbg.prompt, PROMPT_FMT, global.exec_name, global.last_exit_code ? COLOR_BOLD_RED : COLOR_BOLD_GREEN, global.last_exit_code);
     }
 
-    for(size_t i = 0; i < global.debugger.breakpoints->size; i++)
-        free_breakpoint(global.debugger.breakpoints->items[i]);
-    free_list(global.debugger.breakpoints);
+    free_debugger(&dbg);
 }
 
-static void handle_exit(const char* input)
+static void handle_exit(Debugger_T* dbg, const char* input)
 {
-    if(global.debugger.loaded)
+    if(dbg->loaded)
     {
-        if(question("An Executable is still loaded,\ninferior process `%d` will be killed.\n\nQuit anyway?", global.debugger.loaded))
-            handle_unload(input);
+        if(question("An Executable is still loaded,\ninferior process `%d` will be killed.\n\nQuit anyway?", dbg->loaded))
+            handle_unload(dbg, input);
         else
             return;
     }
 
-    global.debugger.running = false;
+    dbg->running = false;
 }
 
-static void handle_comp(const char* input)
+static void handle_comp(Debugger_T* dbg, const char* input)
 {
-    bool was_loaded = global.debugger.loaded;
-    if(global.debugger.loaded)
+    bool was_loaded = dbg->loaded;
+    if(dbg->loaded)
     {
-        if(question("An Executable is still loaded,\ninferior process `%d` will be killed.\n\nContinue anyway?", global.debugger.loaded))
-            handle_unload(input);
+        if(question("An Executable is still loaded,\ninferior process `%d` will be killed.\n\nContinue anyway?", dbg->loaded))
+            handle_unload(dbg, input);
         else
             return;
     }
@@ -229,7 +234,7 @@ static void handle_comp(const char* input)
     const char* args[] = {
         global.exec_name,
         "build",
-        global.debugger.src_file,
+        dbg->src_file,
         global.ct == CT_ASM ? "--asm" : "--transpile",
         NULL
     };
@@ -239,7 +244,7 @@ static void handle_comp(const char* input)
     fprintf(OUTPUT_STREAM, "\n");
 
     if(was_loaded)
-        handle_load(global.debugger.loaded_cmd);
+        handle_load(dbg, dbg->loaded_cmd);
 }
 
 static u64 hex_value_arg(const char* cmd_name)
@@ -271,31 +276,31 @@ static bool is_enabled(int* enabled, bool enabled_when_true)
         : *enabled ? false : true;
 }
 
-static void handle_help(const char* input)
+static void handle_help(Debugger_T* dbg, const char* input)
 {
-    printf(help_text_header, global.debugger.bin_file, global.debugger.src_file);
-    for(size_t i = 0; cmds[i].cmd; i++)
+    printf(help_text_header, dbg->bin_file, dbg->src_file);
+    for(size_t i = 0; dbg->commands[i].cmd; i++)
         printf(help_cmd_fmt, 
-            is_enabled(cmds[i].enabled, cmds[i].enabled_when_true) ? COLOR_GREEN : COLOR_RED,
-            cmds[i].cmd, 
-            max_help_cmd_len - (i32) strlen(cmds[i].cmd), 
+            is_enabled(dbg->commands[i].enabled, dbg->commands[i].enabled_when_true) ? COLOR_GREEN : COLOR_RED,
+            dbg->commands[i].cmd, 
+            max_help_cmd_len - (i32) strlen(dbg->commands[i].cmd), 
             "", 
-            cmds[i].description
+            dbg->commands[i].description
         );
     printf(help_text_footer);
 }
 
-static void handle_clear(const char* input)
+static void handle_clear(Debugger_T* dbg, const char* input)
 {   
     printf(CLEAR_CODE);
 }
 
-static void handle_current(const char* input)
+static void handle_current(Debugger_T* dbg, const char* input)
 {
-    printf("`%s` (compiled from `%s`).\n", global.debugger.bin_file, global.debugger.src_file);
+    printf("`%s` (compiled from `%s`).\n", dbg->bin_file, dbg->src_file);
 }
 
-static bool load_exec(char* exec)
+static bool load_exec(Debugger_T* dbg, char* exec)
 {
     List_T* exec_args = init_list();
     list_push(exec_args, exec);
@@ -318,12 +323,12 @@ static bool load_exec(char* exec)
     }
     else if(pid > 0)
     {
-        global.debugger.loaded = pid;
+        dbg->loaded = pid;
         if(!global.silent)
             debug_info("Loaded executable `%s` with pid `%d`.", exec, pid);
         
-        for(size_t i = 0; i < global.debugger.breakpoints->size; i++)
-            ((Breakpoint_T*) global.debugger.breakpoints->items[i])->enabled = false;
+        for(size_t i = 0; i < dbg->breakpoints->size; i++)
+            ((Breakpoint_T*) dbg->breakpoints->items[i])->enabled = false;
     }
     else 
     {
@@ -338,24 +343,24 @@ fail:
     return false;
 }
 
-static void handle_sh(const char* input)
+static void handle_sh(Debugger_T* dbg, const char* input)
 {
     input += (uintptr_t) 3;
     system(input);
 }
 
-static void handle_load(const char* input)
+static void handle_load(Debugger_T* dbg, const char* input)
 {
-    if(global.debugger.loaded)
+    if(dbg->loaded)
     {
-        debug_error("An executable is already loaded, please unload first. (pid %d)", global.debugger.loaded);
+        debug_error("An executable is already loaded, please unload first. (pid %d)", dbg->loaded);
         return;
     }
 
-   // if(global.debugger.loaded_cmd)
-   //     free(global.debugger.loaded_cmd);
+   // if(dbg->loaded_cmd)
+   //     free(dbg->loaded_cmd);
 
-    global.debugger.loaded_cmd = strdup(input);
+    dbg->loaded_cmd = strdup(input);
     char* args = strdup(input);
 
     strtok(args, " ");
@@ -363,63 +368,63 @@ static void handle_load(const char* input)
     char* exec = strtok(NULL, " ");
 
     if(exec && strcmp(exec, "help") == 0)
-        fprintf(OUTPUT_STREAM, load_help_text, global.debugger.loaded ? COLOR_RED : COLOR_GREEN);
+        fprintf(OUTPUT_STREAM, load_help_text, dbg->loaded ? COLOR_RED : COLOR_GREEN);
     else
-        load_exec(exec);
+        load_exec(dbg, exec);
     
     free(args);
 }
 
-static void handle_unload(const char* input)
+static void handle_unload(Debugger_T* dbg, const char* input)
 {
-    if(!global.debugger.loaded)
+    if(!dbg->loaded)
     {
         debug_error("No executable is currently loaded.");
         return;
     }
 
-    kill(global.debugger.loaded, SIGKILL);
+    kill(dbg->loaded, SIGKILL);
     if(!global.silent)
-        debug_info("Killed process with pid %d.", global.debugger.loaded);
+        debug_info("Killed process with pid %d.", dbg->loaded);
     
-    global.debugger.loaded = 0;
+    dbg->loaded = 0;
 }
 
-static inline u64 debugger_get_pc(void) 
+static inline u64 debugger_get_pc(Debugger_T* dbg) 
 {
-    return get_register_value(global.debugger.loaded, REG_RIP);
+    return get_register_value(dbg->loaded, REG_RIP);
 }
 
-static inline void debugger_set_pc(u64 pc)
+static inline void debugger_set_pc(Debugger_T* dbg, u64 pc)
 {
-    set_register_value(global.debugger.loaded, REG_RIP, pc);
+    set_register_value(dbg->loaded, REG_RIP, pc);
 }
 
-static void wait_for_signal(void)
+static void wait_for_signal(Debugger_T* dbg)
 {
     i32 wait_status, options = 0;
-    waitpid(global.debugger.loaded, &wait_status, options);
+    waitpid(dbg->loaded, &wait_status, options);
 }
 
-static void step_over_breakpoint(void)
+static void step_over_breakpoint(Debugger_T* dbg)
 {
-    u64 possible_breakpoint_location = debugger_get_pc() - 1;
+    u64 possible_breakpoint_location = debugger_get_pc(dbg) - 1;
 
-    if(global.debugger.breakpoints->size)
+    if(dbg->breakpoints->size)
     {
-        Breakpoint_T* bp = find_breakpoint(possible_breakpoint_location);
+        Breakpoint_T* bp = find_breakpoint(dbg, possible_breakpoint_location);
 
         if(bp && bp->enabled)
         {
             u64 prev_instruction_addr = possible_breakpoint_location;
-            debugger_set_pc(prev_instruction_addr);
+            debugger_set_pc(dbg, prev_instruction_addr);
 
             bool silent = global.silent;
             global.silent = true;
             
             breakpoint_disable(bp);
-            ptrace(PTRACE_SINGLESTEP, global.debugger.loaded, NULL, NULL);
-            wait_for_signal();
+            ptrace(PTRACE_SINGLESTEP, dbg->loaded, NULL, NULL);
+            wait_for_signal(dbg);
             breakpoint_enable(bp);
 
             global.silent = silent;
@@ -427,31 +432,31 @@ static void step_over_breakpoint(void)
     }
 }
 
-static void handle_continue(const char* input)
+static void handle_continue(Debugger_T* dbg, const char* input)
 {
-    if(!global.debugger.loaded)
+    if(!dbg->loaded)
     {
        debug_error("`cont` is only available if an executable is loaded.");
         return; 
     }
 
-    step_over_breakpoint();
-    ptrace(PTRACE_CONT, global.debugger.loaded, NULL, NULL);
+    step_over_breakpoint(dbg);
+    ptrace(PTRACE_CONT, dbg->loaded, NULL, NULL);
 
     i32 wait_status,
         options = 0;
-    waitpid(global.debugger.loaded, &wait_status, options);
+    waitpid(dbg->loaded, &wait_status, options);
 
     if(WIFEXITED(wait_status))
     {
         i32 exit_code = WEXITSTATUS(wait_status);
-        debug_info("Process %d terminated with exit code %s%d" COLOR_RESET, global.debugger.loaded, exit_code ? COLOR_BOLD_RED : COLOR_BOLD_GREEN, exit_code);
+        debug_info("Process %d terminated with exit code %s%d" COLOR_RESET, dbg->loaded, exit_code ? COLOR_BOLD_RED : COLOR_BOLD_GREEN, exit_code);
         global.last_exit_code = exit_code;
         goto process_exited;
     }
     else if(WIFSIGNALED(wait_status))
     {
-        debug_info("Process %d was killed by signal %s.", global.debugger.loaded, strsignal(WTERMSIG(wait_status)));
+        debug_info("Process %d was killed by signal %s.", dbg->loaded, strsignal(WTERMSIG(wait_status)));
         global.last_exit_code = WTERMSIG(wait_status);
         goto process_exited;
     }
@@ -461,11 +466,11 @@ static void handle_continue(const char* input)
         switch(stop_sig)
         {
             case SIGTRAP:
-                debug_info("Process %d hit breakpoint 0x%016lx.", global.debugger.loaded, debugger_get_pc() - 1);
+                debug_info("Process %d hit breakpoint 0x%016lx.", dbg->loaded, debugger_get_pc(dbg) - 1);
                 global.last_exit_code = 0;
                 break;
             default:
-                debug_info("Process %d was stopped by signal %s.", global.debugger.loaded, strsignal(WSTOPSIG(wait_status)));
+                debug_info("Process %d was stopped by signal %s.", dbg->loaded, strsignal(WSTOPSIG(wait_status)));
                 global.last_exit_code = WSTOPSIG(wait_status);
                 goto process_exited;
         }
@@ -473,10 +478,10 @@ static void handle_continue(const char* input)
 
     return;
 process_exited:
-    global.debugger.loaded = 0;
+    dbg->loaded = 0;
 }
 
-static void handle_breakpoint(const char* input)
+static void handle_breakpoint(Debugger_T* dbg, const char* input)
 {
 
     char* args = strdup(input);
@@ -490,8 +495,8 @@ static void handle_breakpoint(const char* input)
     }
 
     if(strcmp(subcommand, "help") == 0)
-        fprintf(OUTPUT_STREAM, brk_help_text, global.debugger.loaded ? COLOR_GREEN : COLOR_RED);
-    else if(!global.debugger.loaded) 
+        fprintf(OUTPUT_STREAM, brk_help_text, dbg->loaded ? COLOR_GREEN : COLOR_RED);
+    else if(!dbg->loaded) 
     {
         debug_error("`brk` is only available if an executable is loaded.");
         return;
@@ -499,15 +504,15 @@ static void handle_breakpoint(const char* input)
     else if(strcmp(subcommand, "list") == 0)
     {
         debug_info("Currently set breakpoints:");
-        if(global.debugger.breakpoints->size == 0)
+        if(dbg->breakpoints->size == 0)
         {
             fprintf(OUTPUT_STREAM, "  <none>\n\n");
             goto end;
         }
 
-        for(size_t i = 0; i < global.debugger.breakpoints->size; i++)
+        for(size_t i = 0; i < dbg->breakpoints->size; i++)
         {
-            Breakpoint_T* b = global.debugger.breakpoints->items[i];
+            Breakpoint_T* b = dbg->breakpoints->items[i];
             fprintf(OUTPUT_STREAM, "%s * " COLOR_RESET "0x%016lx\n", b->enabled ? COLOR_GREEN : COLOR_RED, b->addr);
         }
         fprintf(OUTPUT_STREAM, "\n");
@@ -525,9 +530,9 @@ static void handle_breakpoint(const char* input)
 
         if(strcmp(addr_str, "*") == 0)
         {
-            for(size_t i = 0; i < global.debugger.breakpoints->size; i++)
+            for(size_t i = 0; i < dbg->breakpoints->size; i++)
             {
-                Breakpoint_T* b = global.debugger.breakpoints->items[i];
+                Breakpoint_T* b = dbg->breakpoints->items[i];
                 if(b->enabled)
                     breakpoint_disable(b);
             }
@@ -541,7 +546,7 @@ static void handle_breakpoint(const char* input)
         }
 
         intptr_t addr = strtol(addr_str, NULL, 16);
-        disable_breakpoint_at_address(addr);
+        disable_breakpoint_at_address(dbg, addr);
     }
     else if(strcmp(subcommand, "add") == 0)
     {
@@ -549,7 +554,7 @@ static void handle_breakpoint(const char* input)
         if(errno)
             goto end;
 
-        set_breakpoint_at_address(addr);
+        set_breakpoint_at_address(dbg, addr);
     }
     else
     {
@@ -561,7 +566,7 @@ end:
     free(args);
 }
 
-static void handle_register(const char* input)
+static void handle_register(Debugger_T* dbg, const char* input)
 {
     char* args = strdup(input);
     strtok(args, " "); // skip `register`
@@ -574,14 +579,14 @@ static void handle_register(const char* input)
     }
 
     if(strcmp(subcommand, "help") == 0)
-        fprintf(OUTPUT_STREAM, register_help_text, global.debugger.loaded ? COLOR_GREEN : COLOR_RED);
-    else if(!global.debugger.loaded) 
+        fprintf(OUTPUT_STREAM, register_help_text, dbg->loaded ? COLOR_GREEN : COLOR_RED);
+    else if(!dbg->loaded) 
     {
         debug_error("`register` is only available if an executable is loaded.");
         goto fail;
     }
     else if(strcmp(subcommand, "dump") == 0)
-        dump_registers();
+        dump_registers(dbg);
     else if(strcmp(subcommand, "read") == 0)
     {
         char* reg = strtok(NULL, " ");
@@ -591,7 +596,7 @@ static void handle_register(const char* input)
             goto fail;
         }
 
-        printf("%s %016lx\n", reg, get_register_value(global.debugger.loaded, get_register_from_name(reg)));
+        printf("%s %016lx\n", reg, get_register_value(dbg->loaded, get_register_from_name(reg)));
     }
     else if(strcmp(subcommand, "write") == 0)
     {
@@ -606,7 +611,7 @@ static void handle_register(const char* input)
         if(errno)
             goto fail;
 
-        set_register_value(global.debugger.loaded, get_register_from_name(reg), val);
+        set_register_value(dbg->loaded, get_register_from_name(reg), val);
     }
     else 
     {
@@ -618,17 +623,17 @@ fail:
     free(args);    
 }
 
-static inline u64 debugger_read_memory(u64 address)
+static inline u64 debugger_read_memory(Debugger_T* dbg, u64 address)
 {
-    return ptrace(PTRACE_PEEKDATA, global.debugger.loaded, address, NULL);
+    return ptrace(PTRACE_PEEKDATA, dbg->loaded, address, NULL);
 }
 
-static inline void debugger_write_memory(u64 address, u64 value)
+static inline void debugger_write_memory(Debugger_T* dbg, u64 address, u64 value)
 {
-    ptrace(PTRACE_POKEDATA, global.debugger.loaded, address, value);
+    ptrace(PTRACE_POKEDATA, dbg->loaded, address, value);
 }
 
-static void handle_memory(const char* input)
+static void handle_memory(Debugger_T* dbg, const char* input)
 {
     char* args = strdup(input);
     strtok(args, " "); // skip `register`
@@ -641,8 +646,8 @@ static void handle_memory(const char* input)
     }
 
     if(strcmp(subcommand, "help") == 0)
-        fprintf(OUTPUT_STREAM, memory_help_text, global.debugger.loaded ? COLOR_GREEN : COLOR_RED);
-    else if(!global.debugger.loaded) 
+        fprintf(OUTPUT_STREAM, memory_help_text, dbg->loaded ? COLOR_GREEN : COLOR_RED);
+    else if(!dbg->loaded) 
     {
         debug_error("`memory` is only available if an executable is loaded.");
         goto fail;
@@ -653,7 +658,7 @@ static void handle_memory(const char* input)
         if(errno)
             goto fail;
         
-        fprintf(OUTPUT_STREAM, "0x%016lx: 0x%016lx\n", addr, debugger_read_memory(addr));
+        fprintf(OUTPUT_STREAM, "0x%016lx: 0x%016lx\n", addr, debugger_read_memory(dbg, addr));
     }
     else if(strcmp(subcommand, "write") == 0)
     {
@@ -665,8 +670,8 @@ static void handle_memory(const char* input)
         if(errno)
             goto fail;
         
-        fprintf(OUTPUT_STREAM, "0x%016lx: 0x%016lx -> 0x%016lx\n", addr, debugger_read_memory(addr), value);
-        debugger_write_memory(addr, value);
+        fprintf(OUTPUT_STREAM, "0x%016lx: 0x%016lx -> 0x%016lx\n", addr, debugger_read_memory(dbg, addr), value);
+        debugger_write_memory(dbg, addr, value);
     }
     else 
     {

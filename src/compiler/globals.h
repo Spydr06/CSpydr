@@ -63,18 +63,6 @@ __CSP_GLOBAL struct {
 
     // timesteps recorded by `timer/timer.c`
     List_T* timesteps;
-
-    // debugger state
-    struct {
-        char prompt[BUFSIZ];
-        bool running;
-        char* bin_file;
-        char* src_file;
-        pid_t loaded;
-        char* loaded_cmd;
-
-        List_T* breakpoints;
-    } debugger;
 } global;
 
 __CSP_GLOBAL void globals_exit_hook(void);

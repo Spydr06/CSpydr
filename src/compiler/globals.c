@@ -35,8 +35,5 @@ void globals_exit_hook(void)
             free(global.timesteps->items[i]);
         }
         free_list(global.timesteps);
-    } 
-
-    if(global.debugger.loaded_cmd)
-        free(global.debugger.loaded_cmd);
+    }
 }

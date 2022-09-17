@@ -1,5 +1,5 @@
 #include "register.h"
-#include "dbg.h"
+#include "debugger.h"
 #include <globals.h>
 #include <string.h>
 #include <io/log.h>
@@ -91,14 +91,14 @@ Register_T get_register_from_name(const char* name)
     return 0;
 }
 
-void dump_registers() 
+void dump_registers(Debugger_T* dbg) 
 {
     for(size_t i = 0; i < REG_NUM; i++)
         fprintf(OUTPUT_STREAM, "%s%*s%016lx\n", 
             REG_DESCRIPTORS[i].name, 
             11 - (int) strlen(REG_DESCRIPTORS[i].name), 
             "0x", 
-            get_register_value(global.debugger.loaded, REG_DESCRIPTORS[i].r)
+            get_register_value(dbg->loaded, REG_DESCRIPTORS[i].r)
         );
 }
 

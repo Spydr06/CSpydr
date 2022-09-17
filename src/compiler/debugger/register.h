@@ -3,7 +3,8 @@
 
 #include <util.h>
 #include <stdlib.h>
-#include <globals.h>
+
+#include "debugger.h"
 
 typedef enum REGISTER_ENUM
 {
@@ -34,6 +35,6 @@ u64 get_register_value(pid_t pid, Register_T r);
 void set_register_value(pid_t pid, Register_T r, u64 value);
 const char* get_register_name(Register_T r);
 Register_T get_register_from_name(const char* name);
-void dump_registers();
+void dump_registers(Debugger_T* dbg);
 
 #endif

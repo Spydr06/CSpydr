@@ -50,7 +50,7 @@
 #include "version.h"
 #include "config.h"
 #include "globals.h"
-#include "debugger/dbg.h"
+#include "debugger/debugger.h"
 
 #ifdef CSPYDR_USE_LLVM
     #include "codegen/llvm/llvm_codegen.h"
