@@ -13,6 +13,7 @@
 #include "llvm_codegen.h"
 #include "llvm_includes.h"
 #include "globals.h"
+#include "timer/timer.h"
 
 #define GET_GENERATOR(args) LLVMCodegenData_T* cg = va_arg(args, LLVMCodegenData_T*)
 
@@ -59,7 +60,9 @@ static void free_llvm_codegen(LLVMCodegenData_T* cg)
 
 i32 llvm_codegen_pass(ASTProg_T* ast)
 {
+    timer_start("llvm code generation");
     generate_llvm(ast, global.target, global.print_code, global.silent);
+    timer_stop();
 
     return 0;
 }

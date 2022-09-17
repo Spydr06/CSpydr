@@ -72,5 +72,11 @@ void timer_print_summary(void)
         LOG_INFO_F("  %.03lfms\t%s\n", duration, ts->description);
     }
 
-    LOG_INFO_F("=================================\n" COLOR_BOLD_WHITE "  total: %lu lines in %.03lfms\n" COLOR_RESET, global.total_source_lines, total);
+    LOG_INFO_F(
+        "==========================================\n" 
+        COLOR_BOLD_WHITE 
+        "  total: %lu lines in %.03lfms (%.03lfs)\n"
+        COLOR_RESET, 
+        global.total_source_lines, total, total / 1000
+    );
 }

@@ -21,8 +21,9 @@
 #include "keywords.h"
 #include "list.h"
 #include "util.h"
-#include <mem/mem.h>
+#include "mem/mem.h"
 #include "debugger/register.h"
+#include "timer/timer.h"
 
 #define ID_PREFIX  "__csp_"
 #define MAIN_FN_ID ID_PREFIX "main"
@@ -292,6 +293,8 @@ i32 transpiler_pass(ASTProg_T* ast)
 
 void c_gen_code(CCodegenData_T* cg, const char* target)
 {
+    timer_start("C code generation");
+
     char platform[1024] = { '\0' };
     get_build(platform);
     if(!cg->silent)
@@ -319,11 +322,16 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
         fprintf(OUTPUT_STREAM, "%s", cg->buf);
     }
 
+    timer_stop();
+
     if(!global.do_assemble)
         return;
+
+    timer_start("compiling C code");
+
     char c_source_file[BUFSIZ] = {'\0'};
     get_cached_file_path(c_source_file, target, ".c");
-    
+
     // run the compiler
     if(global.do_link)
     {
@@ -388,6 +396,8 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
             throw(global.main_error_exception);
         }
     }
+
+    timer_stop();
 }
 
 static char* c_gen_identifier(ASTIdentifier_T* id)

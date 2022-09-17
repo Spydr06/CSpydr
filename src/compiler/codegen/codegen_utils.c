@@ -7,6 +7,7 @@
 #include "io/io.h"
 #include "globals.h"
 #include "platform/platform_bindings.h"
+#include "timer/timer.h"
 
 #include <libgen.h>
 #include <string.h>
@@ -178,6 +179,8 @@ void print_linking_msg(const char* target)
 
 void link_obj(const char* target, char* obj_file, bool silent)
 {
+    timer_start("linking");
+
     if(!silent)
         print_linking_msg(target);
 
@@ -211,4 +214,6 @@ void link_obj(const char* target, char* obj_file, bool silent)
     
         free_list(args);
     }
+
+    timer_stop();
 }

@@ -186,19 +186,17 @@ namespace std {
             } unless condition;
         }
 
-        fn log(t: &Testing, fmt: &const char, args: ...) {
+        fn log(_t: &Testing, fmt: &const char, args: ...) {
             using io, color;
             puts(&RESET[0]);
             printf("    ");
             vfprintf(stdout!, fmt, &args);
             printf(&RESET[0]);
         }
-        [ignore_unused("log")]
 
         # skip the current test by terminating the process
-        fn skip(t: &Testing) {
+        fn skip(_t: &Testing) {
             process::exit(0);
         }
-        [ignore_unused("skip")]
     }
 }

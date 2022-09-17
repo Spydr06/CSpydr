@@ -16,7 +16,7 @@ namespace std {
             <- len str;
         }
         
-        fn strnlen(s: &const char, n: usize): std::usize
+        fn strnlen(s: &const char, _n: usize): std::usize
             <- strlen(s);
 
         # similar to c_str::copy
@@ -379,7 +379,5 @@ namespace std {
             }
             <- if neg => n else -n;
         }
-
-        [ignore_unused("*")]
     }
 }

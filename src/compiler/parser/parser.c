@@ -2,6 +2,7 @@
 
 #include "ast/ast.h"
 #include "hashmap.h"
+#include "io/file.h"
 #include "util.h"
 #include "config.h"
 #include "error/error.h"
@@ -415,6 +416,13 @@ i32 parser_pass(ASTProg_T* ast)
         LOG_OK_F(COLOR_BOLD_GREEN "\33[2K\r  Compiling " COLOR_RESET " %s\n", ((File_T*) ast->files->items[0])->path);
     }
 
+    global.total_source_lines = 0;
+    for(size_t i = 0; i < ast->files->size; i++)
+    {
+        File_T* file = ast->files->items[i];
+        global.total_source_lines += file->num_lines;
+    }
+    
     // initialize the parser;
     timer_start("parsing");
     Parser_T parser;
@@ -512,27 +520,6 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, Li
         
         if(!all)
             throw_error(ERR_SYNTAX_ERROR, p->tok, "could not find function `%s` in current scope", value);        
-    }
-    else if(streq(field->value, "ignore_unused"))
-    {
-        bool all = streq("*", value);
-        for(size_t i = 0; i < obj_list->size; i++)
-        {
-            ASTObj_T* obj = obj_list->items[i];
-            if(all) 
-            {
-                obj->ignore_unused = true;
-                continue;
-            }
-            else if(streq(value, obj->id->callee)) 
-            {
-                obj->ignore_unused = true;
-                return;
-            }
-        }
-
-        if(!all)
-            throw_error(ERR_SYNTAX_ERROR, p->tok, "could not find identifier `%s` in current scope", value);
     }
     else if(streq(field->value, "exit_fn"))
     {

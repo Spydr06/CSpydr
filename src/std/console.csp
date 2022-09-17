@@ -194,11 +194,10 @@ namespace std {
             <- syscall::ioctl(fd, io::TIOCSWINSZ, winsize: u64);
         }
 
-        fn send_break(fd: i32, dur: i32): i32
+        fn send_break(fd: i32, _dur: i32): i32
         {
             <- io::ioctl(fd, io::TCSBRK, 0);
         }
-        [ignore_unused("send_break")]
 
         fn drain(fd: i32): i32
         {

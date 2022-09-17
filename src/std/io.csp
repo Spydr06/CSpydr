@@ -337,7 +337,5 @@ namespace std {
             let r = syscall::ioctl(fd, req, arg);
             <- r;
         }
-
-        [ignore_unused("*")]
     }
 }

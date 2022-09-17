@@ -13,6 +13,7 @@
 #include "globals.h"
 #include "list.h"
 #include "../relocation.h"
+#include "timer/timer.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -255,6 +256,7 @@ i32 asm_codegen_pass(ASTProg_T* ast)
 
 void asm_gen_code(ASMCodegenData_T* cg, const char* target)
 {
+    timer_start("assembly code generation");
     char platform[1024] = { '\0' };
     get_build(platform);
     if(!cg->silent)
@@ -278,8 +280,13 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         fprintf(OUTPUT_STREAM, "%s", cg->buf);
     }
 
+    timer_stop();
+
     if(!global.do_assemble)
         return;
+
+    timer_start("assembling");
+
     char asm_source_file[BUFSIZ] = {'\0'};
     get_cached_file_path(asm_source_file, target, ".s");
 
@@ -312,6 +319,8 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
             throw(global.main_error_exception);
         }
     }
+
+    timer_stop();
 
     // run the linker
     if(global.do_link) 

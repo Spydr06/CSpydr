@@ -287,9 +287,8 @@ i32 main(i32 argc, char* argv[])
             break;
     }
 
-    if(global.timer_enabled) {
+    if(global.timer_enabled)
         timer_print_summary();
-    }
 
     if(!streq(cc_flags, DEFAULT_CC_FLAGS))
         free(cc_flags);
@@ -321,6 +320,7 @@ static void evaluate_info_flags(char* argv)
 
 static void run(char* file)
 {
+    timer_start("execution");
     if(!global.do_assemble || !global.do_link) 
     {
         LOG_OK(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " cannot execute target since no executable was generated.\n");
@@ -336,4 +336,5 @@ static void run(char* file)
     sprintf(cmd, cmd_tmp, file);
 
     global.last_exit_code = subprocess(cmd, (char* const[]){cmd, NULL}, !global.silent);
+    timer_stop();
 }
