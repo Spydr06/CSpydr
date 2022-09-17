@@ -16,7 +16,7 @@ typedef struct MACRO_STRUCT
     bool used : 1;
 } __attribute__((packed)) Macro_T;
 
-List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent);
+i32 preprocessor_pass(ASTProg_T* ast);
 Macro_T* init_macro(Token_T* tok);
 
 #endif

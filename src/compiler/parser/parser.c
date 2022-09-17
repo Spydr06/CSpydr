@@ -285,11 +285,12 @@ static inline Precedence_T get_precedence(TokenType_T tt)
 // helperfunctions             //
 /////////////////////////////////
 
-static void init_parser(Parser_T* parser, List_T* tokens)
+static void init_parser(Parser_T* parser, ASTProg_T* ast)
 {
     memset(parser, 0, sizeof(struct PARSER_STRUCT));
-    parser->tokens = tokens;
-    parser->tok = tokens->items[0];
+    parser->root_ref = ast;
+    parser->tokens = ast->tokens;
+    parser->tok = ast->tokens->items[0];
 }
 
 static void free_parser(Parser_T* p)
@@ -407,32 +408,19 @@ static ASTObj_T* get_compatible_tuple(Parser_T* p, ASTType_T* tuple)
 static void parse_obj(Parser_T* p, List_T* obj_list);
 static void parse_compiler_directives(Parser_T* p, List_T* obj_list);
 
-void parse(ASTProg_T* ast, List_T* files, bool is_silent)
+i32 parser_pass(ASTProg_T* ast)
 {
-    // get the main source file
-    File_T* main_file = files->items[0];
-
-    // initialize the lexer for the main file
-    Lexer_T lex;
-    init_lexer(&lex, main_file);
-
-    List_T* tokens = lex_and_preprocess_tokens(&lex, files, is_silent);
+    if(!global.silent)
+    {
+        LOG_OK_F(COLOR_BOLD_GREEN "\33[2K\r  Compiling " COLOR_RESET " %s\n", ((File_T*) ast->files->items[0])->path);
+    }
 
     // initialize the parser;
     timer_start("parsing");
     Parser_T parser;
-    init_parser(&parser, tokens);
+    init_parser(&parser, ast);
 
     global.current_fn = &parser.cur_fn;
-
-    if(!is_silent)
-    {
-        LOG_OK_F(COLOR_BOLD_GREEN "\33[2K\r  Compiling " COLOR_RESET " %s\n", main_file->path);
-    }
-
-    // initialize the main ast node
-    init_ast_prog(ast, main_file->path, NULL, NULL);
-    parser.root_ref = ast;
 
     // parse
     while(!tok_is(&parser, TOKEN_EOF))
@@ -452,13 +440,12 @@ void parse(ASTProg_T* ast, List_T* files, bool is_silent)
     global.current_fn = NULL;
 
     // dispose
-    free_list(tokens);
+    free_list(ast->tokens);
     free_parser(&parser);
 
     timer_stop();
 
-    // check the ast for validity
-    validate_ast(ast);
+    return 0;
 }
 
 /////////////////////////////////

@@ -11,7 +11,7 @@ enum IMPLICIT_CAST_RESULT {
     CAST_DELETING_CONST
 };
 
-void run_typechecker(ASTProg_T* ast, Validator_T* v);
+i32 typechecker_pass(ASTProg_T* ast);
 
 bool types_equal(ASTType_T* a, ASTType_T* b);
 

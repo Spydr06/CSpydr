@@ -227,7 +227,7 @@ static const ASTIteratorList_T main_iterator_list =
     .iterate_over_right_members = false
 };
 
-void validate_ast(ASTProg_T* ast)
+i32 validator_pass(ASTProg_T* ast)
 {
     timer_start("code validation");
 
@@ -256,12 +256,8 @@ void validate_ast(ASTProg_T* ast)
     }
 
     timer_stop();
-
-    // check all data types and create implicit casts when needed
-    run_typechecker(ast, &v);
-
-    if(global.emitted_errors)
-        panic();
+    
+    return global.emitted_errors;
 }
 
 static ASTObj_T* search_in_current_scope(Scope_T* scope, char* id)
@@ -280,6 +276,8 @@ static ASTObj_T* search_in_scope(Scope_T* scope, char* id)
     return search_in_scope(scope->prev, id);
 }
 
+// FIXME:
+// type definitions will not be found if contained in an namespace which is defined after the calling function
 static ASTObj_T* search_identifier(Validator_T* v, Scope_T* scope, ASTIdentifier_T* id)
 {
     if(!v || !scope || !id)
@@ -731,7 +729,6 @@ static void fn_end(ASTObj_T* fn, va_list args)
     char buf[BUFSIZ];
     memset(buf, 0, LEN(buf));
 
-retry:
     switch(return_type->kind)
     {
         case TY_C_ARRAY:

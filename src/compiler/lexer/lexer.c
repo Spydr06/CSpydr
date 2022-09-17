@@ -1,10 +1,13 @@
 #include "lexer.h"
+#include "ast/ast.h"
 #include "config.h"
+#include "list.h"
 #include "mem/mem.h"
 #include "token.h"
 
 #include "io/log.h"
 #include "util.h"
+#include "timer/timer.h"
 
 #include <ctype.h>
 #include <stddef.h>
@@ -129,6 +132,26 @@ void init_lexer(Lexer_T* lexer, File_T* src)
     lexer->pos = 0;
     lexer->line = 0;
     lexer->c = get_char(lexer->file, lexer->line, lexer->pos);
+}
+
+i32 lexer_pass(ASTProg_T* ast)
+{
+    timer_start("lexing main file");
+
+    ast->tokens = init_list();
+
+    Lexer_T lex;
+    init_lexer(&lex, ast->files->items[0]);
+
+    Token_T* tok;
+    for(tok = lexer_next_token(&lex); tok->type != TOKEN_EOF; tok = lexer_next_token(&lex))
+        list_push(ast->tokens, tok);
+
+    // push EOF token
+    list_push(ast->tokens, tok);
+    
+    timer_stop();
+    return 0;
 }
 
 static void lexer_advance(Lexer_T* lexer)

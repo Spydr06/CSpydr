@@ -3,6 +3,8 @@
 
 #include "ast.h"
 
+i32 serializer_pass(ASTProg_T* ast);
+
 void ast_to_json(ASTProg_T* ast, const char* file, bool print_json);
 void ast_from_json(ASTProg_T* ast, const char* file);
 

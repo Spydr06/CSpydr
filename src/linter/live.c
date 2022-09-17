@@ -53,11 +53,13 @@ void lint_watched(const char* filepath)
     FILES = init_list();
     list_push(FILES, read_file(filepath));
 
-    ASTProg_T ast = {};
+    ASTProg_T ast = {
+        .files = FILES
+    };
     try(global.main_error_exception)
     {
         global.silent = true;
-        parse(&ast, FILES, true);
+        parser_pass(&ast);
     }
     catch {
     };

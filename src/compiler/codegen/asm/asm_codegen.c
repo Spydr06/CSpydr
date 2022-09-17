@@ -240,6 +240,19 @@ static void write_code(ASMCodegenData_T* cg, const char* target, bool cachefile)
     fclose(out);
 }
 
+i32 asm_codegen_pass(ASTProg_T* ast)
+{
+    ASMCodegenData_T cg;
+    init_asm_cg(&cg, ast);
+    cg.silent = global.silent;
+    cg.print = global.print_code;
+
+    asm_gen_code(&cg, global.target);
+    free_asm_cg(&cg);
+
+    return 0;
+}
+
 void asm_gen_code(ASMCodegenData_T* cg, const char* target)
 {
     char platform[1024] = { '\0' };
@@ -314,9 +327,9 @@ static char* asm_gen_identifier(ASTIdentifier_T* id)
 
 static void asm_gen_file_descriptors(ASMCodegenData_T* cg)
 {
-    for(size_t i = 0; i < cg->ast->imports->size; i++)
+    for(size_t i = 0; i < cg->ast->files->size; i++)
     {
-        File_T* file = cg->ast->imports->items[i];
+        File_T* file = cg->ast->files->items[i];
         asm_println(cg, "  .file %d \"%s\"", file->file_no + 1, file->path);
     }
 }

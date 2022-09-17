@@ -3,6 +3,6 @@
 
 #include "ast/ast.h"
 
-void parse(ASTProg_T* ast, List_T* files, bool is_silent);
+i32 parser_pass(ASTProg_T* ast);
 
 #endif

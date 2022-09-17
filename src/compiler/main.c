@@ -50,6 +50,7 @@
 #include "version.h"
 #include "config.h"
 #include "globals.h"
+#include "debugger/dbg.h"
 
 #ifdef CSPYDR_USE_LLVM
     #include "codegen/llvm/llvm_codegen.h"
@@ -59,6 +60,14 @@
 
 // default texts, which get shown if you enter help, info or version flags
 #define CSPC_HELP_COMMAND "cspc --help"
+
+typedef enum ACTION_ENUM
+{
+    AC_NULL = -1,
+    AC_BUILD,
+    AC_RUN,
+    AC_DEBUG
+} Action_T;
 
 const char usage_text[] = COLOR_BOLD_WHITE "Usage:" COLOR_RESET " cspc [run, build, debug] [<input file> <flags>]\n"
                          "       cspc [--help, --info, --version]\n";
@@ -135,27 +144,8 @@ const struct {
     {NULL, -1}
 };
 
-static void evaluate_info_flags(char* argv)
-{
-    char csp_build[32];
-    get_cspydr_build(csp_build);
-
-    if(streq(argv, "-h") || streq(argv, "--help"))
-        printf(help_text, usage_text, __CSP_DEFAULT_MAX_MACRO_CALL_DEPTH, get_home_directory());
-    else if(streq(argv, "-i") || streq(argv, "--info"))
-        printf(info_text, get_cspydr_version(), csp_build);
-    else if(streq(argv, "-v") || streq(argv, "--version"))
-        printf(version_text, get_cspydr_version(), csp_build);
-    else if(streq(argv, "--clear-cache"))
-        clear_cache();
-    else
-    {
-        LOG_ERROR_F("unknown or wrong used flag \"%s\", type \"cspydr --help\" to get help.\n", argv);
-        exit(1);
-    }
-
-    exit(0);
-}
+static void run(char* file);
+static void evaluate_info_flags(char* argv);
 
 // entry point
 i32 main(i32 argc, char* argv[])
@@ -169,7 +159,7 @@ i32 main(i32 argc, char* argv[])
     global.exec_name = argv[0]; // save the execution name for later use
     if(argc == 1)
     {
-        LOG_ERROR_F("[Error] Too few arguments given.\n" COLOR_RESET "%s", usage_text);
+        LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " too few arguments given.\n" COLOR_RESET "%s", usage_text);
         exit(1);
     }
 
@@ -185,7 +175,7 @@ i32 main(i32 argc, char* argv[])
             action = action_table[i].ac;
     if(action == AC_NULL)
     {
-        LOG_ERROR_F("[Error] Unknown action \"%s\", expect [build, run, debug, repl]\n", argv[1]);
+        LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " unknown action \"%s\", expect one of [build, run, debug]\n", argv[1]);
         exit(1);
     }
 
@@ -196,7 +186,7 @@ i32 main(i32 argc, char* argv[])
     input_file = argv[2];
     if(!file_exists(input_file))
     {
-        LOG_ERROR_F("[Error] Error opening file \"%s\": No such file or directory\n", input_file);
+        LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " error opening file \"%s\": No such file or directory\n", input_file);
         exit(1);
     }
     // remove the first three flags form argc/argv
@@ -212,7 +202,7 @@ i32 main(i32 argc, char* argv[])
         {
             if(!argv[++i])
             {
-                LOG_ERROR("[Error] Expect target file path after -o/--output.\n");
+                LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " expect target file path after -o/--output.\n");
                 exit(1);
             }
             output_file = argv[i];
@@ -245,7 +235,7 @@ i32 main(i32 argc, char* argv[])
         {
             if(!argv[++i])
             {
-                LOG_ERROR("[Error] Expect C compiler name after --cc.\n");
+                LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " Expect C compiler name after --cc.\n");
                 exit(1);
             }
             cc = argv[i];
@@ -266,7 +256,7 @@ i32 main(i32 argc, char* argv[])
         {
             if(!argv[++i])
             {
-                LOG_ERROR_F("[Error] Expect STD path after %s.", arg);
+                LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " expect STD path after %s.", arg);
                 exit(1);
             }
             global.std_path = get_absolute_path(argv[i]);
@@ -277,7 +267,23 @@ i32 main(i32 argc, char* argv[])
             evaluate_info_flags(argv[i]);
     }
 
-    compile(input_file, output_file, action);
+    compile(input_file, output_file);
+
+    switch(action)
+    {
+        case AC_BUILD:
+            break;
+        case AC_DEBUG:
+            debug_repl(input_file, output_file);
+            break;
+        case AC_RUN:
+            run(output_file);
+            remove(output_file);
+            break;
+        default:
+            LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED "unknown action `%d`\n", action);
+            break;
+    }
 
     if(global.timer_enabled) {
         timer_print_summary();
@@ -287,4 +293,45 @@ i32 main(i32 argc, char* argv[])
         free(cc_flags);
 
     return 0;
+}
+
+static void evaluate_info_flags(char* argv)
+{
+    char csp_build[32];
+    get_cspydr_build(csp_build);
+
+    if(streq(argv, "-h") || streq(argv, "--help"))
+        printf(help_text, usage_text, __CSP_DEFAULT_MAX_MACRO_CALL_DEPTH, get_home_directory());
+    else if(streq(argv, "-i") || streq(argv, "--info"))
+        printf(info_text, get_cspydr_version(), csp_build);
+    else if(streq(argv, "-v") || streq(argv, "--version"))
+        printf(version_text, get_cspydr_version(), csp_build);
+    else if(streq(argv, "--clear-cache"))
+        clear_cache();
+    else
+    {
+        LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " unknown or wrong used flag \"%s\", type \"cspydr --help\" to get help.\n", argv);
+        exit(1);
+    }
+
+    exit(0);
+}
+
+static void run(char* file)
+{
+    if(!global.do_assemble || !global.do_link) 
+    {
+        LOG_OK(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " cannot execute target since no executable was generated.\n");
+        return;
+    }
+
+    if(!global.silent)
+        LOG_OK_F(COLOR_BOLD_BLUE "  Executing " COLOR_RESET " %s\n", file);
+    
+    const char* cmd_tmp = "." DIRECTORY_DELIMS "%s";
+    char cmd[BUFSIZ];
+    memset(cmd, '\0', sizeof cmd);
+    sprintf(cmd, cmd_tmp, file);
+
+    global.last_exit_code = subprocess(cmd, (char* const[]){cmd, NULL}, !global.silent);
 }

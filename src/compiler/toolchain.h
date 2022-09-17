@@ -1,6 +1,7 @@
 #ifndef CSPYDR_TOOLCHAIN_H
 #define CSPYDR_TOOLCHAIN_H
 
+#include "ast/ast.h"
 #include "config.h"
 
 typedef enum COMPILE_TYPE_ENUM
@@ -13,14 +14,11 @@ typedef enum COMPILE_TYPE_ENUM
     CT_TO_JSON,
 } CompileType_T;
 
-typedef enum ACTION_ENUM
-{
-    AC_NULL = -1,
-    AC_BUILD,
-    AC_RUN,
-    AC_DEBUG
-} Action_T;
+typedef struct PASS_STRUCT {
+    const char* desc;
+    i32 (*func)(ASTProg_T* ast);
+} Pass_T;
 
-void compile(char* input_file, char* output_file, Action_T action);
+void compile(char* input_file, char* output_file);
 
 #endif

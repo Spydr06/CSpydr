@@ -26,7 +26,7 @@ typedef struct VALIDATOR_STRUCT
     u32 scope_depth;  // depth of the current scope
 } Validator_T;
 
-void validate_ast(ASTProg_T* ast);
+i32 validator_pass(ASTProg_T* ast);
 ASTType_T* expand_typedef(Validator_T* v, ASTType_T* type);
 
 #endif

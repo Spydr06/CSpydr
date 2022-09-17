@@ -35,18 +35,18 @@ void test_file_generation(void)
     TEST_CHECK(strcmp(file->lines->items[1], "world") == 0);
 }
 
-#include "test_hashmap.h"
-#include "test_lexer.h"
-#include "test_preprocessor.h"
-#include "test_parser.h"
-#include "test_compiler.h"
+//#include "test_hashmap.h"
+//#include "test_lexer.h"
+//#include "test_preprocessor.h"
+//#include "test_parser.h"
+//#include "test_compiler.h"
 
 TEST_LIST = {
    {"file generation", test_file_generation},
-   HASHMAP_TESTS,
-   LEXER_TESTS,        // all lexer tests included from "test_lexer.h"
-   PREPROCESSOR_TESTS, // all preprocessor tests included from "test_preprocessor.h"
-   PARSER_TESTS,       // all parser tests included from "test_parser.h"
-   COMPILER_TESTS,     // all compiler tests
+   //HASHMAP_TESTS,
+   //LEXER_TESTS,        // all lexer tests included from "test_lexer.h"
+   //PREPROCESSOR_TESTS, // all preprocessor tests included from "test_preprocessor.h"
+   //PARSER_TESTS,       // all parser tests included from "test_parser.h"
+   //COMPILER_TESTS,     // all compiler tests
    {NULL, NULL}        // end of the tests
 };

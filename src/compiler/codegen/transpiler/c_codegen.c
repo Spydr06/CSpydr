@@ -271,6 +271,19 @@ static void write_code(CCodegenData_T* cg, const char* target, bool cachefile)
     fclose(out);
 }
 
+i32 transpiler_pass(ASTProg_T* ast)
+{
+    CCodegenData_T cg;
+    init_c_cg(&cg, ast);
+    cg.print = global.print_code;
+    cg.silent = global.silent;
+    
+    c_gen_code(&cg, global.target);
+    free(cg.buf);
+
+    return 0;
+}
+
 void c_gen_code(CCodegenData_T* cg, const char* target)
 {
     char platform[1024] = { '\0' };

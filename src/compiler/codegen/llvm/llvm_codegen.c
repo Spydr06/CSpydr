@@ -1,4 +1,3 @@
-#include <llvm-c/Core.h>
 #ifdef CSPYDR_USE_LLVM
 
 #include <string.h>
@@ -56,6 +55,13 @@ static void init_llvm_codegen(LLVMCodegenData_T* cg, ASTProg_T* ast)
 
 static void free_llvm_codegen(LLVMCodegenData_T* cg)
 {
+}
+
+i32 llvm_codegen_pass(ASTProg_T* ast)
+{
+    generate_llvm(ast, global.target, global.print_code, global.silent);
+
+    return 0;
 }
 
 void generate_llvm(ASTProg_T *ast, char *output_file, bool print_code, bool is_silent)

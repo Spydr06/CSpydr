@@ -52,12 +52,10 @@ ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok)
     return obj;
 }
 
-void init_ast_prog(ASTProg_T* prog, const char* main_file_path, const char* target_binary, List_T* imports)
+void init_ast_prog(ASTProg_T* prog, const char* main_file_path, const char* target_binary)
 {
     prog->main_file_path = main_file_path;
     prog->target_binary = target_binary;
-
-    prog->imports = imports;
 
     prog->objs = init_list();
     prog->tuple_structs = init_list();

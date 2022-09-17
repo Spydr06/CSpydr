@@ -3,6 +3,6 @@
 
 #include "ast/ast.h"
 
-void optimize(ASTProg_T* ast);
+i32 optimizer_pass(ASTProg_T* ast);
 
 #endif

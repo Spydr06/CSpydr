@@ -15,7 +15,11 @@
 #include "ast/types.h"
 #include "timer/timer.h"
 
-#define GET_VALIDATOR(va) Validator_T* v = va_arg(va, Validator_T*)
+#define GET_TYPECHECKER(va) TypeChecker_T* t = va_arg(va, TypeChecker_T*)
+
+typedef struct TYPECHECKER_STRUCT {
+    ASTObj_T* current_fn;
+} TypeChecker_T;
 
 static void set_fn(ASTObj_T* fn, va_list args);
 static void unset_fn(ASTObj_T* fn, va_list args);
@@ -50,23 +54,31 @@ static const ASTIteratorList_T iterator = {
     }
 };
 
-void run_typechecker(ASTProg_T* ast, Validator_T* v)
+i32 typechecker_pass(ASTProg_T* ast)
 {
     timer_start("type checking");
-    ast_iterate(&iterator, ast, v);
+
+    TypeChecker_T typechecker = {
+        NULL
+    };
+    global.current_fn = &typechecker.current_fn;
+
+    ast_iterate(&iterator, ast, &typechecker);
     timer_stop();
+
+    return global.emitted_errors;
 }
 
 static void set_fn(ASTObj_T* fn, va_list args)
 {
-    GET_VALIDATOR(args);
-    v->current_function = fn;
+    GET_TYPECHECKER(args);
+    t->current_fn = fn;
 }
 
 static void unset_fn(ASTObj_T* fn, va_list args)
 {
-    GET_VALIDATOR(args);
-    v->current_function = NULL;
+    GET_TYPECHECKER(args);
+    t->current_fn = NULL;
 }
 
 static void typecheck_call(ASTNode_T* call, va_list args)

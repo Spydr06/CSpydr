@@ -15,7 +15,8 @@ i32 lint(char* src_file)
     list_push(files, read_file(src_file));
 
     global.silent = true;
-    parse(&ast, files, true);
+    ast.files = files;
+    parser_pass(&ast);
 
     for(size_t i = 0; i < files->size; i++)
         free_file(files->items[i]);

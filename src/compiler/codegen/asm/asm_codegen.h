@@ -25,6 +25,8 @@ typedef struct ASM_CODEGEN_DATA_STRUCT
     u64 cur_cnt_id; // current statement id, which supports continue; statements
 } ASMCodegenData_T;
 
+i32 asm_codegen_pass(ASTProg_T* ast);
+
 void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast);
 void free_asm_cg(ASMCodegenData_T* cg);
 void asm_gen_code(ASMCodegenData_T* cg, const char* target);

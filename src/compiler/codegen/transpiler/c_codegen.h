@@ -22,9 +22,10 @@ typedef struct C_CODEGEN_DATA_STRUCT
     FILE* code_buffer;
 } CCodegenData_T;
 
+i32 transpiler_pass(ASTProg_T* ast);
+
 void init_c_cg(CCodegenData_T* cg, ASTProg_T* ast);
 void free_c_cg(CCodegenData_T* cg);
-
 void c_gen_code(CCodegenData_T* cg, const char* target);
 
 #endif

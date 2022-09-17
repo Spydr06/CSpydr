@@ -18,7 +18,7 @@
 void remove_dead_code(ASTProg_T* ast);
 void evaluate_const_exprs(ASTProg_T* ast);
 
-void optimize(ASTProg_T *ast)
+i32 optimizer_pass(ASTProg_T *ast)
 {
     timer_start("code optimization");
 
@@ -46,6 +46,8 @@ void optimize(ASTProg_T *ast)
         fprintf(OUTPUT_STREAM, "\n");
     
     timer_stop();
+
+    return global.emitted_errors;
 }
 
 void remove_dead_code(ASTProg_T* ast)

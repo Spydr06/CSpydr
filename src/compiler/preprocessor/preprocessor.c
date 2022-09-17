@@ -1,4 +1,5 @@
 #include "preprocessor.h"
+#include "ast/ast.h"
 #include "config.h"
 #include "list.h"
 #include "mem/mem.h"
@@ -32,7 +33,6 @@
 
 typedef struct PREPROCESSOR_STRUCT 
 {
-    Lexer_T* lex;
     List_T* files;
 
     List_T* tokens;
@@ -114,9 +114,8 @@ static void free_import(Import_T* imp)
     free(imp);
 }
  
-void init_preprocessor(Preprocessor_T* pp, Lexer_T* lex)
+void init_preprocessor(Preprocessor_T* pp)
 {
-    pp->lex = lex;
     pp->macros = init_list();
     pp->imports = init_list();
     pp->tokens = init_list();
@@ -497,31 +496,23 @@ static void expand_macro_call(Preprocessor_T* pp, MacroCall_T call, List_T* src_
 // Main Preprocessor function
 //
 
-List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
+i32 preprocessor_pass(ASTProg_T* ast)
 {
-    timer_start("lexing main file");
-    
-    Preprocessor_T pp;
-    init_preprocessor(&pp, lex);
-
-    pp.files = files;
-    pp.is_silent = is_silent;
-
-    /**************************************
-    * Stage 0: lex the main file          *
-    **************************************/
-
-    Token_T* tok;
-    for(tok = lexer_next_token(lex); tok->type != TOKEN_EOF; tok = lexer_next_token(lex))
-        list_push(pp.tokens, tok);
-    Token_T* eof = tok;
-    
-    timer_stop();
     timer_start("lexing import files");
+
+    Preprocessor_T pp;
+    init_preprocessor(&pp);
+
+    pp.files = ast->files;
+    pp.tokens = ast->tokens;
+    pp.is_silent = global.silent;
 
     /**************************************
     * Stage 1: lex and import all files   *
     **************************************/
+
+    Token_T* eof = list_pop(ast->tokens);
+    Token_T* tok;
 
     for(size_t i = 0; i < pp.tokens->size; i++)
     {
@@ -578,5 +569,7 @@ List_T* lex_and_preprocess_tokens(Lexer_T* lex, List_T* files, bool is_silent)
 
     timer_stop();
 
-    return token_stage_3;
+    ast->tokens = token_stage_3;
+
+    return 0;
 }

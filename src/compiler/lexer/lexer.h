@@ -1,6 +1,7 @@
 #ifndef CSPYDR_LEXER_H
 #define CSPYDR_LEXER_H
 
+#include "ast/ast.h"
 #include "list.h"
 #include "token.h"
 #include "io/file.h"
@@ -20,5 +21,7 @@ Token_T* lexer_consume(Lexer_T* lexer, Token_T* token);
 Token_T* lexer_consume_type(Lexer_T* lexer, TokenType_T type);
 Token_T* lexer_next_token(Lexer_T* lexer);
 bool token_is_keyword(TokenType_T type);
+
+i32 lexer_pass(ASTProg_T* ast);
 
 #endif
