@@ -175,13 +175,10 @@ namespace std {
         }
 
         fn put(map: &Template, pair: &u8) {
-            let key = pair;                  # pair.key (0 offset)
-            let val = pair + (map.data.ksize: u64); # pair.val (sizeof key offset)
-
             map.data.size++;
             grow(map); # grow if needed
 
-            let addr = find_pair(map, key, true);
+            let addr = find_pair(map, pair, true);
             if addr {
                 memory::copy(addr, pair, map.data.ksize + map.data.vsize);
             }

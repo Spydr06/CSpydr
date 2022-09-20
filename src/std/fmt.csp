@@ -137,6 +137,14 @@ namespace std {
                     'b' => {
                         concat(str, va_arg!{args, bool} |> if $ => "true" else "false");
                     }
+                    'f' => { # float (f32)
+                        c_str::from_f32(va_arg!{args, f32}, 10, buf);
+                        concat(str, buf);
+                    }
+                    'd' => { # double (f64)
+                        c_str::from_f64(va_arg!{args, f64}, 20, buf);
+                        concat(str, buf);
+                    }
                     'p' => { # pointer
                         c_str::from_uint(va_arg!{args, &void}: u64, buf, 16);
                         concat(str, "0x");
@@ -191,7 +199,10 @@ namespace std {
                         else
                             concat(str, "(nil)");
                     }
-                    _ => {}
+                    _ => {
+                        append(str, 37);
+                        append(str, *fmt);
+                    }
                 }
 
                 <- nil;

@@ -379,5 +379,49 @@ namespace std {
             }
             <- if neg => n else -n;
         }
+
+        fn from_f32(float: f32, ndigits: i32, buf: &char)
+        {
+            let whole = float: i32;
+            from_int(whole, buf, 10);
+
+            if ndigits <= 0
+                ret;
+
+            buf += len buf;
+            buf[0] = '.';
+
+            float -= whole;
+
+            let i = 1;
+            for 0..ndigits {
+                float *= 10.0;
+                let digit = float: i32;
+                buf[i++] = digit + '0';
+                float -= digit;
+            }
+        }
+
+        fn from_f64(float: f64, ndigits: i32, buf: &char)
+        {
+            let whole = float: i64;
+            from_int(whole, buf, 10);
+
+            if ndigits <= 0
+                ret;
+
+            buf += len buf;
+            buf[0] = '.';
+
+            float -= whole;
+
+            let i = 1;
+            for 0..ndigits {
+                float *= (10.0: f64);
+                let digit = float: i32;
+                buf[i++] = digit + '0';
+                float -= digit;
+            }
+        }
     }
 }

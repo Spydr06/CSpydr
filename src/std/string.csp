@@ -224,5 +224,19 @@ namespace std {
             let buf: u16 = c << 8 | '\0';
             <- str!{(&buf): &char};
         }
+        
+        fn from_f32(float: f32): ::std::String
+        {
+            let buf: char 'c[100];
+            c_str::from_f32(float, 10, buf);
+            <- str!{buf};
+        }
+
+        fn from_f64(float: f64): ::std::String
+        {
+            let buf: char 'c[100];
+            c_str::from_f64(float, 20, buf);
+            <- str!{buf};
+        }
     }
 } 
