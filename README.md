@@ -1,27 +1,75 @@
 # The CSpydr Programming Language
 
-CSpydr is a low-level, static typed, free and open-source, compiled programming language inspired by Rust and C. This repository contains `cspc` (the **CSpydr Programming Language Compiler**), as well as CSpydr's **Standard Libraray**, some code examples and unit tests. 
-
-## Current Status
-
 <div align="center">
 
-![Made with](https://img.shields.io/badge/made%20with-C-123456?style=for-the-badge)
-[![Stars](https://img.shields.io/github/stars/spydr06/cspydr?style=for-the-badge)](https://github.com/Spydr06/CSpydr/stargazers)
-[![Forks](https://img.shields.io/github/forks/spydr06/cspydr?style=for-the-badge)](https://github.com/Spydr06/CSpydr/network/members)
-[![License](https://img.shields.io/github/license/spydr06/cspydr?style=for-the-badge)](https://github.com/Spydr06/CSpydr/blob/main/LICENSE)
-[![Issues](https://img.shields.io/github/issues/spydr06/cspydr?style=for-the-badge)](https://github.com/Spydr06/CSpydr/issues)
+[Documentation](https://github.com/spydr06/cspydr/wiki) |
+[Installation](./INSTALL.md) |
+[Contributing](./CONTRIBUTING.md) |
+[License](./LICENSE) |
+[State](#current-status)
+
+[![License](https://img.shields.io/github/license/spydr06/cspydr?style=flat-square)](https://github.com/Spydr06/CSpydr/blob/main/LICENSE)
+[![Issues](https://img.shields.io/github/issues/spydr06/cspydr?style=flat-square)](https://github.com/Spydr06/CSpydr/issues)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/spydr06/cspydr?style=flat-square)
+![Platform](https://img.shields.io/badge/platform-linux_x86__64-blueviolet?style=flat-square)
+[![Stars](https://img.shields.io/github/stars/spydr06/cspydr?style=flat-square)](https://github.com/Spydr06/CSpydr/stargazers)
+[![Forks](https://img.shields.io/github/forks/spydr06/cspydr?style=flat-square)](https://github.com/Spydr06/CSpydr/network/members)
+![GitHub repo size](https://img.shields.io/github/repo-size/spydr06/cspydr?style=flat-square)
+![Lines of code](https://img.shields.io/tokei/lines/github/spydr06/cspydr?style=flat-square)
 
 </div>
 
-A list of all the features, that are/will be implemented.
+**CSpydr** is a low-level, static typed, free and open-source, compiled programming language inspired by Rust and C. This repository contains `cspc` (the **CSpydr Programming Language Compiler**), as well as CSpydr's **Standard Libraray**, some code examples and unit tests. 
+
+## Code Examples
+
+<details>
+<summary><b>Hello World</b></summary>
+
+### helloworld.csp
+![](examples/assets/img/helloworld.png)
+</details>
+
+<details>
+<summary><b>Fibonacci</b></summary>
+
+### fibonacci.csp
+![](examples/assets/img/fibonacci.png)
+</details>
+
+<details>
+<summary><b>Lambda Functions</b></summary>
+
+### lambda.csp
+![](examples/assets/img/lambda.png)
+</details>
+
+<details>
+<summary><b>Read File</b></summary>
+
+### read_file.csp
+![](examples/assets/img/read_file.png)
+</details>
+
+<details>
+<summary><b>Random Number Generator</b></summary>
+
+### random.csp
+![](examples/assets/img/random.png)
+</details>
+
+> More examples can be found in the [**examples**](./examples/) directory
+
+## Current State
+
+**A list of all the features, that are already implemented or planned.**
 
 ##### cspc Compiler features:
 - [x] Assembly code generator for `x86_64 linux`
 - [ ] LLVM codegen target (maybe even WASM?)
 - [ ] move to an intermediate bytecode compiler
 - [ ] AST to JSON converter (in progress)
-- [x] C transpiler (deprecated)
+- [x] C transpiler
 - [x] lexing tokens
 - [x] `macro` and `import` preprocessor
 - [x] parsing an AST, validation of syntax and semantics
@@ -35,7 +83,7 @@ A list of all the features, that are/will be implemented.
 - [x] primitive data types `i8` `i16` `i32` `i64` `u8` `u16` `u32` `u64` `f32` `f64` `f80` `bool` `char` `void`
 - [x] pointers, arrays and c-like arrays `&` `[]` `'c[]`
 - [x] custom data types `struct` `union` `enum` `{}` (tuples)
-- [x] control statements `if` `match` `for` `while` `loop` `ret` `break` `continue` `noop` `with` `do-while` `do-unless`
+- [x] control statements `if` `match` `for` `while` `loop` `ret` `break` `continue` `noop` `with` `do-while` `do-unless` `defer`
 - [x] different loop types: `for`, `while`, `do-while` and `loop`
 - [x] expressions
 - [x] `extern` functions and globals
@@ -56,13 +104,13 @@ A list of all the features, that are/will be implemented.
 - [x] `cURL` header implementation 
 - [x] from-the-ground custom written `stdlib` based on linux syscalls (in progress)
 
-## Installation and Usage
+## Installation
 
-Please refer to [INSTALL.md](https://github.com/Spydr06/CSpydr/blob/main/INSTALL.md) for installation instructions and information about compatability
+Please refer to [INSTALL.md](./INSTALL.md) for installation instructions and information about compatability
 
-## The CSpydr Syntax
+## Hello, World!
 
-A simple [hello-world](https://github.com/Spydr06/CSpydr/blob/main/examples/traditional/helloworld.csp) program:
+A simple [hello-world](./examples/traditional/helloworld.csp) program:
 
 ```rust
 import "io.csp";
@@ -81,7 +129,7 @@ $ cspc run hello-world.csp
 
 ### Examples
 
-For more examples, please refer to the `examples/` directory in this repository.
+> For more examples, please refer to the `examples/` directory in this repository.
 
 ## Usage
 
@@ -109,7 +157,7 @@ $ cspc --help
 
 ## Editor support
 
-Editor support is found in the **[editor/](https://github.com/Spydr06/CSpydr/tree/main/editors)** subdirectory.
+Editor support is found in the **[editor/](./editors)** subdirectory.
 
 Currently, only [Visual Studio Code](https://code.visualstudio.com/) is supported.
 
