@@ -6,7 +6,7 @@
 [Installation](./INSTALL.md) |
 [Contributing](./CONTRIBUTING.md) |
 [License](./LICENSE) |
-[State](#current-status)
+[State](#current-state)
 
 [![License](https://img.shields.io/github/license/spydr06/cspydr?style=flat-square)](https://github.com/Spydr06/CSpydr/blob/main/LICENSE)
 [![Issues](https://img.shields.io/github/issues/spydr06/cspydr?style=flat-square)](https://github.com/Spydr06/CSpydr/issues)
