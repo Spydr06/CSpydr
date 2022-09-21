@@ -26,35 +26,35 @@
 <details>
 <summary><b>Hello World</b></summary>
 
-### helloworld.csp
+### [helloworld.csp](examples/traditional/helloworld.csp)
 ![](examples/assets/img/helloworld.png)
 </details>
 
 <details>
 <summary><b>Fibonacci</b></summary>
 
-### fibonacci.csp
+### [fibonacci.csp](examples/traditional/fibonacci.csp)
 ![](examples/assets/img/fibonacci.png)
 </details>
 
 <details>
 <summary><b>Lambda Functions</b></summary>
 
-### lambda.csp
+### [lambda.csp](examples/language/lambda.csp)
 ![](examples/assets/img/lambda.png)
 </details>
 
 <details>
 <summary><b>Read File</b></summary>
 
-### read_file.csp
+### [read_file.csp](examples/std/read_file.csp)
 ![](examples/assets/img/read_file.png)
 </details>
 
 <details>
 <summary><b>Random Number Generator</b></summary>
 
-### random.csp
+### [random.csp](examples/std/rand.csp)
 ![](examples/assets/img/random.png)
 </details>
 
