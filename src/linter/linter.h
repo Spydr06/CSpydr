@@ -3,6 +3,6 @@
 
 #include <util.h>
 
-i32 lint(char* src_file);
+i32 lint(char* src_file, char* std_path);
 
 #endif

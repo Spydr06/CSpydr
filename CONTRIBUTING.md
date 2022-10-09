@@ -1,6 +1,6 @@
 # Contributing
 
-Contributions to CSpydr are very welcome. For major changes, pleas open an issue first to discuss what you would like to change.
+Contributions to CSpydr are very welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 Following are instructions, hints and guidelines how contributions should be worked on.
 

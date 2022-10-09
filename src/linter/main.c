@@ -20,8 +20,10 @@
 #include <io/io.h>
 #include <globals.h>
 #include <version.h>
+#include <platform/platform_bindings.h>
 
 // linter includes
+#include "config.h"
 #include "linter.h"
 #include "error.h"
 #include "live.h"
@@ -58,13 +60,14 @@ const char info_text[] = COLOR_BOLD_MAGENTA "** csp-lint - The CSpydr Programmin
 
 const char help_text[] = "%s"
                          COLOR_BOLD_WHITE "Options:\n" COLOR_RESET
-                         "  -h, --help             | Displays this help text and quits.\n"
-                         "  -i, --info             | Displays information text and quits.\n"
-                         "      --version          | Displays the version of CSpydr and quits.\n"
-                         "  -v, --verbose          | Sets verbose error messages, used for programs.\n"
-                         "                         | communicating with the linter.\n"
-                         "  -o, --output           | Sets an output file for the error log.\n"
-                         "  -l, --live             | Start a live session of the linter.\n";
+                         "  -h, --help              | Displays this help text and quits.\n"
+                         "  -i, --info              | Displays information text and quits.\n"
+                         "      --version           | Displays the version of CSpydr and quits.\n"
+                         "  -v, --verbose           | Sets verbose error messages, used for programs.\n"
+                         "                          | communicating with the linter.\n"
+                         "  -o, --output            | Sets an output file for the error log.\n"
+                         "  -l, --live              | Start a live session of the linter.\n"
+                         "  -p, --std-path <string> | Set the path of the standard library (default: " DEFAULT_STD_PATH ")";
 
 // this text gets shown if -v or --version is used
 const char version_text[] = COLOR_BOLD_MAGENTA "** csp-lint - The CSpydr Programming Language Linter **\n" COLOR_RESET
@@ -89,6 +92,7 @@ i32 main(i32 argc, char* argv[])
     global.exec_name = argv[0]; // save the execution name for later use
 
     char* src_path = NULL;
+    char* std_path = DEFAULT_STD_PATH;
     bool is_live = false;
     
     for(i32 i = 1; i < argc; i++)
@@ -133,6 +137,15 @@ i32 main(i32 argc, char* argv[])
         }
         else if(streq(arg, "-l") || streq(arg, "--live"))
             is_live = true;
+        else if(streq(arg, "-p") || streq(arg, "--std-path"))
+        {
+            if(!argv[++i])
+            {
+                LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " expect STD path after %s.", arg);
+                exit(1);
+            }
+            std_path = get_absolute_path(argv[i]);
+        }
         else if(arg[0] == '-')
         {
             LOG_ERROR_F("[Error] Invalid option `%s`\n", arg);
@@ -156,10 +169,10 @@ i32 main(i32 argc, char* argv[])
     }
 
     if(is_live)
-        live_session(src_path);
+        live_session(src_path, std_path);
     else
     {
         atexit(summary);
-        return lint(src_path);
+        return lint(src_path, std_path);
     }
 }

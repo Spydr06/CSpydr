@@ -157,7 +157,7 @@ $ cspc --help
 
 ## Editor support
 
-Editor support is found in the **[editor/](./editors)** subdirectory.
+Editor support is found in the **[editors/](./editors)** subdirectory.
 
 Currently, only [Visual Studio Code](https://code.visualstudio.com/) is supported.
 

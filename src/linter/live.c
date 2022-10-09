@@ -1,16 +1,16 @@
 #include "live.h"
-#include "list.h"
+#include "ast/ast.h"
 
-#include <config.h>
-#include <io/log.h>
-#include <io/io.h>
-#include <ast/ast.h>
+#include <list.h>
 #include <globals.h>
-#include <parser/parser.h>
+#include <io/io.h>
+#include <io/log.h>
 #include <mem/mem.h>
-#include <error/panic.h>
+#include <passes.h>
 
+#include <memory.h>
 #include <stdlib.h>
+#include <time.h> 
 #ifdef CSPYDR_LINUX
     #include <sys/inotify.h>
     #include <sys/wait.h>
@@ -19,50 +19,72 @@
 
 #define ERROR_MSG(str) COLOR_BOLD_RED "[Error] " COLOR_RESET COLOR_RED str COLOR_RESET
 
-static List_T* FILES = NULL;
+static ASTProg_T AST = {0};
 
-static void free_files(int fd) 
+static inline void cleanup(void)
 {
-    if(FILES != NULL)
+    cleanup_pass(&AST);
+    mem_free();
+}
+
+static void free_ast(int fd) 
+{
+    if(AST.files != NULL)
     {
-        for(size_t i = 0; i < FILES->size; i++)
+        for(size_t i = 0; i < AST.files->size; i++)
         {
-            File_T* file = FILES->items[i];
+            File_T* file = AST.files->items[i];
             if(fd) {
                 inotify_rm_watch(fd, file->wd);
             }
-            free_file(file);
         }
-        free_list(FILES);
     }
 
-    mem_free();
+    cleanup();
     globals_exit_hook();
 }
 
 static void sigint_handler(int dummy) 
 {
-    if(question(COLOR_BOLD_YELLOW "\rDo you really want to quit?")) 
+    if(question("\rDo you really want to quit?")) 
+    {
+        cleanup();
         exit(dummy);
+    }
 }
 
-void lint_watched(const char* filepath)
+void lint_watched(const char* filepath, const char* std_path)
 {
     init_globals();
+    global.read_main_file_on_init = true;
+    global.main_src_file = (char*) filepath;
+    global.std_path = (char*) std_path;
+    global.target = "/dev/null";
 
-    FILES = init_list();
-    list_push(FILES, read_file(filepath));
+    memset(&AST, 0, sizeof(ASTProg_T));
 
-    ASTProg_T ast = {
-        .files = FILES
-    };
     try(global.main_error_exception)
     {
-        global.silent = true;
-        parser_pass(&ast);
+        initialization_pass(&AST);
+        lexer_pass(&AST);
+        preprocessor_pass(&AST);
+        parser_pass(&AST);
+        validator_pass(&AST);
+        typechecker_pass(&AST);
     }
     catch {
+        return;
     };
+
+    time_t now;
+    time(&now);
+    struct tm* local = localtime(&now);
+
+    LOG_OK_F(
+        COLOR_GREEN "All good" COLOR_RESET 
+        " (%lu file%s, at %02d:%02d:%02d)\n",
+        AST.files->size, AST.files->size > 1 ? "s" : "", local->tm_hour, local->tm_min, local->tm_sec
+    );
 }
 
 static bool get_event(int fd)
@@ -78,7 +100,7 @@ static bool get_event(int fd)
     return len > 0;
 }
 
-void live_session(const char* filepath)
+void live_session(const char* filepath, const char* std_path)
 {
 #ifndef CSPYDR_LINUX
     LOG_ERROR(ERROR_MSG("live sessions not available on your current platform.\n"));
@@ -93,6 +115,7 @@ void live_session(const char* filepath)
         exit(1);
     }
 
+    bool first_time = true;
     bool relint = true;
     while(1) 
     {
@@ -101,15 +124,19 @@ void live_session(const char* filepath)
             relint = false;
 
             LOG_CLEAR();
-            
-            free_files(fd);
-            close(fd);
-            fd = inotify_init();
-
-            lint_watched(filepath);
-            for(size_t i = 0; i < FILES->size; i++)
+            if(first_time)
+                first_time = false;
+            else
             {
-                File_T* file = FILES->items[i];
+                free_ast(fd);
+                close(fd);
+                fd = inotify_init();
+            }
+
+            lint_watched(filepath, std_path);
+            for(size_t i = 0; i < AST.files->size; i++)
+            {
+                File_T* file = AST.files->items[i];
                 file->wd = inotify_add_watch(fd, file->path, IN_MODIFY | IN_DELETE);
                 if(file->wd == -1)
                     LOG_ERROR_F(ERROR_MSG("Could not add watch to %s.\n"), file->path);
