@@ -1,5 +1,6 @@
 #include "live.h"
 #include "ast/ast.h"
+#include "error/panic.h"
 
 #include <list.h>
 #include <globals.h>
@@ -44,12 +45,12 @@ static void free_ast(int fd)
     globals_exit_hook();
 }
 
-static void sigint_handler(int dummy) 
+static void sigint_handler(int dummy /* unused */) 
 {
     if(question("\rDo you really want to quit?")) 
     {
         cleanup();
-        exit(dummy);
+        exit(0);
     }
 }
 
@@ -73,6 +74,7 @@ void lint_watched(const char* filepath, const char* std_path)
         typechecker_pass(&AST);
     }
     catch {
+        get_panic_handler()();
         return;
     };
 
@@ -81,7 +83,7 @@ void lint_watched(const char* filepath, const char* std_path)
     struct tm* local = localtime(&now);
 
     LOG_OK_F(
-        COLOR_GREEN "All good" COLOR_RESET 
+        COLOR_GREEN "[" COLOR_BOLD_GREEN " Ok " COLOR_RESET COLOR_GREEN "] All good" COLOR_RESET 
         " (%lu file%s, at %02d:%02d:%02d)\n",
         AST.files->size, AST.files->size > 1 ? "s" : "", local->tm_hour, local->tm_min, local->tm_sec
     );

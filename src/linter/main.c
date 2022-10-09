@@ -24,9 +24,11 @@
 
 // linter includes
 #include "config.h"
+#include "error/panic.h"
 #include "linter.h"
 #include "error.h"
 #include "live.h"
+#include "panic.h"
 
 #define streq(a, b) (strcmp(a, b) == 0)
 
@@ -167,6 +169,8 @@ i32 main(i32 argc, char* argv[])
         LOG_ERROR("[Error] No file path given\n");
         exit(1);
     }
+
+    set_panic_handler(linter_panic_handler);
 
     if(is_live)
         live_session(src_path, std_path);
