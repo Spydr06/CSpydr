@@ -72,6 +72,8 @@ void lint_watched(const char* filepath, const char* std_path)
         parser_pass(&AST);
         validator_pass(&AST);
         typechecker_pass(&AST);
+        if(global.emitted_errors)
+            panic();
     }
     catch {
         get_panic_handler()();

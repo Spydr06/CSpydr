@@ -295,7 +295,7 @@ static Macro_T* parse_macro_def(Preprocessor_T* pp, size_t* i)
     }
 
     if(next->type != TOKEN_RBRACE)
-        throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `}` to begin the macro body", next->value);
+        throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `}` to end the macro body", next->value);
 
     Macro_T* found = find_macro(pp, macro->tok->value, macro->argc);
     if(found && found->tok)
