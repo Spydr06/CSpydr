@@ -184,3 +184,5 @@ CSpydr is licensed under the [MIT License](https://mit-license.org/)
 - porth programming language: https://gitlab.com/tsoding/porth.git
 - cURL C library for transferring data: https://github.com/curl/curl
 - tiny-regex-c as the main inspiration behind `regex.csp`: https://github.com/kokke/tiny-regex-c.git
+- logo inspiration: IntelliJ IDEs (https://www.jetbrains.com/),
+                    Haskell-Intellij Plugin (https://plugins.jetbrains.com/plugin/8258-intellij-haskell)
