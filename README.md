@@ -1,6 +1,10 @@
-# The CSpydr Programming Language
-
 <div align="center">
+
+<p>
+<img width="200" src="./assets/csp-logo-big.svg"></img>
+</p>
+
+<h1>The CSpydr Programming Language</h1>
 
 [Documentation](https://github.com/spydr06/cspydr/wiki) |
 [Installation](./INSTALL.md) |
