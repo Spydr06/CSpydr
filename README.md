@@ -19,7 +19,7 @@
 [![Stars](https://img.shields.io/github/stars/spydr06/cspydr?style=flat-square)](https://github.com/Spydr06/CSpydr/stargazers)
 [![Forks](https://img.shields.io/github/forks/spydr06/cspydr?style=flat-square)](https://github.com/Spydr06/CSpydr/network/members)
 ![GitHub repo size](https://img.shields.io/github/repo-size/spydr06/cspydr?style=flat-square)
-![Lines of code](https://img.shields.io/tokei/lines/github/spydr06/cspydr?style=flat-square)
+![Lines of code](https://raster.shields.io/tokei/lines/github/spydr06/CSpydr?style=flat-square)
 
 </div>
 
