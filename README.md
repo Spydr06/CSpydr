@@ -173,7 +173,7 @@ Please make sure to update the unit tests as appropriate.
 **View CONTRIBUTING.md for more information**
 
 ## License
-CSpydr is licensed under the [MIT License](https://mit-license.org/)
+CSpydr is licensed under the [MIT License](https://mit-license.org/).
 
 ## Resources | Reference | Inspiration
 
