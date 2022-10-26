@@ -6,11 +6,11 @@
 
 <h1>The CSpydr Programming Language</h1>
 
-[📑 Documentation](https://github.com/spydr06/cspydr/wiki) |
+**[📑 Documentation](https://github.com/spydr06/cspydr/wiki) |
 [💾 Installation](./INSTALL.md) |
 [🤝 Contributing](./CONTRIBUTING.md) |
 [📜 License](./LICENSE) |
-[🔄 State](#current-state)
+[🔄 State](#current-state)**
 
 [![License](https://img.shields.io/github/license/spydr06/cspydr?style=flat-square)](https://github.com/Spydr06/CSpydr/blob/main/LICENSE)
 [![Issues](https://img.shields.io/github/issues/spydr06/cspydr?style=flat-square)](https://github.com/Spydr06/CSpydr/issues)
