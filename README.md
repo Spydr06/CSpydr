@@ -23,7 +23,7 @@
 
 </div>
 
-**CSpydr** is a low-level, static typed, free and open-source, compiled programming language inspired by Rust and C. This repository contains `cspc` (the **CSpydr Programming Language Compiler**), as well as CSpydr's **Standard Libraray**, some code examples and unit tests. 
+**CSpydr** is a low-level, static typed, free and open-source, compiled programming language inspired by Rust and C. This repository contains `cspc` (the **CSpydr Programming Language Compiler**), as well as CSpydr's **Standard Libraray**, a [code-linting utility](./src/linter), some code examples and unit tests. 
 
 ## Code Examples
 
