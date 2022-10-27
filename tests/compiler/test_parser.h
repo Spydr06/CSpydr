@@ -42,7 +42,7 @@ PARSER_TEST_FUNC(test_parsing_simple_main_func, "fn main(): i32 { ret 0; }",
     TEST_ASSERT(return_stmt->return_val != NULL);
 })
 
-PARSER_TEST_FUNC(test_parsing_complex_main_func, "fn main(argc: i32, argv: &&char): i32 { ret 0; } [ignore_unused(\"main\")]",
+PARSER_TEST_FUNC(test_parsing_complex_main_func, "fn main(_argc: i32, _argv: &&char): i32 { ret 0; }",
 {
     TEST_ASSERT(prog.objs != NULL);
     TEST_ASSERT(prog.objs->size == 1);
@@ -98,15 +98,16 @@ PARSER_TEST_FUNC(test_parsing_binary_operators, "fn main(): i32 { ret (2 * 10 / 
     TEST_ASSERT(return_val->left->left != NULL);
     TEST_ASSERT(return_val->left->left->kind == ND_CLOSURE); // ()
 
-    ASTNode_T* closure = return_val->left->left;
-    TEST_ASSERT(closure->expr != NULL);
-    TEST_ASSERT(closure->expr->kind == ND_SUB); // -
-    TEST_ASSERT(closure->expr->right != NULL);
-    TEST_ASSERT(closure->expr->right->kind == ND_NEG); // -
-    TEST_ASSERT(closure->expr->right->right != NULL);
-    TEST_ASSERT(closure->expr->right->right->kind == ND_INT); // 2
-    TEST_ASSERT(closure->expr->left != NULL);
-    TEST_ASSERT(closure->expr->left->kind == ND_DIV); // /
-    TEST_ASSERT(closure->expr->left->left != NULL);
-    TEST_ASSERT(closure->expr->left->left->kind == ND_MUL); // *
+    ASTNode_T* closure = return_val->left->left;\
+    TEST_ASSERT(closure->exprs->size == 1);
+    TEST_ASSERT(closure->exprs->items[0] != NULL);
+    TEST_ASSERT(((ASTNode_T*) closure->exprs->items[0])->kind == ND_SUB); // -
+    TEST_ASSERT(((ASTNode_T*) closure->exprs->items[0])->right != NULL);
+    TEST_ASSERT(((ASTNode_T*) closure->exprs->items[0])->right->kind == ND_NEG); // -
+    TEST_ASSERT(((ASTNode_T*) closure->exprs->items[0])->right->right != NULL);
+    TEST_ASSERT(((ASTNode_T*) closure->exprs->items[0])->right->right->kind == ND_INT); // 2
+    TEST_ASSERT(((ASTNode_T*) closure->exprs->items[0])->left != NULL);
+    TEST_ASSERT(((ASTNode_T*) closure->exprs->items[0])->left->kind == ND_DIV); // /
+    TEST_ASSERT(((ASTNode_T*) closure->exprs->items[0])->left->left != NULL);
+    TEST_ASSERT(((ASTNode_T*) closure->exprs->items[0])->left->left->kind == ND_MUL); // *
 })

@@ -8,7 +8,7 @@ macro return_zero { return! zero! }
 macro is { : }
 macro returns(t) { is! t }
 
-function! main(argc is! integer!, argv is! str_array!) returns!{integer!}
+function! main(_argc is! integer!, _argv is! str_array!) returns!{integer!}
 {
     return_zero!;
 }

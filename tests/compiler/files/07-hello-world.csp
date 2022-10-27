@@ -1,0 +1,9 @@
+# success
+import "io.csp";
+
+fn main(): i32 {
+    using std::io;
+    printf("Hello, World");
+
+    <- 0;
+}
