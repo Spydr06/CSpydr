@@ -1,5 +1,7 @@
 # CMake file for the CSpydr Compiler source
 include(GNUInstallDirs)
+include(CheckIncludeFile)
+include(CheckIncludeFiles)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -43,14 +45,17 @@ else()
         message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 
         execute_process(COMMAND llvm-config --libs all OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE llvm_libraries)
-        target_include_directories(libcspc INTERFACE ${LLVM_INCLUDE_DIRS})
+        execute_process(COMMAND llvm-config --libdir OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE llvm_link_dirs)
+        execute_process(COMMAND llvm-config --includedir OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE llvm_include_dirs)
+       
+        target_include_directories(libcspc PUBLIC "${llvm_include_dirs}")
+        target_link_directories(libcspc PUBLIC "${llvm_link_dirs}")
         target_link_libraries(libcspc LINK_PUBLIC m json-c "${llvm_libraries}")
 endif()
 
 # build the main executable
 add_executable(cspc main.c)
 target_link_libraries(cspc libcspc)
-
 
 install(PROGRAMS ${PROJECT_SOURCE_DIR}/bin/cspc 
         DESTINATION bin

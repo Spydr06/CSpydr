@@ -31,17 +31,19 @@ else()
 endif()
 
 # llvm
-find_package(LLVM)
-if(${LLVM_FOUND} AND NOT NO_LLVM)
-    message(STATUS "Looking for llvm - found")
-    check_include_files(
-        "llvm-c/Analysis.h;llvm-c/Core.h;llvm-c/TargetMachine.h;llvm-c/ErrorHandling.h;llvm-c/Types.h;llvm-c/Transforms/Scalar.h;llvm-c/Target.h;llvm-c/ExecutionEngine.h;llvm-c/BitWriter.h;llvm-c/Linker.h"
-        HAVE_LLVM_C
-    )
-    if(NOT HAVE_LLVM_C)
-        message(SEND_ERROR "-- Looking for llvm-c bindings - not found")
+if(NOT NO_LLVM)
+    find_package(LLVM)
+    if(${LLVM_FOUND})
+        message(STATUS "Looking for llvm - found")
+        #check_include_files(
+        #    "llvm-c/Analysis.h;llvm-c/Core.h;llvm-c/TargetMachine.h;llvm-c/ErrorHandling.h;llvm-c/Types.h;llvm-c/Transforms/Scalar.h;llvm-c/Target.h;llvm-c/ExecutionEngine.h;llvm-c/BitWriter.h;llvm-c/Linker.h"
+        #    HAVE_LLVM_C
+        #)
+        #if(NOT HAVE_LLVM_C)
+        #    message(SEND_ERROR "-- Looking for llvm-c bindings - not found")
+        #endif()
+    else()
+        message(STATUS "Looking for llvm - not found")
+        set(NO_LLVM TRUE)
     endif()
-else()
-    message(STATUS "Looking for llvm - not found")
-    set(NO_LLVM TRUE)
 endif()
