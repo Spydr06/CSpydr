@@ -70,9 +70,9 @@ fn main(): i32 {
     ];
 
     let t = new(tests);
-    run_all(&t);
+    let failed = run_all(&t);
 
-    <- 0;
+    <- if failed == 0 => 0 else 1;
 }
 
 # --------------------
