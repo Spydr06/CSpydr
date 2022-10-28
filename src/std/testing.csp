@@ -172,7 +172,7 @@ namespace std {
 
         fn assert_fatal(t: &Testing, condition: bool, error_msg: &const char, args: ...) {
             do {
-                error::new(Errno::NILPTR, "argument t is nil");
+                error::new(std::Errno::NILPTR, "argument t is nil");
                 ret;
             } unless t && t.tests;
 

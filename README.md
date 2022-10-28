@@ -62,6 +62,13 @@
 ![](examples/assets/img/random.png)
 </details>
 
+<details>
+<summary><b>Time & Timer API</b></summary>
+
+### [time.csp](examples/std/time.csp)
+![](examples/assets/img/time.png)
+</details>
+
 > More examples can be found in the [**examples**](./examples/) directory
 
 ## Current State

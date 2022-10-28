@@ -1,18 +1,18 @@
 import "file.csp";
 import "io.csp";
 
-macro PATH { "examples/assets/test.txt" }
-
 fn main(): i32 {
     using std;
 
-    with f = file::open(PATH!, file::READ) {
+    let path = "examples/assets/test.txt";
+    
+    with f = file::open(path, file::READ) {
         let buffer = file::read_all(f);
         io::puts(buffer);
         string::free(buffer);
     }
     else
-        io::eprintf("%E `" PATH! "`\n");
+        io::eprintf("%E `%s`\n", path);
     
     <- 0;
 }
