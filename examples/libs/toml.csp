@@ -1,4 +1,5 @@
 import "toml/toml.csp";
+import "libc/string.csp";
 
 macro TOML_FILE { "examples/assets/test.toml" }
 

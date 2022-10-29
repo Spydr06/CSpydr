@@ -318,7 +318,7 @@ static void evaluate_info_flags(char* argv)
     exit(0);
 }
 
-static void run(char* file)
+static void run(char* filename)
 {
     timer_start("execution");
     if(!global.do_assemble || !global.do_link) 
@@ -328,12 +328,12 @@ static void run(char* file)
     }
 
     if(!global.silent)
-        LOG_OK_F(COLOR_BOLD_BLUE "  Executing " COLOR_RESET " %s\n", file);
+        LOG_OK_F(COLOR_BOLD_BLUE "  Executing " COLOR_RESET " %s\n", filename);
     
-    const char* cmd_tmp = "." DIRECTORY_DELIMS "%s";
-    char cmd[BUFSIZ];
-    memset(cmd, '\0', sizeof cmd);
-    sprintf(cmd, cmd_tmp, file);
+    size_t cmd_len = strlen(filename) + 3;
+    char cmd[cmd_len];
+    memset(cmd, 0, cmd_len);
+    sprintf(cmd, "." DIRECTORY_DELIMS "%s", filename);
 
     global.last_exit_code = subprocess(cmd, (char* const[]){cmd, NULL}, !global.silent);
     timer_stop();
