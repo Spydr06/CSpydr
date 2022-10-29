@@ -1,26 +1,44 @@
+#[ 
+    utils.csp - Various utility functions, macros and structs, e.g. va_lists
+
+    THIS FILE IS PART OF THE STANDARD LIBRARY FOR THE CSPYDR PROGRAMMING LANGUAGE.
+
+    Copyright (c) 2021 - 2022 Spydr06
+    CSpydr is distributed under the MIT license.
+    This is free software; see the source for copying conditions;
+    you may redistribute it under the terms of the MIT license.
+    This program has absolutely no warranty.
+]#
+
 import "memory.csp";
 import "cfg.csp";
 
+# cast a value to a pointer type
 macro ptr(x) {
     ((x): &void)
 }
 
+# cast a value to a pointer with specific type
 macro ptr(x, ty) {
     ((x): &(ty))
 }
 
-macro each(i, lo, hi) {
-    let i = lo; i < hi; i++
-}
-
+# wrapper to traverse a range from lo to hi in a for loop
 macro range(lo, hi) {
     let i = lo; i < hi; i++
 }
 
+# wrapper to traverse a range from lo to hi in a for loop
+macro range(i, lo, hi) {
+    let i = lo; i < hi; i++
+}
+
+# swaps two variables with each other without creating a third variable
 macro xor_swap(a, b) {
     ((a) ^= (b) |> (b) ^= (a) |> (a) ^= (b))
 }
 
+# swaps two variables with a third buffer variable
 macro swap(a, b) {
     {
         let __swap_tmp = (a);
@@ -29,6 +47,7 @@ macro swap(a, b) {
     }
 }
 
+# converts any type to a string
 macro ttos(ty) {
     (type::__to_str(ty))
 }
@@ -48,16 +67,20 @@ macro set_bit(v, p, x) {
     ((v) ^= ((-(x)) ^ (v)) & ((1: u64) << (p)))
 }
 
+# gets an argument from a va_list
 macro va_arg(ap, ty) {
     (*(::std::va::get((ap), sizeof (ty), alignof (ty), type::reg_class(ty)): &(ty)))
 }
 
+# copies the data of a va_list
 macro va_copy(dest, src) {
     (::std::va::copy((dest), (src)))
 }
 
+# size of one va_element in the C backend
 macro C_VA_ARGS_SIZE { 24 }
 
+# VAList implementation for the assembly and C backend
 namespace std {
     type VAList: std::va::Element;
 

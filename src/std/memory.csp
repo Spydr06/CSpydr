@@ -1,3 +1,16 @@
+#[ 
+    memory.csp - Functions for managing and allocating memory
+
+    THIS FILE IS PART OF THE STANDARD LIBRARY FOR THE CSPYDR PROGRAMMING LANGUAGE.
+
+    Copyright (c) 2021 - 2022 Spydr06
+    CSpydr is distributed under the MIT license.
+    This is free software; see the source for copying conditions;
+    you may redistribute it under the terms of the MIT license.
+    This program has absolutely no warranty.
+]#
+
+
 import "syscall.csp";
 import "types.csp";
 import "utils.csp";

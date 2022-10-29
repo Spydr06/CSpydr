@@ -1,3 +1,15 @@
+#[ 
+    vec.csp - Implementation of dynamic arrays for CSpydr
+
+    THIS FILE IS PART OF THE STANDARD LIBRARY FOR THE CSPYDR PROGRAMMING LANGUAGE.
+
+    Copyright (c) 2021 - 2022 Spydr06
+    CSpydr is distributed under the MIT license.
+    This is free software; see the source for copying conditions;
+    you may redistribute it under the terms of the MIT license.
+    This program has absolutely no warranty.
+]#
+
 import "memory.csp";
 import "types.csp";
 
@@ -52,14 +64,17 @@ macro vec_free(addr) {
 
 namespace std {
     namespace vec {
+        # data representing a vector
         type VecData: struct {
-            alloc: u64,
-            size: u64,
-            buff: u8 'c[0]
+            alloc: u64,     # number of allocated bytes
+            size: u64,      # size of the vector``
+            buff: u8 'c[0]  # vector buffer, this is the actual data
         };
 
+        # constant defining how memory allocation should increase
         const VECTOR_MULTIPLIER: i32 = 2;
 
+        # create a new vector
         fn init(): &void 
         {
             let vec_data: &VecData = memory::alloc(sizeof VecData);
@@ -69,26 +84,31 @@ namespace std {
             <- &vec_data.buff;
         }
 
+        # free a vector
         fn free(vec: &void) 
         {
             memory::free(get_data(vec));
         }
 
+        # get VecData struct of the vector
         fn get_data(vec: &void): &VecData 
         {
             <- &(vec: &VecData)[-1];
         }
 
+        # get the size of the vector
         fn size(vec: &void): u64
         {
             <- get_data(vec).size;
         }
 
+        # get the number of allocated bytes of the vector
         fn allocated(vec: &void): u64 
         {
             <- get_data(vec).alloc;
         }
 
+        # reallocate a vector to a new size
         fn reallocate(v_data: &VecData, type_size: u8): &VecData 
         {
             let new_alloc: u64;
@@ -103,10 +123,15 @@ namespace std {
             <- new_v_data;
         }
 
+        # check if the vector still has free allocated slots
         fn has_space(v_data: &VecData): bool 
         {
             <- (v_data.alloc - v_data.size) > 0;
         }
+
+        # 
+        # internal logic of more complex functions
+        #
 
         fn __internal_add(addr: &&void, type_size: u8): &void 
         {

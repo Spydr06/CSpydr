@@ -1,3 +1,15 @@
+#[ 
+    types.csp - Core data types
+
+    THIS FILE IS PART OF THE STANDARD LIBRARY FOR THE CSPYDR PROGRAMMING LANGUAGE.
+
+    Copyright (c) 2021 - 2022 Spydr06
+    CSpydr is distributed under the MIT license.
+    This is free software; see the source for copying conditions;
+    you may redistribute it under the terms of the MIT license.
+    This program has absolutely no warranty.
+]#
+
 # signed integer data type limits
 macro i8_max  { (127: i8) }
 macro i8_min  { (-128: i8) }
@@ -23,6 +35,7 @@ macro char_min { i8_min! }
 macro char_max { i8_max! }
 
 namespace std {
+    # type used for array indexing, etc.
     type usize: u64;
     
     # default "simple" types for syscalls

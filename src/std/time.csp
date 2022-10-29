@@ -1,18 +1,33 @@
+#[ 
+    time.csp - Utilities for handling time in CSpydr
+
+    THIS FILE IS PART OF THE STANDARD LIBRARY FOR THE CSPYDR PROGRAMMING LANGUAGE.
+
+    Copyright (c) 2021 - 2022 Spydr06
+    CSpydr is distributed under the MIT license.
+    This is free software; see the source for copying conditions;
+    you may redistribute it under the terms of the MIT license.
+    This program has absolutely no warranty.
+]#
+
 import "types.csp";
 import "syscall.csp";
 import "string.csp";
 
 namespace std {
+    # represents time in (micro)seconds
     type TimeVal: struct {
-        tv_sec: i64,
-        tv_usec: i64
+        tv_sec: i64, # time in seconds
+        tv_usec: i64 # time in microseconds
     };
 
+    # represents time in (nano)seconds
     type TimeSpec: struct {
-        tv_sec: i64,
-        tv_nsec: i64
+        tv_sec: i64, # time in seconds
+        tv_nsec: i64 # time in nanoseconds
     };
 
+    # represents time in a human-readable way
     type Time: struct {
         ts: std::TimeVal,
         year: u16,  # 2022 (0 to 65535)
@@ -23,9 +38,11 @@ namespace std {
         second: u8  # 36   (0 to 59)
     };
 
+    # clock id
     type Clock: i32;
 
     namespace time {
+        # gets the current time in a human-readable way.
         fn get(): Time
         {
             let time = Time::{clock::get_time_of_day()};
@@ -62,6 +79,7 @@ namespace std {
         }
 
         namespace unix {
+            # gets the current unix-time (time in seconds since 01.01.1970)
             fn secs(): std::TimeVal
             {
                 <- syscall::time(nil);
@@ -70,14 +88,17 @@ namespace std {
     }
 
     namespace clock {
+        # indicator to get the current time
         const REALTIME: i32 = 0;
 
+        # get the current time of day
         fn get_time_of_day(): TimeVal {
             let ts = TimeSpec::{};
             get_time(REALTIME, &ts);
             <- TimeVal::{ts.tv_sec, ts.tv_nsec / 1000};
         }
 
+        # get the current time of day
         fn get_time(clk_id: Clock, ts: &TimeSpec): std::Errno {
             let r = syscall::clock_gettime(clk_id, ts);
             if r == -std::Errno::NOSYS {
@@ -92,16 +113,19 @@ namespace std {
             <- r;
         }
 
+        # set the time for a given clock
         fn set_time(clk_id: Clock, ts: &const TimeSpec): i32 {
             <- syscall::clock_settime(clk_id, ts);
         }
     }
 
     namespace timer {
+        # wrapper for the `nanosleep` system call
         fn nanosleep(req: &const TimeSpec, rem: &TimeSpec) {
             syscall::nanosleep(req, rem);
         }
 
+        # delay further execution by `millis` milliseconds
         fn delay(millis: i64): TimeSpec {
             let req = TimeSpec::{millis / 1_000, (millis % 1000) * 1000};
             let rem = TimeSpec::{};
@@ -109,9 +133,17 @@ namespace std {
             <- rem;
         }
 
+        # execute `func` every `millis` milliseconds
         fn do_each(millis: u64, func: fn) {
             loop {
                 func();
+                delay(millis);
+            }
+        }
+
+        # execute `func` every `millis` milliseconds until `func` returns `false`
+        fn do_each_until(mullis: u64, func: fn<bool>) {
+            while func() {
                 delay(millis);
             }
         }

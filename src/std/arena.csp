@@ -1,4 +1,14 @@
-# An implementation of a region-based arena memory manager
+#[ 
+    arena.csp - An implementation of a region-based arena memory manager
+
+    THIS FILE IS PART OF THE STANDARD LIBRARY FOR THE CSPYDR PROGRAMMING LANGUAGE.
+
+    Copyright (c) 2021 - 2022 Spydr06
+    CSpydr is distributed under the MIT license.
+    This is free software; see the source for copying conditions;
+    you may redistribute it under the terms of the MIT license.
+    This program has absolutely no warranty.
+]#
 
 import "types.csp";
 import "error.csp";
@@ -7,11 +17,13 @@ import "memory.csp";
 import "libc/stdlib.csp";
 
 namespace std {
+    # which allocator to use in the background (default is MMAP)
     type ArenaBackend: enum {
         MMAP = 0,
         LIBC_MALLOC
     };
 
+    # struct representing an arena
     type Arena: struct {
         backend: const std::ArenaBackend, 
         begin: &arena::Region,
@@ -19,15 +31,18 @@ namespace std {
     };
 
     namespace arena {
+        # struct representing a memory region
         type Region: struct {
             next: &Region,
             count: u64,
             capacity: u64,
-            data: UIntPtr 'c[0]
+            data: UIntPtr'c[0]
         };
 
+        # default size of a region
         const REGION_DEFAULT_CAPACITY: u64 = 8096;
 
+        # create a new region
         fn new_region(backend: const ArenaBackend, capacity: u64): &std::arena::Region
         {
             let size_bytes = sizeof Region + sizeof UIntPtr * capacity;
@@ -51,6 +66,7 @@ namespace std {
             <- region;
         }
 
+        # free a region
         fn free_region(backend: const ArenaBackend, region: &Region): std::Error
         {
             match backend {
@@ -62,6 +78,7 @@ namespace std {
             <- error::none();
         }
 
+        # allocate space using the arena allocator
         fn alloc(a: &Arena, size_bytes: u64): &void
         {
             let size = (size_bytes + sizeof UIntPtr - 1) / sizeof UIntPtr;
@@ -92,6 +109,7 @@ namespace std {
             <- result;
         }
 
+        # reset the arena allocator
         fn reset(a: &Arena)
         {
             for let r = a.begin; r != nil; r = r.next;
@@ -100,6 +118,7 @@ namespace std {
             a.end = a.begin;
         }
 
+        # free all items of the arena
         fn free(a: &Arena)
         {
             let r = a.begin;

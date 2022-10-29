@@ -1,5 +1,18 @@
+#[ 
+    arena.csp - Implementation of the assert!() macro
+
+    THIS FILE IS PART OF THE STANDARD LIBRARY FOR THE CSPYDR PROGRAMMING LANGUAGE.
+
+    Copyright (c) 2021 - 2022 Spydr06
+    CSpydr is distributed under the MIT license.
+    This is free software; see the source for copying conditions;
+    you may redistribute it under the terms of the MIT license.
+    This program has absolutely no warranty.
+]#
+
 import "io.csp";
 
+# assert, that condition is true, if not, print an error message
 macro assert(condition, error_msg) {
     do {
         if ::std::assert::ENABLED && !(condition) {
@@ -8,6 +21,7 @@ macro assert(condition, error_msg) {
     } while false
 }
 
+# assert, that condition is true
 macro assert(condition) {
     do {
         if ::std::assert::ENABLED && !(condition) {
@@ -16,6 +30,7 @@ macro assert(condition) {
     } while false
 }
 
+# assert, that condition is false
 macro assert_false(condition, error_msg) {
     do {
         if ::std::assert::ENABLED && (condition) {
@@ -25,6 +40,7 @@ macro assert_false(condition, error_msg) {
 }
 
 namespace std {
+    # implementation of assert
     namespace assert {
         let ENABLED: bool = true;
 
@@ -42,6 +58,7 @@ namespace std {
             exit(std::Errno::ASSERT);
         }
 
+        # enable/disable asserts
         fn disable() ENABLED = false;
         fn enable() ENABLED = true;
         fn status(): bool ret ENABLED;

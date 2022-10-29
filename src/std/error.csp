@@ -1,6 +1,19 @@
+#[ 
+    error.csp - Error handling utilities
+
+    THIS FILE IS PART OF THE STANDARD LIBRARY FOR THE CSPYDR PROGRAMMING LANGUAGE.
+
+    Copyright (c) 2021 - 2022 Spydr06
+    CSpydr is distributed under the MIT license.
+    This is free software; see the source for copying conditions;
+    you may redistribute it under the terms of the MIT license.
+    This program has absolutely no warranty.
+]#
+
 import "string.csp";
 
 namespace std {
+    # error types, superset of C's `errno`
     type Errno: enum {
         NONE = 0,
         PERM = 1,

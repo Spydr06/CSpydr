@@ -1,7 +1,20 @@
+#[ 
+    hashmap.csp - Implementation of type-generic hashmaps in CSpydr
+
+    THIS FILE IS PART OF THE STANDARD LIBRARY FOR THE CSPYDR PROGRAMMING LANGUAGE.
+
+    Copyright (c) 2021 - 2022 Spydr06
+    CSpydr is distributed under the MIT license.
+    This is free software; see the source for copying conditions;
+    you may redistribute it under the terms of the MIT license.
+    This program has absolutely no warranty.
+]#
+
 import "memory.csp";
 import "algorithm.csp";
 import "vec.csp";
 
+# hashmap type
 macro hashmap(key_type, val_type) {
     (struct {
         pairs: &struct {
@@ -12,6 +25,7 @@ macro hashmap(key_type, val_type) {
     })
 }
 
+# create a hashmap
 macro hashmap_init(key_type, val_type) {
     (::std::hashmap::init(&({
             nil, ::std::hashmap::Data::{}
@@ -34,6 +48,7 @@ macro hashmap_init(key_type, val_type) {
     })
 }
 
+# initialize an existing hashmap struct
 macro hashmap_init(map) {
     (::std::hashmap::init((map), 
         sizeof typeof (map).pairs.key, 
@@ -42,10 +57,12 @@ macro hashmap_init(map) {
     ): typeof (map))
 }
 
+# free a hashmap
 macro hashmap_free(map) {
     (::std::hashmap::free((map)))
 }
 
+# add a new key-value pair to a hashmap
 macro hashmap_put(map, _key, _val) {
     (::std::hashmap::put((map), &{
         (_key): typeof (map).pairs.key, 
@@ -53,6 +70,7 @@ macro hashmap_put(map, _key, _val) {
     }))
 }
 
+# get a value from a hashmap with its key
 macro hashmap_get(map, _key) {
     (::std::hashmap::get((map), &{(_key): typeof (map).pairs.key}): typeof &(map).pairs.val |>
         if $ == nil => 
@@ -62,10 +80,12 @@ macro hashmap_get(map, _key) {
     )
 }
 
+# get the keys of a hashmap as a vector
 macro hashmap_keys(map) {
     (::std::hashmap::keys((map)): &typeof (map).pairs.key)
 }
 
+# get the values of a hashmap as a vector
 macro hashmap_values(map) {
     (::std::hashmap::values((map)): &typeof (map).pairs.val)
 }
@@ -78,6 +98,7 @@ macro hashmap_num_allocated(map) {
     ((map).data.alloc / ((map).data.ksize + (map).data.vsize))
 }
 
+# hashmap implementation
 namespace std {
     namespace hashmap {
         type Data: struct {

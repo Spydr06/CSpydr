@@ -26,7 +26,7 @@ pushd $SCRIPT_DIR
     
 log "start generating stdlib"
 
-gen-allimport-file "std.csp" $SCRIPT_DIR "file for quickly importing all stdlib files."
+gen-allimport-file "std.csp" $SCRIPT_DIR "std.csp - File for quickly importing all stdlib files."
 
 for dir in * ; do
     if [ -d "${dir}" ] && [ -f "${dir}/generate.sh" ]; then

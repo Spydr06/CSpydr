@@ -1,11 +1,23 @@
-# utilities for arrays in CSpydr
+#[ 
+    array.csp - Utility functions for array handling
+
+    THIS FILE IS PART OF THE STANDARD LIBRARY FOR THE CSPYDR PROGRAMMING LANGUAGE.
+
+    Copyright (c) 2021 - 2022 Spydr06
+    CSpydr is distributed under the MIT license.
+    This is free software; see the source for copying conditions;
+    you may redistribute it under the terms of the MIT license.
+    This program has absolutely no warranty.
+]#
 
 import "memory.csp";
 
+# get the last element of an array
 macro last(array) {
     ((array)[^1])
 }
 
+# get the first element of an array
 macro first(array) {
     ((array)[0])
 }
