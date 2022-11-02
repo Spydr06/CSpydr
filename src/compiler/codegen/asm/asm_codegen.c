@@ -1550,7 +1550,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_ADD:
             if(unpack(node->left->data_type)->base && unpack(node->right->data_type)->base)
                 throw_error(ERR_SYNTAX_ERROR, node->tok, "cannot add two pointer types together");
-            if(ptr_type(node->left->data_type))
+            if(ptr_type(node->left->data_type) && unpack(node->left->data_type)->base->size > 1)
             {
                 // if we add a number to a pointer, multiply the second argument with the base type size
                 // a + b -> a + b * sizeof *a
@@ -1560,7 +1560,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                     .left = node->right,
                     .right = &(ASTNode_T) {
                         .kind = ND_LONG,
-                        .data_type = (ASTType_T*) primitives[TY_I64],
+                        .data_type = (ASTType_T*) primitives[TY_U64],
                         .long_val = unpack(node->left->data_type)->base->size
                     }
                 };
@@ -1583,7 +1583,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                     .left = node->right,
                     .right = &(ASTNode_T) {
                         .kind = ND_LONG,
-                        .data_type = (ASTType_T*) primitives[TY_I64],
+                        .data_type = (ASTType_T*) primitives[TY_U64],
                         .long_val = unpack(node->left->data_type)->size
                     }
                 };
@@ -2234,6 +2234,7 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             u64 pbrk = cg->cur_brk_id;
             u64 pcnt = cg->cur_cnt_id;
             u64 c = cg->cur_brk_id 
+                  = cg->cur_cnt_id
                   = cg->cur_count 
                   = cg->max_count++;
             
@@ -2264,6 +2265,7 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             u64 pcnt = cg->cur_cnt_id;
             u64 c = cg->cur_brk_id 
                   = cg->cur_count 
+                  = cg->cur_cnt_id
                   = cg->max_count++;
 
             asm_gen_expr(cg, node->left);
@@ -2299,6 +2301,7 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             u64 pcnt = cg->cur_cnt_id; 
             u64 c = cg->cur_brk_id 
                   = cg->cur_count 
+                  = cg->cur_cnt_id
                   = cg->max_count++;
 
             asm_println(cg, ".L.begin.%lu:", c);
@@ -2336,6 +2339,7 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             u64 pcnt = cg->cur_cnt_id; 
             u64 c = cg->cur_brk_id 
                   = cg->cur_count 
+                  = cg->cur_cnt_id
                   = cg->max_count++;  
 
             asm_println(cg, ".L.begin.%lu:", c);
@@ -2358,6 +2362,7 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             u64 pcnt = cg->cur_cnt_id; 
             u64 c = cg->cur_brk_id 
                   = cg->cur_count 
+                  = cg->cur_cnt_id
                   = cg->max_count++;
             
             asm_println(cg, ".L.begin.%lu:", c);

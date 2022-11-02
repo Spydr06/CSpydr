@@ -25,6 +25,8 @@ static u8 escape_sequence(char c, const char* str, size_t* i)
             return '\r';
         case 'f':
             return '\f';
+        case 'e':
+            return '\e';
         case '"':
         case '\'':
         case '\\':

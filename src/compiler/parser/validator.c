@@ -1643,6 +1643,7 @@ static void string_lit(ASTNode_T* str, va_list args)
                 case 'n':
                 case 'r':
                 case 'f':
+                case 'e':
                 case '"':
                 case '\'':
                 case '\\':  

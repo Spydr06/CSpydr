@@ -11,7 +11,7 @@ static void print_current_fn(void) {
     if(global.current_fn && *global.current_fn && *global.current_fn != last_fn) 
     {
         char buf[BUFSIZ] = {};
-        fprintf(ERR_OUTPUT_STREAM, COLOR_MAGENTA "In function " COLOR_BOLD_MAGENTA "%s:\n" COLOR_RESET, ast_id_to_str(buf, (*global.current_fn)->id, LEN(buf)));
+        fprintf(ERR_OUTPUT_STREAM, COLOR_MAGENTA "In function " COLOR_BOLD_MAGENTA "%s()" COLOR_RESET COLOR_MAGENTA ":\n" COLOR_RESET, ast_id_to_str(buf, (*global.current_fn)->id, LEN(buf)));
         last_fn = *global.current_fn;
     }
     else

@@ -142,7 +142,7 @@ namespace std {
         }
 
         # execute `func` every `millis` milliseconds until `func` returns `false`
-        fn do_each_until(mullis: u64, func: fn<bool>) {
+        fn do_each_until(millis: u64, func: fn<bool>) {
             while func() {
                 delay(millis);
             }

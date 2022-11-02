@@ -154,6 +154,10 @@ namespace std {
         const TCSADRIAN: Flag = 1;
         const TCSAFLUSH: Flag = 2;
 
+        fn clear() {
+            std::io::printf("\e[1;1H\e[2J");
+        }
+
         fn get_output_speed(console: &Console): Speed 
         {
             <- console.cflag & CBAUD;

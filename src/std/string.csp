@@ -18,6 +18,7 @@ import "math.csp";
 import "vec.csp";
 import "c_str.csp";
 import "error.csp";
+import "libc/string.csp";
 
 # a macro to crate a string
 macro str() {
@@ -92,6 +93,15 @@ namespace std {
             let str_data: &StringData = memory::alloc(sizeof StringData + size + 1);
             str_data.alloc = size + 1;
             <- &(str_data.buff[0]);
+        }
+
+        fn init_sized_with(size: u64, fill: char): ::std::String
+        {
+            let str_data: &StringData = memory::alloc(sizeof StringData + size + 1);
+            str_data.alloc = size + 1;
+            let str_ptr = &(*str_data.buff);
+            memory::set(str_ptr, fill, size);
+            <- str_ptr;
         }
 
         fn free(str: std::String) 
@@ -184,15 +194,15 @@ namespace std {
             <- none!(usize);
         }
 
-        fn split(str: String, delim: String): &::std::String {
+        fn split(str: String, delim: &char): &::std::String {
             let str_vec = vec![String];
  
             let token: &char;
-            while (token = c_str::strsep(&str, delim)) != nil {
+            while (token = libc::strsep(&str, delim)) != nil {
                 let part = init(token);
                 vec_add!(str_vec, part);
             }
- 
+
             <- str_vec;
         }
 

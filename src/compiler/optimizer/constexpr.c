@@ -71,6 +71,7 @@ static i64 const_i64_prefix(ASTNode_T* node)
 
 u64 const_u64(ASTNode_T* node)
 {
+    if(!node) return 0;
     switch(node->kind)
     {
         case ND_CLOSURE:
@@ -166,7 +167,7 @@ i64 const_i64(ASTNode_T* node)
     switch(node->kind)
     {
         case ND_CLOSURE:
-            return const_i64(node->expr);
+            return const_i64(node->exprs->items[node->exprs->size - 1]);
         case ND_INT:
             return node->int_val;
         case ND_LONG:
