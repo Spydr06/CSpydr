@@ -1,0 +1,180 @@
+# Definitions for data structures and routines for the regular
+# expression library. Taken from "regex.h"
+
+# syntax options
+macro RE_BLACKSLASH_ESCAPE_IN_LISTS { 1 }
+macro RE_BK_PLUS_QM { 2 }
+macro RE_CHAR_CLASSES { 4 }
+macro RE_CONTEXT_INDEP_ANCHORS { 8 }
+macro RE_CONTEXT_INDEP_OPS { 16 }
+macro RE_CONTEXT_INVALID_OPS { 32 }
+macro RE_DOT_NEWLINE { 64 }
+macro RE_DOT_NOT_NULL { 128 }
+macro RE_HAT_LISTS_NOT_NEWLINE { 256 }
+macro RE_INTERVALS { 512 }
+macro RE_LIMITED_OPS { 1024 }
+macro RE_NEWLINE_ALT { 2048 }
+macro RE_NO_BK_BRACES { 4096 }
+macro RE_NO_BK_PARENS { 8192 }
+macro RE_NO_BK_REFS { 16384 }
+macro RE_NO_BK_VBAR { 32768 }
+macro RE_NO_EMPTY_RANGES { 65536 }
+macro RE_UNMATCHED_RIGHT_PAREN_ORD { 131072 }
+macro RE_NO_POSIX_BACKTRACKING { 262144 }
+macro RE_NO_GNU_OPS { 524288 }
+macro RE_DEBUG { 1048576 }
+macro RE_INVALID_ITERVAL_ORD { 2097152 }
+macro RE_ICASE { 4194304 }
+macro RE_CARET_ANCHORS_HERE { 8388608 }
+macro RE_CONTEXT_INVALID_DUP { 16777216 }
+macro RE_NO_SUB { 33554432 }
+
+# syntax presets
+macro RE_SYNTAX_AWK {(
+    RE_BLACKSLASH_ESCAPE_IN_LISTS! | RE_DOT_NOT_NULL! | RE_NO_BK_PARENS! |
+    RE_NO_BK_REFS! | RE_NO_BK_VBAR! | RE_NO_EMPTY_RANGES! | RE_DOT_NEWLINE! |
+    RE_CONTEXT_INDEP_ANCHORS! | RE_CHAR_CLASSES! | RE_UNMATCHED_RIGHT_PAREN_ORD! | RE_NO_GNU_OPS!
+)}
+
+macro RE_SYNTAX_GNU_AWK {(
+    (RE_SYNTAX_POSIX_EXTENDED! | RE_BLACKSLASH_ESCAPE_IN_LISTS! | RE_INVALID_ITERVAL_ORD!) &
+    ~(RE_DOT_NOT_NULL | RE_NO_GNU_OPS | RE_INVALID_ITERVAL_ORD)
+)}
+
+macro RE_SYNTAX_POSIX_AWK {(
+    RE_SYNTAX_POSIX_EXTENDED! | RE_BLACKSLASH_ESCAPE_IN_LISTS! | RE_INTERVALS! | RE_NO_GNU_OPS! | RE_INVALID_ITERVAL_ORD!
+)}
+
+macro RE_SYNTAX_GREP {(
+    ((RE_SYNTAX_POSIX_BASIC! | RE_NEWLINE_ALT!) & ~(RE_CONTEXT_INVALID_DUP! | RE_DOT_NOT_NULL!))
+)}
+
+macro RE_SYNTAX_EGREP {(
+    ((RE_SYNTAX_POSIX_EXTENDED! | RE_INVALID_ITERVAL_ORD! | RE_NEWLINE_ALT!) & ~(RE_CONTEXT_INVALID_OPS! | RE_DOT_NOT_NULL!))
+)}
+
+macro RE_SYNTAX_POSIX_EGREP { RE_SYNTAX_EGREP! }
+
+macro RE_SYNTAX_ED { RE_SYNTAX_POSIX_BASIC! }
+macro RE_SYNTEX_SED { RE_SYNTAX_POSIX_BASIC! }
+
+macro _RE_SYNTAX_POSIX_COMMON {(
+    RE_CHAR_CLASSES! | RE_DOT_NEWLINE! | RE_DOT_NOT_NULL! | RE_INTERVALS! | RE_NO_EMPTY_RANGES!
+)}
+
+macro RE_SYNTAX_POSIX_BASIC {(
+    _RE_SYNTAX_POSIX_COMMON! | RE_LIMITED_OPS!
+)}
+
+macro RE_SYNTAX_POSIX_EXTENDED {(
+    _RE_SYNTAX_POSIX_COMMON! | RE_CONTEXT_INDEP_ANCHORS! | RE_CONTEXT_INDEP_OPS! | RE_NO_BK_BRACES! |
+    RE_NO_BK_PARENS! | RE_NO_BK_VBAR! | RE_CONTEXT_INVALID_OPS! | RE_UNMATCHED_RIGHT_PAREN_ORD!
+)}
+
+macro RE_SYNTAX_POSIX_MINIMAL_EXTENDED {(
+    _RE_SYNTAX_POSIX_COMMON! | RE_CONTEXT_INDEP_ANCHORS! | RE_CONTEXT_INDEP_OPS! | RE_NO_BK_BRACES! |
+    RE_NO_BK_PARENS! | RE_NO_BK_REFS! | RE_NO_BK_VBAR! | RE_UNMATCHED_RIGHT_PAREN_ORD!
+)}
+
+macro REG_DUP_MAX  { 0x7fff }
+macro REG_EXTENDED { 1 }
+macro REG_ICASE    { 2 }
+macro REG_NEWLINE  { 4 }
+macro REG_NOSUB    { 8 }
+
+macro REG_NOTBOL   { 1 }
+macro REG_NOTEOL   { 2 }
+macro REG_STARTEND { 4 }
+
+namespace libc {
+    namespace regex {
+        type Size: u32;
+        type LongSize: u64;
+
+        type Reg: u32;
+        type ActiveReg: u64;
+        type RegSyntax: u64;
+
+        type ErrCode: enum {
+            ENOSYS = 1, # This will never happen for this implementation.
+            NOERROR,    # Success.
+            NOMATCH,    # Didn't find a match (for regexec).
+
+            BADPAT,     # Invalid pattern.
+            ECOLLATE,   # Invalid collating element.
+            ECTYPE,     # Invalid character class name.
+            EESCAPE,    # Trailing backslash.
+            ESUBREG,    # Invalid back reference.
+            EBRACK,     # Unmatched left bracket.
+            EPAREN,     # Parenthesis imbalance.
+            EBRACE,     # Unmatched \{.
+            BADBR,      # Invalid contents of \{\}.
+            ERANGE,     # Invalid range end.
+            ESPACE,     # Ran out of memory.
+            BADRPT,     # No preceding re for repitition op.
+
+            EEND,       # Premature end.
+            ESIZE,      # Too large (e.g. repeat count too large).
+            ERPAREN     # Unmatched ) or \); not returned from regcomp.
+        };
+
+        type PatternBuffer: struct {
+            buffer: &void,
+            allocated: LongSize,
+            used: LongSize,
+            syntax: RegSyntax,
+            fastmap: &char,
+            translate: &char,
+            nsub: u64,
+            flags: u8
+        };
+
+        type Regex: PatternBuffer;
+        type Off: i32;
+
+        type Registers: struct {
+            num_regs: Size,
+            start: &Off,
+            end: &Off
+        };
+
+        type Match: struct {
+            rm_so: Off,
+            rm_eo: Off
+        };
+
+        extern "C" const re_syntax_options: RegSyntax;
+
+        extern "C" {
+            fn re_set_syntax(syntax: RegSyntax): RegSyntax;
+            fn re_compile_pattern(pattern: &const char, length: u64, buffer: &PatternBuffer): &const char;
+            fn re_compile_fastmap(buffer: &PatternBuffer): i32;
+            fn re_search(buffer: &PatternBuffer, string: &const char, length: Off, start: Off, range: Off, regs: &Registers): Off;
+            fn re_search_2(buffer: &PatternBuffer, string1: &const char, length1: Off, string2: &const char, length2: Off, start: Off, range: Off, regs: &Registers, stop: Off): Off;
+            fn re_match(buffer: &PatternBuffer, string: &const char, length: Off, start: Off, regs: Registers): Off;
+            fn re_match_2(buffer: &PatternBuffer, string1: &const char, length1: Off, string2: &const char, length2: Off, start: Off, regs: &Registers, stop: Off): Off;
+            fn re_set_regsiters(buffer: &PatternBuffer, regs: &Registers, num_regs: Size, starts: Off, ends: Off);
+            
+            fn regcomp(preg: &Regex, pattern: &const char, cflags: i32): i32;
+            fn regexec(preg: &Regex, string: &const char, nmatch: Size, pmatch: &Match, eflags: i32): i32;
+            fn regerror(errcode: i32, preg: &const Regex, errbuf: &char, errbuf_size: Size): u64;
+            fn regfree(preg: &Regex);
+        }
+
+        # Wrapper
+
+        fn compile(pattern: &const char): Regex {
+            let regex: Regex;
+            regcomp(&regex, pattern, 0);
+            <- regex;
+        }
+
+        fn exec(regex: &Regex, string: &const char): ErrCode {
+            <- regexec(regex, string, 0, nil, 0);
+        }
+
+        fn free(regex: &Regex) {
+            regfree(regex);
+        }
+    }
+}
