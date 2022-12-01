@@ -150,7 +150,7 @@ namespace libc {
             fn re_compile_pattern(pattern: &const char, length: u64, buffer: &PatternBuffer): &const char;
             fn re_compile_fastmap(buffer: &PatternBuffer): i32;
             fn re_search(buffer: &PatternBuffer, string: &const char, length: Off, start: Off, range: Off, regs: &Registers): Off;
-            fn re_search_2(buffer: &PatternBuffer, string1: &const char, length1: Off, string2: &const char, length2: Off, start: Off, range: Off, regs: &Registers, stop: Off): Off;
+            fn re_search_2(buffer: &PatternBuffer, string1: &const char, length1: Off, string2: &const char, length2: Offe, start: Off, range: Off, regs: &Registers, stop: Off): Off;
             fn re_match(buffer: &PatternBuffer, string: &const char, length: Off, start: Off, regs: Registers): Off;
             fn re_match_2(buffer: &PatternBuffer, string1: &const char, length1: Off, string2: &const char, length2: Off, start: Off, regs: &Registers, stop: Off): Off;
             fn re_set_regsiters(buffer: &PatternBuffer, regs: &Registers, num_regs: Size, starts: Off, ends: Off);

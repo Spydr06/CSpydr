@@ -227,6 +227,16 @@ namespace std {
             <- sub_str;
         }
 
+        fn trim(str: ::std::String): ::std::String {
+            while(character::isspace(*str)) str++;
+
+            let back = &str[len str];
+            while(character::isspace(*back)) back--;
+            *back = '\0';
+
+            <- str;
+        }
+
         fn from_int(int: i64): ::std::String
         {
             let buf: char 'c[100];

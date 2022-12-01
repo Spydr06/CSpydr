@@ -1,5 +1,6 @@
 #include "util.h"
 
+#include <ctype.h>
 #include <stdbool.h>
 #include <string.h>
 
@@ -72,4 +73,17 @@ u64 str_count_char(const char* s, char c)
     u64 i = 0;
     for (i=0; s[i]; s[i]=='.' ? (void) i++ : (void) *s++);
     return i;
+}
+
+char *trim(char* string)
+{
+    // trim left
+    while(isspace(*string)) string++;
+
+    // trim right
+    char* back = string + strlen(string);
+    while(isspace(*--back));
+    back[1] = '\0';
+
+    return string;
 }

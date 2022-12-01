@@ -19,6 +19,10 @@ import "error.csp";
 import "string.csp";
 import "fmt.csp";
 
+macro file(path) {
+    (::std::file::open((path), ::std::file::READ_WRITE))
+}
+
 namespace std {
     type File: struct {
         desc: i32,

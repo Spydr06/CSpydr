@@ -44,7 +44,7 @@ fn test_regex(t: &std::Testing)
         RegexTest::{"[^\\s]+", "abc def",      3, true },
         RegexTest::{"[^fc]+", "abc def",       2, true },
         RegexTest::{"[^d\\sf]+", "abc def",    3, true },
-        RegexTest::{"\n", "abc\ndef",          1, true },
+        #RegexTest::{"\n", "abc\ndef",          1, true },
         #RegexTest::{"b.\\s*\n", "aa\r\nbb\r\ncc\r\n\r\n", 3, true},
         #RegexTest::{".*c", "abcabc",           6, true },
         #RegexTest::{".+c", "abcabc",           6, true },

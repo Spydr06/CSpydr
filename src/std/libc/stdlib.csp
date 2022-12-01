@@ -70,7 +70,7 @@ extern "C" {
     fn system(string: const &char): i32;
 
     fn bsearch(key: const &void, base: const &void, nmemb: size_t, size: size_t, compar: fn<i32>(const &void, const &void));
-    fn qsort(base: &void, nmemb: size_t, size: size_t, compar: fn<i32>(const &void, const &void));
+    fn qsort(base: &void, nmemb: size_t, size: size_t, compar: const fn<i32>(&const void, &const void));
 
     fn abs(j: i32): i32;
     fn labs(j: i64): i64;
