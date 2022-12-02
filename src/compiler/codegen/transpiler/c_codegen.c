@@ -60,6 +60,15 @@ static const char* reg_names[C_NUM_REGISTERS] = {
     "%rip" 
 };
 
+static const char* cmp_mode[TOKEN_EOF] = {
+    [TOKEN_EQ] = "==",
+    [TOKEN_NOT_EQ] = "!=",
+    [TOKEN_LT] = "<",
+    [TOKEN_LT_EQ] = "<=",
+    [TOKEN_GT] = ">",
+    [TOKEN_GT_EQ] = ">=",
+};
+
 static const char* op_symbols[ND_KIND_LEN] = {
     [ND_ADD] = "+",
     [ND_SUB] = "-",
@@ -1578,9 +1587,9 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
         for(size_t i = 0; i < node->cases->size; i++)
         {
             ASTNode_T* _case = node->cases->items[i];
-            c_print(cg, "%sif(" UNIQUE_ID_FMT " == (", i == 0 ? "" : "else ", uid);
+            c_print(cg, "%sif((", i == 0 ? "" : "else ");
             c_gen_expr(cg, _case->condition, true);
-            c_println(cg, ")){");
+            c_println(cg, ") %s " UNIQUE_ID_FMT "){", cmp_mode[_case->mode], uid);
             c_gen_stmt(cg, _case->body);
             c_println(cg, "}");
         }

@@ -69,6 +69,15 @@ static const char* asm_start_text[] =
         
 };
 
+static char* jmp_mode[TOKEN_EOF] = {
+    [TOKEN_EQ] = "je",
+    [TOKEN_NOT_EQ] = "jne",
+    [TOKEN_LT] = "jl",
+    [TOKEN_LT_EQ] = "jle",
+    [TOKEN_GT] = "jg",
+    [TOKEN_GT_EQ] = "jge",
+};
+
 static char* argreg8[]  = {"%dil", "%sil", "%dl", "%cl", "%r8b", "%r9b"};
 static char* argreg16[] = {"%di", "%si", "%dx", "%cx", "%r8w", "%r9w"};
 static char* argreg32[] = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d"};
@@ -2395,7 +2404,8 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
                 asm_pop(cg, "%rdi");
                 asm_println(cg, "  cmp %s, %s", ax, di);
                 asm_pop(cg, "%rax");
-                asm_println(cg, "  je .L.case.%ld.%lu", i, c);
+
+                asm_println(cg, "  %s .L.case.%ld.%lu", jmp_mode[_case->mode], i, c);
             }
             
             if(node->default_case) 

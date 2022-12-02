@@ -1388,13 +1388,24 @@ static ASTNode_T* parse_case(Parser_T* p)
 {
     ASTNode_T* case_stmt = init_ast_node(ND_CASE, p->tok);
 
-    if(tok_is(p, TOKEN_UNDERSCORE))
-    {
+    switch(p->tok->type) {
+    case TOKEN_GT:
+    case TOKEN_LT:
+    case TOKEN_GT_EQ:
+    case TOKEN_LT_EQ:
+        case_stmt->mode = p->tok->type;
+        parser_advance(p);
+        case_stmt->condition = parse_expr(p, LOWEST, TOKEN_ARROW);
+        break;
+    case TOKEN_UNDERSCORE:
         parser_advance(p);
         case_stmt->is_default_case = true;
-    }
-    else
+        break;
+    default:
+        case_stmt->mode = TOKEN_EQ;
         case_stmt->condition = parse_expr(p, LOWEST, TOKEN_ARROW);
+    }
+
 
     parser_consume(p, TOKEN_ARROW, "expect `=>` after case condition");
     case_stmt->body = parse_stmt(p, true);

@@ -111,6 +111,8 @@ struct AST_NODE_STRUCT
 
         // with statement, single object
         ASTObj_T* obj;
+
+        TokenType_T mode; // case mode
     };
 
     union {

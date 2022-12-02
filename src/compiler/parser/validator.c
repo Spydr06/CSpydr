@@ -71,6 +71,7 @@ static void using_start(ASTNode_T* using, va_list args);
 static void using_end(ASTNode_T* using, va_list args);
 static void with_start(ASTNode_T* with, va_list args);
 static void with_end(ASTNode_T* with, va_list args);
+static void case_end(ASTNode_T* with, va_list args);
 static void expr_stmt(ASTNode_T* expr_stmt, va_list args);
 
 // expressions
@@ -143,6 +144,7 @@ static const ASTIteratorList_T main_iterator_list =
         [ND_MATCH_TYPE] = match_type_end,
         [ND_USING] = using_end,
         [ND_WITH] = with_end,
+        [ND_CASE] = case_end,
         [ND_EXPR_STMT] = expr_stmt,
 
         // expressions
@@ -1030,11 +1032,23 @@ static void with_end(ASTNode_T* with, va_list args)
     if(!handle)
     {
         char buf[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
-        throw_error(ERR_TYPE_ERROR_UNCR, with->obj->tok, "type `%s` does not have a registered exit function.\nRegister one by using the `exit_fn` compiler directive", ast_type_to_str(buf, with->condition->data_type, LEN(buf)));
+        throw_error(ERR_TYPE_ERROR_UNCR, with->obj->tok, "type `%s` does not have a registered exit function.\nRegister one by using the `exit_fn` compiler directive",
+            ast_type_to_str(buf, with->condition->data_type, LEN(buf)));
     }
     with->exit_fn = handle->fn;
 
     end_scope(v);
+}
+
+static void case_end(ASTNode_T* c_stmt, va_list args)
+{
+    GET_VALIDATOR(args);
+
+    if(c_stmt->condition && c_stmt->mode != TOKEN_EQ && !is_number(v, c_stmt->condition->data_type)) {
+        char buf[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
+        throw_error(ERR_TYPE_ERROR_UNCR, c_stmt->tok, "match cases with special ranges are only supported with number types, got `%s`",
+            ast_type_to_str(buf, c_stmt->condition->data_type, LEN(buf)));
+    }
 }
 
 static void expr_stmt(ASTNode_T* expr_stmt, va_list args)
