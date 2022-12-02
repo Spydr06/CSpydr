@@ -232,7 +232,7 @@ namespace std {
 
             let back = &str[len str];
             while(character::isspace(*back)) back--;
-            *back = '\0';
+            back[1] = '\0';
 
             <- str;
         }

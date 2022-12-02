@@ -15,7 +15,12 @@ import "types.csp";
 
 # macro to quickly create a new vector
 macro vec(datatype) {
-    (std::vec::init(): &datatype)
+    (::std::vec::init(): &datatype)
+}
+
+# macro to get the size of the vector
+macro vec_size(addr) {
+    (::std::vec::size((addr)))
 }
 
 # macro to add a value to the vector

@@ -21,3 +21,83 @@ macro last(array) {
 macro first(array) {
     ((array)[0])
 }
+
+macro sum(__a) {
+    (if type::is_array(typeof (__a)) => (
+        if type::((typeof (__a)[0]) == i32) =>
+            ::std::array::sum_i32(&__a[0], len (__a))
+        else if type::((typeof (__a)[0]) == u32) =>
+            ::std::array::sum_u32(&__a[0], len (__a)): i64
+        else if type::((typeof (__a)[0]) == i64) =>
+            ::std::array::sum_i32(&__a[0], len (__a))
+        else if type::((typeof (__a)[0]) == u64) =>
+            ::std::array::sum_u32(&__a[0], len (__a)): i64
+        else if type::((typeof (__a)[0]) == i16) =>
+            ::std::array::sum_i32(&__a[0], len (__a))
+        else if type::((typeof (__a)[0]) == u16) =>
+            ::std::array::sum_u32(&__a[0], len (__a)): i64
+        else if type::((typeof (__a)[0]) == i8) =>
+            ::std::array::sum_i32(&__a[0], len (__a))
+        else if type::((typeof (__a)[0]) == u8) =>
+            ::std::array::sum_u32(&__a[0], len (__a)): i64
+        else 0: i64
+    )
+    else 0: i64)
+}
+
+macro sum(a, b) {
+    ((a) + (b))
+}
+
+macro sum(a, b, c) {
+    ((a) + (b) + (c))
+}
+
+macro sum(a, b, c, d) {
+    ((a) + (b) + (c) + (d))
+}
+
+macro sum(a, b, c, d, e) {
+    ((a) + (b) + (c) + (d) + (e))
+}
+
+macro sum(a, b, c, d, e, f) {
+    ((a) + (b) + (c) + (d) + (e) + (f))
+}
+
+macro __sum_internal(arr, length, total_type) {
+    {
+        let total: total_type;
+        for let i = 0; i < length; i++;
+            total += arr[i];
+        <- total;
+    }
+}
+
+namespace std {
+    namespace array {
+        fn sum_u8(arr: &u8, length: u64): u64
+            __sum_internal!(arr, length, u64)
+
+        fn sum_i8(arr: &i8, length: u64): i64
+            __sum_internal!(arr, length, i64)
+        
+        fn sum_u16(arr: &u16, length: u64): u64
+            __sum_internal!(arr, length, u64)
+
+        fn sum_i16(arr: &i16, length: u64): i64
+            __sum_internal!(arr, length, i64)
+
+        fn sum_u32(arr: &u32, length: u64): u64
+            __sum_internal!(arr, length, i64)
+
+        fn sum_i32(arr: &i32, length: u64): i64
+            __sum_internal!(arr, length, i64)
+
+        fn sum_u64(arr: &u64, length: u64): u64
+            __sum_internal!(arr, length, u64)
+        
+        fn sum_i64(arr: &i64, length: u64): i64
+            __sum_internal!(arr, length, i64)
+    }
+}
