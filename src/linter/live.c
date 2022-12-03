@@ -21,6 +21,7 @@
 #define ERROR_MSG(str) COLOR_BOLD_RED "[Error] " COLOR_RESET COLOR_RED str COLOR_RESET
 
 static ASTProg_T AST = {0};
+static bool prompt_on_quit = true;
 
 static inline void cleanup(void)
 {
@@ -47,11 +48,11 @@ static void free_ast(int fd)
 
 static void sigint_handler(int dummy /* unused */) 
 {
-    if(question("\rDo you really want to quit?")) 
-    {
-        cleanup();
-        exit(0);
-    }
+    if(prompt_on_quit && !question("\rDo you really want to quit?")) 
+        return;
+
+    cleanup();
+    exit(0);
 }
 
 void lint_watched(const char* filepath, const char* std_path)
@@ -104,8 +105,9 @@ static bool get_event(int fd)
     return len > 0;
 }
 
-void live_session(const char* filepath, const char* std_path)
+void live_session(const char* filepath, const char* std_path, bool _prompt_on_quit)
 {
+    prompt_on_quit = _prompt_on_quit;
 #ifndef CSPYDR_LINUX
     LOG_ERROR(ERROR_MSG("live sessions not available on your current platform.\n"));
     exit(1);

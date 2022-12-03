@@ -69,7 +69,8 @@ const char help_text[] = "%s"
                          "                          | communicating with the linter.\n"
                          "  -o, --output            | Sets an output file for the error log.\n"
                          "  -l, --live              | Start a live session of the linter.\n"
-                         "  -p, --std-path <string> | Set the path of the standard library (default: " DEFAULT_STD_PATH ")";
+                         "  -p, --std-path <string> | Set the path of the standard library (default: " DEFAULT_STD_PATH ")"
+                         "  -y, --yes               | Answer prompts with `yes` on default.\n";
 
 // this text gets shown if -v or --version is used
 const char version_text[] = COLOR_BOLD_MAGENTA "** csp-lint - The CSpydr Programming Language Linter **\n" COLOR_RESET
@@ -95,7 +96,8 @@ i32 main(i32 argc, char* argv[])
 
     char* src_path = NULL;
     char* std_path = DEFAULT_STD_PATH;
-    bool is_live = false;
+    bool is_live = false,
+        default_yes = false;
     
     for(i32 i = 1; i < argc; i++)
     {
@@ -139,6 +141,8 @@ i32 main(i32 argc, char* argv[])
         }
         else if(streq(arg, "-l") || streq(arg, "--live"))
             is_live = true;
+        else if(streq(arg, "-y") || streq(arg, "--yes"))
+            default_yes = true;
         else if(streq(arg, "-p") || streq(arg, "--std-path"))
         {
             if(!argv[++i])
@@ -173,7 +177,7 @@ i32 main(i32 argc, char* argv[])
     set_panic_handler(linter_panic_handler);
 
     if(is_live)
-        live_session(src_path, std_path);
+        live_session(src_path, std_path, !default_yes);
     else
     {
         atexit(summary);
