@@ -16,6 +16,7 @@
 #include "../codegen_utils.h"
 #include "ast/ast.h"
 #include "ast/ast_iterator.h"
+#include "ast/types.h"
 #include "error/error.h"
 #include "hashmap.h"
 #include "keywords.h"
@@ -1062,32 +1063,52 @@ static void c_gen_inline_asm(CCodegenData_T* cg, ASTNode_T* node)
     c_print(cg, "\n)");
 }
 
-static void c_gen_index(CCodegenData_T* cg, ASTNode_T* node)
+static void c_gen_index2(CCodegenData_T* cg, ASTNode_T* node, ASTNode_T* index)
 {
-    ASTTypeKind_T ty = unpack(node->left->data_type)->kind;
+    ASTTypeKind_T ty = unpack(node->data_type)->kind;
     switch(ty)
     {
         case TY_PTR:
         case TY_FN:
         case TY_C_ARRAY:
             c_print(cg, "(");
-            c_gen_expr(cg, node->left, true);
+            c_gen_expr(cg, node, true);
             c_print(cg, ")[");
-            c_gen_expr(cg, node->expr, true);
+            c_gen_expr(cg, index, true);
             c_print(cg, "]");
             break;
         
         case TY_VLA:
         case TY_ARRAY:
             c_print(cg, "(");
-            c_gen_expr(cg, node->left, true);
+            c_gen_expr(cg, node, true);
             c_print(cg, ")%s__v[", ty == TY_ARRAY ? "." : "->");
-            c_gen_expr(cg, node->expr, true);
+            c_gen_expr(cg, index, true);
             c_putc(cg, ']');
             break;
 
         default:
             throw_error(ERR_CODEGEN, node->tok, "wrong index type");
+    }
+}
+
+static void c_gen_index(CCodegenData_T* cg, ASTNode_T* node)
+{
+    c_gen_index2(cg, node->left, node->expr);
+}
+
+static void c_gen_unpack_arg(CCodegenData_T* cg, ASTNode_T* arg)
+{
+    UnpackMode_T mode = arg->unpack_mode;
+    size_t num_indices = unpack(arg->data_type)->num_indices;
+
+    for(size_t i = 0; i < num_indices; i++)
+    {
+        size_t index = mode == UMODE_FTOB ? i : num_indices - i - 1;
+        c_gen_index2(cg, arg, &(ASTNode_T){.kind = ND_LONG, .data_type = (ASTType_T*) primitives[TY_U64], .long_val = index});
+        if(num_indices - i > 1) {
+            c_putc(cg, ',');
+        } 
     }
 }
 
@@ -1273,14 +1294,22 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node, bool with_casts)
             }
             for(size_t i = 0; i < node->args->size; i++)
             {
+                ASTNode_T* arg = node->args->items[i];
                 ASTType_T* arg_type = call_type->arg_types->items[i];
+                if(arg->unpack_mode) {
+                    c_gen_unpack_arg(cg, arg);
+                    if(node->args->size - i > 1)
+                        c_print(cg, ",");
+                    continue;
+                }
+
                 if(arg_type && node->expr->kind == ND_ID)
                 {
                     c_putc(cg, '(');
                     c_gen_type(cg, arg_type);
                     c_putc(cg, ')');
                 }
-                c_gen_expr(cg, node->args->items[i], true);
+                c_gen_expr(cg, arg, true);
                 if(node->args->size - i > 1)
                     c_print(cg, ",");
             }

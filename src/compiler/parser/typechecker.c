@@ -81,12 +81,30 @@ static void unset_fn(ASTObj_T* fn, va_list args)
     t->current_fn = NULL;
 }
 
+static bool is_const_len_array(ASTType_T* arr) {
+    arr = unpack(arr);
+    return arr->kind == TY_ARRAY || arr->kind == TY_C_ARRAY;
+}
+
 static void typecheck_call(ASTNode_T* call, va_list args)
 {
     ASTType_T* call_type = unpack(call->expr->data_type);
     size_t expected_arg_num = call_type->arg_types->size;
+
     for(size_t i = 0; i < MIN(expected_arg_num, call->args->size); i++)
         call->args->items[i] = typecheck_arg_pass(call_type->arg_types->items[i], call->args->items[i]);
+
+    if(expected_arg_num < call->args->size) {
+        for(size_t i = expected_arg_num; i < call->args->size; i++) {
+            ASTNode_T* arg = call->args->items[i];
+            if(arg->unpack_mode)
+            {
+                char buf[BUFSIZ];
+                if(!is_const_len_array(arg->data_type))
+                    throw_error(ERR_TYPE_ERROR_UNCR, arg->tok, "unpacking with `...` is not supported for type `%s`\n", ast_type_to_str(buf, arg->data_type, LEN(buf)));
+            }
+        }
+    }
 }
 
 static void typecheck_for_range(ASTNode_T* loop, va_list args)
@@ -131,13 +149,21 @@ static void typecheck_assignment(ASTNode_T* assignment, va_list args)
 
 static ASTNode_T* typecheck_arg_pass(ASTType_T* expected, ASTNode_T* received)
 {
+    char buf1[BUFSIZ] = {};
+    if(received->unpack_mode)
+    {
+        if(!is_const_len_array(received->data_type))
+            throw_error(ERR_TYPE_ERROR_UNCR, received->tok, "unpacking with `...` is not supported for type `%s`\n", ast_type_to_str(buf1, received->data_type, LEN(buf1)));
+        throw_error(ERR_TYPE_ERROR_UNCR, received->tok, "unpacking with `...` is only available for variable-length argument lists");
+        return received;
+    }
+
     if(types_equal(expected, received->data_type))
         return received;
     
     if(implicitly_castable(received->tok, received->data_type, expected) == CAST_OK)
         return implicit_cast(received->tok, received, expected);
     
-    char buf1[BUFSIZ] = {};
     char buf2[BUFSIZ] = {};
     throw_error(ERR_TYPE_ERROR_UNCR, received->tok, "cannot implicitly cast from `%s` to `%s`", 
         ast_type_to_str(buf1, received->data_type, LEN(buf1)),

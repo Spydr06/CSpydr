@@ -170,7 +170,10 @@ namespace std {
         }
 
         fn zero(ptr: &void, size: usize)
-            set(ptr, 0, size);
+        {
+            for let i: usize = 0; i < size; i++; 
+                (ptr: &u8)[i] = 0;
+        }
 
         # function to check if two pointer overlap
         fn ptr_overlap(a: &const void, b: &const void, n: usize): bool

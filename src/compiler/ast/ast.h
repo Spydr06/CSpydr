@@ -29,6 +29,12 @@ typedef struct AST_IDENTIFIER_STRUCT   ASTIdentifier_T;
 typedef struct AST_TYPE_STRUCT         ASTType_T;
 typedef struct AST_OBJ_STRUCT          ASTObj_T;
 
+typedef enum UNPACK_MODE {
+    UMODE_NONE = 0b00,
+    UMODE_FTOB = 0b01,
+    UMODE_BTOF = 0b10
+} UnpackMode_T;
+
 struct AST_NODE_STRUCT
 {
     ASTNodeKind_T kind;
@@ -146,9 +152,11 @@ struct AST_NODE_STRUCT
         bool from_back       : 1; // index
     };
 
+    UnpackMode_T unpack_mode : 2;
+
     // assignment expression
     bool is_assigning    : 1;
-    bool output       : 1;
+    bool output          : 1;
     bool is_initializing : 1;
     bool result_ignored  : 1;
 

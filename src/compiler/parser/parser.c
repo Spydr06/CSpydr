@@ -1849,14 +1849,30 @@ static ASTNode_T* parse_expr(Parser_T* p, Precedence_T prec, TokenType_T end_tok
     return left_expr;
 }
 
-static List_T* parse_expr_list(Parser_T* p, TokenType_T end_tok)
+static List_T* parse_expr_list(Parser_T* p, TokenType_T end_tok, bool allow_unpacking_operators)
 {
     List_T* list = init_list();
     mem_add_list(list);
 
     while (!tok_is(p, end_tok) && !tok_is(p, TOKEN_EOF)) 
     {
-        list_push(list, parse_expr(p, LOWEST, TOKEN_COMMA));
+        UnpackMode_T umode = UMODE_NONE;
+        if(allow_unpacking_operators && tok_is(p, TOKEN_VA_LIST)) {
+            parser_advance(p);
+            umode = UMODE_FTOB;
+        }
+
+        ASTNode_T* arg = parse_expr(p, LOWEST, TOKEN_COMMA);
+
+        if(allow_unpacking_operators && tok_is(p, TOKEN_VA_LIST)) {
+            if(umode)
+                throw_error(ERR_SYNTAX_ERROR_UNCR, p->tok, "already unpacking front-to-back, cannot unpack twice");
+            parser_advance(p);
+            umode = UMODE_BTOF;
+        }
+        arg->unpack_mode = umode;
+
+        list_push(list, arg);
 
         if(!tok_is(p, end_tok))
             parser_consume(p, TOKEN_COMMA, "expect `,` between call arguments");
@@ -1996,7 +2012,7 @@ static ASTNode_T* parse_array_lit(Parser_T* p)
 {
     ASTNode_T* a_lit = init_ast_node(ND_ARRAY, p->tok);
     parser_consume(p, TOKEN_LBRACKET, "expect `[` for array literal");
-    a_lit->args = parse_expr_list(p, TOKEN_RBRACKET);
+    a_lit->args = parse_expr_list(p, TOKEN_RBRACKET, false);
     parser_consume(p, TOKEN_RBRACKET, "expect `]` after array literal");
 
     return a_lit;
@@ -2007,7 +2023,7 @@ static ASTNode_T* parse_struct_lit(Parser_T* p, ASTNode_T* id)
     parser_consume(p, TOKEN_STATIC_MEMBER, "expect `::` before `{`");
     ASTNode_T* struct_lit = init_ast_node(ND_STRUCT, p->tok);
     parser_consume(p, TOKEN_LBRACE, "expect `{` for struct literal");
-    struct_lit->args = parse_expr_list(p, TOKEN_RBRACE);
+    struct_lit->args = parse_expr_list(p, TOKEN_RBRACE, false);
     parser_consume(p, TOKEN_RBRACE, "expect `}` after struct literal");
 
     struct_lit->data_type = init_ast_type(TY_UNDEF, id->tok);
@@ -2020,7 +2036,7 @@ static ASTNode_T* parse_anonymous_struct_lit(Parser_T* p)
 {
     ASTNode_T* struct_lit = init_ast_node(ND_STRUCT, p->tok);
     parser_consume(p, TOKEN_LBRACE, "expect `{` for struct literal");
-    struct_lit->args = parse_expr_list(p, TOKEN_RBRACE);
+    struct_lit->args = parse_expr_list(p, TOKEN_RBRACE, false);
     parser_consume(p, TOKEN_RBRACE, "expect `}` after struct literal");
 
     return struct_lit;
@@ -2255,7 +2271,7 @@ static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left)
 
     parser_consume(p, TOKEN_LPAREN, "expect `(` after callee");
 
-    call->args = parse_expr_list(p, TOKEN_RPAREN);
+    call->args = parse_expr_list(p, TOKEN_RPAREN, true);
     parser_consume(p, TOKEN_RPAREN, "expect `)` after call arguments");
 
     return call;

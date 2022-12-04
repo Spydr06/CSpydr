@@ -1220,6 +1220,59 @@ static void asm_load(ASMCodegenData_T* cg, ASTType_T *ty) {
         asm_println(cg, "  mov (%%rax), %%rax");
 }
 
+static ASTNode_T* make_index_expr(ASTNode_T* left, size_t index)
+{
+    ASTNode_T* index_expr = init_ast_node(ND_LONG, left->tok);
+    index_expr->data_type = (ASTType_T*) primitives[TY_U64];
+    index_expr->long_val = index;
+
+    ASTNode_T* expr = init_ast_node(ND_INDEX, left->tok);
+    expr->data_type = unpack(left->data_type)->base;
+    expr->left = left;
+    expr->expr = index_expr;
+
+    return expr;
+}
+
+static List_T* unpack_call_args(ASTNode_T* node) {
+    if((node->called_obj && node->called_obj->data_type && !unpack(node->called_obj->data_type)->is_variadic))
+        return node->args;
+    
+    bool needs_unpacking = false;
+    for(size_t i = 0; i < node->args->size; i++)
+    {
+        ASTNode_T* arg = node->args->items[i];
+        if(arg->unpack_mode) {
+            needs_unpacking = true;
+            break;
+        }
+    }
+
+    if(!needs_unpacking)
+        return node->args;
+
+    List_T* unpacked_args = init_list();
+
+    for(size_t i = 0; i < node->args->size; i++)
+    {
+        ASTNode_T* arg = node->args->items[i];
+        if(!arg->unpack_mode)
+        {
+            list_push(unpacked_args, arg);
+            continue;
+        }
+        
+        size_t num_indices = unpack(arg->data_type)->num_indices;
+        for(size_t j = 0; j < num_indices; j++)
+        {
+            size_t index = arg->unpack_mode == UMODE_FTOB ? j : num_indices - j - 1;
+            list_push(unpacked_args, make_index_expr(arg, index));
+        }
+    }
+
+    return unpacked_args;
+}
+
 static void asm_push_args2(ASMCodegenData_T* cg, List_T* args, bool first_pass)
 {
     for(i64 i = args->size - 1; i >= 0; i--)
@@ -1328,6 +1381,56 @@ static i32 asm_push_args(ASMCodegenData_T* cg, ASTNode_T* node)
         asm_push(cg);
     }
     return stack;
+}
+
+static i32 asm_pop_args(ASMCodegenData_T* cg, ASTNode_T* node)
+{
+    i32 gp = 0, fp = 0;
+
+    if(node->data_type->kind != TY_VOID && node->data_type->size > 16)
+        asm_pop(cg, argreg64[gp++]);
+    for(u64 i = 0; i < node->args->size; i++)
+    {
+        ASTNode_T* arg = node->args->items[i];
+        ASTType_T* ty = unpack(arg->data_type);
+        switch(ty->kind)
+        {
+            case TY_STRUCT:
+                if(ty->size > 16)
+                    continue;
+                
+                bool fp1 = asm_has_flonum_1(ty);
+                bool fp2 = asm_has_flonum_2(ty);
+                if(fp + fp1 + fp2 < ASM_FP_MAX && gp + !fp1 + !fp2 < ASM_GP_MAX)
+                {
+                    if(fp1)
+                        asm_popf(cg, fp++);
+                    else
+                        asm_pop(cg, argreg64[gp++]);
+                    
+                    if(ty->size > 8) 
+                    {
+                        if(fp2)
+                            asm_popf(cg, fp++);
+                        else
+                            asm_pop(cg, argreg64[gp++]);    
+                    }
+                }
+                break;
+            case TY_F32:
+            case TY_F64:
+                if(fp < ASM_FP_MAX)
+                    asm_popf(cg, fp++);
+                break;
+            case TY_F80:
+                break;
+            default:
+                if(gp < ASM_GP_MAX)
+                    asm_pop(cg, argreg64[gp++]);
+        }
+    }
+
+    return fp;
 }
 
 static void asm_gen_inc(ASMCodegenData_T* cg, ASTNode_T* node)
@@ -1803,58 +1906,15 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
 
         case ND_CALL:
         {
+            List_T* packed_args = node->args;
+            node->args = unpack_call_args(node);
             i32 stack_args = asm_push_args(cg, node);
             asm_gen_addr(cg, node->expr);
 
             if(!node->called_obj || node->called_obj->kind == OBJ_LOCAL || node->called_obj->kind == OBJ_FN_ARG)
                 asm_println(cg, "  mov (%%rax), %%rax");
 
-            i32 gp = 0, fp = 0;
-
-            if(node->data_type->kind != TY_VOID && node->data_type->size > 16)
-                asm_pop(cg, argreg64[gp++]);
-            for(u64 i = 0; i < node->args->size; i++)
-            {
-                ASTNode_T* arg = node->args->items[i];
-                ASTType_T* ty = unpack(arg->data_type);
-
-                switch(ty->kind)
-                {
-                    case TY_STRUCT:
-                        if(ty->size > 16)
-                            continue;
-                        
-                        bool fp1 = asm_has_flonum_1(ty);
-                        bool fp2 = asm_has_flonum_2(ty);
-
-                        if(fp + fp1 + fp2 < ASM_FP_MAX && gp + !fp1 + !fp2 < ASM_GP_MAX)
-                        {
-                            if(fp1)
-                                asm_popf(cg, fp++);
-                            else
-                                asm_pop(cg, argreg64[gp++]);
-                            
-                            if(ty->size > 8) 
-                            {
-                                if(fp2)
-                                    asm_popf(cg, fp++);
-                                else
-                                    asm_pop(cg, argreg64[gp++]);    
-                            }
-                        }
-                        break;
-                    case TY_F32:
-                    case TY_F64:
-                        if(fp < ASM_FP_MAX)
-                            asm_popf(cg, fp++);
-                        break;
-                    case TY_F80:
-                        break;
-                    default:
-                        if(gp < ASM_GP_MAX)
-                            asm_pop(cg, argreg64[gp++]);
-                }
-            }
+            i32 fp = asm_pop_args(cg, node);
 
             asm_println(cg, "  mov %%rax, %s", call_reg);
             asm_println(cg, "  mov $%d, %%rax", fp);
@@ -1893,6 +1953,11 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             if(node->return_buffer && node->data_type->size <= 16) {
                 asm_copy_ret_buffer(cg, node->return_buffer);
                 asm_println(cg, "  lea %d(%%rbp), %%rax", node->return_buffer->offset);
+            }
+
+            if(node->args != packed_args) {
+                free_list(node->args);
+                node->args = packed_args;
             }
         } return;
         

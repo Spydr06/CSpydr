@@ -1,0 +1,12 @@
+import "io.csp";
+
+fn main(): i32 {
+    using std;
+    
+    let arr = [1, 2, 3];
+
+    io::printf("%i, %i, %i\n", ...arr);
+    io::printf("%i, %i, %i\n", arr...);
+
+    <- 0;
+}
