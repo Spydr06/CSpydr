@@ -101,8 +101,8 @@ static void typecheck_call(ASTNode_T* call, va_list args)
             if(arg->unpack_mode)
             {
                 char buf[BUFSIZ];
-                if(!is_const_len_array(arg->data_type))
-                    throw_error(ERR_TYPE_ERROR_UNCR, arg->tok, "unpacking with `...` is not supported for type `%s`\n", ast_type_to_str(buf, arg->data_type, LEN(buf)));
+                if(!is_const_len_array(arg->data_type) && unpack(arg->data_type)->kind != TY_STRUCT)
+                    throw_error(ERR_TYPE_ERROR_UNCR, arg->tok, "unpacking with `...` is not supported for type `%s`", ast_type_to_str(buf, arg->data_type, LEN(buf)));
             }
         }
     }
@@ -220,7 +220,7 @@ static void typecheck_array_lit(ASTNode_T* a_lit, va_list args)
         if(arg->unpack_mode)
         {
             if(!is_const_len_array(arg_type)) {
-                throw_error(ERR_TYPE_ERROR_UNCR, arg->tok, "unpacking with `...` is not supported for type `%s`\n", ast_type_to_str(buf1, arg_type, LEN(buf1)));
+                throw_error(ERR_TYPE_ERROR_UNCR, arg->tok, "unpacking with `...` is not supported for type `%s`", ast_type_to_str(buf1, arg_type, LEN(buf1)));
                 continue;
             }
 

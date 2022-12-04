@@ -1071,7 +1071,7 @@ static void c_gen_index2(CCodegenData_T* cg, ASTNode_T* node, ASTNode_T* index)
         case TY_PTR:
         case TY_FN:
         case TY_C_ARRAY:
-            c_print(cg, "(");
+            c_putc(cg, '(');
             c_gen_expr(cg, node, true);
             c_print(cg, ")[");
             c_gen_expr(cg, index, true);
@@ -1080,7 +1080,7 @@ static void c_gen_index2(CCodegenData_T* cg, ASTNode_T* node, ASTNode_T* index)
         
         case TY_VLA:
         case TY_ARRAY:
-            c_print(cg, "(");
+            c_putc(cg, '(');
             c_gen_expr(cg, node, true);
             c_print(cg, ")%s__v[", ty == TY_ARRAY ? "." : "->");
             c_gen_expr(cg, index, true);
@@ -1100,15 +1100,22 @@ static void c_gen_index(CCodegenData_T* cg, ASTNode_T* node)
 static void c_gen_unpack_arg(CCodegenData_T* cg, ASTNode_T* arg)
 {
     UnpackMode_T mode = arg->unpack_mode;
-    size_t num_indices = unpack(arg->data_type)->num_indices;
+    ASTType_T* arg_type = unpack(arg->data_type);
+    bool is_struct = arg_type->kind == TY_STRUCT;
+    size_t num_indices = is_struct ? arg_type->members->size : arg_type->num_indices;
 
     for(size_t i = 0; i < num_indices; i++)
     {
         size_t index = mode == UMODE_FTOB ? i : num_indices - i - 1;
-        c_gen_index2(cg, arg, &(ASTNode_T){.kind = ND_LONG, .data_type = (ASTType_T*) primitives[TY_U64], .long_val = index});
-        if(num_indices - i > 1) {
+        if(is_struct) {
+            c_putc(cg, '(');
+            c_gen_expr(cg, arg, true);
+            c_print(cg, ")." ID_PREFIX "%s", ((ASTNode_T*)arg_type->members->items[i])->id->callee);
+        }
+        else
+            c_gen_index2(cg, arg, &(ASTNode_T){.kind = ND_LONG, .data_type = (ASTType_T*) primitives[TY_U64], .long_val = index});
+        if(num_indices - i > 1)
             c_putc(cg, ',');
-        } 
     }
 }
 

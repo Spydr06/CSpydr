@@ -1,13 +1,20 @@
 import "io.csp";
 
+type Foo: struct {
+    a: i32,
+    b: &char
+};
+
 fn main(): i32 {
     using std;
     
     let arr = [1, 2, 3];
     let arr2 = [...arr, 4, 5];
+    let foo = Foo::{10, "Hello, World"};
 
-    io::printf("%i, %i, %i\n", ...arr);
-    io::printf("%i, %i, %i, %i, %i\n", arr2...);
+    io::printf("%i, %i, %i\n", ...arr);          # 1, 2, 3
+    io::printf("%i, %i, %i, %i, %i\n", arr2...); # 5, 4, 3, 2, 1
+    io::printf("%i, %s\n", ...foo);
 
     <- 0;
 }

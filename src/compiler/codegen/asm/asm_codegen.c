@@ -1234,7 +1234,42 @@ static ASTNode_T* make_index_expr(ASTNode_T* left, size_t index)
     return expr;
 }
 
-static List_T* unpack_call_args(ASTNode_T* node) {
+static ASTNode_T* make_member_expr(ASTNode_T* left, ASTNode_T* struct_member)
+{
+    ASTNode_T* right = init_ast_node(ND_ID, left->tok);
+    right->data_type = struct_member->data_type;
+
+    ASTNode_T* expr = init_ast_node(ND_MEMBER, left->tok);
+    expr->data_type = struct_member->data_type;
+    expr->left = left;
+    expr->right = right;
+    expr->body = struct_member;
+
+    return expr;
+}
+
+static void unpack_array(List_T* unpacked_args, ASTNode_T* arg, ASTType_T* type)
+{
+    size_t num_indices = type->num_indices;
+    for(size_t j = 0; j < num_indices; j++)
+    {
+        size_t index = arg->unpack_mode == UMODE_FTOB ? j : num_indices - j - 1;
+        list_push(unpacked_args, make_index_expr(arg, index));
+    }
+}
+
+static void unpack_struct(List_T* unpacked_args, ASTNode_T* arg, ASTType_T* type)
+{
+    size_t num_members = type->members->size;
+    for(size_t j = 0; j < num_members; j++)
+    {
+        ASTNode_T* member = type->members->items[arg->unpack_mode == UMODE_FTOB ? j : num_members - j - 1];
+        list_push(unpacked_args, make_member_expr(arg, member));
+    }
+}
+
+static List_T* unpack_call_args(ASTNode_T* node)
+{
     if((node->called_obj && node->called_obj->data_type && !unpack(node->called_obj->data_type)->is_variadic))
         return node->args;
     
@@ -1262,11 +1297,17 @@ static List_T* unpack_call_args(ASTNode_T* node) {
             continue;
         }
         
-        size_t num_indices = unpack(arg->data_type)->num_indices;
-        for(size_t j = 0; j < num_indices; j++)
-        {
-            size_t index = arg->unpack_mode == UMODE_FTOB ? j : num_indices - j - 1;
-            list_push(unpacked_args, make_index_expr(arg, index));
+        ASTType_T* arg_type = unpack(arg->data_type);
+        switch (arg_type->kind) {
+            case TY_ARRAY:
+            case TY_C_ARRAY:
+                unpack_array(unpacked_args, arg, arg_type);
+                break;
+            case TY_STRUCT:
+                unpack_struct(unpacked_args, arg, arg_type);
+                break;
+            default:
+                unreachable();
         }
     }
 
