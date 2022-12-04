@@ -81,7 +81,8 @@ static void unset_fn(ASTObj_T* fn, va_list args)
     t->current_fn = NULL;
 }
 
-static bool is_const_len_array(ASTType_T* arr) {
+static bool is_const_len_array(ASTType_T* arr)
+{
     arr = unpack(arr);
     return arr->kind == TY_ARRAY || arr->kind == TY_C_ARRAY;
 }
@@ -214,17 +215,31 @@ static void typecheck_array_lit(ASTNode_T* a_lit, va_list args)
     for(size_t i = 0; i < a_lit->args->size; i++)
     {
         ASTNode_T* arg = a_lit->args->items[i];
+        ASTType_T* arg_type = arg->data_type;
 
-        if(types_equal(arg->data_type, base_ty))
+        if(arg->unpack_mode)
+        {
+            if(!is_const_len_array(arg_type)) {
+                throw_error(ERR_TYPE_ERROR_UNCR, arg->tok, "unpacking with `...` is not supported for type `%s`\n", ast_type_to_str(buf1, arg_type, LEN(buf1)));
+                continue;
+            }
+
+            arg_type = unpack(arg_type)->base;
+        }
+
+        if(types_equal(arg_type, base_ty))
             continue;
 
-        if(implicitly_castable(arg->tok, arg->data_type, base_ty) == CAST_OK)
+        if(implicitly_castable(arg->tok, arg_type, base_ty) == CAST_OK)
             a_lit->args->items[i] = implicit_cast(arg->tok, arg, base_ty);
-        else
+        else {
+            memset(buf1, 0, LEN(buf1));
+            memset(buf2, 0, LEN(buf2));
             throw_error(ERR_TYPE_ERROR_UNCR, arg->tok, "cannot implicitly cast from `%s` to `%s`",
-                ast_type_to_str(buf1, arg->data_type, BUFSIZ),
+                ast_type_to_str(buf1, arg_type, BUFSIZ),
                 ast_type_to_str(buf2, base_ty, BUFSIZ)
             );
+        }
     }
 }
 
@@ -252,11 +267,15 @@ static void typecheck_struct_lit(ASTNode_T* s_lit, va_list args)
 
         if(implicitly_castable(arg->tok, arg->data_type, expected_ty) == CAST_OK)
             s_lit->args->items[i] = implicit_cast(arg->tok, arg, expected_ty);
-        else
+        else {
+            memset(buf1, 0, LEN(buf1));
+            memset(buf2, 0, LEN(buf2));
+
             throw_error(ERR_TYPE_ERROR_UNCR, arg->tok, "cannot implicitly cast from `%s` to `%s`",
                 ast_type_to_str(buf1, arg->data_type, BUFSIZ),
                 buf2[0] == '\0' ? buf2 : ast_type_to_str(buf2, expected_ty, BUFSIZ)
             );
+        }
     }
 }
 

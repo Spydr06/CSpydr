@@ -2012,7 +2012,7 @@ static ASTNode_T* parse_array_lit(Parser_T* p)
 {
     ASTNode_T* a_lit = init_ast_node(ND_ARRAY, p->tok);
     parser_consume(p, TOKEN_LBRACKET, "expect `[` for array literal");
-    a_lit->args = parse_expr_list(p, TOKEN_RBRACKET, false);
+    a_lit->args = parse_expr_list(p, TOKEN_RBRACKET, p->cur_fn);
     parser_consume(p, TOKEN_RBRACKET, "expect `]` after array literal");
 
     return a_lit;

@@ -1232,7 +1232,16 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node, bool with_casts)
             c_print(cg, "{%lu,{", (u64) unpack(node->data_type)->num_indices);
             for(size_t i = 0; i < node->args->size; i++)
             {
-                c_gen_expr(cg, node->args->items[i], true);
+                ASTNode_T* arg = node->args->items[i];
+                if(arg->unpack_mode)
+                {
+                    c_gen_unpack_arg(cg, arg);
+                    if(node->args->size - i > 1)
+                        c_print(cg, ",");
+                    continue;
+                }
+
+                c_gen_expr(cg, arg, true);
                 if(node->args->size - i > 1)
                     c_putc(cg, ',');
             }

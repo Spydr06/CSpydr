@@ -1746,18 +1746,46 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             return;
         
         case ND_ARRAY:
+        {
+            size_t current = 0;
             for(size_t i = 0; i < node->args->size; i++)
             {
-                asm_println(cg, "  lea %ld(%%rbp), %%rax", node->buffer->offset + 8 + i * node->data_type->base->size);
-                asm_push(cg);
-                asm_gen_expr(cg, node->args->items[i]);
-                asm_store(cg, node->data_type->base);
+                ASTNode_T* arg = node->args->items[i];
+                if(arg->unpack_mode) {
+                    ASTType_T* arg_type = unpack(arg->data_type);
+                    size_t num_indices = arg_type->num_indices;
+                    for(size_t j = 0; j < num_indices; j++) {
+                        size_t index = arg->unpack_mode == UMODE_FTOB ? j : num_indices - j - 1;
+                        asm_println(cg, "  lea %ld(%%rbp), %%rax", node->buffer->offset + 8 + (current++ * node->data_type->base->size));
+                        asm_push(cg);
+
+                        asm_gen_expr(cg, &(ASTNode_T){
+                            .kind = ND_INDEX,
+                            .left = arg,
+                            .expr = &(ASTNode_T) {
+                                .kind = ND_LONG,
+                                .long_val = index,
+                                .data_type = (ASTType_T*) primitives[TY_U64]
+                            },
+                            .data_type = arg_type->base
+                        });
+
+                        asm_store(cg, node->data_type->base);
+                    }
+                }
+                else {
+                    asm_println(cg, "  lea %ld(%%rbp), %%rax", node->buffer->offset + 8 + (current++ * node->data_type->base->size));
+                    asm_push(cg);
+                    asm_gen_expr(cg, arg);
+                    asm_store(cg, node->data_type->base);
+                }
             }
             
             // add the size of the array at the beginning
             asm_println(cg, "  movq $%lu, %d(%%rbp)", node->data_type->num_indices, node->buffer->offset);
             asm_println(cg, "  lea %d(%%rbp), %%rax", node->buffer->offset);
             return;
+        }
         
         case ND_STRUCT:
             asm_println(cg, "  lea %d(%%rbp), %%rax", node->buffer->offset);
@@ -1784,11 +1812,36 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                 asm_println(cg, "  add $8, %%rax");
                 for(size_t i = 0; i < node->right->args->size; i++)
                 {
-                    asm_push(cg);
-                    asm_gen_expr(cg, node->right->args->items[i]);
-                    asm_store(cg, node->right->data_type->base);
-                    asm_println(cg, "  mov %%rdi, %%rax");
-                    asm_println(cg, "  add $%d, %%rax", node->right->data_type->base->size);
+                    ASTNode_T* arg = node->right->args->items[i];
+                    if(arg->unpack_mode)
+                    {
+                        size_t num_indices = unpack(arg->data_type)->num_indices;
+                        for(size_t j = 0; j < num_indices; j++)
+                        {
+                            size_t index = arg->unpack_mode == UMODE_FTOB ? j : num_indices - j - 1;
+                            asm_push(cg);
+                            asm_gen_expr(cg, &(ASTNode_T){
+                                .kind = ND_INDEX,
+                                .left = arg,
+                                .expr = &(ASTNode_T){
+                                    .kind = ND_LONG,
+                                    .long_val = index,
+                                    .data_type = (ASTType_T*) primitives[TY_U64]
+                                },
+                                .data_type = unpack(arg->data_type)->base
+                            });
+                            asm_store(cg, node->right->data_type->base);
+                            asm_println(cg, "  mov %%rdi, %%rax");
+                            asm_println(cg, "  add $%d, %%rax", node->right->data_type->base->size);
+                        }
+                    }
+                    else {
+                        asm_push(cg);
+                        asm_gen_expr(cg, arg);
+                        asm_store(cg, node->right->data_type->base);
+                        asm_println(cg, "  mov %%rdi, %%rax");
+                        asm_println(cg, "  add $%d, %%rax", node->right->data_type->base->size);
+                    }
                 }
                 
                 asm_pop(cg, "%rax");

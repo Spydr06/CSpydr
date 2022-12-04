@@ -1516,15 +1516,38 @@ static void array_lit(ASTNode_T* a_lit, va_list args)
     if(a_lit->args->size == 0)
         throw_error(ERR_UNDEFINED, a_lit->tok, "empty array literals are not allowed");
     
-    a_lit->data_type->base = ((ASTNode_T*) a_lit->args->items[0])->data_type;
-    a_lit->data_type->num_indices = a_lit->args->size;
+    ASTNode_T* first_arg = a_lit->args->items[0];
+    if(first_arg->unpack_mode)
+    {
+        ASTType_T* base_type = expand_typedef(v, first_arg->data_type)->base;
+        if(!base_type) {
+            throw_error(ERR_TYPE_ERROR_UNCR, first_arg->tok, "unpacking with `...` is only supported for array types\n");
+        }
+        a_lit->data_type->base = base_type;
+    }
+    else
+        a_lit->data_type->base = first_arg->data_type;
+    a_lit->data_type->num_indices = 0;
+
+    for(size_t i = 0; i < a_lit->args->size; i++)
+    {
+        ASTNode_T* arg = a_lit->args->items[i];
+        if(!arg->unpack_mode)
+        {
+            a_lit->data_type->num_indices++;
+            continue;
+        }
+
+        a_lit->data_type->num_indices += expand_typedef(v, first_arg->data_type)->num_indices;
+    }
+
     a_lit->data_type->size = get_type_size(v, a_lit->data_type);
 
     if(global.ct == CT_ASM && !a_lit->is_assigning && v->current_function)
     {
         a_lit->buffer = init_ast_obj(OBJ_LOCAL, a_lit->tok);
         a_lit->buffer->data_type = a_lit->data_type;
-        a_lit->buffer->data_type->num_indices = a_lit->args->size;
+        a_lit->buffer->data_type->num_indices = a_lit->data_type->num_indices;
         a_lit->buffer->data_type->size = get_type_size(v, a_lit->buffer->data_type);
     
         list_push(v->current_function->objs, a_lit->buffer);
