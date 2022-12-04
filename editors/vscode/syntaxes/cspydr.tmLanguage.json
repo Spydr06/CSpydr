@@ -1059,7 +1059,7 @@
 				},
 				{
 					"name": "keyword.operator.range.cspydr",
-					"match": "(\\.\\.)"
+					"match": "(\\.\\.\\.|\\.\\.)"
 				},
 				{
 					"name": "punctuation.comma.cspydr",
