@@ -86,7 +86,7 @@ const ASTType_T* char_ptr_type = &(ASTType_T)
     {
         .kind = TY_CHAR,
         .is_primitive = true,
-        .size = CHAR_S
+        .size = CHAR_S,
     }
 };
 

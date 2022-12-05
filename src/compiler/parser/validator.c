@@ -1825,7 +1825,13 @@ static void type_expr(ASTNode_T* cmp, va_list args)
         case TOKEN_BUILTIN_TO_STR:
             {
                 char buf[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
-                *cmp = *build_str_lit(cmp->tok, strdup(ast_type_to_str(buf, cmp->r_type, LEN(buf))), v->current_function, v->ast->objs);
+                ASTNode_T node = {
+                    .kind = ND_STR,
+                    .tok = cmp->tok,
+                    .str_val = strdup(ast_type_to_str(buf, cmp->r_type, LEN(buf))),
+                    .data_type = (ASTType_T*) char_ptr_type
+                };
+                *cmp = node;
             } return;
         default: 
             unreachable();

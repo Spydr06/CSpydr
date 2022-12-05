@@ -19,6 +19,8 @@ typedef struct ASM_CODEGEN_DATA_STRUCT
     char* current_fn_name;
     u64 depth;
 
+    List_T* string_literals;
+
     u64 max_count;  // current maximum label id
     u64 cur_count;  // current label id
     u64 cur_brk_id; // current statement id, which supports break; statements

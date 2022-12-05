@@ -7,7 +7,7 @@
 
 #include <string.h>
 
-static u8 escape_sequence(char c, const char* str, size_t* i) 
+u8 escape_sequence(char c, const char* str, size_t* i) 
 {
     switch(c) 
     {

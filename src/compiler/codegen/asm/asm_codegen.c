@@ -183,6 +183,7 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node);
 static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node);
 static void asm_gen_lambda(ASMCodegenData_T* cg, ASTObj_T* lambda);
 static void asm_load(ASMCodegenData_T* cg, ASTType_T *ty);
+static void asm_gen_string_literals(ASMCodegenData_T* cg);
 
 void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast)
 {
@@ -191,10 +192,12 @@ void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast)
     cg->ast = ast;
     cg->embed_file_locations = global.embed_debug_info;
     cg->code_buffer = open_memstream(&cg->buf, &cg->buf_len);
+    cg->string_literals = init_list();
 }
 
 void free_asm_cg(ASMCodegenData_T* cg)
 {
+    free_list(cg->string_literals);
     free(cg->buf);
 }
 
@@ -280,6 +283,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
     asm_gen_data(cg, cg->ast->objs);
     asm_println(cg, "%s", asm_start_text[cg->ast->mfk]);
     asm_gen_text(cg, cg->ast->objs);
+    asm_gen_string_literals(cg);
     write_code(cg, target, global.do_assemble);
 
     if(cg->print)
@@ -1611,6 +1615,10 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_NIL:
             asm_println(cg, "  xor %%rax, %%rax");
             return;
+        case ND_STR:
+            asm_println(cg, "  lea .L.string.%lu, %%rax", cg->string_literals->size);
+            list_push(cg->string_literals, node->str_val);
+            return;
         
         case ND_SIZEOF:
             if(node->the_type->size)
@@ -2764,4 +2772,21 @@ static void asm_gen_lambda(ASMCodegenData_T* cg, ASTObj_T* lambda_obj)
     asm_println(cg, "  ret");
 
     cg->current_fn_name = prev_fn_name;
+}
+
+static void asm_gen_string_literals(ASMCodegenData_T* cg) 
+{
+    for(size_t i = 0; i < cg->string_literals->size; i++)
+    {
+        const char* str = cg->string_literals->items[i];
+        size_t size = (strlen(str) + 1) * CHAR_S;
+
+        asm_println(cg, "  .data");    
+        asm_println(cg, "  .align 1");
+        asm_println(cg, "  .size .L.string.%d, %d", i, size);
+        asm_println(cg, ".L.string.%d:", i);
+        
+        for(size_t i = 0; i < size; i++)
+            asm_println(cg, "  .byte %u", str[i] == '\\' ? (i++, escape_sequence(str[i], &str[i], &i)) : str[i]);
+    }
 }
