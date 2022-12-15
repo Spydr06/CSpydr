@@ -21,6 +21,7 @@ namespace std {
             "%%" => '%'
             "%i" => insert an i32
             "%u" => insert an u32
+            "%U" => insert an u64
             "%l" => insert an i64
             "%o" => insert an i64 in octal form
             "%x" => insert an u64 in hexadecimal form
@@ -131,7 +132,7 @@ namespace std {
                         concat(str, buf);
                     }
                     'u' => {
-                        c_str::from_uint(va_arg!{args, u32}, buf, 10);
+                        c_str::from_uint(va_arg!{args, u64}, buf, 10);
                         concat(str, buf);
                     }
                     'l' => {

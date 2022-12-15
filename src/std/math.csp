@@ -20,6 +20,10 @@ macro min(a, b) {
     (if (a) < (b) => (a) else (b))
 }
 
+macro abs(num) {
+    ((num) |> if $ < 0 => -$ else $)
+}
+
 namespace std {
     type Division: struct {
         quot: i32,

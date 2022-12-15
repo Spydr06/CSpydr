@@ -28,7 +28,7 @@ namespace std {
             <- c: u32 < 0x20 || c == 0x7f;
         
         fn isdigit(c: i32): i32
-            <- c && c: u32 - '0' < 10;
+            <- c >= '0' && c <= '9';
         
         fn isgraph(c: i32): i32
             <- c: u32 - 0x21 < 0x5e;

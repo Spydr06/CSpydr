@@ -15,7 +15,11 @@ import "types.csp";
 
 # macro to quickly create a new vector
 macro vec(datatype) {
-    (::std::vec::init(): &datatype)
+    (::std::vec::init(0, 0): &(datatype))
+}
+
+macro vec(datatype, size) {
+    (std::vec::init((size), sizeof (datatype)): &(datatype))
 }
 
 # macro to get the size of the vector
@@ -48,6 +52,11 @@ macro vec_pop(addr) {
 # macro to get the last element of a vector
 macro vec_last(addr) {
     ((addr) |> $[::std::vec::size($) - 1])
+}
+
+# macro to get the last element of a vector
+macro vec_last(addr, idx) {
+    ((addr) |> $[::std::vec::size($) - 1 - (idx)])
 }
 
 # macro to insert a value in the vector
@@ -97,13 +106,13 @@ namespace std {
         };
 
         # constant defining how memory allocation should increase
-        const VECTOR_MULTIPLIER: i32 = 2;
+        const VECTOR_MULTIPLIER: i32 = 10;
 
         # create a new vector
-        fn init(): &void 
+        fn init(type_size: u32, size: u64): &void 
         {
-            let vec_data: &VecData = memory::alloc(sizeof VecData);
-            vec_data.alloc = 0;
+            let vec_data: &VecData = memory::alloc(sizeof VecData + size * type_size);
+            vec_data.alloc = size;
             vec_data.size = 0;
 
             <- &vec_data.buff;
@@ -134,11 +143,11 @@ namespace std {
         }
 
         # reallocate a vector to a new size
-        fn reallocate(v_data: &VecData, type_size: u8): &VecData 
+        fn reallocate(v_data: &VecData, type_size: u32): &VecData 
         {
             let new_alloc: u64;
             if v_data.alloc == 0
-                new_alloc = 1;
+                new_alloc = 64;
             else
                 new_alloc = v_data.alloc * VECTOR_MULTIPLIER;
             
@@ -158,7 +167,7 @@ namespace std {
         # internal logic of more complex functions
         #
 
-        fn __internal_add(addr: &&void, type_size: u8): &void 
+        fn __internal_add(addr: &&void, type_size: u32): &void 
         {
             let v_data = get_data(*addr);
 
@@ -170,7 +179,7 @@ namespace std {
             <- &(v_data.buff[type_size * (v_data.size++)]);
         }
 
-        fn __internal_insert(addr: &&void, type_size: u8, pos: u64): &void 
+        fn __internal_insert(addr: &&void, type_size: u32, pos: u64): &void 
         {
             let v_data = get_data(*addr);
             let new_length = size(*addr) + 1;
@@ -188,7 +197,7 @@ namespace std {
             <- &(v_data.buff[pos * type_size]);
         }
 
-        fn __internal_erase(vec: &void, type_size: u8, pos: u64, length: u64) 
+        fn __internal_erase(vec: &void, type_size: u32, pos: u64, length: u64) 
         {
             let v_data = get_data(vec);
             # todo: index validation
@@ -198,12 +207,12 @@ namespace std {
             v_data.size = (v_data.size - length);
         }
 
-        fn __internal_remove(vec: &void, type_size: u8, pos: u64) 
+        fn __internal_remove(vec: &void, type_size: u32, pos: u64) 
         {
             __internal_erase(vec, type_size, pos, 1);
         }
 
-        fn __internal_copy(vec: &void, type_size: u8): &void 
+        fn __internal_copy(vec: &void, type_size: u32): &void 
         {
             let v_data = get_data(vec);
             let size = v_data.size;
@@ -214,7 +223,7 @@ namespace std {
             <- &copy.buff;
         }
 
-        fn __internal_pop(vec: &void, type_size: u8): &void
+        fn __internal_pop(vec: &void, type_size: u32): &void
         {
             <- get_data(vec) |> if $.size > 0 => &($.buff[($.size -= 1) * type_size]) else nil: &u8;
         }

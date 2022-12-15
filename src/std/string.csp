@@ -165,8 +165,8 @@ namespace std {
             if !a || !b 
                 <- false;
 
-            let length = c_str::strlen(a);
-            if length != c_str::strlen(b) 
+            let length = len a;
+            if length != len b 
                 <- false;
 
             for let i: u64 = 0; i < length; i++;
