@@ -13,7 +13,7 @@
 /*
     The MIT License (MIT) - This License applies to all parts of CSpydr (cspc, csp-lint, libcspydr and the STD library)
 
-    Copyright (c) 2021 - 2022 Spydr06
+    Copyright (c) 2021 - 2023 Spydr06
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal

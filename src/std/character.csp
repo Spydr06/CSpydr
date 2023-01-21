@@ -46,7 +46,7 @@ namespace std {
             <- c == ' ' || (c: u32 - '\t' < 5);
         
         fn isupper(c: i32): i32
-            <- c: u32 - 'A' < 26;
+            <- c >= 'A' && c <= 'Z';
         
         fn toascii(c: i32): i32
             <- c & 0x7f;
