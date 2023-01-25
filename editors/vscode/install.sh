@@ -4,7 +4,15 @@
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-VSCODE_EXTENSION_DIR="$HOME/.vscode-oss/extensions/cspydr"
+if [[ -d "$HOME/.vscode/" ]]
+then
+	VSCODE_EXTENSION_DIR="$HOME/.vscode/extensions/cspydr"
+elif [[ -d "$HOME/.vscode-oss/" ]]
+then
+	VSCODE_EXTENSION_DIR="$HOME/.vscode-oss/extensions/cspydr"
+else
+	echo "Error: Unable to find Visual Studio Code Path in $HOME!"
+fi
 
 pushd $SCRIPT_DIR
 
