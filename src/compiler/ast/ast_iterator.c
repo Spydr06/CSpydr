@@ -367,6 +367,10 @@ static void ast_node(const ASTIteratorList_T* list, ASTNode_T* node, va_list cus
             ast_type(list, node->data_type->base, custom_args);
             break;
         
+        case ND_EMBED_STRUCT:
+            ast_type(list, node->data_type, custom_args);
+            break;
+        
         default:
             // ignore
             break;

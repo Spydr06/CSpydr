@@ -119,6 +119,7 @@ static void array_type(ASTType_T* a_type, va_list args);
 static void c_array_type(ASTType_T* ca_type, va_list args);
 static void type_end(ASTType_T* type, va_list args);
 static i32 get_type_size(Validator_T* v, ASTType_T* type);
+static i32 get_type_size_impl(Validator_T* v, ASTType_T* type, List_T** struct_types);
 
 // iterator configuration
 static const ASTIteratorList_T main_iterator_list = 
@@ -1845,9 +1846,61 @@ static void type_expr(ASTNode_T* cmp, va_list args)
 
 // types
 
+static bool struct_contains_embeds(ASTType_T* s_type)
+{
+    for(size_t i = 0; i < s_type->members->size; i++)
+    {
+        ASTNode_T* member = s_type->members->items[i];
+        if(member->kind == ND_EMBED_STRUCT)
+            return true;
+    }
+    return false;
+}
+
+static void resolve_struct_embeds(Validator_T* v, ASTType_T* s_type)
+{
+    if(!struct_contains_embeds(s_type))
+        return;
+
+    List_T* resolved_fields = init_list_sized(s_type->members->size);
+    mem_add_list(resolved_fields);
+
+    for(size_t i = 0; i < s_type->members->size; i++)
+    {
+        ASTNode_T* member = s_type->members->items[i];
+        switch(member->kind)
+        {
+            case ND_STRUCT_MEMBER:
+                list_push(resolved_fields, member);
+                break;
+            
+            case ND_EMBED_STRUCT:
+            {
+                char buf[BUFSIZ] = {'\0'};
+                
+                ASTType_T* embedded_type = expand_typedef(v, member->data_type);
+                if(embedded_type->kind != TY_STRUCT)
+                {
+                    throw_error(ERR_TYPE_ERROR, member->data_type->tok, "embedding types is only supported for structs, got `%s`", ast_type_to_str(buf, embedded_type, LEN(buf)));
+                    break;
+                }
+
+                resolve_struct_embeds(v, embedded_type);
+                for(size_t i = 0; i < embedded_type->members->size; i++)
+                    list_push(resolved_fields, embedded_type->members->items[i]);
+            } break;
+            default:
+                unreachable();
+        }
+    }
+    s_type->members = resolved_fields;
+}
+
 static void struct_type(ASTType_T* s_type, va_list args)
 {
     GET_VALIDATOR(args);
+    resolve_struct_embeds(v, s_type);
+
     begin_scope(v, NULL);
 
     for(size_t i = 0; i < s_type->members->size; i++)
@@ -1855,10 +1908,20 @@ static void struct_type(ASTType_T* s_type, va_list args)
         ASTNode_T* member = s_type->members->items[i];
         ASTType_T* expanded = expand_typedef(v, member->data_type);
 
-        if(expanded->kind == TY_VOID)
-            throw_error(ERR_TYPE_ERROR, member->data_type->tok, "struct member cannot be of type `void`");
+        switch(member->kind)
+        {
+            case ND_STRUCT_MEMBER:
+                if(expanded->kind == TY_VOID)
+                    throw_error(ERR_TYPE_ERROR_UNCR, member->data_type->tok, "struct member cannot be of type `void`");
 
-        scope_add_node(v, member);
+                scope_add_node(v, member);
+                break;
+            case ND_EMBED_STRUCT:
+                unreachable();
+                break;
+            default:
+                unreachable();
+        }
     }
     end_scope(v);
 }
@@ -1943,22 +2006,35 @@ static i32 get_union_size(ASTType_T* u_type)
     return biggest;
 }
 
-static i32 get_struct_size(Validator_T* v, ASTType_T* s_type)
+static i32 get_struct_size(Validator_T* v, ASTType_T* s_type, List_T** struct_types)
 {
+    if(!*struct_types)
+        *struct_types = init_list();
+
+    if(list_contains(*struct_types, s_type)) {
+        char buf[BUFSIZ] = {};
+        throw_error(ERR_TYPE_ERROR, s_type->tok, "detected recursive structs, encountered `%s` twice.", ast_type_to_str(buf, s_type, LEN(buf)));
+        return 0;
+    }
+
+    list_push(*struct_types, s_type);
+
     i64 bits = 0;
     for(size_t i = 0; i < s_type->members->size; i++)
     {
         ASTNode_T* member = s_type->members->items[i];
-        member->data_type->size = get_type_size(v, member->data_type);
+        member->data_type->size = get_type_size_impl(v, member->data_type, struct_types);
         bits = align_to(bits, align_type(member->data_type) * 8);
         member->offset = bits / 8;
         bits += member->data_type->size * 8;
     }
 
-    return align_to(bits, align_type(s_type) * 8) / 8;
-}
+    list_pop(*struct_types);
 
-static i32 get_type_size(Validator_T* v, ASTType_T* type)
+    return align_to(bits, align_type(s_type) * 8) / 8;
+};
+
+static i32 get_type_size_impl(Validator_T* v, ASTType_T* type, List_T** struct_types)
 {
     switch(type->kind)
     {
@@ -1996,26 +2072,35 @@ static i32 get_type_size(Validator_T* v, ASTType_T* type)
         case TY_FN:
             return PTR_S;
         case TY_TYPEOF:
-            return get_type_size(v, expand_typedef(v, type->num_indices_node->data_type));
+            return get_type_size_impl(v, expand_typedef(v, type->num_indices_node->data_type), struct_types);
         case TY_UNDEF:
-            return get_type_size(v, expand_typedef(v, type));
+            return get_type_size_impl(v, expand_typedef(v, type), struct_types);
         case TY_C_ARRAY:
             if(type->num_indices == 0)
                 return 0;
-            return get_type_size(v, type->base) * type->num_indices;
+            return get_type_size_impl(v, type->base, struct_types) * type->num_indices;
         case TY_VLA:
             return PTR_S;
         case TY_ARRAY:
-                return get_type_size(v, type->base) * type->num_indices + PTR_S;
+                return get_type_size_impl(v, type->base, struct_types) * type->num_indices + PTR_S;
         case TY_STRUCT:
             if(type->is_union)
                 return get_union_size(type);
             else
-                return get_struct_size(v, type);
+                return get_struct_size(v, type, struct_types);
         default:
             return 0;
     }
     
     throw_error(ERR_TYPE_ERROR, type->tok, "could not resolve data type size");
     return 0;
+}
+
+static i32 get_type_size(Validator_T* v, ASTType_T* type)
+{
+    List_T* struct_types = NULL;
+    i32 size = get_type_size_impl(v, type, &struct_types);
+    if(struct_types)
+        free_list(struct_types);
+    return size;
 }

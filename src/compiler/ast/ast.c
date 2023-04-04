@@ -1,4 +1,5 @@
 #include "ast.h"
+#include "error/error.h"
 #include "io/log.h"
 
 #include "codegen/codegen_utils.h"
@@ -210,14 +211,26 @@ char* ast_type_to_str(char* dest, ASTType_T* ty, size_t size)
             for(size_t i = 0; i < ty->members->size; i++)
             {
                 ASTNode_T* member = ty->members->items[i];
-                
-                if(member->id->callee && strlen(member->id->callee) != 0)
-                {
-                    strcat(dest, member->id->callee);
-                    strcat(dest, ": ");
-                }
 
-                ast_type_to_str(dest, member->data_type, size);
+                switch(member->kind) {
+                case ND_STRUCT_MEMBER:
+                    if(member->id->callee && strlen(member->id->callee) != 0)
+                    {
+                        strcat(dest, member->id->callee);
+                        strcat(dest, ": ");
+                    }
+
+                    ast_type_to_str(dest, member->data_type, size);
+                    break;
+
+                case ND_EMBED_STRUCT:
+                    strcat(dest, "embed ");
+                    ast_type_to_str(dest, member->data_type, size);
+                    break;
+                default:
+                    unreachable();
+                }
+                
                 if(ty->members->size - i > 1)
                     strcat(dest, ", ");
             }

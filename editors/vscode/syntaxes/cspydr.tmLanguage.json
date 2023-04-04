@@ -88,6 +88,9 @@
 							"include": "#comment"
 						},
 						{
+							"include": "#struct-embed"
+						},
+						{
 							"include": "#member-list"
 						}
 					]
@@ -273,6 +276,17 @@
 				{
 					"name": "punctuation.comma.cspydr",
 					"match": ","
+				},
+				{
+					"include": "#types"
+				}
+			]
+		},
+		"struct-embed": {
+			"patterns": [
+				{
+					"name": "keyword.control.embed.cspydr",
+					"match": "\\bembed\\b"
 				},
 				{
 					"include": "#types"

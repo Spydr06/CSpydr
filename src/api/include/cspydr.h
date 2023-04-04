@@ -172,6 +172,7 @@ enum CSPYDR_TOKEN_TYPE {
     CSPYDR_TOKEN(DO),           // do
     CSPYDR_TOKEN(UNLESS),       // unless
     CSPYDR_TOKEN(DEFER),        // defer
+    CSPYDR_TOKEN(EMBED),        // embed
 
     CSPYDR_TOKEN(CURRENT_FN),   // special token for the __func__! macro
 
@@ -302,6 +303,7 @@ enum CSPYDR_AST_NODE_KIND_ENUM {
     CSPYDR_ND(USING),         // using x::y
     CSPYDR_ND(WITH),          // with x = y {}
     CSPYDR_ND(STRUCT_MEMBER), // struct members
+    CSPYDR_ND(EMBED_STRUCT),  // embedded Struct
     CSPYDR_ND(DEFER),         // defer {}
     CSPYDR_ND(EXTERN_C_BLOCK), // extern "C" {}
 

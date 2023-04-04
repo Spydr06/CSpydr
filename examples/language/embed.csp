@@ -1,0 +1,19 @@
+import "std.csp";
+
+type Foo: struct {
+    x: i32
+};
+
+type Bar: struct {
+    embed Foo,
+    y: i32
+};
+
+fn main(): i32 {
+    let bar: Bar;
+    bar.x = 69;
+    bar.y = 420;
+
+    std::io::printf("%i %i\n", ...bar);
+    <- 0;
+}

@@ -713,12 +713,24 @@ static ASTType_T* parse_struct_type(Parser_T* p)
 
     while(!tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF))
     {
-        ASTNode_T* member = init_ast_node(ND_STRUCT_MEMBER, p->tok);
-        member->id = parse_simple_identifier(p);
-        parser_consume(p, TOKEN_COLON, "expect `:` after struct member name");
-        member->data_type = parse_type(p);
+        if(tok_is(p, TOKEN_EMBED))
+        {
+            parser_advance(p);
 
-        list_push(struct_type->members, member);
+            ASTNode_T* member = init_ast_node(ND_EMBED_STRUCT, p->tok);
+            member->data_type = parse_type(p);
+
+            list_push(struct_type->members, member);
+        }
+        else
+        {
+            ASTNode_T* member = init_ast_node(ND_STRUCT_MEMBER, p->tok);
+            member->id = parse_simple_identifier(p);
+            parser_consume(p, TOKEN_COLON, "expect `:` after struct member name");
+            member->data_type = parse_type(p);
+
+            list_push(struct_type->members, member);
+        }
 
         if(!tok_is(p, TOKEN_RBRACE))
             parser_consume(p, TOKEN_COMMA, "expect `,` between struct members");

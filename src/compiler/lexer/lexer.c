@@ -53,6 +53,7 @@ const struct {
     {"do", TOKEN_DO},
     {"unless", TOKEN_UNLESS},
     {"defer", TOKEN_DEFER},
+    {"embed", TOKEN_EMBED},
     {NULL, TOKEN_EOF}   // end of array indicator
 };
 
