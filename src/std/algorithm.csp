@@ -10,6 +10,9 @@
     This program has absolutely no warranty.
 ]#
 
+import "random.csp";
+import "time.csp";
+
 namespace std {
     namespace algorithm {
         # hash function used by the hashmap implementation
@@ -75,6 +78,75 @@ namespace std {
         fn bswap_64(x: u64): u64
         {
             <- bswap_32(x) << 32 | bswap_32(x >> 32);
+        }
+    }
+
+    type Uuid: u8[16];
+
+    namespace uuid {
+        namespace __internal {
+            const HEX: char[16] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'];
+
+            fn hex_2_dec(c: char): i32 {
+                for let i = 0; i < 16; i++; {
+                    if HEX[i] == c
+                        <- i;
+                }
+                <- -1;
+            }
+        }
+
+        namespace __static {
+            let seeded: bool = false;
+        }
+
+        fn generate(out: &Uuid) {
+            using __static, __internal;
+            if !seeded {
+                seeded = true;
+                random::seed(time::unix::secs().tv_usec);
+            }
+
+            for let i = 0; i < 16 / 4; i++; {
+                let rnd = random::rand();
+
+                for let j = 0; j < 4; j++; {
+                    (*out)[i * 4 + j] = (0xff & rnd >> (8 * j));
+                }
+            }
+        }  
+
+        fn parse(in: &const char, dest: &Uuid) {
+            let i = 0;
+            let j = 0;
+            do {
+                using __internal;
+                match in[i] {
+                    '-' => i++;
+                    _ => (*dest)[j++] = (hex_2_dec(in[i++]) | hex_2_dec(in[i++]) << 4);
+                }
+            } while j < 16 && i < 36;
+        }
+
+        fn serialize(in: &const Uuid, out: &char) {
+            let i = 0;
+            let j = 0;
+            do {
+                using __internal;
+                if j == 4 || j == 6 || j == 8 || j == 10
+                    out[i++] = '-';
+
+                out[i++] = HEX[(*in)[j] >> 4];
+                out[i++] = HEX[0x0f & (*in)[j]];
+
+                j++;
+            } while j < 16;
+        }
+
+        fn copy(src: &const Uuid, dest: &Uuid) {
+            for let i = 0; i < len *dest; i++; {
+                (*dest)[i] = (*src)[i];
+            }
         }
     }
 }
