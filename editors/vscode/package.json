@@ -26,6 +26,12 @@
             "language": "cspydr",
             "scopeName": "source.csp",
             "path": "./syntaxes/cspydr.tmLanguage.json"
-        }]
+        }],
+        "snippets": [
+            {
+                "language": "cspydr",
+                "path": "./snippets/cspydr.json"
+            }
+        ]
     }
 }

@@ -1,0 +1,210 @@
+{
+    "comment": {
+        "prefix": ["comment", "#"],
+        "body": [
+            "# $0"
+        ]
+    },
+    "multiline-comment": {
+        "prefix": ["multiline comment", "#["],
+        "body": [
+            "#[",
+            "\t$0",
+            "]#"
+        ]
+    },
+    "function": {
+        "prefix": ["fn", "function"],
+        "body": [
+            "fn ${1:name}($2): $3 {",
+            "\t$0",
+            "}"
+        ]
+    },
+    "exit-fn": {
+        "prefix": ["[exit_fn", "exit_fn", "exit function"],
+        "body": [
+            "fn ${1:name}(${2:arg}: ${3:arg_type}) {",
+            "\t$4",
+            "}",
+            "[exit_fn(\"$1\": $3)]" 
+        ]
+    },
+    "namespace": {
+        "prefix": ["namespace"],
+        "body": [
+            "namespace ${1:name} {",
+            "\t$2",
+            "}"
+        ]
+    },
+    "macro": {
+        "prefix": ["macro"],
+        "body": [
+            "macro ${1:name}(${2:args}) {",
+            "\t$2",
+            "}"
+        ]
+    },
+    "let-var": {
+        "prefix": ["let", "variable"],
+        "body": [
+            "let ${1:name}: $2 = $3;"
+        ]
+    },
+    "const-var": {
+        "prefix": ["const", "constant"],
+        "body": [
+            "const ${1:name}: $2 = $3;"
+        ]
+    },
+    "typedef": {
+        "prefix": ["type", "typedef", "alias"],
+        "body": [
+            "type ${1:name}: ${2:datatype};"
+        ]
+    },
+    "struct-type": {
+        "prefix": ["struct", "structure"],
+        "body": [
+            "struct {",
+            "\t${1:members}",
+            "}"
+        ]
+    },
+    "union-type": {
+        "prefix": ["union"],
+        "body": [
+            "union {",
+            "\t${1:members}",
+            "}"
+        ]
+    },
+    "enum": {
+        "prefix": ["enum"],
+        "body": [
+            "enum {",
+            "\t${1:fields}",
+            "}"
+        ]
+    },
+    "c-style-array": {
+        "prefix": ["'c", "c-style array"],
+        "body": ["'c[${1:size}]"]
+    },
+    "using": {
+        "prefix": ["using"],
+        "body": ["using $0;"]
+    },
+    "using-many": {
+        "prefix": ["using many"],
+        "body": ["using $0, $1, ...;"]
+    },
+    "using-for": {
+        "prefix": ["using-for"],
+        "body": ["using $0 for $1;"]
+    },
+    "loop": {
+        "prefix": ["loop"],
+        "body": [
+            "loop {",
+            "\t$0",
+            "}"
+        ]
+    },
+    "while": {
+        "prefix": ["while"],
+        "body": [
+            "while ${0|true|false|condition|} {",
+            "\t$0",
+            "}"
+        ]
+    },
+    "do-while": {
+        "prefix": ["do-while"],
+        "body": [
+            "do {",
+            "\t$1",
+            "} while ${0|true|false|condition|};"
+        ]
+    },
+    "for": {
+        "prefix": ["for"],
+        "body": [
+            "for ${0:init}; ${1|true|false|condition|}; ${2:iterator}; {",
+            "\t$3",
+            "}"
+        ]
+    },
+    "for-let": {
+        "prefix": ["for-let"],
+        "body": [
+            "for let ${0:i} = ${1:0}; $0 < ${2:10}; $0++; {",
+            "\t$3",
+            "}"   
+        ]
+    },
+    "for-range": {
+        "prefix": ["for-range", "for .."],
+        "body": [
+            "for ${0:0}..${1:10} {",
+            "\t$2",
+            "}"
+        ]
+    },
+    "if": {
+        "prefix": ["if"],
+        "body": [
+            "if ${0|true|false|condition|} {",
+            "\t$1",
+            "}"
+        ]
+    },
+    "if-else": {
+        "prefix": ["if-else", "else"],
+        "body": [
+            "if ${0|true|false|condition|} {",
+            "\t$1",
+            "}",
+            "else {",
+            "\t$2",
+            "}"
+        ]
+    },
+    "do-unless": {
+        "prefix": ["do-unless", "unless"],
+        "body": [
+            "do {",
+            "\t$1",
+            "} unless ${0|true|false|condition};"
+        ]
+    },
+    "match": {
+        "prefix": ["match"],
+        "body": [
+            "match ${0:expr} {",
+            "\t${1:value} => $2;",
+            "\t_ => $3;",
+            "}"
+        ]
+    },
+    "with": {
+        "prefix": ["with"],
+        "body": [
+            "with ${0:name} = ${1:expr} {",
+            "\t$2",
+            "}"
+        ]
+    },
+    "with-else": {
+        "prefix": ["with-else"],
+        "body": [
+            "with ${0:name} = ${1:expr} {",
+            "\t$2",
+            "}",
+            "else {",
+            "\t$3",
+            "}"
+        ]
+    }
+}
