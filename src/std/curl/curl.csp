@@ -20,7 +20,7 @@
  *
  **************************************************************************]#
 
-[link("curl")]
+[link("libcurl")]
 
 import "curl_system.csp";
 import "curlver.csp";

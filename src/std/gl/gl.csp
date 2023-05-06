@@ -1,7 +1,7 @@
 # an implementation of the GL/gl.h header file
 
 # link with the GL shared library
-[link("GL")]
+[link("gl")]
 
 macro GL_VERSION_1_1 { 1 }
 macro GL_VERSION_1_2 { 1 }

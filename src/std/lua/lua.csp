@@ -4,7 +4,7 @@
 ** See Copyright Notice at the end of this file
 ]#
 
-[link("lua")]
+[link("lua5.3")]
 
 import "luaconf.csp";
 import "lauxlib.csp";
@@ -14,8 +14,8 @@ import "utils.csp";
 import "libc/string.csp";
 
 macro LUA_VERSION_MAJOR { "5" }
-macro LUA_VERSION_MINOR { "2" }
-macro LUA_VERSION_NUM { 502 }
+macro LUA_VERSION_MINOR { "3" }
+macro LUA_VERSION_NUM { 503 }
 macro LUA_VERSION_RELEASE { "4" }
 
 macro LUA_VERSION {

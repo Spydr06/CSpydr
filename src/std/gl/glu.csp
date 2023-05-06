@@ -1,6 +1,6 @@
 # an implementation of the GL/glu.h header file
 
-[link("GLU")]
+[link("glu")]
 
 import "gl/gl.csp";
 

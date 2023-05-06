@@ -1,3 +1,4 @@
+#include "hashmap.h"
 #define __CSP_GLOBAL_OWNER
 #include "globals.h"
 #include "config.h"
@@ -16,6 +17,7 @@ void init_globals(void)
     global.do_assemble = true;
     global.max_macro_call_depth = __CSP_DEFAULT_MAX_MACRO_CALL_DEPTH;
     global.compiler_flags = init_list();
+    global.included_libs = hashmap_init();
 
     // default compiler flags
     list_push(global.compiler_flags, (void*) optimization_flag);
@@ -29,6 +31,7 @@ void globals_exit_hook(void)
 {
     free_list(global.compiler_flags);
     free_list(global.linker_flags);
+    hashmap_free(global.included_libs);
 
     if(global.timesteps) {
         for(size_t i = 0; i < global.timesteps->size; i++) {

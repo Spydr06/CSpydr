@@ -2,6 +2,7 @@
 #define CSPYDR_GLOBALS_H
 
 #include "ast/ast.h"
+#include "hashmap.h"
 
 #ifdef __CSP_GLOBAL_OWNER
     #define __CSP_GLOBAL
@@ -60,6 +61,8 @@ __CSP_GLOBAL struct {
     u64 total_source_lines;
 
     Exception_T main_error_exception;
+
+    HashMap_T* included_libs;
 
     // timesteps recorded by `timer/timer.c`
     List_T* timesteps;

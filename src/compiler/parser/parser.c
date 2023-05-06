@@ -23,6 +23,7 @@
 #include "optimizer/constexpr.h"
 #include "timer/timer.h"
 #include "codegen/transpiler/c_codegen.h"
+#include "platform/pkg_config.h"
 
 #include <errno.h>
 #include <limits.h>
@@ -461,18 +462,19 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, Li
 {
     if(streq(field->value, "link"))
     {
-        char* link_flag = calloc(strlen(value) + 3, sizeof(char));
-        sprintf(link_flag, "-l%s", value);
-
-        for(size_t i = 0; i < global.linker_flags->size; i++)
-            if(streq(global.linker_flags->items[i], link_flag))
-            {
-                free(link_flag);
-                return;
-            }
-        
-        mem_add_ptr(link_flag);
-        list_push(global.linker_flags, link_flag);
+        pkg_config(value, field);
+        //char* link_flag = calloc(strlen(value) + 3, sizeof(char));
+        //sprintf(link_flag, "-l%s", value);
+        //
+        //for(size_t i = 0; i < global.linker_flags->size; i++)
+        //    if(streq(global.linker_flags->items[i], link_flag))
+        //    {
+        //        free(link_flag);
+        //        return;
+        //    }
+        //
+        //mem_add_ptr(link_flag);
+        //list_push(global.linker_flags, link_flag);
     }
     else if(streq(field->value, "link_dir"))
     {

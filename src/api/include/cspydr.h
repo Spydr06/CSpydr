@@ -282,7 +282,7 @@ enum CSPYDR_AST_NODE_KIND_ENUM {
     CSPYDR_ND(TYPE_EXPR), // type expressions like: "(type) T == U" or "(type) reg_class(T)"
 
     // statements
-    CSPYDR_ND(BLOCK),         // {...}https://github.com/deter0/ActivateWindows2
+    CSPYDR_ND(BLOCK),         // {...}
     CSPYDR_ND(IF),            // if x {}
     CSPYDR_ND(TERNARY),       // if x => y <> z
     CSPYDR_ND(LOOP),          // loop {}
