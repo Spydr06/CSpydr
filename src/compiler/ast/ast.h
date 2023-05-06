@@ -248,6 +248,7 @@ struct AST_OBJ_STRUCT
     ASTObj_T* alloca_bottom;
     ASTObj_T* va_area;
     ASTObj_T* return_ptr;
+    const char* exported;
 } __attribute__((packed));
 
 typedef struct AST_EXIT_FN_HANDLE_STRUCT

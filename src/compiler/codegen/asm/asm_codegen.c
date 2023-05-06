@@ -19,6 +19,8 @@
 #include <assert.h>
 #include <string.h>
 
+#define either(a, b) ((a) ? (a) : (b))
+
 #define CSPC_ASM_EXTERN_FN_POSTFIX "@GOTPCREL"
 
 enum { I8, I16, I32, I64, U8, U16, U32, U64, F32, F64, F80, LAST };
@@ -595,14 +597,20 @@ static void asm_gen_defer(ASMCodegenData_T* cg, List_T* deferred)
     asm_pop(cg, "%rax");
 }
 
-static void asm_gen_function(ASMCodegenData_T* cg, ASTObj_T* obj)
+static void asm_gen_function_signature(ASMCodegenData_T* cg, const char* fn_name)
 {
-    char* fn_name = asm_gen_identifier(obj->id);
-
     asm_println(cg, "  .globl %s", fn_name);
     asm_println(cg, "  .text");
     asm_println(cg, "  .type %s, @function", fn_name);
     asm_println(cg, "%s:", fn_name);
+}
+
+static void asm_gen_function(ASMCodegenData_T* cg, ASTObj_T* obj)
+{
+    char* fn_name = asm_gen_identifier(obj->id);
+    asm_gen_function_signature(cg, fn_name);
+    if(obj->exported)
+        asm_gen_function_signature(cg, obj->exported);
 
     cg->current_fn = obj;
 
@@ -877,11 +885,12 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
                 case OBJ_FUNCTION:
                     if(node->call)
                     {
-                        if(node->call->referenced_obj->is_extern_c)
-                            asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", node->id->callee);
-                        else if(node->call->referenced_obj->is_extern)
-                            asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", asm_gen_identifier(node->id));
-                        else if(node->call->referenced_obj->kind != OBJ_FUNCTION)
+                        ASTObj_T* obj = node->call->referenced_obj;
+                        if(obj->is_extern_c)
+                            asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", either(obj->exported, node->id->callee));
+                        else if(obj->is_extern)
+                            asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", either(obj->exported, asm_gen_identifier(node->id)));
+                        else if(obj->kind != OBJ_FUNCTION)
                         {
                             asm_println(cg, "  lea %d(%%rbp), %%rax", node->referenced_obj->offset);
                             asm_println(cg, "  mov (%%rax), %%rax");
@@ -890,9 +899,9 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
                             asm_println(cg, "  lea %s(%%rip), %%rax", asm_gen_identifier(node->id));
                     }
                     else if(node->referenced_obj->is_extern_c)
-                        asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", node->id->callee);
+                        asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", either(node->referenced_obj->exported, node->id->callee));
                     else if(node->referenced_obj->is_extern)
-                        asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", asm_gen_identifier(node->id));
+                        asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", either(node->referenced_obj->exported, asm_gen_identifier(node->id)));
                     else
                         asm_println(cg, "  lea %s(%%rip), %%rax", asm_gen_identifier(node->id));
                     return;
@@ -1522,9 +1531,9 @@ static void asm_gen_id_ptr(ASMCodegenData_T* cg, ASTNode_T* id)
             break;
         case OBJ_FUNCTION:
             if(id->referenced_obj->is_extern_c)
-                asm_print(cg, "%s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip)", id->id->callee);
+                asm_print(cg, "%s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip)", either(id->referenced_obj->exported, id->id->callee));
             else if(id->referenced_obj->is_extern)
-                asm_print(cg, "%s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip)", asm_gen_identifier(id->id));
+                asm_print(cg, "%s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip)", either(id->referenced_obj->exported, asm_gen_identifier(id->id)));
             else
                 asm_print(cg, "%s(%%rip)", asm_gen_identifier(id->id));
             break;

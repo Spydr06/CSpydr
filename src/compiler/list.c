@@ -86,6 +86,13 @@ size_t list_contains(List_T* list, void* item)
     return 0;
 }
 
+void* list_last(List_T* list) {
+    if(list->size == 0)
+        return NULL;
+    
+    return list->items[list->size - 1];
+}
+
 void list_foreach(List_T* list, void (*func)(void*))
 {
     for(size_t i = 0; i < list->size; i++)

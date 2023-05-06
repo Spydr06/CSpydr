@@ -623,6 +623,21 @@ static bool handle_compiler_cfg(Parser_T* p, const char* field)
     return false;
 }
 
+static void export_fn(ASTObj_T* obj, Token_T* export_name)
+{
+    if(!obj || !export_name)
+        return;
+    
+    if(obj->kind != OBJ_FUNCTION)
+        throw_error(ERR_TYPE_ERROR_UNCR, export_name, "`export` compiler directive expects object of type function, got `%s`", obj_kind_to_str(obj->kind));
+
+    obj->exported = export_name->value;
+    obj->referenced = true;
+
+    if(!obj->is_extern && !obj->is_extern_c)
+        throw_error(ERR_MISC, export_name, "`export` can only be used with `extern` functions currently");
+}
+
 static void parse_compiler_directives(Parser_T* p, List_T* obj_list)
 {
     parser_consume(p, TOKEN_LBRACKET, "expect `[` for compiler directive");
@@ -633,16 +648,22 @@ static void parse_compiler_directives(Parser_T* p, List_T* obj_list)
 
     bool obj_after = false;
     bool keep_obj = true;
+    Token_T* export_name = NULL;
     do {
         if(tok_is(p, TOKEN_COMMA))
             parser_advance(p);
         Token_T* tok = p->tok;
         parser_consume(p, TOKEN_STRING, "expect value as string");
-        if(strcmp(field_token->value, "cfg") == 0)
+        if(streq(field_token->value, "cfg"))
         {
             obj_after = true;
             if(!handle_compiler_cfg(p, tok->value))
                 keep_obj = false;
+        }
+        else if(streq(field_token->value, "export"))
+        {
+            obj_after = true;
+            export_name = field_token;
         }
         else
             eval_compiler_directive(p, field_token, tok->value, obj_list);
@@ -655,6 +676,7 @@ static void parse_compiler_directives(Parser_T* p, List_T* obj_list)
     {
         u64 size_before = obj_list->size;
         parse_obj(p, obj_list);
+        export_fn(list_last(obj_list), export_name);
         if(!keep_obj && size_before < obj_list->size)
             list_pop(obj_list);
     }
