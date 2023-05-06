@@ -21,6 +21,7 @@ typedef struct {
 const LibOverride_T OVERRIDES[] = {
     {"c", "-lc"},
     {"m", "-lm"},
+    {"pthread", "-lpthread"},
     {NULL, NULL}
 };
 
