@@ -3,7 +3,7 @@
 Building and installation is done via CMake from source.
 
 ## Overview
-  - [Installation](#installation)
+- [Installation](#installation)
   - [Overview](#overview)
   - [Compatibility](#compatibility)
   - [Obtaining CSpydr](#obtaining-cspydr)
@@ -47,6 +47,8 @@ CSpydr depends on the following libraries. They need to be installed on your com
 **Libraries:**
 - `glibc` (GNU C standard library, should be bundled with every major distribution)
 - `llvm` with `llvm-c` bindings **(optional)**
+- `json-c`
+- `libpkgconf`
 
 **Programs:**
 - `cmake`

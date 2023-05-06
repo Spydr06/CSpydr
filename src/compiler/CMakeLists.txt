@@ -5,6 +5,7 @@ include(CheckIncludeFiles)
 find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(LIBPKGCONF REQUIRED libpkgconf)
+pkg_check_modules(JSON-C REQUIRED json-c)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -36,14 +37,14 @@ set_target_properties(libcspc PROPERTIES
         POSITION_INDEPENDENT_CODE ON
 )
 
-target_compile_options(libcspc PUBLIC ${LIBPKGCONF_CFLAGS_OTHER})
-target_include_directories(libcspc PUBLIC ${LIBPKGCONF_INCLUDE_DIRS})
+target_compile_options(libcspc PUBLIC ${LIBPKGCONF_CFLAGS_OTHER} ${JSON-C_CFLAGS_OTHER})
+target_include_directories(libcspc PUBLIC ${LIBPKGCONF_INCLUDE_DIRS} ${JSON-C_INCLUDE_DIRS})
 
 add_dependencies(libcspc version)
 
 if(${NO_LLVM})
         add_compile_definitions(CSPYDR_NO_LLVM)
-        target_link_libraries(libcspc LINK_PUBLIC m json-c ${LIBPKGCONF_LIBRARIES})
+        target_link_libraries(libcspc LINK_PUBLIC m ${JSON-C_LIBRARIES} ${LIBPKGCONF_LIBRARIES})
 else()
         add_compile_definitions(CSPYDR_USE_LLVM)
         
@@ -56,7 +57,7 @@ else()
        
         target_include_directories(libcspc PUBLIC "${llvm_include_dirs}")
         target_link_directories(libcspc PUBLIC "${llvm_link_dirs}")
-        target_link_libraries(libcspc LINK_PUBLIC m json-c ${LIBPKGCONF_LIBRARIES} "${llvm_libraries}")
+        target_link_libraries(libcspc LINK_PUBLIC m ${JSON-C_LIBRARIES} ${LIBPKGCONF_LIBRARIES} "${llvm_libraries}")
 endif()
 
 # build the main executable
