@@ -1,4 +1,4 @@
-#WIP GTK4 bindings (with example file).
+# WIP GTK4 bindings (with example file).
 
 Hello, this what I have been up to for the last month. This is unfinished btw but it works.
 
