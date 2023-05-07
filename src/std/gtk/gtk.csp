@@ -1,8 +1,4 @@
-[link("gtk-4", "pangocairo-1.0")]
-[link("gtk-4", "pangocairo-1.0", "pango-1.0", "harfbuzz")]
-[link("gdk_pixbuf-2.0", "cairo-gobject", "cairo", "graphene-1.0")]
-[link("gio-2.0", "gobject-2.0", "glib-2.0")]
-
+[link("gtk4")]
 
 import "application.csp"; 
 import "container.csp";  

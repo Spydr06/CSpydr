@@ -9,7 +9,7 @@ namespace gtk {
             fn gtk_scrolled_window_set_child(scroll: ScrolledWindowPtr, child: gtk::Widget::WidgetPtr);
         }
 
-        fn new(): ScrolledWindowPtr {
+        fn new(): gtk::Scrolled::ScrolledWindowPtr {
             <- gtk_scrolled_window_new();
         }
 

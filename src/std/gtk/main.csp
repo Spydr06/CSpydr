@@ -8,7 +8,7 @@ fn activate(app: &gtk::GtkAnyPtr, _data: &gtk::GtkAnyPtr) {
 
     let text = "Epsum ipsum";
 
-    let src = gtk::Window::Scrolled::new();
+    let src = gtk::Scrolled::new();
     gtk::Window::set_child(window, src);
 
     let text_view = gtk::TextView::new();
@@ -16,7 +16,7 @@ fn activate(app: &gtk::GtkAnyPtr, _data: &gtk::GtkAnyPtr) {
     gtk::TextView::TextBuffer::set_text(buffer, text, -1);
     gtk::TextView::set_wrap_mode(text_view, gtk::TextView::WrapMode::WordChar);
 
-    gtk::Window::Scrolled::set_child(src, text_view);
+    gtk::Scrolled::set_child(src, text_view);
     gtk::Widget::show(window);
 }
 
