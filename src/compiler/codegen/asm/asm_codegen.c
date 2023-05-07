@@ -14,6 +14,7 @@
 #include "list.h"
 #include "../relocation.h"
 #include "timer/timer.h"
+#include "linker.h"
 
 #include <stdio.h>
 #include <assert.h>
