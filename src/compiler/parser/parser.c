@@ -663,7 +663,7 @@ static void parse_compiler_directives(Parser_T* p, List_T* obj_list)
         else if(streq(field_token->value, "export"))
         {
             obj_after = true;
-            export_name = field_token;
+            export_name = tok;
         }
         else
             eval_compiler_directive(p, field_token, tok->value, obj_list);
