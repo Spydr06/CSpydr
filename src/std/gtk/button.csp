@@ -1,0 +1,36 @@
+import "gtk.csp";
+
+namespace gtk {
+    namespace Button {
+        type ButtonPtr: &void;
+
+        extern "C" {
+            fn gtk_button_new_with_label(label: &char): &ButtonPtr;
+            fn gtk_button_get_label(btn: ButtonPtr): &char;
+            fn gtk_button_set_label(btn: ButtonPtr, label: &char);
+        }
+
+        fn new(label: &char): &GtkAnyPtr {
+            <- gtk_button_new_with_label(label);
+        }
+
+        fn set_label(button: ButtonPtr, label: &char) {
+            gtk_button_set_label(button, label);
+        }
+
+        fn get_label(button: ButtonPtr): &char {
+            <- gtk_button_get_label(button);
+        }
+
+        namespace Signal {
+            extern "C" {
+                fn g_signal_connect_data(instance: ButtonPtr,detailed_signal: &char,c_handler: const fn(&GtkAnyPtr), data: &GtkAnyPtr, destroy_data: &GtkAnyPtr, connect_flags: i32): i64;
+            }
+
+            fn connect(instance: AppPtr, detailed_signal: &char, c_handler: const fn(&GtkAnyPtr), data: &GtkAnyPtr) {
+                g_signal_connect_data(instance, detailed_signal, c_handler, data, nil, ConnectFlags::NoConnect);
+            }
+        }
+    }
+
+}

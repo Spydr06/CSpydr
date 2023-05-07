@@ -1,0 +1,13 @@
+import "widget.csp"; 
+namespace gtk {
+    namespace Native {
+        extern "C" {
+            fn gtk_native_get_surface(native: gtk::Widget::WidgetPtr): gtk::Widget::WidgetPtr;  
+        }
+
+        fn get_surface(native: &gtk::Widget::WidgetPtr): &gtk::Widget::WidgetPtr {
+            <- gtk_native_get_surface(native);
+        }
+    }
+
+}

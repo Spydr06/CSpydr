@@ -1,0 +1,30 @@
+import "gtk.csp";
+import "std.csp";
+
+fn activate(app: &gtk::GtkAnyPtr, _data: &gtk::GtkAnyPtr) {
+    let window = gtk::Window::new(app);
+    gtk::Window::set_title(window, "CSpydr gtk-test");
+    gtk::Window::set_size(window, 400, 300);
+
+    let text = "Epsum ipsum";
+
+    let src = gtk::Window::Scrolled::new();
+    gtk::Window::set_child(window, src);
+
+    let text_view = gtk::TextView::new();
+    let buffer = gtk::TextView::TextBuffer::get(text_view);
+    gtk::TextView::TextBuffer::set_text(buffer, text, -1);
+    gtk::TextView::set_wrap_mode(text_view, gtk::TextView::WrapMode::WordChar);
+
+    gtk::Window::Scrolled::set_child(src, text_view);
+    gtk::Widget::show(window);
+}
+
+
+fn main(argc: i32, argv: &&char): i32 {
+    let app = gtk::Application::new("org.gtk.example", gtk::Application::Flags::None);
+    gtk::Application::Signal::connect(app, "activate", activate , nil);
+    let status = gtk::Application::run(app, argc, argv); 
+    gtk::unref_object(app);
+    <- status;
+}

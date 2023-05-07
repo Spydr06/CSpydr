@@ -1,0 +1,35 @@
+import "gtk.csp";
+import "widget.csp";
+import "flags.csp";
+
+namespace gtk {
+    type AppPtr: &void;
+    namespace Application {
+
+        extern "C" {
+            fn g_application_run(app: &AppPtr, argc: i32, argv: &&char): i32;
+            fn gtk_application_new(package: &char, flags: i32): AppPtr;
+            fn g_signal_connect_data(instance: gtk::Widget::WidgetPtr ,detailed_signal: &char,c_handler: const fn(&gtk::GtkAnyPtr, &gtk::GtkAnyPtr), data: &gtk::GtkAnyPtr, destroy_data: &gtk::GtkAnyPtr, connect_flags: i32): i64;
+        }
+
+
+        type Flags: enum {
+            None = 0
+        };
+
+        fn new(package: &char, flags: Flags): &GtkAnyPtr {
+            <- gtk_application_new(package, flags);
+        }
+
+        fn run(app: AppPtr, argc: i32, argv: &&char): i32 {
+            <- g_application_run(app, argc, argv);
+        }
+
+        namespace Signal {
+            fn connect(instance: AppPtr, detailed_signal: &char, c_handler: const fn(&GtkAnyPtr, &GtkAnyPtr), data: &GtkAnyPtr) {
+                g_signal_connect_data(instance, detailed_signal, c_handler, data, nil, gtk::ConnectFlags::NoConnect);
+            }
+        }
+    }
+
+}

@@ -1,0 +1,40 @@
+import "gtk.csp";
+
+namespace gtk {
+    namespace TextView {
+        type TextViewPtr: &void;
+
+        extern "C" {
+            fn gtk_text_view_new(): TextViewPtr;
+            fn gtk_text_view_get_buffer(view: TextViewPtr): TextBufferPtr;
+            fn gtk_text_buffer_set_text(buffer: TextBufferPtr, text: &char, ln: i32);
+            fn gtk_text_view_set_wrap_mode(view: TextViewPtr, mode: i32);
+        }
+        
+        type WrapMode: enum {
+            None = 0,
+            Char = 1,
+            Word = 2,
+            WordChar = 3
+        };
+    
+
+        fn new(): &GtkAnyPtr {
+            <- gtk_text_view_new();
+        }
+
+        fn set_wrap_mode(view: TextViewPtr, mode: WrapMode) {
+            gtk_text_view_set_wrap_mode(view, mode);
+        }
+
+        namespace TextBuffer {
+            fn set_text(view: TextBufferPtr, text: &char, ln: i32) {
+                gtk_text_buffer_set_text(view, text, ln);
+            }
+            
+            fn get(view: TextViewPtr): &GtkAnyPtr {
+                <- gtk_text_view_get_buffer(view);
+            }
+        }
+    }
+}

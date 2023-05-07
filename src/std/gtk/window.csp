@@ -1,0 +1,37 @@
+import "gtk.csp";
+import "widget.csp"; 
+
+namespace gtk {
+    namespace Window {
+        type WindowPtr: &void;    
+        extern "C" {
+            fn gtk_application_window_new(app: &AppPtr): &WindowPtr;
+            fn gtk_window_set_title(win: WindowPtr, title: &char);
+            fn gtk_window_set_default_size(win: WindowPtr, width: i64, height: i64);
+            fn gtk_window_set_child(window: WindowPtr, widget: &gtk::Widget::WidgetPtr);
+            fn gtk_window_destroy(window: &gtk::Widget::WidgetPtr);
+        }
+    
+        fn destroy_window(win: &GtkAnyPtr) {
+            gtk_window_destroy(win);
+        }
+
+
+        fn new(app: AppPtr): &GtkAnyPtr {
+            <- gtk_application_window_new(app);
+        }
+
+        fn set_child(window: WindowPtr, widget: &GtkAnyPtr) {
+            gtk_window_set_child(window, widget);
+        }
+
+        fn set_title(win: WindowPtr, title: &char) {
+            gtk_window_set_title(win, title);
+        }
+
+        fn set_size(win: WindowPtr, width: i64, height: i64) {
+            gtk_window_set_default_size(win, width, height);
+        }
+    }
+
+}

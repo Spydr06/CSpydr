@@ -1,0 +1,14 @@
+import "gtk.csp"; 
+
+namespace gtk {
+    namespace Frame {
+        type FramePtr: &void; 
+
+        extern "C" {
+            fn gtk_frame_new(label: &char): &FramePtr;  
+        }
+        fn new(label: &char): FramePtr {
+            <- gtk_frame_new(label);
+        }
+    }
+}

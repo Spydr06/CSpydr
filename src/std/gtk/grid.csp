@@ -1,0 +1,20 @@
+import "gtk.csp";
+
+namespace gtk {
+    namespace Grid {
+        type GridPtr: &void;
+
+        extern "C" {
+            fn gtk_grid_new(): GridPtr;
+            fn gtk_grid_attach(grid: GridPtr, widget: gtk::Widget::WidgetPtr, col: i32, row: i32, width: i32, height: i32);   
+        }
+
+        fn new(): &GtkAnyPtr {
+            <- gtk_grid_new();
+        }
+
+        fn attach(grid: GridPtr, widget: gtk::Widget::WidgetPtr, col: i32, row: i32, width: i32, height: i32) {
+            gtk_grid_attach(grid, widget, col, row, width, height);
+        }           
+    }
+}

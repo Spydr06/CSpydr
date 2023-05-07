@@ -1,0 +1,97 @@
+[link("gtksourceview-5", "gtk-4", "pangocairo-1.0", "pango-1.0")]
+[link("harfbuzz", "gdk_pixbuf-2.0", "cairo-gobject")]
+[link("cairo", "graphene-1.0", "gio-2.0", "gobject-2.0", "glib-2.0")]
+
+
+import "gtk.csp";
+
+namespace gtk {
+
+    type SourceViewPtr: &void;
+    type SourceViewTextBufferPtr: &void;
+    type LanguageManagerPtr: &void;
+    type LanguagePtr: &void;
+    type SchemeManagerPtr: &void;
+    type SchemePtr: &void;
+    
+    namespace TextView {
+        namespace TextBuffer {
+            extern "C" {
+                fn gtk_source_buffer_set_language(buf: TextBufferPtr, lang: LanguagePtr);
+            }
+
+            fn set_language(buffer: TextBufferPtr, lang: LanguagePtr) {
+                gtk_source_buffer_set_language(buffer, lang);
+            }
+        }
+    }
+
+    namespace SourceView {
+        extern "C" {
+            fn gtk_source_view_new():SourceViewPtr;
+            fn gtk_text_view_get_buffer(sv: SourceViewPtr):SourceViewTextBufferPtr;
+            fn gtk_source_view_set_auto_indent(sv: SourceViewPtr, mode: i32);
+            fn gtk_source_view_set_indent_on_tab(sv: SourceViewPtr, mode: i32);
+            fn gtk_source_view_set_tab_width(sv: SourceViewPtr, width:i32);
+        }
+
+        namespace SchemeManager {
+            extern "C" {
+                fn gtk_source_style_scheme_manager_get_default(): SchemeManagerPtr; 
+                fn gtk_source_style_scheme_manager_get_scheme(mng: SchemeManagerPtr, name: &char): SchemePtr;
+            }
+
+            fn get_scheme(man: SchemeManagerPtr, name: &char): gtk::SchemePtr {
+                <- gtk_source_style_scheme_manager_get_scheme(man, name);
+            }
+
+
+            fn get_default(): gtk::SchemeManagerPtr {
+                <- gtk_source_style_scheme_manager_get_default();
+            }
+        }
+
+
+        namespace LanguageManager {
+
+            extern "C" {
+                fn gtk_source_language_manager_get_default(): LanguageManagerPtr;
+                fn gtk_source_language_manager_get_language(manager: LanguageManagerPtr, lang: &char): LanguagePtr;
+            }
+
+            fn get_default(): gtk::LanguageManagerPtr {
+                <- gtk_source_language_manager_get_default();
+            }
+
+            fn get_language(manager: LanguageManagerPtr, lang: &char): gtk::LanguageManagerPtr {
+                <- gtk_source_language_manager_get_language(manager, lang);
+            }
+        }
+
+
+        fn new(): gtk::SourceViewPtr {
+            <- gtk_source_view_new();
+        }
+
+        fn set_tab_width(sv: SourceViewPtr, width:i32) {
+            gtk_source_view_set_tab_width(sv, width);
+        }
+
+        fn set_auto_indent(sv: SourceViewPtr, mode: bool) {
+            let set = 0;
+            if mode {
+                set = 1;
+            }
+            gtk_source_view_set_auto_indent(sv, mode);
+        }
+
+        fn set_indent_on_tab(sv: SourceViewPtr, mode: bool) {
+            let set = 0;
+            if mode {
+                set = 1;
+            }
+            gtk_source_view_set_indent_on_tab(sv, set);
+        }
+    }
+
+}

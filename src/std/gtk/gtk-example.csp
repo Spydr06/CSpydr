@@ -1,0 +1,40 @@
+import "gtk.csp";
+import "std.csp";
+
+fn print_hello(widget: &gtk::GtkAnyPtr) {
+    std::io::printf("Clicked!!\n");
+}
+
+fn activate(app: &gtk::GtkAnyPtr, data: &gtk::GtkAnyPtr) {
+    let window = gtk::Window::new(app);
+    gtk::Window::set_title(window, "Gtk Example with CSpydr");
+    gtk::Window::set_size(window, 400, 300);
+
+    let grid = gtk::Grid::new();
+    gtk::Window::set_child(window, grid); 
+
+    let button = gtk::Button::new("button 1");
+    gtk::Button::Signal::connect(button, "clicked", print_hello, nil);
+    gtk::Grid::attach(grid, button, 0,0,1,1); 
+    
+    let button2 = gtk::Button::new("button 2");
+    gtk::Button::Signal::connect(button2, "clicked", print_hello, nil);
+
+    gtk::Grid::attach(grid, button2, 1,0,1,1);
+
+    let button3 = gtk::Button::new("Quit");
+    gtk::Button::Signal::connect(button3, "clicked", print_hello, nil);
+
+  
+    gtk::Grid::attach(grid, button3, 0,1,2,1);
+    gtk::Widget::show(window);
+}
+
+fn main(argc: i32, argv: &&char): i32
+{
+    let app = gtk::Application::new("org.gtk.example", gtk::Application::Flags::None);
+    gtk::Application::Signal::connect(app, "activate", activate , nil);
+    let status = gtk::Application::run(app, argc, argv); 
+    gtk::unref_object(app);
+    <- status;
+}

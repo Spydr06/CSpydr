@@ -1,0 +1,34 @@
+import "sourceview.csp";
+
+fn activate(app: &gtk::GtkAnyPtr, data: &gtk::GtkAnyPtr) {
+    let window = gtk::Window::new(app);
+    gtk::Window::set_title(window, "NodePad in CSpydr");
+    gtk::Window::set_size(window, 400, 300);
+
+    let scintilla = gtk::SourceView::new();
+    let buffer = gtk::TextView::TextBuffer::get(scintilla);
+
+    gtk::SourceView::set_auto_indent(scintilla, true);
+    gtk::SourceView::set_indent_on_tab(scintilla, true);
+    gtk::SourceView::set_tab_width(scintilla, 4);
+
+    let manager = gtk::SourceView::LanguageManager::get_default();
+    let lang = gtk::SourceView::LanguageManager::get_language(manager, "java");
+
+    gtk::TextView::TextBuffer::set_language(buffer, lang);
+
+    let sch_man = gtk::SourceView::SchemeManager::get_default(); 
+    let scheme = gtk::SourceView::SchemeManager::get_scheme(sch_man, "Kate");
+    
+    gtk::Window::set_child(window, scintilla);
+    gtk::Widget::show(window);
+}
+
+fn main(argc: i32, argv: &&char): i32
+{
+    let app = gtk::Application::new("org.gtk.example", gtk::Application::Flags::None);
+    gtk::Application::Signal::connect(app, "activate", activate , nil);
+    let status = gtk::Application::run(app, argc, argv); 
+    gtk::unref_object(app);
+    <- status;
+}
