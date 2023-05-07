@@ -1,0 +1,34 @@
+import "gtk.csp";
+
+namespace gtk {
+    namespace Box {
+        type BoxPtr: &void;
+        extern "C" {
+            fn gtk_box_new(orientation: i32, spacing: i32): BoxPtr;
+            fn gtk_box_append(box: BoxPtr, child: gtk::Widget::WidgetPtr);
+            fn gtk_box_set_homogeneous(box: &BoxPtr, set: i32);
+        } 
+
+        type Orientation: enum {
+            Horizontal = 0,
+            Vertical = 1
+        };
+
+        fn new(orientaion: Orientation, spacing: i32): BoxPtr{
+            <- gtk_box_new(orientaion, spacing);
+        }
+
+
+        fn box_append(box: BoxPtr, child: gtk::Widget::WidgetPtr) {
+            gtk_box_append(box, child);
+        }
+
+        fn box_set_homogeneous(box: BoxPtr, value: bool) {
+            let set = 0; 
+            if value == true {
+                set = 1;
+            }
+            gtk_box_set_homogeneous(box, set);
+        }   
+    }
+}

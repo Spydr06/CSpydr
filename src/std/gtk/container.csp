@@ -1,0 +1,18 @@
+import "widget.csp"; 
+
+namespace gtk {
+    namespace Container {
+        extern "C" {
+            fn gtk_container_set_border_width(widget: gtk::Widget::WidgetPtr, width: i32);
+            fn gtk_container_add(parent: gtk::Widget::WidgetPtr, child: gtk::Widget::WidgetPtr);
+        }
+        
+        fn set_border_width(widget: gtk::Widget::WidgetPtr, width: i32) {
+            gtk_container_set_border_width(widget, width);
+        }
+
+        fn add_child(parent: gtk::Widget::WidgetPtr, child: gtk::Widget::WidgetPtr) {
+            gtk_container_add(parent, child);
+        }
+    }
+}

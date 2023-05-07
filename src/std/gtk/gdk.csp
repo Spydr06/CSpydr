@@ -1,0 +1,13 @@
+import "gtk.csp";
+
+namespace gtk {
+    namespace gdk {
+        extern "C" {
+            fn gdk_surface_create_similar_surface(native: &gtk::GtkAnyPtr, content: cairo::Content, width: i32, heigth: i64): &gtk::GtkAnyPtr;
+        }
+
+        fn create_similar_surface(native: &gtk::GtkAnyPtr, content: cairo::Content, width: i32, heigth: i64): &gtk::GtkAnyPtr {
+            <- gdk_surface_create_similar_surface(native, content, width, heigth);
+        }
+    }
+}

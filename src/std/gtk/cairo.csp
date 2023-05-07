@@ -1,0 +1,60 @@
+import "gtk.csp";
+
+namespace gtk {
+
+    namespace cairo {
+        type Content: enum {
+            Color = 0x1000,
+            Alpha = 0x2000,
+            ColorAlpha = 0x3000
+        };
+
+        extern "C" {
+            fn cairo_create(surface: &gtk::GtkAnyPtr): &gtk::GtkAnyPtr;
+            fn cairo_set_source_rgb(cairo_t: &gtk::GtkAnyPtr, r:i64, g: i64, b: i64);
+            fn cairo_paint(cairo_t: &gtk::GtkAnyPtr);
+            fn cairo_destroy(cairo_t: &gtk::GtkAnyPtr);
+            fn cairo_surface_destroy(surface: &gtk::GtkAnyPtr);
+            fn clear_surface();
+            fn cairo_set_source_surface(cairo_t: &gtk::GtkAnyPtr, surface: &gtk::GtkAnyPtr, x: f64, y: f64);
+            fn cairo_rectangle(cairo_t: &gtk::GtkAnyPtr, x: f64, y: f64, width: f64, height: f64);
+            fn cairo_fill(cairo_t: &gtk::GtkAnyPtr);
+        }
+
+        fn fill(cairo_t: &gtk::GtkAnyPtr) {
+            cairo_fill(cairo_t);
+        }
+
+        fn set_source_rgb(cairo_t: &gtk::GtkAnyPtr, r:i64, g: i64, b: i64) {
+            cairo_set_source_rgb(cairo_t, r, b,g);
+        }
+
+
+        fn draw_rectangle(cairo_t: &gtk::GtkAnyPtr, x: f64, y: f64, width: f64, height: f64) {
+            cairo_rectangle(cairo_t, x, y, width, height);
+        }
+
+        fn set_source_surface(cairo_t: &gtk::GtkAnyPtr, surface: &gtk::GtkAnyPtr, x: f64, y: f64) {
+            cairo_set_source_surface(cairo_t, surface, x,y);
+        }
+        fn create(surface: &gtk::GtkAnyPtr): &gtk::GtkAnyPtr {
+            <- cairo_create(surface);
+        }
+
+        fn paint(cairo_t: &gtk::GtkAnyPtr) {
+            cairo_paint(cairo_t);
+        }
+
+        fn destroy(cairo_t: &gtk::GtkAnyPtr) {
+            cairo_destroy(cairo_t);
+        }
+
+        fn destroy_surface(surface: &gtk::GtkAnyPtr) {
+            cairo_surface_destroy(surface);
+        }
+
+        fn surface_clear() {
+            clear_surface();
+        }
+    }
+}

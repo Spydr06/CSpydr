@@ -3,274 +3,49 @@
 [link("gdk_pixbuf-2.0", "cairo-gobject", "cairo", "graphene-1.0")]
 [link("gio-2.0", "gobject-2.0", "glib-2.0")]
 
+
+import "application.csp"; 
+import "container.csp";  
+import "flags.csp";
+import "textbuffer.csp";  
+import "window.csp";
+import "box.csp";
+import "drawingarea.csp"; 
+import "frame.csp";
+import "native.csp";
+import "textview.csp";
+import "button.csp";
+import "cairo.csp";
+import "grid.csp";
+import "label.csp";
+import "widget.csp";
+import "sourceview.csp";
+import "scrolled.csp";
+import "gdk.csp";
+
 namespace gtk {
-
-    type ApplicationFlags: enum {
-        None = 0
-    };
-
-    type Orientation: enum {
-        Horizontal = 0,
-        Vertical = 1
-    };
-
-
-    type Align: enum {
-        Fill = 0,
-        Start = 1,
-        End = 2,
-        Center = 3,
-        Baseline = 4
-    };
-
-    type ConnectFlags: enum {
-        NoConnect = 0,
-        After = 1 << 0,
-        Swapped = 1 << 1
-    };
-
-    type GtkApplication: &i8;
-    type GtkAnyPtr: void;
-
+    type GtkAnyPtr: &void; 
     extern "C" {
-        fn gtk_application_window_new(app: &GtkAnyPtr): &GtkAnyPtr;
-        fn g_application_run(app: &GtkAnyPtr, argc: i32, argv: &&char): i32;
-        fn gtk_application_new(package: &char, flags: i32): &GtkAnyPtr;
-        fn g_object_unref(obj: &GtkAnyPtr): void;
-        fn g_signal_connect_data(instance: &GtkAnyPtr,detailed_signal: &char,c_handler: const fn(&GtkAnyPtr, &GtkAnyPtr), data: &GtkAnyPtr, destroy_data: &GtkAnyPtr, connect_flags: i32): i64;
-        fn gtk_window_set_title(win: &GtkAnyPtr, title: &char): void;
-        fn gtk_window_set_default_size(win: &GtkAnyPtr, width: i64, height: i64): void;
-        fn gtk_widget_show(widget: &GtkAnyPtr): void;
-        fn gtk_box_new(orientation: i32, spacing: i32): &GtkAnyPtr;
-        fn gtk_widget_set_halign(widget: &GtkAnyPtr, align: i32): void;
-        fn gtk_widget_set_valign(widget: &GtkAnyPtr, align: i32): void;
-        fn gtk_window_set_child(window: &GtkAnyPtr, widget: &GtkAnyPtr): void;
-        fn gtk_box_append(box:&GtkAnyPtr, child: &GtkAnyPtr): void;
-        fn gtk_button_new_with_label(label: &char): &GtkAnyPtr;
-        fn gtk_window_destroy(window: &GtkAnyPtr): void;
-        fn gtk_grid_new(): &GtkAnyPtr;
-        fn gtk_grid_attach(grid: &GtkAnyPtr, widget: &GtkAnyPtr, col: i32, row: i32, w: i32, h: i32): void;
-        fn gtk_widget_get_native(widget: &GtkAnyPtr): &GtkAnyPtr;
-        fn gtk_native_get_surface(native: &GtkAnyPtr): &GtkAnyPtr;
-        fn gtk_widget_queue_draw(widget: &GtkAnyPtr): void;
-        fn gtk_widget_get_width(widget: &GtkAnyPtr): i32;
-        fn gtk_widget_get_height(widget: &GtkAnyPtr): i32;
-        fn gtk_frame_new(label: &char): &GtkAnyPtr  
-        fn gtk_drawing_area_new(): &GtkAnyPtr; 
-        fn gtk_widget_set_size_request(widget: &GtkAnyPtr, width: i32, height: i32): void;     
-        fn gtk_drawing_area_set_draw_func(area: &GtkAnyPtr, cb: fn(&GtkAnyPtr, &GtkAnyPtr, i32, i32), userdata: &GtkAnyPtr, destory: &GtkAnyPtr): void; 
-        fn gtk_label_new(text: &GtkAnyPtr): &GtkAnyPtr;
-        fn gtk_button_get_label(btn: &GtkAnyPtr): &char;
+        fn g_object_unref(obj: gtk::Widget::WidgetPtr);    
         fn g_strcmp0(left: &char, right: &char): i32;
-        fn gtk_button_set_label(btn: &GtkAnyPtr, label: &char): void;
-        fn gtk_box_set_homogeneous(box: &GtkAnyPtr, set: i32): void;
-    }
-
-    fn box_set_homogeneous(box: &GtkAnyPtr, value: bool): void {
-        let set = 0; 
-        if value == true {
-            set = 1;
-        }
-        gtk_box_set_homogeneous(box, set);
-    }
-    
-    fn button_set_label(button: &GtkAnyPtr, label: &char): void {
-        gtk_button_set_label(button, label);
+        fn gtk_init();
+        
     }
 
     fn compare_strings(left: &char, right: &char): bool {
         let result = g_strcmp0(left, right);
         <- result == 0;
     }
+    #     #[TODO: fix the ability to call g_signal_connect with destroy_window as the data]#
+    #     #[- For now we call the handler with two arguments, we need to call with one? var_args? Don't know ]#
+    # }
 
-    fn button_get_label(button: &GtkAnyPtr): &char {
-        <- gtk_button_get_label(button);
+    fn init() {
+        gtk_init();
     }
 
-    fn new_label(text: &char): &GtkAnyPtr {
-        <- gtk_label_new(text);
-    }
-
-    fn set_drawing_draw_function(area: &GtkAnyPtr, cb: fn(&GtkAnyPtr, &GtkAnyPtr, i32, i32), userdata: &GtkAnyPtr, destory: &GtkAnyPtr): void {
-        gtk_drawing_area_set_draw_func(area, cb, userdata, destory);
-    }
-
-
-    fn set_requested_size(widget: &GtkAnyPtr, width: i32, height: i32): void {
-        gtk_widget_set_size_request(widget, width, height);
-    }
-
-
-    fn new_drawing_area(): &GtkAnyPtr {
-        <- gtk_drawing_area_new();
-    }
-
-    fn new_frame(label: &char): &GtkAnyPtr {
-        <- gtk_frame_new(label);
-    }
-
-    fn draw_qeued_widget(widget: &GtkAnyPtr): void {
-        gtk_widget_queue_draw(widget);
-    }
-
-    fn get_widget_height(widget: &GtkAnyPtr): i32 {
-        <- gtk_widget_get_height(widget);
-    }    
-
-    fn get_widget_width(widget: &GtkAnyPtr): i32 {
-        <- gtk_widget_get_width(widget);
-    }    
-
-    fn get_native_surface(native: &GtkAnyPtr): &GtkAnyPtr {
-        <- gtk_native_get_surface(native);
-    }
-
-    fn get_native(widget: &GtkAnyPtr): &GtkAnyPtr {
-        <- gtk_widget_get_native(widget);
-    }
-
-    fn new_appication(package: &char, flags: ApplicationFlags): &GtkAnyPtr {
-        <- gtk_application_new(package, flags);
-    }
-
-    fn connect_signal(instance: &GtkAnyPtr, detailed_signal: &char, c_handler: const fn(&GtkAnyPtr, &GtkAnyPtr), data: &GtkAnyPtr): void {
-        g_signal_connect_data(instance, detailed_signal, c_handler, data, nil, ConnectFlags::NoConnect);
-    }
-
-    fn connect_swapped_signal(instance: &GtkAnyPtr, detailed_signal: &char, c_handler: const fn(&GtkAnyPtr, &GtkAnyPtr), data: &GtkAnyPtr): void {
-        g_signal_connect_data(instance, detailed_signal, c_handler, data, nil, ConnectFlags::Swapped);
-
-        #[TODO: fix the ability to call g_signal_connect with destroy_window as the data]#
-        #[- For now we call the handler with two arguments, we need to call with one? var_args? Don't know ]#
-
-    }
-
-
-    fn run_application(app: &GtkAnyPtr, argc: i32, argv: &&char): i32 {
-        <- g_application_run(app, argc, argv);
-    }
-
-    fn unref_object(object: &GtkAnyPtr): void {
+    fn unref_object(object: &GtkAnyPtr) {
         g_object_unref(object);
     }
-
-    fn new_window(app: &GtkAnyPtr): &GtkAnyPtr {
-        <- gtk_application_window_new(app);
-    }
-
-    fn set_window_title(win: &GtkAnyPtr, title: &char): void {
-        gtk_window_set_title(win, title);
-    }
-
-    fn set_window_size(win: &GtkAnyPtr, width: i64, height: i64): void {
-        gtk_window_set_default_size(win, width, height);
-    }
-
-    fn show_widget(widget: &GtkAnyPtr): void {
-        gtk_widget_show(widget);
-    }
-
-    fn new_box(orientaion: Orientation, spacing: i32): &GtkAnyPtr {
-        <- gtk_box_new(orientaion, spacing);
-    }
-
-    fn set_widget_halign(widget: &GtkAnyPtr, align: Align): void {
-        gtk_widget_set_halign(widget, align);
-    }
-
-    fn set_widget_valign(widget: &GtkAnyPtr, align: Align): void {
-        gtk_widget_set_valign(widget, align);
-    }
-
-    fn window_set_child(window: &GtkAnyPtr, widget: &GtkAnyPtr): void {
-        gtk_window_set_child(window, widget);
-    }
-
-    fn box_append(box: &GtkAnyPtr, child: &GtkAnyPtr): void {
-        gtk_box_append(box, child);
-    }
-
-    fn new_button(label: &char): &GtkAnyPtr {
-        <- gtk_button_new_with_label(label);
-    }
-
-    fn destroy_window(win: &GtkAnyPtr): void {
-        gtk_window_destroy(win);
-    }
-
-    fn new_grid(): &GtkAnyPtr {
-        <- gtk_grid_new();
-    }
-
-    fn attach_to_grid(grid: &GtkAnyPtr, widget: &GtkAnyPtr, col: i32, row: i32, width: i32, height: i32): void {
-        gtk_grid_attach(grid, widget, col, row, width, height);
-    }   
    
-}
-
-
-namespace gdk {
-    extern "C" {
-        fn gdk_surface_create_similar_surface(native: &gtk::GtkAnyPtr, content: cairo::Content, width: i32, heigth: i64): &gtk::GtkAnyPtr;
-    }
-
-    fn create_similar_surface(native: &gtk::GtkAnyPtr, content: cairo::Content, width: i32, heigth: i64): &gtk::GtkAnyPtr {
-        <- gdk_surface_create_similar_surface(native, content, width, heigth);
-    }
-}
-
-namespace cairo {
-    type Content: enum {
-        Color = 0x1000,
-        Alpha = 0x2000,
-        ColorAlpha = 0x3000
-    };
-
-    extern "C" {
-        fn cairo_create(surface: &gtk::GtkAnyPtr): &gtk::GtkAnyPtr;
-        fn cairo_set_source_rgb(cairo_t: &gtk::GtkAnyPtr, r:i64, g: i64, b: i64): void;
-        fn cairo_paint(cairo_t: &gtk::GtkAnyPtr): void;
-        fn cairo_destroy(cairo_t: &gtk::GtkAnyPtr): void;
-        fn cairo_surface_destroy(surface: &gtk::GtkAnyPtr): void;
-        fn clear_surface(): void;
-        fn cairo_set_source_surface(cairo_t: &gtk::GtkAnyPtr, surface: &gtk::GtkAnyPtr, x: f64, y: f64): void;
-        fn cairo_rectangle(cairo_t: &gtk::GtkAnyPtr, x: f64, y: f64, width: f64, height: f64): void;
-        fn cairo_fill(cairo_t: &gtk::GtkAnyPtr): void;
-    }
-
-    fn fill(cairo_t: &gtk::GtkAnyPtr): void {
-        cairo_fill(cairo_t);
-    }
-
-    fn set_source_rgb(cairo_t: &gtk::GtkAnyPtr, r:i64, g: i64, b: i64): void {
-        cairo_set_source_rgb(cairo_t, r, b,g);
-    }
-
-
-    fn draw_rectangle(cairo_t: &gtk::GtkAnyPtr, x: f64, y: f64, width: f64, height: f64) {
-        cairo_rectangle(cairo_t, x, y, width, height);
-    }
-
-    fn set_source_surface(cairo_t: &gtk::GtkAnyPtr, surface: &gtk::GtkAnyPtr, x: f64, y: f64): void {
-        cairo_set_source_surface(cairo_t, surface, x,y);
-    }
-    fn create(surface: &gtk::GtkAnyPtr): &gtk::GtkAnyPtr {
-        <- cairo_create(surface);
-    }
-
-    fn paint(cairo_t: &gtk::GtkAnyPtr): void {
-        cairo_paint(cairo_t);
-    }
-
-    fn destroy(cairo_t: &gtk::GtkAnyPtr): void {
-        cairo_destroy(cairo_t);
-    }
-
-    fn destroy_surface(surface: &gtk::GtkAnyPtr): void {
-        cairo_surface_destroy(surface);
-    }
-
-    fn surface_clear() {
-        clear_surface();
-    }
 }

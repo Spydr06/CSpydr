@@ -1,0 +1,19 @@
+import "gtk.csp"; 
+
+namespace gtk {
+    namespace DrawingArea {
+        type DrawingAreaPtr: &void;
+        extern "C" {
+            fn gtk_drawing_area_new(): &DrawingAreaPtr;
+            fn gtk_drawing_area_set_draw_func(area: DrawingAreaPtr, cb: fn(gtk::Widget::WidgetPtr, gtk::Widget::WidgetPtr, i32, i32), userdata: &GtkAnyPtr, destory: &GtkAnyPtr); 
+        }
+
+        fn new(): DrawingAreaPtr {
+            <- gtk_drawing_area_new();
+        }       
+
+        fn set_draw_function(area: &GtkAnyPtr, cb: fn(gtk::Widget::WidgetPtr, gtk::Widget::WidgetPtr, i32, i32), userdata: &GtkAnyPtr, destory: &GtkAnyPtr) {
+            gtk_drawing_area_set_draw_func(area, cb, userdata, destory);
+        }
+    }
+}
