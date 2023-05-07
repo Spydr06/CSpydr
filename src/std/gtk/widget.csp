@@ -1,0 +1,76 @@
+import "gtk.csp";
+
+namespace gtk {
+    namespace Widget {
+        type WidgetPtr: &void;
+        extern "C" {
+            fn gtk_widget_show(widget: WidgetPtr);
+            fn gtk_widget_set_halign(widget: WidgetPtr, align: i32);
+            fn gtk_widget_set_valign(widget: WidgetPtr, align: i32);
+            fn gtk_widget_queue_draw(widget: WidgetPtr);
+            fn gtk_widget_get_width(widget: WidgetPtr): i32;
+            fn gtk_widget_get_height(widget: WidgetPtr): i32;
+            fn gtk_widget_get_native(widget: WidgetPtr): WidgetPtr;
+            fn gtk_widget_set_size_request(widget: WidgetPtr, width: i32, height: i32);
+            fn gtk_widget_hide(widget: WidgetPtr);
+            fn gtk_widget_show_all(widget: WidgetPtr);
+            fn gtk_widget_hide_all(widget: WidgetPtr);
+        }
+
+
+        type Align: enum {
+            Fill = 0,
+            Start = 1,
+            End = 2,
+            Center = 3,
+            Baseline = 4
+        };
+
+        fn queue_draw(widget: WidgetPtr) {
+            gtk_widget_queue_draw(widget);
+        }
+
+        fn get_widget_height(widget: WidgetPtr): i32 {
+            <- gtk_widget_get_height(widget);
+        }    
+
+        fn get_widget_width(widget: WidgetPtr): i32 {
+            <- gtk_widget_get_width(widget);
+        }    
+
+
+        fn set_size_request(widget: WidgetPtr, width: i32, height: i32) {
+            gtk_widget_set_size_request(widget, width, height);
+        }
+
+        fn get_native(widget: WidgetPtr): &GtkAnyPtr {
+            <- gtk_widget_get_native(widget);
+        }
+
+        fn show(widget: WidgetPtr) {
+            gtk_widget_show(widget);
+        }
+
+        fn show_all(widget: WidgetPtr) {
+            gtk_widget_show_all(widget);
+        }
+
+        fn hide(widget: WidgetPtr) {
+            gtk_widget_hide(widget);
+        }
+
+        fn hide_all(widget: WidgetPtr) {
+            gtk_widget_hide_all(widget);
+        }
+
+        fn set_halign(widget: &GtkAnyPtr, align: Align) {
+            gtk_widget_set_halign(widget, align);
+        }
+
+        fn set_valign(widget: &GtkAnyPtr, align: Align) {
+            gtk_widget_set_valign(widget, align);
+        }
+
+    }
+
+}

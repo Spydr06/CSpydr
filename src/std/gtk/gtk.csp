@@ -1,0 +1,51 @@
+[link("gtk-4", "pangocairo-1.0")]
+[link("gtk-4", "pangocairo-1.0", "pango-1.0", "harfbuzz")]
+[link("gdk_pixbuf-2.0", "cairo-gobject", "cairo", "graphene-1.0")]
+[link("gio-2.0", "gobject-2.0", "glib-2.0")]
+
+
+import "application.csp"; 
+import "container.csp";  
+import "flags.csp";
+import "textbuffer.csp";  
+import "window.csp";
+import "box.csp";
+import "drawingarea.csp"; 
+import "frame.csp";
+import "native.csp";
+import "textview.csp";
+import "button.csp";
+import "cairo.csp";
+import "grid.csp";
+import "label.csp";
+import "widget.csp";
+import "sourceview.csp";
+import "scrolled.csp";
+import "gdk.csp";
+
+namespace gtk {
+    type GtkAnyPtr: &void; 
+    extern "C" {
+        fn g_object_unref(obj: gtk::Widget::WidgetPtr);    
+        fn g_strcmp0(left: &char, right: &char): i32;
+        fn gtk_init();
+        
+    }
+
+    fn compare_strings(left: &char, right: &char): bool {
+        let result = g_strcmp0(left, right);
+        <- result == 0;
+    }
+    #     #[TODO: fix the ability to call g_signal_connect with destroy_window as the data]#
+    #     #[- For now we call the handler with two arguments, we need to call with one? var_args? Don't know ]#
+    # }
+
+    fn init() {
+        gtk_init();
+    }
+
+    fn unref_object(object: &GtkAnyPtr) {
+        g_object_unref(object);
+    }
+   
+}

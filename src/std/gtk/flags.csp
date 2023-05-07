@@ -1,0 +1,9 @@
+import "gtk.csp";
+
+namespace gtk {
+    type ConnectFlags: enum {
+        NoConnect = 0,
+        After = 1 << 0,
+        Swapped = 1 << 1
+    };
+}

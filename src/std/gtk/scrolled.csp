@@ -1,0 +1,21 @@
+import "gtk.csp";
+import "widget.csp";
+
+namespace gtk {
+    namespace Scrolled {
+        type ScrolledWindowPtr: &void;
+        extern "C" {
+            fn gtk_scrolled_window_new(): ScrolledWindowPtr;
+            fn gtk_scrolled_window_set_child(scroll: ScrolledWindowPtr, child: gtk::Widget::WidgetPtr);
+        }
+
+        fn new(): ScrolledWindowPtr {
+            <- gtk_scrolled_window_new();
+        }
+
+        fn set_child(scroll: ScrolledWindowPtr, child: gtk::Widget::WidgetPtr) {
+            gtk_scrolled_window_set_child(scroll, child);
+        }
+
+    }
+}

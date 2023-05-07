@@ -1,0 +1,31 @@
+import "gtk.csp";
+
+namespace gtk {
+    namespace Label {
+        type LabelPtr: &void;
+
+        extern "C" {
+            fn gtk_label_new(text: &char): LabelPtr;
+            fn gtk_label_set_selectable(label: LabelPtr, activate: i32);
+            fn gtk_label_set_markup(label: LabelPtr, text: &char);
+        }
+
+        
+        fn new_label(text: &char): LabelPtr {
+            <- gtk_label_new(text);
+        }
+
+        fn set_selectable(label: LabelPtr, mode: bool) {
+            let activate = 0; 
+            if mode {
+                activate = 1;
+            }
+            gtk_label_set_selectable(label, activate);
+        }
+
+        fn set_markup(label: LabelPtr, text: &char) {
+            gtk_label_set_markup(label, text);
+        }
+    }
+
+}
