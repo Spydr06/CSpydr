@@ -11,15 +11,21 @@
 #include <stdio.h>
 
 static void print_current_fn(void) {
-    static ASTObj_T* last_fn = NULL; // remember the last function to eliminate duplication in multiple errors of the same function
-    if(global.current_fn && *global.current_fn && *global.current_fn != last_fn) 
+    static ASTObj_T* last_obj = NULL; // remember the last function to eliminate duplication in multiple errors of the same function
+    if(global.current_obj && *global.current_obj && *global.current_obj != last_obj) 
     {
         char buf[BUFSIZ] = {};
-        fprintf(ERR_OUTPUT_STREAM, COLOR_MAGENTA "In function " COLOR_BOLD_MAGENTA "%s()" COLOR_RESET COLOR_MAGENTA ":\n" COLOR_RESET, ast_id_to_str(buf, (*global.current_fn)->id, LEN(buf)));
-        last_fn = *global.current_fn;
+        fprintf(
+            ERR_OUTPUT_STREAM,
+            COLOR_MAGENTA "In %s " COLOR_BOLD_MAGENTA "%s%s" COLOR_RESET COLOR_MAGENTA ":\n" COLOR_RESET,
+            obj_kind_to_str((*global.current_obj)->kind),
+            ast_id_to_str(buf, (*global.current_obj)->id, LEN(buf)),
+            (*global.current_obj)->kind == OBJ_FUNCTION ? "()" : ""
+        );
+        last_obj = *global.current_obj;
     }
     else
-        last_fn = NULL;
+        last_obj = NULL;
 }
 
 void default_error_handler(ErrorType_T ty, Token_T* tok, const char* format, va_list args, bool is_error, const char* error_str)

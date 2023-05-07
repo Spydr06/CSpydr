@@ -40,7 +40,7 @@ typedef struct PARSER_STRUCT
     ASTProg_T* root_ref;
     Token_T* tok;
     ASTNode_T* cur_block;
-    ASTObj_T* cur_fn;
+    ASTObj_T* cur_obj;
 
     size_t cur_lambda_id;
     size_t cur_tuple_id;
@@ -426,7 +426,7 @@ i32 parser_pass(ASTProg_T* ast)
     Parser_T parser;
     init_parser(&parser, ast);
 
-    global.current_fn = &parser.cur_fn;
+    global.current_obj = &parser.cur_obj;
 
     // parse
     while(!tok_is(&parser, TOKEN_EOF))
@@ -443,7 +443,7 @@ i32 parser_pass(ASTProg_T* ast)
         }
     }
 
-    global.current_fn = NULL;
+    global.current_obj = NULL;
 
     // dispose
     free_list(ast->tokens);
@@ -995,12 +995,17 @@ static ASTObj_T* parse_typedef(Parser_T* p)
     ASTObj_T* tydef = init_ast_obj(OBJ_TYPEDEF, p->tok);
     parser_consume(p, TOKEN_TYPE, "expect `type` keyword for typedef");
 
+    ASTObj_T* last_obj = p->cur_obj;
+    p->cur_obj = tydef;
+
     tydef->id = parse_simple_identifier(p);
     parser_consume(p, TOKEN_COLON, "expect `:` after type name");
 
     tydef->data_type = parse_type(p);
 
     parser_consume(p, TOKEN_SEMICOLON, "expect `;` after type definition");
+
+    p->cur_obj = last_obj;
     return tydef;
 }
 
@@ -1149,7 +1154,8 @@ static ASTObj_T* parse_fn(Parser_T* p)
 {
     ASTObj_T* fn = parse_fn_def(p);
 
-    p->cur_fn = fn;
+    ASTObj_T* last_obj = p->cur_obj;
+    p->cur_obj = fn;
     fn->body = parse_stmt(p, true);
 
     if(global.ct == CT_ASM)
@@ -1158,6 +1164,8 @@ static ASTObj_T* parse_fn(Parser_T* p)
         mem_add_list(fn->objs);
         collect_locals(fn->body, fn->objs);
     }
+
+    p->cur_obj = last_obj;
     
     return fn;
 }
@@ -1219,13 +1227,15 @@ static void parse_namespace(Parser_T* p, List_T* objs)
         namespace->objs = init_list();
         mem_add_list(namespace->objs);
     }
+
+    ASTObj_T* last_obj = p->cur_obj;
+    p->cur_obj = namespace;
         
     // if the namespace has a { directly after its name, it exists in the current scope
     parser_consume(p, TOKEN_LBRACE, "expect `{` after namespace declaration");
 
     while(!tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF))
     {
-        p->cur_fn = NULL;
         parse_obj(p, namespace->objs);
     }
 
@@ -1236,6 +1246,8 @@ static void parse_namespace(Parser_T* p, List_T* objs)
         ASTObj_T* obj = namespace->objs->items[i];
         obj->id->outer = namespace->id;
     }
+
+    p->cur_obj = last_obj;
 }
 
 static void parse_obj(Parser_T* p, List_T* obj_list)
@@ -1304,7 +1316,7 @@ static ASTNode_T* parse_return(Parser_T* p, bool needs_semicolon)
 
     if(!tok_is(p, TOKEN_SEMICOLON))
     {
-        if((p->cur_fn && p->cur_fn->return_type->kind == TY_VOID))
+        if((p->cur_obj && p->cur_obj->return_type->kind == TY_VOID))
             throw_error(ERR_TYPE_ERROR_UNCR, ret->tok, "cannot return value from function with type `void`, expect `;`");
         ret->return_val = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
     }
@@ -2045,7 +2057,7 @@ static ASTNode_T* parse_array_lit(Parser_T* p)
 {
     ASTNode_T* a_lit = init_ast_node(ND_ARRAY, p->tok);
     parser_consume(p, TOKEN_LBRACKET, "expect `[` for array literal");
-    a_lit->args = parse_expr_list(p, TOKEN_RBRACKET, p->cur_fn);
+    a_lit->args = parse_expr_list(p, TOKEN_RBRACKET, p->cur_obj);
     parser_consume(p, TOKEN_RBRACKET, "expect `]` after array literal");
 
     return a_lit;
@@ -2612,8 +2624,8 @@ static ASTNode_T* parse_pow_3(Parser_T* p, ASTNode_T* left)
 static ASTNode_T* parse_current_fn_token(Parser_T* p)
 {
     p->tok->type = TOKEN_STRING;
-    p->tok = mem_realloc(p->tok, sizeof(Token_T) + strlen(p->cur_fn->id->callee) + 1);
-    strcpy(p->tok->value, p->cur_fn->id->callee);
+    p->tok = mem_realloc(p->tok, sizeof(Token_T) + strlen(p->cur_obj->id->callee) + 1);
+    strcpy(p->tok->value, p->cur_obj->id->callee);
 
     return parse_str_lit(p);
 }

@@ -54,7 +54,7 @@ __CSP_GLOBAL struct {
     char* std_path;
     char* target;
 
-    ASTObj_T** current_fn;
+    ASTObj_T** current_obj;
 
     List_T* compiler_flags;
     List_T* linker_flags;

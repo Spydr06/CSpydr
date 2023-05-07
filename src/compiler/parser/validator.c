@@ -240,7 +240,7 @@ i32 validator_pass(ASTProg_T* ast)
     v.ast = ast;
     begin_obj_scope(&v, NULL, ast->objs);
     v.global_scope = v.current_scope;
-    global.current_fn = &v.current_function;
+    global.current_obj = &v.current_function;
 
     // iterate over the AST, resolve types and check semantics
     ast_iterate(&main_iterator_list, ast, &v);

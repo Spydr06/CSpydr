@@ -61,7 +61,7 @@ i32 typechecker_pass(ASTProg_T* ast)
     TypeChecker_T typechecker = {
         NULL
     };
-    global.current_fn = &typechecker.current_fn;
+    global.current_obj = &typechecker.current_fn;
 
     ast_iterate(&iterator, ast, &typechecker);
     timer_stop();

@@ -1,4 +1,5 @@
 #include "error.h"
+#include "ast/ast.h"
 #include "config.h"
 
 #include <io/log.h>
@@ -13,10 +14,14 @@ void linter_error_handler(ErrorType_T ty, Token_T* tok, const char* format, va_l
 
     fprintf(OUTPUT_FILE, "%s: %u\nfile: %s\nline: %u\ncol: %u\n", is_error ? "error" : "warning", is_error ? global.emitted_errors : global.emitted_warnings, source_file_path, tok->line + 1, tok->pos + 1);
     
-    if(global.current_fn && *global.current_fn) 
+    if(global.current_obj && *global.current_obj) 
     {
         char buf[BUFSIZ] = {};
-        fprintf(OUTPUT_FILE, "function: %s\n", ast_id_to_str(buf, (*global.current_fn)->id, LEN(buf)));
+        fprintf(OUTPUT_FILE,
+            "%s: %s\n",
+            obj_kind_to_str((*global.current_obj)->kind),
+            ast_id_to_str(buf, (*global.current_obj)->id, LEN(buf))
+        );
     }
     fprintf(OUTPUT_FILE, "desc: ");
 

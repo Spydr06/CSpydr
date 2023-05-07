@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-#include <pkgconf/libpkgconf/libpkgconf.h>
+#include <libpkgconf/libpkgconf.h>
 
 #include "error/error.h"
 #include "hashmap.h"
@@ -13,16 +13,12 @@
 #include "list.h"
 #include "mem/mem.h"
 
-typedef struct {
-    char* libname;
-    char* flag;
-} LibOverride_T;
-
-const LibOverride_T OVERRIDES[] = {
-    {"c", "-lc"},
-    {"m", "-lm"},
-    {"pthread", "-lpthread"},
-    {NULL, NULL}
+// list of libraries known to not work with pkgconf which should be present on all systems
+const char* OVERRIDES[] = {
+    "c",
+    "m",
+    "pthread",
+    NULL
 };
 
 static bool pkg_error_handler(const char* msg, const pkgconf_client_t* client, const void *data) {
@@ -35,7 +31,8 @@ static bool pkg_error_handler(const char* msg, const pkgconf_client_t* client, c
 }
 
 static const char* pkg_errf_str(int errf) {
-    switch(errf) {
+    switch(errf)
+    {
         case PKGCONF_PKG_ERRF_PACKAGE_NOT_FOUND:
             return "package not found";
         case PKGCONF_PKG_ERRF_PACKAGE_VER_MISMATCH:
@@ -93,15 +90,29 @@ static char* fragment_quote(const pkgconf_fragment_t *frag)
 	return out;
 }
 
-void pkg_config(const char* name, Token_T* token)
+static void pkg_try_alternative(const char* name, Token_T* token)
 {
-    for(LibOverride_T const* lib = OVERRIDES; lib->libname != NULL; lib++) {
-        if(strcmp(lib->libname, name) == 0) {
-            list_push(global.linker_flags, lib->flag);
-            return;
+    bool emit_warning = true;
+    for(const char** lib = OVERRIDES; *lib != NULL; lib++)
+    {
+        if(strcmp(*lib, name) == 0)
+        {
+            emit_warning = false;
+            break;
         }
     }
 
+    if(emit_warning)
+        throw_error(ERR_PKG_CONFIG_WARN, token, "could not find package named `%s`, trying `-l%s`", name, name);
+    
+    size_t len = strlen(name) + 3;
+    char* buf = calloc(len, sizeof(char));
+    snprintf(buf, len, "-l%s", name);
+    list_push(global.linker_flags, buf);
+} 
+
+void pkg_config(const char* name, Token_T* token)
+{
     if(hashmap_get(global.included_libs, (char*) name) == (void*) 1)
         return;
     hashmap_put(global.included_libs, (char*) name, (void*) 1);
@@ -111,15 +122,18 @@ void pkg_config(const char* name, Token_T* token)
     pkgconf_client_dir_list_build(client, pkgconf_cross_personality_default());
 
     pkgconf_pkg_t* package = pkgconf_pkg_find(client, name);
-    if(!package) {
-        pkgconf_error(client, "could not find package `%s`", name);
-        return;
+    if(!package)
+    {
+        pkg_try_alternative(name, token);
+        goto free_pkg;
     }
 
     pkgconf_list_t libs = PKGCONF_LIST_INITIALIZER;
     int err = pkgconf_pkg_libs(client, package, &libs, -1);
-    if(err != PKGCONF_PKG_ERRF_OK) {
+    if(err != PKGCONF_PKG_ERRF_OK)
+    {
         pkgconf_error(client, "error resolving libraries from package `%s`: %s", name, pkg_errf_str(err));
+        goto free_fragment;
     }
 
     pkgconf_node_t* node;
@@ -137,7 +151,9 @@ void pkg_config(const char* name, Token_T* token)
         free(quoted);
     }
 
+free_fragment:
     pkgconf_fragment_free(&libs);
+free_pkg:
     pkgconf_pkg_free(client, package);
     pkgconf_client_free(client);
 }
