@@ -54,6 +54,9 @@ __CSP_GLOBAL struct {
     char* std_path;
     char* target;
 
+    char** exec_argv;
+    i32 exec_argc;
+
     ASTObj_T** current_obj;
 
     List_T* compiler_flags;

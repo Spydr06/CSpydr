@@ -22,8 +22,8 @@ configure_file(\${SRC} \${DST} @ONLY)
 
 add_custom_target(
     version
-    ${CMAKE_COMMAND} -D SRC=${CMAKE_CURRENT_SOURCE_DIR}/version.h.in
-                     -D DST=${CMAKE_CURRENT_SOURCE_DIR}/version.h
+    ${CMAKE_COMMAND} -DSRC=${CMAKE_CURRENT_SOURCE_DIR}/version.h.in
+                     -DDST=${CMAKE_CURRENT_SOURCE_DIR}/version.h
                      -P ${CMAKE_CURRENT_SOURCE_DIR}/version.cmake    
 )
 

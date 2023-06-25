@@ -24,8 +24,8 @@
 static i32 construct_passes(Pass_T passes[])
 {
     i32 index = 0;
-#define push_pass(fn) do {                  \
-        passes[index++] = (Pass_T){(#fn), (fn)}; \
+#define push_pass(fn) do {                        \
+        passes[index++] = (Pass_T){(#fn), (fn)};  \
         assert(index < __CSP_MAX_PASSES);         \
     } while(0)        
 

@@ -124,6 +124,7 @@ const char help_text[] = "%s"
                        "      --show-timings     | Shows the duration the different compiler stages took\n"
                        "  -p, --std-path         | Set the path of the standard library (default: " DEFAULT_STD_PATH ")\n"
                        "      --clear-cache      | Clears the cache located at %s" DIRECTORY_DELIMS CACHE_DIR "\n"
+                       "      -- [arguments...]  | Define a list of arguments passed to the program when the `run` action is selected\n"
                        "\n"
                        "If you are unsure, what CSpydr is (or how to use it), please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n";
 
@@ -147,6 +148,7 @@ const struct {
 
 static void run(char* file);
 static void evaluate_info_flags(char* argv);
+static void store_exec_args(i32 argc, char* argv[], Action_T action);
 
 // entry point
 i32 main(i32 argc, char* argv[])
@@ -265,6 +267,11 @@ i32 main(i32 argc, char* argv[])
         }
         else if(streq(arg, "--clear-cache"))
             global.clear_cache_after = true;
+        else if(streq(arg, "--"))
+        {
+            store_exec_args(argc - i - 1, &argv[i + 1], action);
+            i = argc;
+        }
         else
             evaluate_info_flags(argv[i]);
     }
@@ -328,13 +335,35 @@ static void run(char* filename)
     }
 
     if(!global.silent)
-        LOG_OK_F(COLOR_BOLD_BLUE "  Executing " COLOR_RESET " %s\n", filename);
-    
+    {
+        LOG_OK_F(COLOR_BOLD_BLUE "  Executing " COLOR_RESET " %s%s", filename, global.exec_argv && global.exec_argc ? " [" : "\n");
+        for(i32 i = 0; i < global.exec_argc; i++)
+            LOG_OK_F(COLOR_RESET "`%s`%s", global.exec_argv[i], global.exec_argc - i > 1 ? ", " : "]\n" COLOR_RESET);
+    }
+
     size_t cmd_len = strlen(filename) + 3;
     char cmd[cmd_len];
     memset(cmd, 0, cmd_len);
     sprintf(cmd, "." DIRECTORY_DELIMS "%s", filename);
 
-    global.last_exit_code = subprocess(cmd, (char* const[]){cmd, NULL}, !global.silent);
+    const char* argv[global.exec_argc + 2];
+    argv[0] = cmd;
+    if(global.exec_argv != NULL)
+        memcpy(argv + 1, global.exec_argv, global.exec_argc * sizeof(const char*));
+
+    global.last_exit_code = subprocess(cmd, (char* const*) argv, !global.silent);
     timer_stop();
+}
+
+static void store_exec_args(i32 argc, char* argv[], Action_T action) 
+{
+    if(action != AC_RUN)
+    {
+        LOG_WARN(COLOR_BOLD_YELLOW "[Warn]" COLOR_RESET COLOR_YELLOW " ignoring parameters [");
+        for(i32 i = 0; i < argc; i++)
+            LOG_WARN_F("`%s`%s", argv[i], argc - i > 1 ? ", " : "] after `--`, because the program is not executed.\n" COLOR_RESET);
+    }
+
+    global.exec_argv = argv;
+    global.exec_argc = argc;
 }

@@ -16,6 +16,22 @@ import "io.csp";
 
 macro MAX_EXIT_HANDLERS { 1024 }
 
+macro todo {
+    (::std::process::die_with_location(__file__!, __line__!, "reached todo!()", nil))
+}
+
+macro todo(reason) {
+    (::std::process::die_with_location(__file__!, __line__!, "reached todo!()", (reason)))
+}
+
+macro unreachable {
+    (::std::process::die_with_location(__file__!, __line__!, "reached unreachable!()", nil))
+}
+
+macro unreachable(reason) {
+    (::std::process::die_with_location(__file__!, __line__!, "reached unreachable!()", (reason)))
+}
+
 namespace std {
     type ExitCode: enum {
         SUCCESS,
@@ -102,7 +118,20 @@ namespace std {
         
         fn die(msg: const &char)
         {
-            io::eputs(msg);
+            if msg != nil
+                io::eputs(msg);
+            exit(ExitCode::FAILURE);
+        }
+
+        fn die_with_location(file: const &char, line: u32, reason: const &char, msg: const &char)
+        {
+            if file != nil
+                io::eprintf("[%s:%i]", file, line);
+            if reason != nil
+                io::eprintf(": %s", reason);
+            if msg != nil
+                io::eprintf(": %s", msg);
+            io::eputs("\n");
             exit(ExitCode::FAILURE);
         }
 
