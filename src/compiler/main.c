@@ -348,7 +348,8 @@ static void run(char* filename)
 
     const char* argv[global.exec_argc + 2];
     argv[0] = cmd;
-    if(global.exec_argv != NULL)
+    argv[1] = NULL;
+    if(global.exec_argc && global.exec_argv != NULL)
         memcpy(argv + 1, global.exec_argv, global.exec_argc * sizeof(const char*));
 
     global.last_exit_code = subprocess(cmd, (char* const*) argv, !global.silent);
