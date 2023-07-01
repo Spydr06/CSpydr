@@ -160,9 +160,9 @@ bool ptr_type(ASTType_T* ty)
     return ty->kind == TY_PTR || ty->kind == TY_VLA;
 }
 
-void print_linking_msg(const char* target) 
+void print_linking_msg(const char* target, bool is_exec) 
 {
-    LOG_OK_F(COLOR_BOLD_BLUE "  Linking   " COLOR_RESET " %s", target);
+    LOG_OK_F(COLOR_BOLD_BLUE "  Linking   " COLOR_RESET " %s " COLOR_BOLD_WHITE "(%s)" COLOR_RESET, target, is_exec ? "executable" : "library");
     if(global.linker_flags->size > 0)
     {
         LOG_OK(COLOR_RESET " (");

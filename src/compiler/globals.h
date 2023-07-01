@@ -40,8 +40,9 @@ __CSP_GLOBAL struct {
             bool timer_enabled          : 1;
             bool clear_cache_after      : 1;
             bool read_main_file_on_init : 1;
+            bool req_entrypoint         : 1;
 
-            u8 __unused__ : 5;
+            u8 __unused__ : 4;
         };
         u16 flags;
     };

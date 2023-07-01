@@ -67,6 +67,7 @@ typedef enum ACTION_ENUM
     AC_NULL = -1,
     AC_BUILD,
     AC_RUN,
+    AC_LIB,
     AC_DEBUG
 } Action_T;
 
@@ -102,6 +103,7 @@ const char help_text[] = "%s"
                        "  build    Builds a cspydr program to a binary to execute.\n"
                        "  run      Builds, then runs a cspydr program directly.\n"
                        "  debug    Builds a cspydr program, then launches the debugger shell.\n"
+                       "  lib      Builds a static or shared library.\n"
                        COLOR_BOLD_WHITE "Options:\n" COLOR_RESET
                        "  -h, --help             | Displays this help text and quits\n"
                        "  -v, --version          | Displays the version of CSpydr and quits\n"
@@ -143,12 +145,14 @@ const struct {
     {"build", AC_BUILD},
     {"run",   AC_RUN},
     {"debug", AC_DEBUG},
+    {"lib",   AC_LIB},
     {NULL, -1}
 };
 
 static void run(char* file);
 static void evaluate_info_flags(char* argv);
 static void store_exec_args(i32 argc, char* argv[], Action_T action);
+static char* default_output_file(Action_T action);
 
 // entry point
 i32 main(i32 argc, char* argv[])
@@ -179,12 +183,13 @@ i32 main(i32 argc, char* argv[])
             action = action_table[i].ac;
     if(action == AC_NULL)
     {
-        LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " unknown action \"%s\", expect one of [build, run, debug]\n", argv[1]);
+        LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " unknown action \"%s\", expect one of [build, run, debug, lib]\n", argv[1]);
         exit(1);
     }
+    global.req_entrypoint = action != AC_LIB;
 
     // declare the input/output files
-    char* output_file = DEFAULT_OUTPUT_FILE;
+    char* output_file = default_output_file(action);
     char* input_file;
 
     input_file = argv[2];
@@ -281,6 +286,7 @@ i32 main(i32 argc, char* argv[])
     switch(action)
     {
         case AC_BUILD:
+        case AC_LIB:
             break;
         case AC_DEBUG:
             debug_repl(input_file, output_file);
@@ -367,4 +373,14 @@ static void store_exec_args(i32 argc, char* argv[], Action_T action)
 
     global.exec_argv = argv;
     global.exec_argc = argc;
+}
+
+static char* default_output_file(Action_T action)
+{
+    switch(action) {
+    case AC_LIB:
+        return "a.so";
+    default:
+        return "a.out";
+    }
 }

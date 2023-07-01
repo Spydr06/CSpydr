@@ -10,6 +10,7 @@ typedef struct ASM_CODEGEN_DATA_STRUCT
     bool silent;
     bool print;
     bool embed_file_locations;
+    bool link_exec;
 
     char* buf;
     size_t buf_len;

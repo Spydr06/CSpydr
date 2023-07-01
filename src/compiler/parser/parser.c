@@ -634,8 +634,8 @@ static void export_fn(ASTObj_T* obj, Token_T* export_name)
     obj->exported = export_name->value;
     obj->referenced = true;
 
-    if(!obj->is_extern && !obj->is_extern_c)
-        throw_error(ERR_MISC, export_name, "`export` can only be used with `extern` functions currently");
+    if(!obj->is_extern && !obj->is_extern_c && global.req_entrypoint)
+        throw_error(ERR_MISC, export_name, "`export` can only be used in libraries or with `extern` functions currently");
 }
 
 static void parse_compiler_directives(Parser_T* p, List_T* obj_list)

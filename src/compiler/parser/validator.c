@@ -252,9 +252,9 @@ i32 validator_pass(ASTProg_T* ast)
 
     // check for the main function
     check_exit_fns(&v);
-    if(!v.main_function_found)
+    if(!v.main_function_found && global.req_entrypoint)
     {
-        LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " mssing entrypoint; no `main` function declared.\n");
+        LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " missing entrypoint; no `main` function declared.\n");
         global.emitted_errors++;
     }
 
@@ -607,6 +607,7 @@ static void id_use(ASTIdentifier_T* id, va_list args)
 static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
 {
     main_fn->is_entry_point = true;
+    main_fn->referenced = true;
     v->ast->entry_point = main_fn;
 
     ASTType_T* return_type = expand_typedef(v, main_fn->return_type);

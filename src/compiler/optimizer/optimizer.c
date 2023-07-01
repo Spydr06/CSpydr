@@ -8,6 +8,7 @@
 #include "list.h"
 #include "globals.h"
 #include "timer/timer.h"
+#include <stdarg.h>
 
 #define throw_error(...)              \
     do {                              \
@@ -15,7 +16,7 @@
         throw_error(__VA_ARGS__);     \
     } while(0)
 
-void remove_dead_code(ASTProg_T* ast);
+static void remove_dead_code(ASTProg_T* ast);
 void evaluate_const_exprs(ASTProg_T* ast);
 
 i32 optimizer_pass(ASTProg_T *ast)
@@ -50,12 +51,24 @@ i32 optimizer_pass(ASTProg_T *ast)
     return global.emitted_errors;
 }
 
-void remove_dead_code(ASTProg_T* ast)
-{
-    ast->entry_point->referenced = true;
+static void add_func_to_node_stack(ASTObj_T* function, va_list ap) {
+    if(function->referenced && function->body) {
+        List_T* node_stack = va_arg(ap, List_T*);
+        list_push(node_stack, function->body);
+    }
+}
 
+static void remove_dead_code(ASTProg_T* ast)
+{
+    static const ASTIteratorList_T referenced_iter_list = {
+        .iterate_only_objs = true,
+        .obj_start_fns = {
+            [OBJ_FUNCTION] = add_func_to_node_stack
+        }
+    };
+    
     List_T* node_stack = init_list();
-    list_push(node_stack, ast->entry_point->body);
+    ast_iterate(&referenced_iter_list, ast, node_stack);
 
     while(node_stack->size)
     {

@@ -262,6 +262,7 @@ i32 asm_codegen_pass(ASTProg_T* ast)
     init_asm_cg(&cg, ast);
     cg.silent = global.silent;
     cg.print = global.print_code;
+    cg.link_exec = ast->entry_point != NULL;
 
     asm_gen_code(&cg, global.target);
     free_asm_cg(&cg);
@@ -284,7 +285,8 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         asm_gen_file_descriptors(cg);
     asm_assign_lvar_offsets(cg, cg->ast->objs);
     asm_gen_data(cg, cg->ast->objs);
-    asm_println(cg, "%s", asm_start_text[cg->ast->mfk]);
+    if(cg->ast->entry_point)
+        asm_println(cg, "%s", asm_start_text[cg->ast->mfk]);
     asm_gen_text(cg, cg->ast->objs);
     asm_gen_string_literals(cg);
     write_code(cg, target, global.do_assemble);
@@ -340,7 +342,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
 
     // run the linker
     if(global.do_link) 
-        link_obj(target, obj_file, cg->silent);
+        link_obj(target, obj_file, cg->silent, cg->link_exec);
 }
 
 static char* asm_gen_identifier(ASTIdentifier_T* id)

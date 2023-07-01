@@ -20,6 +20,6 @@ bool is_variadic(ASTType_T* ty);
 ASTType_T* unpack(ASTType_T* ty);
 bool should_emit(ASTObj_T* obj);
 bool ptr_type(ASTType_T* ty);
-void print_linking_msg(const char* target);
+void print_linking_msg(const char* target, bool is_exec);
 
 #endif

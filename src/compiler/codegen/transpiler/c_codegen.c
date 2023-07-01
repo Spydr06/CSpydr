@@ -324,7 +324,8 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
     c_gen_function_definitions(cg, cg->ast->objs);
     c_gen_lambdas(cg);
     c_gen_functions(cg, cg->ast->objs);
-    c_println(cg, "%s", c_start_text[cg->ast->mfk]);
+    if(cg->ast->entry_point)
+        c_println(cg, "%s", c_start_text[cg->ast->mfk]);
     write_code(cg, target, global.do_assemble);
 
     if(cg->print)
@@ -348,7 +349,8 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
     if(global.do_link)
     {
         if(!cg->silent)
-            print_linking_msg(target);
+            print_linking_msg(target, global.req_entrypoint);
+
 
         const char* args[] = {
             cc,
@@ -363,6 +365,9 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
         if(global.embed_debug_info)
             list_push(arg_list, "-g");
         
+        if(!global.req_entrypoint)
+            list_push(arg_list, "-shared");
+
         if(global.optimize)
             list_push(arg_list, "-O2");
         
@@ -767,7 +772,7 @@ static void c_gen_globals(CCodegenData_T* cg, List_T* objs)
 
 static void c_gen_function_declaration(CCodegenData_T* cg, ASTObj_T* obj)
 {
-    if(obj->is_extern)
+    if(obj->is_extern || obj->exported)
         c_print(cg, "extern ");
     
     c_gen_type(cg, obj->return_type);
@@ -800,6 +805,8 @@ static void c_gen_function_definitions(CCodegenData_T* cg, List_T* objs)
             if(!should_emit(obj))
                 continue;
             c_gen_function_declaration(cg, obj);
+            if(obj->exported)
+                c_print(cg, " __asm__ (\"%s\")", obj->exported);
             c_println(cg, ";");
             break;
         default:
