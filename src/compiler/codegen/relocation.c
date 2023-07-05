@@ -1,4 +1,5 @@
 #include "relocation.h"
+#include "ast/ast.h"
 #include "codegen/codegen_utils.h"
 #include "ast/types.h"
 #include "optimizer/constexpr.h"
@@ -98,8 +99,15 @@ void gen_relocation(ASTNode_T* node, size_t target_size, u8* buffer)
         } break;
 
         case ND_STRUCT:
-            LOG_ERROR("Not implemented\n");
-            break;
+        {
+            size_t offset = 0;
+            for(size_t i = 0; i < node->args->size; i++)
+            {
+                ASTNode_T* arg = node->args->items[i];
+                gen_relocation(arg, arg->data_type->size, buffer + offset);
+                offset += arg->data_type->size;
+            }  
+        } break;
         
         case ND_CLOSURE:
             gen_relocation(node->expr, target_size, buffer);
@@ -120,9 +128,44 @@ void gen_relocation(ASTNode_T* node, size_t target_size, u8* buffer)
                 gen_relocation(node->referenced_obj->value, target_size, buffer);
                 break;
             }
-            // fall through
+            throw_error(ERR_CODEGEN, node->tok, "cannot generate relocation for `%s` (%d)", node->tok->value, node->kind);
+            break;
 
         default:
+            if(is_unsigned_integer_type(node->data_type))
+            {
+                u64 data = const_u64(node);
+                memcpy(buffer, &data, MIN(U64_S, target_size));
+                return;
+            }
+            else if(is_signed_integer_type(node->data_type))
+            {
+                i64 raw_data = const_i64(node);
+                switch(node->data_type->size) {
+                case I64_S:
+                    memcpy(buffer, &raw_data, MIN(I64_S, target_size));
+                    break;
+                case I32_S: {
+                    i32 data = (i32) raw_data;
+                    memcpy(buffer, &data, MIN(I32_S, target_size));
+                    break;
+                }
+                case I16_S: {
+                    i16 data = (i16) raw_data;
+                    memcpy(buffer, &data, MIN(I16_S, target_size));
+                    break;
+                }
+                case I8_S: {
+                    i8 data = (i8) raw_data;
+                    memcpy(buffer, &data, MIN(I8_S, target_size));
+                    break;
+                }
+                default:
+                    unreachable();
+                }
+                return;
+            }
+
             throw_error(ERR_CODEGEN, node->tok, "cannot generate relocation for `%s` (%d)", node->tok->value, node->kind);
             break;
     }

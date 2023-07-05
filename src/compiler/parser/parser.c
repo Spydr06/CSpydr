@@ -136,6 +136,8 @@ static ASTNode_T* parse_pow_3(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_current_fn_token(Parser_T* p);
 
 static ASTType_T* parse_type(Parser_T* p);
+static ASTObj_T* parse_fn_def(Parser_T* p);
+
 
 static struct { 
     PrefixParseFn_T pfn; 
@@ -839,6 +841,28 @@ static ASTType_T* parse_lambda_type(Parser_T* p)
     return lambda;
 }
 
+static ASTType_T* parse_interface_type(Parser_T* p)
+{
+    ASTType_T* interface = init_ast_type(TY_INTERFACE, p->tok);
+    parser_consume(p, TOKEN_INTERFACE, "expect `interface` keyword for interface type");
+    parser_consume(p, TOKEN_LBRACE, "expect `{` after `interface`");
+
+    interface->func_decls = init_list();
+    mem_add_list(interface->func_decls);
+
+    while(!tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF))
+    {
+        list_push(interface->func_decls, parse_fn_def(p));
+
+        if(!tok_is(p, TOKEN_RBRACE))
+            parser_consume(p, TOKEN_COMMA, "expect `,` between interface functions");
+    }
+
+    parser_consume(p, TOKEN_RBRACE, "expect `}` after interface body");
+
+    return interface;
+}
+
 static ASTObj_T* parser_generate_tuple_type(Parser_T* p, ASTType_T* tuple)
 {
     ASTObj_T* existing_tydef = get_compatible_tuple(p, tuple);
@@ -895,6 +919,9 @@ static ASTType_T* parse_type(Parser_T* p)
             case TOKEN_UNION:
             case TOKEN_STRUCT:
                 type = parse_struct_type(p);
+                break;
+            case TOKEN_INTERFACE:
+                type = parse_interface_type(p);
                 break;
             case TOKEN_ENUM:
                 type = parse_enum_type(p);
@@ -988,7 +1015,6 @@ parse_array_ty:
 /////////////////////////////////
 
 static ASTObj_T* parse_global(Parser_T* p);
-static ASTObj_T* parse_fn_def(Parser_T* p);
 
 static ASTObj_T* parse_typedef(Parser_T* p)
 {

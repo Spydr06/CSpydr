@@ -141,38 +141,39 @@ enum CSPYDR_TOKEN_TYPE {
 
     CSPYDR_TOKEN(C_ARRAY),      // 'c or 'C
 
-    CSPYDR_TOKEN(IF),           // if
-    CSPYDR_TOKEN(ELSE),         // else
-    CSPYDR_TOKEN(LOOP),         // loop
-    CSPYDR_TOKEN(RETURN),       // ret
-    CSPYDR_TOKEN(MATCH),        // match
-    CSPYDR_TOKEN(FN),           // fn
-    CSPYDR_TOKEN(LET),          // let
-    CSPYDR_TOKEN(TYPE),         // type
-    CSPYDR_TOKEN(STRUCT),       // struct
-    CSPYDR_TOKEN(UNION),        // union
-    CSPYDR_TOKEN(ENUM),         // enum
-    CSPYDR_TOKEN(IMPORT),       // import
-    CSPYDR_TOKEN(EXTERN),       // extern
-    CSPYDR_TOKEN(MACRO),        // macro
-    CSPYDR_TOKEN(CONST),        // const
-    CSPYDR_TOKEN(NAMESPACE),    // namespace
-    CSPYDR_TOKEN(SIZEOF),       // sizeof
-    CSPYDR_TOKEN(TYPEOF),       // typeof
     CSPYDR_TOKEN(ALIGNOF),      // alignof
-    CSPYDR_TOKEN(WHILE),        // while
-    CSPYDR_TOKEN(FOR),          // for
-    CSPYDR_TOKEN(CONTINUE),     // continue
-    CSPYDR_TOKEN(BREAK),        // break
-    CSPYDR_TOKEN(NOOP),         // noop
-    CSPYDR_TOKEN(LEN),          // len
     CSPYDR_TOKEN(ASM),          // asm
-    CSPYDR_TOKEN(USING),        // using
-    CSPYDR_TOKEN(WITH),         // with
-    CSPYDR_TOKEN(DO),           // do
-    CSPYDR_TOKEN(UNLESS),       // unless
+    CSPYDR_TOKEN(BREAK),        // break
+    CSPYDR_TOKEN(CONST),        // const
+    CSPYDR_TOKEN(CONTINUE),     // continue
     CSPYDR_TOKEN(DEFER),        // defer
+    CSPYDR_TOKEN(DO),           // do
+    CSPYDR_TOKEN(ELSE),         // else
     CSPYDR_TOKEN(EMBED),        // embed
+    CSPYDR_TOKEN(ENUM),         // enum
+    CSPYDR_TOKEN(EXTERN),       // extern
+    CSPYDR_TOKEN(FN),           // fn
+    CSPYDR_TOKEN(FOR),          // for
+    CSPYDR_TOKEN(IF),           // if
+    CSPYDR_TOKEN(IMPORT),       // import
+    CSPYDR_TOKEN(INTERFACE),    // interface
+    CSPYDR_TOKEN(LEN),          // len
+    CSPYDR_TOKEN(LET),          // let
+    CSPYDR_TOKEN(LOOP),         // loop
+    CSPYDR_TOKEN(MACRO),        // macro
+    CSPYDR_TOKEN(MATCH),        // match
+    CSPYDR_TOKEN(NAMESPACE),    // namespace
+    CSPYDR_TOKEN(NOOP),         // noop
+    CSPYDR_TOKEN(RETURN),       // ret
+    CSPYDR_TOKEN(SIZEOF),       // sizeof
+    CSPYDR_TOKEN(STRUCT),       // struct
+    CSPYDR_TOKEN(TYPE),         // type
+    CSPYDR_TOKEN(TYPEOF),       // typeof
+    CSPYDR_TOKEN(UNION),        // union
+    CSPYDR_TOKEN(UNLESS),       // unless
+    CSPYDR_TOKEN(USING),        // using
+    CSPYDR_TOKEN(WHILE),        // while
+    CSPYDR_TOKEN(WITH),         // with
 
     CSPYDR_TOKEN(CURRENT_FN),   // special token for the __func__! macro
 
@@ -352,6 +353,7 @@ enum CSPYDR_AST_TYPE_KIND_ENUM {
     CSPYDR_TY(UNDEF),   // <identifier>
     CSPYDR_TY(TYPEOF),  // typeof x
     CSPYDR_TY(TEMPLATE), // template types temporarily used during parsing
+    CSPYDR_TY(INTERFACE),   // interface
     
     CSPYDR_TY(KIND_LEN)
 };

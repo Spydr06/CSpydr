@@ -196,7 +196,14 @@ i64 const_i64(ASTNode_T* node)
         case ND_CAST:
             return const_i64(node->left);
         case ND_ID:
-            if(node->referenced_obj && node->referenced_obj->kind == OBJ_GLOBAL && node->referenced_obj->is_constant)
+            if(!node->referenced_obj)
+            {
+                throw_error(ERR_CONSTEXPR, node->tok, "`%s` is not a compile-time constant", node->tok->value);
+                return 0;
+            }
+            if(node->referenced_obj->kind == OBJ_GLOBAL && node->referenced_obj->is_constant)
+                return const_i64(node->referenced_obj->value);
+            if(node->referenced_obj->kind == OBJ_ENUM_MEMBER)
                 return const_i64(node->referenced_obj->value);
             // fall through
         default:

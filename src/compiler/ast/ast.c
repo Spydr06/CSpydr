@@ -236,6 +236,9 @@ char* ast_type_to_str(char* dest, ASTType_T* ty, size_t size)
             }
             strcat(dest, "}");
             break;
+        case TY_INTERFACE:
+            strcat(dest, "interface {}");
+            break;
         case TY_ENUM:
             strcat(dest, "enum");
             break;

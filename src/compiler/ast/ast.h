@@ -202,6 +202,8 @@ struct AST_TYPE_STRUCT
         List_T* arg_types;  // list of ASTType_Ts
         // arrays
         ASTNode_T* num_indices_node;
+        // interfaces
+        List_T* func_decls; // list of ASTObj_Ts
 
         // enums, structs
         List_T* members;    // list of ASTNode_Ts

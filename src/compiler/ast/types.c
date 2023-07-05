@@ -138,3 +138,24 @@ ASTType_T* ptr_to(Token_T* tok, ASTType_T* base)
 
     return ptr;
 }
+
+bool is_signed_integer_type(ASTType_T* ty)
+{
+     return ty && (
+        ty->kind == TY_I8 || 
+        ty->kind == TY_I16 || 
+        ty->kind == TY_I32 || 
+        ty->kind == TY_I64 ||
+        ty->kind == TY_ENUM 
+    );
+}
+
+bool is_unsigned_integer_type(ASTType_T* ty)
+{
+    return ty && (
+        ty->kind == TY_U8 || 
+        ty->kind == TY_U16 || 
+        ty->kind == TY_U32 || 
+        ty->kind == TY_U64
+    );
+}
