@@ -23,6 +23,7 @@
 #include "timer/timer.h"
 #include "codegen/transpiler/c_codegen.h"
 #include "platform/pkg_config.h"
+#include "directives.h"
 
 #include <errno.h>
 #include <limits.h>
@@ -313,14 +314,26 @@ static inline Token_T* parser_advance(Parser_T* p)
     return p->tok;
 }
 
-static inline Token_T* parser_peek(Parser_T* p, i32 level)
+Context_T* parser_context(Parser_T* p)
 {
+    return p->context;
+}
+
+ASTProg_T* parser_ast(Parser_T* p)
+{
+    return p->root_ref;
+}
+
+inline Token_T* parser_peek(Parser_T* p, i32 level)
+{
+    if(level == 0)
+        return p->tok;
     if(p->token_i + level >= p->tokens->size || p->token_i + level <= 0)
         return NULL;
     return p->tokens->items[p->token_i + level];
 }
 
-static inline bool tok_is(Parser_T* p, TokenType_T type)
+inline bool tok_is(Parser_T* p, TokenType_T type)
 {
     return p->tok->type == type;
 }
@@ -407,9 +420,6 @@ static ASTObj_T* get_compatible_tuple(Parser_T* p, ASTType_T* tuple)
 // Parser                      //
 /////////////////////////////////
 
-static void parse_obj(Parser_T* p, List_T* obj_list);
-static void parse_compiler_directives(Parser_T* p, List_T* obj_list);
-
 i32 parser_pass(Context_T* context, ASTProg_T* ast)
 {
     if(!context->flags.silent)
@@ -455,220 +465,6 @@ i32 parser_pass(Context_T* context, ASTProg_T* ast)
     timer_stop(context);
 
     return 0;
-}
-
-/////////////////////////////////
-// Compiler Directives Parser  //
-/////////////////////////////////
-
-static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, List_T* obj_list)
-{
-    if(streq(field->value, "link"))
-        pkg_config(p->context, value, field);
-    else if(streq(field->value, "link_dir"))
-    {
-        char* link_flag = calloc(strlen(value) + 3, sizeof(char));
-        sprintf(link_flag, "-L%s", value);
-        mem_add_ptr(link_flag);
-
-        list_push(p->context->linker_flags, link_flag);
-    }
-    else if(streq(field->value, "link_obj"))
-    {
-        char* abs_path = get_absolute_path(p->tok->source->path);
-        char* working_dir = get_path_from_file(abs_path);
-
-        char* full_fp = mem_malloc((strlen(working_dir) + strlen(DIRECTORY_DELIMS) + strlen(value) + 2) * sizeof(char));
-        sprintf(full_fp, "%s" DIRECTORY_DELIMS "%s", working_dir, value);
-        list_push(p->context->linker_flags, full_fp);
-
-        free(abs_path);
-    }
-    else if(streq(field->value, "no_return"))
-    {
-        bool all = streq("*", value);
-        for(size_t i = 0; i < obj_list->size; i++)
-        {
-            ASTObj_T* obj = obj_list->items[i];
-            if(all)
-            {
-                if(obj->kind != OBJ_FUNCTION) 
-                    continue;
-                obj->no_return = true;
-            }
-            else if(streq(obj->id->callee, value))
-            {
-                if(obj->kind != OBJ_FUNCTION)
-                    throw_error(p->context, ERR_TYPE_ERROR, p->tok, "`%s` is not a function, thus cannot have the `no_return` attribute", value);
-
-                obj->no_return = true;
-                return;
-            }
-        }
-        
-        if(!all)
-            throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "could not find function `%s` in current scope", value);        
-    }
-    else if(streq(field->value, "exit_fn"))
-    {
-        parser_consume(p, TOKEN_COLON, "expect `:` after `exit_fn` compiler directive arg");
-        ASTType_T* ty = parse_type(p);
-        for(size_t i = 0; i < obj_list->size; i++)
-        {
-            ASTObj_T* obj = obj_list->items[i];
-            if(streq(value, obj->id->callee) && obj->kind == OBJ_FUNCTION)
-            {
-                ASTExitFnHandle_T* handle = mem_malloc(sizeof(ASTExitFnHandle_T));
-                handle->fn = obj;
-                handle->type = ty;
-                handle->tok = parser_peek(p, -2);
-
-                if(!p->root_ref->type_exit_fns)
-                    mem_add_list(p->root_ref->type_exit_fns = init_list());
-                list_push(p->root_ref->type_exit_fns, handle);
-                return;
-            }
-        }
-        throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "could not find function `%s` in current scope", value);
-    }
-    else if(streq(field->value, "cfg"))
-    {   
-    }
-#ifdef CSPYDR_LINUX
-    else if(streq(field->value, "cc"))
-    {
-        char* abs_path = get_absolute_path(p->tok->source->path);
-        char* working_dir = get_path_from_file(abs_path);
-        if(!p->context->flags.silent) 
-            LOG_OK_F(COLOR_BOLD_CYAN "  Command   " COLOR_RESET " \"%s %s\"\n", cc, value);
-
-        List_T* args = init_list();
-        list_push(args, cc);
-        
-        char* ch = strtok(value, " ");
-        while(ch != NULL)
-        {
-            list_push(args, ch);
-            ch = strtok(NULL, " ");
-        }
-
-        char current_dir[FILENAME_MAX];
-        getcwd(current_dir, LEN(current_dir));
-        chdir(working_dir);
-        
-        i32 exit_code = subprocess(cc, (char* const*) args->items, false);
-        if(exit_code)
-            throw_error(p->context, ERR_MISC, parser_peek(p, -1), "command %s %s failed with exit code %d", cc, value, exit_code);
-
-        chdir(current_dir);
-        free_list(args);
-        free(abs_path);
-    }
-    else if(streq(field->value, "copy"))
-    {
-        char* from = value;
-        parser_consume(p, TOKEN_ARROW, "expect `=>` after first copy file");
-        char* to = p->tok->value;
-        parser_consume(p, TOKEN_STRING, "expect string literal after `=>`");
-
-        if(!p->context->flags.silent) 
-            LOG_OK_F(COLOR_BOLD_CYAN "  Command" COLOR_RESET "    \"cp -r %s %s\"\n", from, to);
-
-        char* abs_path = get_absolute_path(p->tok->source->path);
-        char* working_dir = get_path_from_file(abs_path);
-        char current_dir[FILENAME_MAX];
-        getcwd(current_dir, LEN(current_dir));
-        chdir(working_dir);
-
-        char* const args[] = {
-            "cp",
-            "-r",
-            from,
-            to,
-            NULL
-        };
-        i32 exit_code = subprocess(args[0], args, false);
-        if(exit_code)
-            throw_error(p->context, ERR_MISC, parser_peek(p, -1), "copy failed with exit code %d", exit_code);
-
-        chdir(current_dir);
-        free(abs_path);
-    }
-#endif
-    else
-        throw_error(p->context, ERR_SYNTAX_WARNING, field, "undefined compiler directive `%s`", field->value);
-}
-
-static bool handle_compiler_cfg(Parser_T* p, const char* field)
-{
-    for(size_t i = 0; configurations[i].name; i++)
-    {
-        const Config_T* cfg = &configurations[i];
-        if(strcmp(cfg->name, field) == 0)
-            return cfg->set(p->context);
-    }
-
-    throw_error(p->context, ERR_UNDEFINED_UNCR, p->tok, "undefined `cfg` directive `%s`", field);
-    return false;
-}
-
-static void export_fn(Context_T* context, ASTObj_T* obj, Token_T* export_name)
-{
-    if(!obj || !export_name)
-        return;
-    
-    if(obj->kind != OBJ_FUNCTION)
-        throw_error(context, ERR_TYPE_ERROR_UNCR, export_name, "`export` compiler directive expects object of type function, got `%s`", obj_kind_to_str(obj->kind));
-
-    obj->exported = export_name->value;
-    obj->referenced = true;
-
-    if(!obj->is_extern && !obj->is_extern_c && context->flags.require_entrypoint)
-        throw_error(context, ERR_MISC, export_name, "`export` can only be used in libraries or with `extern` functions currently");
-}
-
-static void parse_compiler_directives(Parser_T* p, List_T* obj_list)
-{
-    parser_consume(p, TOKEN_LBRACKET, "expect `[` for compiler directive");
-
-    Token_T* field_token = p->tok;
-    parser_consume(p, TOKEN_ID, "expect compiler directive identifier");
-    parser_consume(p, TOKEN_LPAREN, "expect `(` after identifier");
-
-    bool obj_after = false;
-    bool keep_obj = true;
-    Token_T* export_name = NULL;
-    do {
-        if(tok_is(p, TOKEN_COMMA))
-            parser_advance(p);
-        Token_T* tok = p->tok;
-        parser_consume(p, TOKEN_STRING, "expect value as string");
-        if(streq(field_token->value, "cfg"))
-        {
-            obj_after = true;
-            if(!handle_compiler_cfg(p, tok->value))
-                keep_obj = false;
-        }
-        else if(streq(field_token->value, "export"))
-        {
-            obj_after = true;
-            export_name = tok;
-        }
-        else
-            eval_compiler_directive(p, field_token, tok->value, obj_list);
-    } while(tok_is(p, TOKEN_COMMA));
-
-    parser_consume(p, TOKEN_RPAREN, "expect `)` after value");
-    parser_consume(p, TOKEN_RBRACKET, "expect `]` after compiler directive");
-
-    if(obj_after)
-    {
-        u64 size_before = obj_list->size;
-        parse_obj(p, obj_list);
-        export_fn(p->context, list_last(obj_list), export_name);
-        if(!keep_obj && size_before < obj_list->size)
-            list_pop(obj_list);
-    }
 }
 
 /////////////////////////////////
@@ -1263,7 +1059,7 @@ static void parse_namespace(Parser_T* p, List_T* objs)
     p->cur_obj = last_obj;
 }
 
-static void parse_obj(Parser_T* p, List_T* obj_list)
+void parse_obj(Parser_T* p, List_T* obj_list)
 {
     switch(p->tok->type)
     {
@@ -1284,7 +1080,7 @@ static void parse_obj(Parser_T* p, List_T* obj_list)
             parse_namespace(p, obj_list);
             break;
         case TOKEN_LBRACKET:
-            parse_compiler_directives(p, obj_list);
+            parse_directives(p, obj_list);
             break;
         default:
             throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect [import, type, let, const, fn]", p->tok->value);

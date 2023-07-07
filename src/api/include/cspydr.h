@@ -398,17 +398,18 @@ enum CSPYDR_AST_TYPE_KIND_ENUM {
 #endif
 
 enum CSPYDR_AST_OBJ_KIND_ENUM {
-    CSPYDR_OBJ(GLOBAL),      // global variable
-    CSPYDR_OBJ(LOCAL),       // local variable
-    CSPYDR_OBJ(FUNCTION),    // function
-    CSPYDR_OBJ(FN_ARG),      // function argument
-    CSPYDR_OBJ(TYPEDEF),     // datatype definition
-    CSPYDR_OBJ(NAMESPACE),   // namespace
-    CSPYDR_OBJ(ENUM_MEMBER), // member of an `enum` data type
+    CSPYDR_OBJ(GLOBAL)      = 0b00000001, // global variable
+    CSPYDR_OBJ(LOCAL)       = 0b00000010, // local variable
+    CSPYDR_OBJ(FUNCTION)    = 0b00000100, // function
+    CSPYDR_OBJ(FN_ARG)      = 0b00001000, // function argument
+    CSPYDR_OBJ(TYPEDEF)     = 0b00010000, // datatype definition
+    CSPYDR_OBJ(NAMESPACE)   = 0b00100000, // namespace
+    CSPYDR_OBJ(ENUM_MEMBER) = 0b01000000, // member of an `enum` data type
 
     //! internal:
-    CSPYDR_OBJ(LAMBDA),      // lambda implementation used internally
+    CSPYDR_OBJ(LAMBDA)      = 0b10000000,      // lambda implementation used internally
 
+    CSPYDR_OBJ(ANY)         = 0b11111111,
     CSPYDR_OBJ(KIND_LEN)
 };
 

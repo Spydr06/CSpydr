@@ -117,6 +117,7 @@ namespace std {
             #<- (&plen[1]): &void;
         }
 
+        [drop]
         fn free(ptr: &void)
         {
             if ptr == nil ret;
@@ -127,7 +128,6 @@ namespace std {
 
             syscall::munmap(plen: &void, length);
         }
-        [exit_fn("free": &void)]
 
         fn copy(dest: &void, src: &const void, n: usize): i32
         {

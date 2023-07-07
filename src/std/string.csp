@@ -104,11 +104,11 @@ namespace std {
             <- str_ptr;
         }
 
+        [drop]
         fn free(str: std::String) 
         {
             memory::free(get_data(str));
         } 
-        [exit_fn("free": std::String)]
 
         fn get_data(str: String): &StringData 
         {

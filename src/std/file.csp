@@ -132,6 +132,7 @@ namespace std {
             <- c;
         }
 
+        [drop]
         fn close(file: &File): Error
         {
             do
@@ -143,7 +144,6 @@ namespace std {
 
             <- error::none();
         }
-        [exit_fn("close": &std::File)]
 
         fn size(file: &File): i64
         {

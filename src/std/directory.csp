@@ -89,13 +89,13 @@ namespace std {
             <- dir;
         }
 
+        [drop]
         fn close(dir: &Directory): i32 
         {
             let return = syscall::close(dir.fd);
             memory::free(dir);
             <- return;
         }
-        [exit_fn("close": &std::Directory)]
 
         fn tell(dir: &Directory): i64 
         {
