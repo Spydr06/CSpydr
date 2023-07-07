@@ -5,8 +5,8 @@
 #include "ast/ast.h"
 
 void llvm_exit_hook(void);
-void generate_llvm(ASTProg_T *ast, char *output_file, bool print_code, bool is_silent);
-i32 llvm_codegen_pass(ASTProg_T* ast);
+void generate_llvm(Context_T* context, ASTProg_T *ast, char *output_file, bool print_code, bool is_silent);
+i32 llvm_codegen_pass(Context_T* context, ASTProg_T* ast);
 
 #endif
 #endif

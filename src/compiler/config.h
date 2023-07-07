@@ -102,9 +102,10 @@ void get_build(char* dest);
 // language access to compiler config via [cfg()] //
 ////////////////////////////////////////////////////
 
+typedef struct CSPYDR_CONTEXT_STRUCT Context_T;
 typedef struct CONFIG_STRUCT {
     const char* name;
-    bool (*set)(void);
+    bool (*set)(Context_T*);
 } Config_T;
 
 extern const Config_T configurations[];

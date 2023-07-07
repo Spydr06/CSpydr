@@ -50,7 +50,7 @@
 #include "util.h"
 #include "version.h"
 #include "config.h"
-#include "globals.h"
+#include "context.h"
 #include "debugger/debugger.h"
 
 #ifdef CSPYDR_USE_LLVM
@@ -149,22 +149,23 @@ const struct {
     {NULL, -1}
 };
 
-static void run(char* file);
-static void evaluate_info_flags(char* argv);
-static void store_exec_args(i32 argc, char* argv[], Action_T action);
+static void run(Context_T* context, char* file);
+static void evaluate_info_flags(Context_T* context, char* argv);
+static void store_exec_args(Context_T* context, i32 argc, char* argv[], Action_T action);
 static char* default_output_file(Action_T action);
 
 // entry point
 i32 main(i32 argc, char* argv[])
 {
-    init_globals();
-    atexit(globals_exit_hook);
-    atexit(mem_free);
+    Context_T context;
+    init_context(&context);
+
 #ifdef CSPYDR_USE_LLVM
     atexit(llvm_exit_hook);
 #endif
+    atexit(mem_free);
 
-    global.exec_name = argv[0]; // save the execution name for later use
+    context.paths.exec_name = argv[0]; // save the execution name for later use
     if(argc == 1)
     {
         LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " too few arguments given.\n" COLOR_RESET "%s", usage_text);
@@ -173,11 +174,11 @@ i32 main(i32 argc, char* argv[])
 
     // if there are 2 args, check for --help, --info or --version flags
     if(argv[1][0] == '-')
-        evaluate_info_flags(argv[1]);
+        evaluate_info_flags(&context, argv[1]);
 
     // get the action to perform
     Action_T action = AC_NULL;
-    global.ct = DEFAULT_COMPILE_TYPE;
+    context.ct = DEFAULT_COMPILE_TYPE;
     for(i32 i = 0; action_table[i].as_str; i++)
         if(streq(argv[1], action_table[i].as_str))
             action = action_table[i].ac;
@@ -186,7 +187,7 @@ i32 main(i32 argc, char* argv[])
         LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " unknown action \"%s\", expect one of [build, run, debug, lib]\n", argv[1]);
         exit(1);
     }
-    global.req_entrypoint = action != AC_LIB;
+    context.flags.require_entrypoint = action != AC_LIB;
 
     // declare the input/output files
     char* output_file = default_output_file(action);
@@ -217,29 +218,29 @@ i32 main(i32 argc, char* argv[])
             output_file = argv[i];
         }
         else if(streq(arg, "--print-code"))
-            global.print_code = true;
+            context.flags.print_code = true;
         else if(streq(arg, "-t") || streq(arg, "--transpile"))
-            global.ct = CT_TRANSPILE;
+            context.ct = CT_TRANSPILE;
         else if(streq(arg, "-a") || streq(arg, "--asm"))
-            global.ct = CT_ASM;
+            context.ct = CT_ASM;
 #ifdef CSPYDR_USE_LLVM
         else if(streq(arg, "-l") || streq(arg, "--llvm"))
-                    global.ct = CT_LLVM;
+            context.ct = CT_LLVM;
 #endif
         else if(streq(arg, "--to-json"))
-            global.ct = CT_TO_JSON;
+            context.ct = CT_TO_JSON;
         else if(streq(arg, "--from-json"))
-            global.from_json = true;
+            context.flags.from_json = true;
         else if(streq(arg, "--silent"))
-            global.silent = true;
+            context.flags.silent = true;
         else if(streq(arg, "-S"))
-            global.do_link = global.do_assemble = false;
+            context.flags.do_linking = context.flags.do_assembling = false;
         else if(streq(arg, "-c"))
-            global.do_link = false;
+            context.flags.do_linking = false;
         else if(streq(arg, "-g"))
-            global.embed_debug_info = true;
+            context.flags.embed_debug_info = true;
         else if(streq(arg, "-g0"))
-            global.embed_debug_info = false;
+            context.flags.embed_debug_info = false;
         else if(streq(arg, "--cc"))
         {
             if(!argv[++i])
@@ -250,17 +251,17 @@ i32 main(i32 argc, char* argv[])
             cc = argv[i];
         }
         else if(streq(arg, "-0") || streq(arg, "--no-opt"))
-            global.optimize = false;
+            context.flags.optimize = false;
         else if(streq(arg, "--set-mmcd"))
         {
-            if(!(global.max_macro_call_depth = atoi(argv[++i])))
+            if(!(context.max_macro_call_depth = atoi(argv[++i])))
             {
                 LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " `--set-mmcd` expects an integer greater than 0\n");
                 exit(1);
             }
         }
         else if(streq(arg, "--show-timings"))
-            enable_timer();
+            enable_timer(&context);
         else if(streq(arg, "-p") || streq(arg, "--std-path"))
         {
             if(!argv[++i])
@@ -268,20 +269,20 @@ i32 main(i32 argc, char* argv[])
                 LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " expect STD path after %s.", arg);
                 exit(1);
             }
-            global.std_path = get_absolute_path(argv[i]);
+            context.paths.std_path = get_absolute_path(argv[i]);
         }
         else if(streq(arg, "--clear-cache"))
-            global.clear_cache_after = true;
+            context.flags.clear_cache_after = true;
         else if(streq(arg, "--"))
         {
-            store_exec_args(argc - i - 1, &argv[i + 1], action);
+            store_exec_args(&context, argc - i - 1, &argv[i + 1], action);
             i = argc;
         }
         else
-            evaluate_info_flags(argv[i]);
+            evaluate_info_flags(&context, argv[i]);
     }
 
-    compile(input_file, output_file);
+    compile(&context, input_file, output_file);
 
     switch(action)
     {
@@ -289,10 +290,10 @@ i32 main(i32 argc, char* argv[])
         case AC_LIB:
             break;
         case AC_DEBUG:
-            debug_repl(input_file, output_file);
+            debug_repl(&context, input_file, output_file);
             break;
         case AC_RUN:
-            run(output_file);
+            run(&context, output_file);
             remove(output_file);
             break;
         default:
@@ -300,8 +301,8 @@ i32 main(i32 argc, char* argv[])
             break;
     }
 
-    if(global.timer_enabled)
-        timer_print_summary();
+    if(context.flags.timer_enabled)
+        timer_print_summary(&context);
 
     if(!streq(cc_flags, DEFAULT_CC_FLAGS))
         free(cc_flags);
@@ -309,7 +310,7 @@ i32 main(i32 argc, char* argv[])
     return 0;
 }
 
-static void evaluate_info_flags(char* argv)
+static void evaluate_info_flags(Context_T* context, char* argv)
 {
     char csp_build[32];
     get_cspydr_build(csp_build);
@@ -321,7 +322,7 @@ static void evaluate_info_flags(char* argv)
     else if(streq(argv, "-v") || streq(argv, "--version"))
         printf(version_text, get_cspydr_version(), csp_build);
     else if(streq(argv, "--clear-cache"))
-        clear_cache();
+        clear_cache(context);
     else
     {
         LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " unknown or wrong used flag \"%s\", type \"cspydr --help\" to get help.\n", argv);
@@ -331,20 +332,20 @@ static void evaluate_info_flags(char* argv)
     exit(0);
 }
 
-static void run(char* filename)
+static void run(Context_T* context, char* filename)
 {
-    timer_start("execution");
-    if(!global.do_assemble || !global.do_link) 
+    timer_start(context, "execution");
+    if(!context->flags.do_assembling || !context->flags.do_linking) 
     {
         LOG_OK(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " cannot execute target since no executable was generated.\n");
         return;
     }
 
-    if(!global.silent)
+    if(!context->flags.silent)
     {
-        LOG_OK_F(COLOR_BOLD_BLUE "  Executing " COLOR_RESET " %s%s", filename, global.exec_argv && global.exec_argc ? " [" : "\n");
-        for(i32 i = 0; i < global.exec_argc; i++)
-            LOG_OK_F(COLOR_RESET "`%s`%s", global.exec_argv[i], global.exec_argc - i > 1 ? ", " : "]\n" COLOR_RESET);
+        LOG_OK_F(COLOR_BOLD_BLUE "  Executing " COLOR_RESET " %s%s", filename, context->args.argv && context->args.argc ? " [" : "\n");
+        for(i32 i = 0; i < context->args.argc; i++)
+            LOG_OK_F(COLOR_RESET "`%s`%s", context->args.argv[i], context->args.argc - i > 1 ? ", " : "]\n" COLOR_RESET);
     }
 
     size_t cmd_len = strlen(filename) + 3;
@@ -352,17 +353,17 @@ static void run(char* filename)
     memset(cmd, 0, cmd_len);
     sprintf(cmd, "." DIRECTORY_DELIMS "%s", filename);
 
-    const char* argv[global.exec_argc + 2];
+    const char* argv[context->args.argc + 2];
     argv[0] = cmd;
     argv[1] = NULL;
-    if(global.exec_argc && global.exec_argv != NULL)
-        memcpy(argv + 1, global.exec_argv, global.exec_argc * sizeof(const char*));
+    if(context->args.argc && context->args.argv != NULL)
+        memcpy(argv + 1, context->args.argv, context->args.argc * sizeof(const char*));
 
-    global.last_exit_code = subprocess(cmd, (char* const*) argv, !global.silent);
-    timer_stop();
+    context->last_exit_code = subprocess(cmd, (char* const*) argv, !context->flags.silent);
+    timer_stop(context);
 }
 
-static void store_exec_args(i32 argc, char* argv[], Action_T action) 
+static void store_exec_args(Context_T* context, i32 argc, char* argv[], Action_T action) 
 {
     if(action != AC_RUN)
     {
@@ -371,8 +372,8 @@ static void store_exec_args(i32 argc, char* argv[], Action_T action)
             LOG_WARN_F("`%s`%s", argv[i], argc - i > 1 ? ", " : "] after `--`, because the program is not executed.\n" COLOR_RESET);
     }
 
-    global.exec_argv = argv;
-    global.exec_argc = argc;
+    context->args.argv = argv;
+    context->args.argc = argc;
 }
 
 static char* default_output_file(Action_T action)

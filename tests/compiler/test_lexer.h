@@ -1,3 +1,5 @@
+#include "config.h"
+#include "context.h"
 #define LEXER_TESTS                             \
     {"lexing symbols", test_lexer_symbols},     \
     {"lexing strings", test_lexer_strings},     \
@@ -16,8 +18,10 @@
 
 void check_tokens_str(char** expected_tokens, File_T* file, int num_tokens, bool heap_value)
 {
+    Context_T context;
+    init_context(&context);
     Lexer_T lexer;
-    init_lexer(&lexer, file);
+    init_lexer(&lexer, &context, file);
 
     for(int i = 0; i < num_tokens; i++)
     {
@@ -37,8 +41,10 @@ void check_tokens_str(char** expected_tokens, File_T* file, int num_tokens, bool
 
 void check_tokens(TokenType_T* expected_tokens, File_T* file, int num_tokens)
 {
+    Context_T context;
+    init_context(&context);
     Lexer_T lexer;
-    init_lexer(&lexer, file);
+    init_lexer(&lexer, &context, file);
     for(int i = 0; i < num_tokens; i++)
     {
         Token_T* token =  lexer_next_token(&lexer);

@@ -1,8 +1,7 @@
 #include "error.h"
 #include "io/log.h"
 #include "ast/ast.h"
-#include "config.h"
-#include "globals.h"
+#include "context.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -42,22 +41,22 @@ static ErrorHandlerFn_T ERROR_HANDLER = default_error_handler;
 #ifdef __GNUC__
 __attribute((format(printf, 3, 4)))
 #endif
-void throw_error(ErrorType_T ty, Token_T* tok, const char* format, ...)
+void throw_error(Context_T* context, ErrorType_T ty, Token_T* tok, const char* format, ...)
 {
     va_list args;
     va_start(args, format);
 
     if(error_types[ty].is_error)
-        global.emitted_errors++;
+        context->emitted_errors++;
     else
-        global.emitted_warnings++;
+        context->emitted_warnings++;
 
-    ERROR_HANDLER(ty, tok, format, args, error_types[ty].is_error, error_types[ty].as_str);
+    ERROR_HANDLER(context, ty, tok, format, args, error_types[ty].is_error, error_types[ty].as_str);
     va_end(args);
 
     // exit if mandatory
     if(error_types[ty].force_exit)
-        panic();
+        panic(context);
 }
 
 void set_error_handler(ErrorHandlerFn_T fn)

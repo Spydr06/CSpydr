@@ -1,6 +1,5 @@
 #include "list.h"
 #include "config.h"
-#include "globals.h"
 
 #include <stddef.h>
 #include <stdlib.h>

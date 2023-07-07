@@ -21,12 +21,15 @@
 #ifndef __CSPYDR_H
 #define __CSPYDR_H
 
+#include "config.h"
+
 #ifdef __cplusplus
 namespace cspydr {
     extern "C" {
 #endif
 
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef struct CSPYDR_COMPILER_STRUCT CSpydrCompiler_T;
 
@@ -35,9 +38,9 @@ extern void csp_free_compiler(CSpydrCompiler_T* compiler);
 
 #ifdef __CSPYDR_INTERNAL_USE
 // Internal use only!
-#define CSPYDR_COMPILER_STATUS CompilerStatus_T
+#define CSPYDR_TYPE(name) name##_T
 #else
-#define CSPYDR_COMPILER_STATUS CSpydrCompilerStatus_T
+#define CSPYDR_TYPE(name) CSpydr##name##_T
 #endif
 
 typedef enum {
@@ -47,10 +50,37 @@ typedef enum {
     COMPILER_OPTIMIZED,
     COMPILER_GENERATED,
     COMPILER_EXECUTED
-} CSPYDR_COMPILER_STATUS;
+} CSPYDR_TYPE(CompilerStatus);
 
-extern CSPYDR_COMPILER_STATUS csp_get_status(CSpydrCompiler_T* compiler);
-const char* csp_status_str(CSPYDR_COMPILER_STATUS status);
+extern CSPYDR_TYPE(CompilerStatus) csp_get_status(CSpydrCompiler_T* compiler);
+extern const char* csp_status_str(CSPYDR_TYPE(CompilerStatus) status);
+
+typedef struct CSPYDR_CONTEXT_STRUCT CSPYDR_TYPE(Context);
+
+extern CSPYDR_TYPE(Context)* csp_init_context(void);
+
+typedef union CSPYDR_FLAGS_STRUCT {
+    struct {
+        bool silent : 1;
+        bool print_code : 1;
+        bool optimize : 1;
+        bool embed_debug_info : 1;
+        bool from_json : 1;
+        bool do_linking : 1;
+        bool do_assembling : 1;
+        bool do_parsing : 1;
+        bool timer_enabled : 1;
+        bool clear_cache_after : 1;
+        bool read_main_file_on_init : 1;
+        bool require_entrypoint : 1;
+
+        uint8_t __unused__ : 4;
+    };
+    uint16_t flags;
+} CSPYDR_TYPE(Flags);
+
+extern CSPYDR_TYPE(Flags) csp_context_get_flags(CSPYDR_TYPE(Context)* context);
+extern void csp_context_set_flags(CSPYDR_TYPE(Context)* context, CSPYDR_TYPE(Flags) flags);
 
 #ifdef __CSPYDR_INTERNAL_USE
 // Internal use only!

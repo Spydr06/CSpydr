@@ -3,8 +3,6 @@
 
 #include <string.h>
 
-#include <globals.h>
-
 const char* get_arch(void)
 {
 #ifdef CSPYDR_ARCH_X86_64
@@ -54,41 +52,41 @@ void get_build(char* dest)
 
 
 #ifdef CSPYDR_LINUX
-    static bool linux_set(void) {
+    static bool linux_set(Context_T* context) {
         return true;
     }
 #else
-    static bool linux_set(void) {
+    static bool linux_set(Context_T* context) {
         return false;
     }
 #endif
 
 #ifdef CSPYDR_WINDOWS
-    static bool windows_set(void) {
+    static bool windows_set(Context_T* context) {
         return true;
     }
 #else
-    static bool windows_set(void) {
+    static bool windows_set(Context_T* context) {
         return false;
     }
 #endif
 
 #ifdef CSPYDR_MACOS
-    static bool macos_set(void) {
+    static bool macos_set(Context_T* context) {
         return true;
     }
 #else
-    static bool macos_set(void) {
+    static bool macos_set(Context_T* context) {
         return false;
     }
 #endif
 
-static bool transpiling(void) {
-    return global.ct == CT_TRANSPILE;
+static bool transpiling(Context_T* context) {
+    return context->ct == CT_TRANSPILE;
 }
 
-static bool assembly(void) {
-    return global.ct == CT_ASM;
+static bool assembly(Context_T* context) {
+    return context->ct == CT_ASM;
 }
 
 const Config_T configurations[] = {

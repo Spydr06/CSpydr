@@ -5,6 +5,7 @@
 #include "optimizer/constexpr.h"
 #include "error/error.h"
 #include "io/log.h"
+#include "context.h"
 
 #include <string.h>
 
@@ -42,7 +43,7 @@ u8 escape_sequence(char c, const char* str, size_t* i)
     }
 }
 
-void gen_relocation(ASTNode_T* node, size_t target_size, u8* buffer)
+void gen_relocation(Context_T* context, ASTNode_T* node, size_t target_size, u8* buffer)
 {
     if(!node)
         return;
@@ -95,7 +96,7 @@ void gen_relocation(ASTNode_T* node, size_t target_size, u8* buffer)
             size_t index_size = node->data_type->base->size;
             memcpy(buffer, &node->data_type->num_indices, PTR_S);
             for(size_t i = 0; i < node->args->size; i++)
-                gen_relocation(node->args->items[i], index_size, buffer + index_size * i + PTR_S);
+                gen_relocation(context, node->args->items[i], index_size, buffer + index_size * i + PTR_S);
         } break;
 
         case ND_STRUCT:
@@ -104,43 +105,43 @@ void gen_relocation(ASTNode_T* node, size_t target_size, u8* buffer)
             for(size_t i = 0; i < node->args->size; i++)
             {
                 ASTNode_T* arg = node->args->items[i];
-                gen_relocation(arg, arg->data_type->size, buffer + offset);
+                gen_relocation(context, arg, arg->data_type->size, buffer + offset);
                 offset += arg->data_type->size;
             }  
         } break;
         
         case ND_CLOSURE:
-            gen_relocation(node->expr, target_size, buffer);
+            gen_relocation(context, node->expr, target_size, buffer);
             break;
         
         case ND_NEG:
             node->right->int_val = -node->right->int_val; // temporary
-            gen_relocation(node->right, target_size, buffer);
+            gen_relocation(context, node->right, target_size, buffer);
             break;
 
         case ND_CAST:
-            gen_relocation(node->left, node->data_type->size, buffer);
+            gen_relocation(context, node->left, node->data_type->size, buffer);
             break;
         
         case ND_ID:
             if(node->referenced_obj && node->referenced_obj->value)
             {
-                gen_relocation(node->referenced_obj->value, target_size, buffer);
+                gen_relocation(context, node->referenced_obj->value, target_size, buffer);
                 break;
             }
-            throw_error(ERR_CODEGEN, node->tok, "cannot generate relocation for `%s` (%d)", node->tok->value, node->kind);
+            throw_error(context, ERR_CODEGEN, node->tok, "cannot generate relocation for `%s` (%d)", node->tok->value, node->kind);
             break;
 
         default:
             if(is_unsigned_integer_type(node->data_type))
             {
-                u64 data = const_u64(node);
+                u64 data = const_u64(context, node);
                 memcpy(buffer, &data, MIN(U64_S, target_size));
                 return;
             }
             else if(is_signed_integer_type(node->data_type))
             {
-                i64 raw_data = const_i64(node);
+                i64 raw_data = const_i64(context, node);
                 switch(node->data_type->size) {
                 case I64_S:
                     memcpy(buffer, &raw_data, MIN(I64_S, target_size));
@@ -166,7 +167,7 @@ void gen_relocation(ASTNode_T* node, size_t target_size, u8* buffer)
                 return;
             }
 
-            throw_error(ERR_CODEGEN, node->tok, "cannot generate relocation for `%s` (%d)", node->tok->value, node->kind);
+            throw_error(context, ERR_CODEGEN, node->tok, "cannot generate relocation for `%s` (%d)", node->tok->value, node->kind);
             break;
     }
 }

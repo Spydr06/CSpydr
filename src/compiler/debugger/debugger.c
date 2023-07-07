@@ -2,7 +2,6 @@
 #include "debugger/breakpoint.h"
 #include "io/log.h"
 #include "io/io.h"
-#include "globals.h"
 #include "toolchain.h"
 #include "platform/platform_bindings.h"
 #include "register.h"
@@ -132,13 +131,14 @@ void debug_error(const char* fmt, ...)
     fprintf(stderr, "\n");
 }
 
-static void init_debugger(Debugger_T* dbg, const char* src, const char* bin)
+static void init_debugger(Debugger_T* dbg, Context_T* context, const char* src, const char* bin)
 {
+    dbg->context = context;
     dbg->running = true;
     dbg->src_file = (char*) src;
     dbg->bin_file = (char*) bin;
     dbg->breakpoints = init_list();
-    sprintf(dbg->prompt, PROMPT_FMT, global.exec_name, COLOR_BOLD_GREEN, 0);
+    sprintf(dbg->prompt, PROMPT_FMT, context->paths.exec_name, COLOR_BOLD_GREEN, 0);
 }
 
 static void free_debugger(Debugger_T* dbg)
@@ -151,13 +151,13 @@ static void free_debugger(Debugger_T* dbg)
         free(dbg->loaded_cmd);
 }
 
-void debug_repl(const char* src, const char* bin)
+void debug_repl(Context_T* context, const char* src, const char* bin)
 {
-    if(!global.silent)
+    if(!context->flags.silent)
         debug_info("Started debug session; for help, type `help`.");
 
     Debugger_T dbg = {0};
-    init_debugger(&dbg, src, bin);
+    init_debugger(&dbg, context, src, bin);
 
     dbg.commands = (Command_T[]){
         { "help",     handle_help,       &ALWAYS_TRUE,     true,  "Display this help text"                         },
@@ -197,9 +197,9 @@ void debug_repl(const char* src, const char* bin)
             }
         }
         debug_error("Unknown command `%s`.", input);
-        global.last_exit_code = 1;
+        context->last_exit_code = 1;
     skip:
-        sprintf(dbg.prompt, PROMPT_FMT, global.exec_name, global.last_exit_code ? COLOR_BOLD_RED : COLOR_BOLD_GREEN, global.last_exit_code);
+        sprintf(dbg.prompt, PROMPT_FMT, context->paths.exec_name, context->last_exit_code ? COLOR_BOLD_RED : COLOR_BOLD_GREEN, context->last_exit_code);
     }
 
     free_debugger(&dbg);
@@ -232,14 +232,14 @@ static void handle_comp(Debugger_T* dbg, const char* input)
     fprintf(OUTPUT_STREAM, "\n");
 
     const char* args[] = {
-        global.exec_name,
+        dbg->context->paths.exec_name,
         "build",
         dbg->src_file,
-        global.ct == CT_ASM ? "--asm" : "--transpile",
+        dbg->context->ct == CT_ASM ? "--asm" : "--transpile",
         NULL
     };
 
-    global.last_exit_code = subprocess(args[0], (char* const*) args, false);
+    dbg->context->last_exit_code = subprocess(args[0], (char* const*) args, false);
 
     fprintf(OUTPUT_STREAM, "\n");
 
@@ -324,7 +324,7 @@ static bool load_exec(Debugger_T* dbg, char* exec)
     else if(pid > 0)
     {
         dbg->loaded = pid;
-        if(!global.silent)
+        if(!dbg->context->flags.silent)
             debug_info("Loaded executable `%s` with pid `%d`.", exec, pid);
         
         for(size_t i = 0; i < dbg->breakpoints->size; i++)
@@ -385,7 +385,7 @@ static void handle_unload(Debugger_T* dbg, const char* input)
     }
 
     kill(dbg->loaded, SIGKILL);
-    if(!global.silent)
+    if(!dbg->context->flags.silent)
         debug_info("Killed process with pid %d.", dbg->loaded);
     
     dbg->loaded = 0;
@@ -420,15 +420,15 @@ static void step_over_breakpoint(Debugger_T* dbg)
             u64 prev_instruction_addr = possible_breakpoint_location;
             debugger_set_pc(dbg, prev_instruction_addr);
 
-            bool silent = global.silent;
-            global.silent = true;
+            bool silent = dbg->context->flags.silent;
+            dbg->context->flags.silent = true;
             
-            breakpoint_disable(bp);
+            breakpoint_disable(dbg->context, bp);
             ptrace(PTRACE_SINGLESTEP, dbg->loaded, NULL, NULL);
             wait_for_signal(dbg);
-            breakpoint_enable(bp);
+            breakpoint_enable(dbg->context, bp);
 
-            global.silent = silent;
+            dbg->context->flags.silent = silent;
         }
     }
 }
@@ -452,13 +452,13 @@ static void handle_continue(Debugger_T* dbg, const char* input)
     {
         i32 exit_code = WEXITSTATUS(wait_status);
         debug_info("Process %d terminated with exit code %s%d" COLOR_RESET, dbg->loaded, exit_code ? COLOR_BOLD_RED : COLOR_BOLD_GREEN, exit_code);
-        global.last_exit_code = exit_code;
+        dbg->context->last_exit_code = exit_code;
         goto process_exited;
     }
     else if(WIFSIGNALED(wait_status))
     {
         debug_info("Process %d was killed by signal %s.", dbg->loaded, strsignal(WTERMSIG(wait_status)));
-        global.last_exit_code = WTERMSIG(wait_status);
+        dbg->context->last_exit_code = WTERMSIG(wait_status);
         goto process_exited;
     }
     else if(WIFSTOPPED(wait_status))
@@ -468,11 +468,11 @@ static void handle_continue(Debugger_T* dbg, const char* input)
         {
             case SIGTRAP:
                 debug_info("Process %d hit breakpoint 0x%016lx.", dbg->loaded, debugger_get_pc(dbg) - 1);
-                global.last_exit_code = 0;
+                dbg->context->last_exit_code = 0;
                 break;
             default:
                 debug_info("Process %d was stopped by signal %s.", dbg->loaded, strsignal(WSTOPSIG(wait_status)));
-                global.last_exit_code = WSTOPSIG(wait_status);
+                dbg->context->last_exit_code = WSTOPSIG(wait_status);
                 goto process_exited;
         }
     }
@@ -535,7 +535,7 @@ static void handle_breakpoint(Debugger_T* dbg, const char* input)
             {
                 Breakpoint_T* b = dbg->breakpoints->items[i];
                 if(b->enabled)
-                    breakpoint_disable(b);
+                    breakpoint_disable(dbg->context, b);
             }
             goto end;
         }

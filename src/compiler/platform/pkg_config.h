@@ -4,6 +4,6 @@
 #include "list.h"
 #include "lexer/token.h"
 
-void pkg_config(const char* in, Token_T* token);
+void pkg_config(Context_T* context, const char* in, Token_T* token);
 
 #endif

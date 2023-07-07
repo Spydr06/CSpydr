@@ -2,32 +2,31 @@
 
 #include "config.h"
 #include "io/log.h"
-#include "globals.h"
 #include "list.h"
 #include "timer/timer.h"
 #include "platform/platform_bindings.h"
 #include "codegen/codegen_utils.h"
 
-static int link_exec(const char* target, char* obj_file);
-static int link_lib(const char* target, char* obj_file);
+static int link_exec(Context_T* context, const char* target, char* obj_file);
+static int link_lib(Context_T* context, const char* target, char* obj_file);
 
-void link_obj(const char* target, char* obj_file, bool silent, bool _link_exec)
+void link_obj(Context_T* context, const char* target, char* obj_file, bool silent, bool _link_exec)
 {
-    timer_start("linking");
+    timer_start(context, "linking");
     if(!silent)
-        print_linking_msg(target, _link_exec);
+        print_linking_msg(context, target, _link_exec);
 
-    i32 exit_code = (_link_exec ? link_exec : link_lib)(target, obj_file);
+    i32 exit_code = (_link_exec ? link_exec : link_lib)(context, target, obj_file);
     if(exit_code != 0)
     {
         LOG_ERROR_F("error linking code. (exit code %d)\n", exit_code);
-        throw(global.main_error_exception);
+        throw(context->main_error_exception);
     }
 
-    timer_stop();
+    timer_stop(context);
 }
 
-static int link_exec(const char* target, char* obj_file) {
+static int link_exec(Context_T* context, const char* target, char* obj_file) {
     List_T* args = init_list();
     list_push(args, DEFAULT_LINKER);
     list_push(args, "-o");
@@ -39,11 +38,11 @@ static int link_exec(const char* target, char* obj_file) {
     list_push(args, "-L/usr/lib");
     list_push(args, "-L/lib");
 
-    if(global.optimize)
+    if(context->flags.optimize)
         list_push(args, "-O");
 
-    for(size_t i = 0; i < global.linker_flags->size; i++)
-        list_push(args, global.linker_flags->items[i]);
+    for(size_t i = 0; i < context->linker_flags->size; i++)
+        list_push(args, context->linker_flags->items[i]);
 
     list_push(args, "-dynamic-linker");
     list_push(args, "/lib64/ld-linux-x86-64.so.2");
@@ -55,7 +54,7 @@ static int link_exec(const char* target, char* obj_file) {
     return exit_code;    
 }
 
-static int link_lib(const char* target, char* obj_file)
+static int link_lib(Context_T* context, const char* target, char* obj_file)
 {
     List_T* args = init_list();
     list_push(args, DEFAULT_LINKER);
@@ -69,8 +68,8 @@ static int link_lib(const char* target, char* obj_file)
     list_push(args, "-L/lib");
     list_push(args, "-shared");
 
-    for(size_t i = 0; i < global.linker_flags->size; i++)
-        list_push(args, global.linker_flags->items[i]);
+    for(size_t i = 0; i < context->linker_flags->size; i++)
+        list_push(args, context->linker_flags->items[i]);
 
     list_push(args, obj_file);
     list_push(args, NULL);

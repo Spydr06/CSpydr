@@ -18,12 +18,12 @@
 // compiler includes
 #include <io/log.h>
 #include <io/io.h>
-#include <globals.h>
 #include <version.h>
 #include <platform/platform_bindings.h>
 
 // linter includes
 #include "config.h"
+#include "context.h"
 #include "error/panic.h"
 #include "linter.h"
 #include "error.h"
@@ -90,9 +90,10 @@ i32 main(i32 argc, char* argv[])
 
     set_error_output_file(stderr);
 
-    init_globals();
-    atexit(globals_exit_hook);
-    global.exec_name = argv[0]; // save the execution name for later use
+    Context_T context;
+    init_context(&context);
+
+    context.paths.exec_name = argv[0]; // save the execution name for later use
 
     char* src_path = NULL;
     char* std_path = DEFAULT_STD_PATH;
@@ -177,10 +178,10 @@ i32 main(i32 argc, char* argv[])
     set_panic_handler(linter_panic_handler);
 
     if(is_live)
-        live_session(src_path, std_path, !default_yes);
+        live_session(&context, src_path, std_path, !default_yes);
     else
     {
         atexit(summary);
-        return lint(src_path, std_path);
+        return lint(&context, src_path, std_path);
     }
 }

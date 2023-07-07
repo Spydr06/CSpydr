@@ -1,6 +1,7 @@
 #include "breakpoint.h"
 
 #include <sys/ptrace.h>
+
 #include "debugger.h"
 #include "debugger/register.h"
 
@@ -18,7 +19,7 @@ void free_breakpoint(Breakpoint_T* brk)
     free(brk);
 }
 
-void breakpoint_enable(Breakpoint_T* brk)
+void breakpoint_enable(Context_T* context, Breakpoint_T* brk)
 {
     u64 data = ptrace(PTRACE_PEEKDATA, brk->pid, brk->addr, NULL);
     brk->saved_data = data & 0xff;
@@ -27,18 +28,18 @@ void breakpoint_enable(Breakpoint_T* brk)
 
     ptrace(PTRACE_POKEDATA, brk->pid, brk->addr, int3);
     brk->enabled = true;
-    if(!global.silent)
+    if(!context->flags.silent)
         debug_info("Enabled breakpoint at address 0x%016lx", brk->addr);
 }
 
-void breakpoint_disable(Breakpoint_T* brk)
+void breakpoint_disable(Context_T* context, Breakpoint_T* brk)
 {
     u64 data = ptrace(PTRACE_PEEKDATA, brk->pid, brk->addr, NULL);
     u64 restored_data = ((data & ~0xff) | brk->saved_data);
     ptrace(PTRACE_POKEDATA, brk->pid, brk->addr, restored_data);
 
     brk->enabled = false;
-    if(!global.silent)
+    if(!context->flags.silent)
         debug_info("Disabled breakpoint at address 0x%016lx", brk->addr);
 }
 
@@ -61,14 +62,14 @@ Breakpoint_T* set_breakpoint_at_address(Debugger_T* dbg, intptr_t addr)
     if(found)
     {
         if(!found->enabled)
-            breakpoint_enable(found);
+            breakpoint_enable(dbg->context, found);
 
         return found;
     }
     else
     {
         Breakpoint_T* brk = init_breakpoint(dbg, addr);
-        breakpoint_enable(brk);
+        breakpoint_enable(dbg->context, brk);
         list_push(dbg->breakpoints, brk);
 
         return brk;
@@ -80,7 +81,7 @@ void disable_breakpoint_at_address(Debugger_T* dbg, intptr_t addr)
     Breakpoint_T* found = find_breakpoint(dbg, addr);
 
     if(found)
-        breakpoint_disable(found);
+        breakpoint_disable(dbg->context, found);
     else
         debug_error("No breakpoint enabled at address 0x%016lx.\n", addr);
 }

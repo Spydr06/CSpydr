@@ -112,10 +112,10 @@ fn algorithm_test_hash_string(t: &std::Testing) {
 
     let testdata = [
         # input a         input b        a == b
-        {"hello": &char, "hello": &char, true },
-        {"hello": &char, "hallo": &char, false},
-        {"hallo": &char, "hello": &char, false},
-        {"hallo": &char, "hallo": &char, true },
+        {"hello", "hello", true },
+        {"hello", "hallo", false},
+        {"hallo", "hello", false},
+        {"hallo", "hallo", true },
     ];
 
     for let i = 0; i < len testdata; i++; {

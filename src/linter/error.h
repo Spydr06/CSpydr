@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <error/error.h>
 
-void linter_error_handler(ErrorType_T ty, Token_T* tok, const char* format, va_list args, bool is_error, const char* error_str);
+void linter_error_handler(Context_T* context, ErrorType_T ty, Token_T* tok, const char* format, va_list args, bool is_error, const char* error_str);
 void summary();
 void set_error_output_file(FILE* fp);
 void close_output_file();

@@ -1,6 +1,7 @@
 #include "validator.h"
 #include "ast/ast_iterator.h"
 #include "ast/types.h"
+#include "config.h"
 #include "hashmap.h"
 #include "list.h"
 #include "error/error.h"
@@ -14,7 +15,6 @@
 #include "mem/mem.h"
 #include "parser/parser.h"
 #include "parser/utils.h"
-#include "globals.h"
 #include "typechecker.h"
 #include "timer/timer.h"
 
@@ -28,9 +28,10 @@
 #define GET_VALIDATOR(va) Validator_T* v = va_arg(va, Validator_T*)
 
 // validator struct functions
-static void init_validator(Validator_T* v)
+static void init_validator(Validator_T* v, Context_T* context)
 {
     memset(v, 0, sizeof(struct VALIDATOR_STRUCT));
+    v->context = context;
 }
 
 static void begin_obj_scope(Validator_T* v, ASTIdentifier_T* id, List_T* objs);
@@ -230,17 +231,17 @@ static const ASTIteratorList_T main_iterator_list =
     .iterate_over_right_members = false
 };
 
-i32 validator_pass(ASTProg_T* ast)
+i32 validator_pass(Context_T* context, ASTProg_T* ast)
 {
-    timer_start("code validation");
+    timer_start(context, "code validation");
 
     // initialize the validator
     Validator_T v;
-    init_validator(&v);
+    init_validator(&v, context);
     v.ast = ast;
     begin_obj_scope(&v, NULL, ast->objs);
     v.global_scope = v.current_scope;
-    global.current_obj = &v.current_function;
+    context->current_obj = &v.current_function;
 
     // iterate over the AST, resolve types and check semantics
     ast_iterate(&main_iterator_list, ast, &v);
@@ -252,15 +253,15 @@ i32 validator_pass(ASTProg_T* ast)
 
     // check for the main function
     check_exit_fns(&v);
-    if(!v.main_function_found && global.req_entrypoint)
+    if(!v.main_function_found && context->flags.require_entrypoint)
     {
         LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " missing entrypoint; no `main` function declared.\n");
-        global.emitted_errors++;
+        context->emitted_errors++;
     }
 
-    timer_stop();
+    timer_stop(context);
     
-    return global.emitted_errors;
+    return context->emitted_errors;
 }
 
 static ASTObj_T* search_in_current_scope(Scope_T* scope, char* id)
@@ -309,7 +310,7 @@ static ASTObj_T* search_identifier(Validator_T* v, Scope_T* scope, ASTIdentifier
                                 return member;
                         }
                     }
-                    throw_error(ERR_UNDEFINED, id->outer->tok, "type `%s` has no member called `%s`", outer_obj->id->callee, id->callee);
+                    throw_error(v->context, ERR_UNDEFINED, id->outer->tok, "type `%s` has no member called `%s`", outer_obj->id->callee, id->callee);
                 } break;
             case OBJ_NAMESPACE:
                 {
@@ -367,7 +368,7 @@ static void scope_add_obj(Validator_T* v, ASTObj_T* obj)
     if(hashmap_put(v->current_scope->objs, obj->id->callee, obj) == EEXIST)
     {
         ASTObj_T* found = hashmap_get(v->current_scope->objs, obj->id->callee);
-        throw_error(ERR_REDEFINITION, obj->id->tok, 
+        throw_error(v->context, ERR_REDEFINITION, obj->id->tok, 
             "redefinition of %s `%s`.\nfirst defined in " COLOR_BOLD_WHITE "%s " COLOR_RESET "at line " COLOR_BOLD_WHITE "%u" COLOR_RESET " as %s.", 
             obj_kind_to_str(obj->kind), obj->id->callee, 
             found->tok->source->short_path ? found->tok->source->short_path : found->tok->source->path, 
@@ -383,7 +384,7 @@ static void scope_add_node(Validator_T* v, ASTNode_T* node)
     if(hashmap_put(v->current_scope->objs, node->id->callee, node) == EEXIST)
     {
         ASTNode_T* found = hashmap_get(v->current_scope->objs, node->id->callee);
-        throw_error(ERR_REDEFINITION, node->id->tok, 
+        throw_error(v->context, ERR_REDEFINITION, node->id->tok, 
             "redefinition of member `%s`.\nfirst defined in " COLOR_BOLD_WHITE "%s " COLOR_RESET "at line " COLOR_BOLD_WHITE "%u" COLOR_RESET, 
             node->id->callee, 
             found->tok->source->short_path ? found->tok->source->short_path : found->tok->source->path, 
@@ -401,9 +402,9 @@ ASTType_T* expand_typedef(Validator_T* v, ASTType_T* type)
 
     ASTObj_T* ty_def = search_identifier(v, v->current_scope, type->id);
     if(!ty_def)
-        throw_error(ERR_TYPE_ERROR, type->tok, "undefined data type `%s`", type->id->callee);
+        throw_error(v->context, ERR_TYPE_ERROR, type->tok, "undefined data type `%s`", type->id->callee);
     if(ty_def->kind != OBJ_TYPEDEF)
-        throw_error(ERR_TYPE_ERROR, type->tok, "identifier `%s` references object of kind `%s`, expect type", type->id->callee, obj_kind_to_str(ty_def->kind));
+        throw_error(v->context, ERR_TYPE_ERROR, type->tok, "identifier `%s` references object of kind `%s`, expect type", type->id->callee, obj_kind_to_str(ty_def->kind));
 
     return ty_def->data_type->kind == TY_UNDEF ? expand_typedef(v, ty_def->data_type) : ty_def->data_type;
 }
@@ -434,7 +435,7 @@ static ASTNode_T* find_member_in_type(Validator_T* v, ASTType_T* type, ASTNode_T
     if(type->kind != TY_STRUCT)
     {
         char buf[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
-        throw_error(ERR_TYPE_ERROR, id->tok, "cannot get member of type `%s`", ast_type_to_str(buf, type, LEN(buf)));
+        throw_error(v->context, ERR_TYPE_ERROR, id->tok, "cannot get member of type `%s`", ast_type_to_str(v->context, buf, type, LEN(buf)));
         return NULL;
     }
 
@@ -554,7 +555,7 @@ static ASTExitFnHandle_T* find_exit_fn(Validator_T* v, ASTType_T* ty)
     for(size_t i = 0; i < v->ast->type_exit_fns->size; i++)
     {
         ASTExitFnHandle_T* handle = v->ast->type_exit_fns->items[i];
-        if(types_equal(handle->type, ty))
+        if(types_equal(v->context, handle->type, ty))
             return handle;
     }
     return NULL;
@@ -574,19 +575,19 @@ static void check_exit_fns(Validator_T* v)
         if(handle != found)
         {
             char buf[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
-            throw_error(ERR_REDEFINITION_UNCR, handle->tok, "exit function for data type `%s` already defined", ast_type_to_str(buf, handle->type, LEN(buf)));
+            throw_error(v->context, ERR_REDEFINITION_UNCR, handle->tok, "exit function for data type `%s` already defined", ast_type_to_str(v->context, buf, handle->type, LEN(buf)));
         }
 
         if(fn->args->size != 1)
-            throw_error(ERR_TYPE_ERROR_UNCR, handle->tok, "exit function must have one argument");
+            throw_error(v->context, ERR_TYPE_ERROR_UNCR, handle->tok, "exit function must have one argument");
 
         
-        if(!types_equal(((ASTObj_T*) fn->args->items[0])->data_type, handle->type))
-            throw_error(ERR_TYPE_ERROR_UNCR, handle->tok, "specified data type and first argument type of function `%s` do not match", fn->id->callee);
+        if(!types_equal(v->context, ((ASTObj_T*) fn->args->items[0])->data_type, handle->type))
+            throw_error(v->context, ERR_TYPE_ERROR_UNCR, handle->tok, "specified data type and first argument type of function `%s` do not match", fn->id->callee);
 
         /*
         if(expand_typedef(v, fn->return_type)->kind != TY_VOID)
-            throw_error(ERR_UNUSED, handle->tok, "function `%s` returns a value that cannot be accessed", fn->id->callee);
+            throw_error(v->context, ERR_UNUSED, handle->tok, "function `%s` returns a value that cannot be accessed", fn->id->callee);
         */
     }
 }
@@ -598,7 +599,7 @@ static void id_use(ASTIdentifier_T* id, va_list args)
     GET_VALIDATOR(args);
     ASTObj_T* found = search_identifier(v, v->current_scope, id);
     if(!found) {
-        throw_error(ERR_UNDEFINED, id->tok, "undefined identifier `%s`.", id->callee);
+        throw_error(v->context, ERR_UNDEFINED, id->tok, "undefined identifier `%s`.", id->callee);
     }
 }
 
@@ -612,7 +613,7 @@ static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
 
     ASTType_T* return_type = expand_typedef(v, main_fn->return_type);
     if(return_type->kind != TY_I32)
-        throw_error(ERR_TYPE_ERROR_UNCR, main_fn->return_type->tok ? main_fn->return_type->tok : main_fn->tok, "expect type `i32` as return type for function `main`");
+        throw_error(v->context, ERR_TYPE_ERROR_UNCR, main_fn->return_type->tok ? main_fn->return_type->tok : main_fn->tok, "expect type `i32` as return type for function `main`");
 
     switch(main_fn->args->size)
     {
@@ -629,12 +630,13 @@ static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
                 {
                     v->ast->mfk = MFK_ARGS_ARRAY;
                 }
-                else*/ if(arg_type->kind == TY_PTR && arg_type->base && arg_type->base->kind == TY_PTR && arg_type->base->base && arg_type->base->base->kind != TY_CHAR)
+                else*/ 
+                if(arg_type->kind == TY_PTR && arg_type->base && arg_type->base->kind == TY_PTR && arg_type->base->base && arg_type->base->base->kind != TY_CHAR)
                 {
                     v->ast->mfk = MFK_ARGV_PTR;
                 }
                 else {
-                    throw_error(ERR_TYPE_ERROR_UNCR, ((ASTObj_T*) main_fn->args->items[0])->tok, "expect argument of function `main` to be `&&char` or `&char[]`");
+                    throw_error(v->context, ERR_TYPE_ERROR_UNCR, ((ASTObj_T*) main_fn->args->items[0])->tok, "expect argument of function `main` to be `&&char` or `&char[]`");
                     return;
                 }
             } break;
@@ -645,21 +647,21 @@ static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
                 ASTType_T* arg0_type = expand_typedef(v, ((ASTObj_T*) main_fn->args->items[0])->data_type);
                 if(arg0_type->kind != TY_I32)
                 {
-                    throw_error(ERR_TYPE_ERROR_UNCR, ((ASTObj_T*) main_fn->args->items[0])->tok, "expect first argument of function `main` to be `i32`");
+                    throw_error(v->context, ERR_TYPE_ERROR_UNCR, ((ASTObj_T*) main_fn->args->items[0])->tok, "expect first argument of function `main` to be `i32`");
                     return;
                 }
 
                 ASTType_T* arg1_type = expand_typedef(v, ((ASTObj_T*) main_fn->args->items[1])->data_type);
                 if(arg1_type->kind != TY_PTR || arg1_type->base->kind != TY_PTR || arg1_type->base->base->kind != TY_CHAR)
                 {
-                    throw_error(ERR_TYPE_ERROR_UNCR, ((ASTObj_T*) main_fn->args->items[1])->tok, "expect second argument of function `main` to be `&&char`");
+                    throw_error(v->context, ERR_TYPE_ERROR_UNCR, ((ASTObj_T*) main_fn->args->items[1])->tok, "expect second argument of function `main` to be `&&char`");
                     return;
                 }
                 v->ast->mfk = MFK_ARGC_ARGV_PTR;
             } break;
 
         default:
-            throw_error(ERR_UNDEFINED_UNCR, main_fn->tok, "expect 0 or 2 arguments for function `main`, got %ld", main_fn->args->size);
+            throw_error(v->context, ERR_UNDEFINED_UNCR, main_fn->tok, "expect 0 or 2 arguments for function `main`, got %ld", main_fn->args->size);
             return;
     }
 }
@@ -675,7 +677,7 @@ static void fn_start(ASTObj_T* fn, va_list args)
         scope_add_obj(v, fn->va_area);
 }
 
-static bool stmt_returns_value(ASTNode_T* node)
+static bool stmt_returns_value(Validator_T* v, ASTNode_T* node)
 {
     switch(node->kind)
     {
@@ -684,21 +686,21 @@ static bool stmt_returns_value(ASTNode_T* node)
         case ND_BLOCK:
             for(size_t i = 0; i < node->stmts->size; i++)
             {
-                if(stmt_returns_value(node->stmts->items[i]))
+                if(stmt_returns_value(v, node->stmts->items[i]))
                 {
                     if(node->stmts->size - i > 1)
-                        throw_error(ERR_UNREACHABLE, ((ASTNode_T*) node->stmts->items[i + 1])->tok, "unreachable code after return statement");
+                        throw_error(v->context, ERR_UNREACHABLE, ((ASTNode_T*) node->stmts->items[i + 1])->tok, "unreachable code after return statement");
                     return true;
                 }
             }
             return false;
         case ND_IF:
-            return stmt_returns_value(node->if_branch) && node->else_branch ? stmt_returns_value(node->else_branch) : false;
+            return stmt_returns_value(v, node->if_branch) && node->else_branch ? stmt_returns_value(v, node->else_branch) : false;
         case ND_LOOP:
         case ND_FOR:
         case ND_WHILE:
         case ND_DO_WHILE:
-            return stmt_returns_value(node->body);
+            return stmt_returns_value(v, node->body);
         case ND_MATCH:
             if(!node->default_case)
                 return false;
@@ -706,13 +708,13 @@ static bool stmt_returns_value(ASTNode_T* node)
             {
                 u64 cases_return = 0;
                 for(size_t i = 0; i < node->cases->size; i++)
-                    if(stmt_returns_value(((ASTNode_T*) node->cases->items[i])->body))
+                    if(stmt_returns_value(v, ((ASTNode_T*) node->cases->items[i])->body))
                         cases_return++;
                 
-                return cases_return == node->cases->size && stmt_returns_value(node->default_case->body);
+                return cases_return == node->cases->size && stmt_returns_value(v, node->default_case->body);
             }
         case ND_FOR_RANGE:
-            return stmt_returns_value(node->body);
+            return stmt_returns_value(v, node->body);
         default: 
             return false;
     }
@@ -737,11 +739,11 @@ static void fn_end(ASTObj_T* fn, va_list args)
     {
         case TY_C_ARRAY:
         case TY_ARRAY:
-            throw_error(ERR_TYPE_ERROR_UNCR, return_tok, "cannot return type `%s` from function", ast_type_to_str(buf, return_type, BUFSIZ));
+            throw_error(v->context, ERR_TYPE_ERROR_UNCR, return_tok, "cannot return type `%s` from function", ast_type_to_str(v->context, buf, return_type, BUFSIZ));
             break;
 
         case TY_STRUCT:
-            if(global.ct == CT_ASM && return_type->size > 16)
+            if(v->context->ct == CT_ASM && return_type->size > 16)
             {
                 fn->return_ptr = init_ast_obj(OBJ_LOCAL, fn->return_type->tok);
                 fn->return_ptr->data_type = init_ast_type(TY_PTR, fn->return_type->tok);
@@ -762,8 +764,8 @@ static void fn_end(ASTObj_T* fn, va_list args)
 
     end_scope(v);
 
-    if(return_type->kind != TY_VOID && !fn->is_extern && !fn->no_return && !stmt_returns_value(fn->body))
-        throw_error(ERR_NORETURN, fn->tok, "function `%s` does not return a value", fn->id->callee);
+    if(return_type->kind != TY_VOID && !fn->is_extern && !fn->no_return && !stmt_returns_value(v, fn->body))
+        throw_error(v->context, ERR_NORETURN, fn->tok, "function `%s` does not return a value", fn->id->callee);
 
     v->current_function = NULL;
 
@@ -771,11 +773,11 @@ static void fn_end(ASTObj_T* fn, va_list args)
     {
         ASTObj_T* arg = fn->args->items[i];
         if(!arg->referenced && !fn->is_extern && !fn->ignore_unused && arg->id->callee[0] != '_')
-            throw_error(ERR_UNUSED, arg->tok, "unused function argument `%s`, prefix with `_` to disable this warning", arg->id->callee);
+            throw_error(v->context, ERR_UNUSED, arg->tok, "unused function argument `%s`, prefix with `_` to disable this warning", arg->id->callee);
     }
 
     if(v->scope_depth == 1 && strcmp(fn->id->callee, "_start") == 0)
-        throw_error(ERR_MISC, fn->id->tok, "cannot name a function \"_start\" in global scope");
+        throw_error(v->context, ERR_MISC, fn->id->tok, "cannot name a function \"_start\" in global scope");
 }
 
 static void namespace_start(ASTObj_T* namespace, va_list args)
@@ -819,7 +821,7 @@ static void global_end(ASTObj_T* global, va_list args)
     {
         if(!global->value->data_type)
         {
-            throw_error(ERR_TYPE_ERROR, global->value->tok, "could not resolve datatype for `%s`", global->id->callee);
+            throw_error(v->context, ERR_TYPE_ERROR, global->value->tok, "could not resolve datatype for `%s`", global->id->callee);
             return;
         }
 
@@ -834,7 +836,7 @@ static void global_end(ASTObj_T* global, va_list args)
     switch(expanded->kind)
     {
     case TY_VOID:
-        throw_error(ERR_TYPE_ERROR, global->tok, "`void` type is not allowed for variables"); 
+        throw_error(v->context, ERR_TYPE_ERROR, global->tok, "`void` type is not allowed for variables"); 
         break;
     
     case TY_VLA:
@@ -874,15 +876,15 @@ static void fn_arg_end(ASTObj_T* arg, va_list args)
     switch(expanded->kind)
     {
         case TY_VOID:
-            throw_error(ERR_TYPE_ERROR, arg->tok, "`void` type is not allowed for function arguments");
+            throw_error(v->context, ERR_TYPE_ERROR, arg->tok, "`void` type is not allowed for function arguments");
             break;
         
         case TY_ARRAY:
-            throw_error(ERR_TYPE_ERROR, arg->tok, "array type is not allowed for function arguments, use VLA `[]`");
+            throw_error(v->context, ERR_TYPE_ERROR, arg->tok, "array type is not allowed for function arguments, use VLA `[]`");
             break;
         
         case TY_C_ARRAY:
-            throw_error(ERR_TYPE_ERROR, arg->tok, "c-array type is not allowed for function arguments, use pointer `&`");
+            throw_error(v->context, ERR_TYPE_ERROR, arg->tok, "c-array type is not allowed for function arguments, use pointer `&`");
             break;
         
         default:
@@ -892,8 +894,9 @@ static void fn_arg_end(ASTObj_T* arg, va_list args)
 
 static void enum_member_end(ASTObj_T* e_member, va_list args)
 {
+    GET_VALIDATOR(args);
     if(!e_member->value->is_constant)
-        throw_error(ERR_CONST_ASSIGN, e_member->value->tok, "cannot assign non-constant value to enum member");
+        throw_error(v->context, ERR_CONST_ASSIGN, e_member->value->tok, "cannot assign non-constant value to enum member");
 }
 
 // node
@@ -914,7 +917,7 @@ static void block_end(ASTNode_T* block, va_list args)
     {
         ASTObj_T* var = block->locals->items[i];
         if(!var->referenced && !v->current_function->ignore_unused)
-            throw_error(ERR_UNUSED, var->tok, "unused local variable `%s`", var->id->callee);
+            throw_error(v->context, ERR_UNUSED, var->tok, "unused local variable `%s`", var->id->callee);
     }
 }
 
@@ -923,7 +926,7 @@ static void return_end(ASTNode_T* ret, va_list args)
     GET_VALIDATOR(args);
     if(!v->current_function)
     {
-        throw_error(ERR_SYNTAX_ERROR, ret->tok, "unexpected return statement outside of function");
+        throw_error(v->context, ERR_SYNTAX_ERROR, ret->tok, "unexpected return statement outside of function");
         return;
     }
 
@@ -949,20 +952,21 @@ static void for_range_end(ASTNode_T* _for, va_list args)
 
     char buf[BUFSIZ] = {'\0'};
     if(!is_integer(left))
-        throw_error(ERR_TYPE_ERROR_UNCR, _for->left->tok, "expression of range-based for loop expected to be integer, got %s", ast_type_to_str(buf, left, LEN(buf)));
+        throw_error(v->context, ERR_TYPE_ERROR_UNCR, _for->left->tok, "expression of range-based for loop expected to be integer, got %s", ast_type_to_str(v->context, buf, left, LEN(buf)));
 
     ASTType_T* right = expand_typedef(v, _for->right->data_type);
     if(!is_integer(right))
-            throw_error(ERR_TYPE_ERROR_UNCR, _for->right->tok, "expression of range-based for loop expected to be integer, got %s", ast_type_to_str(buf, right, LEN(buf)));
+            throw_error(v->context, ERR_TYPE_ERROR_UNCR, _for->right->tok, "expression of range-based for loop expected to be integer, got %s", ast_type_to_str(v->context, buf, right, LEN(buf)));
 }
 
 static void match_type_end(ASTNode_T* match, va_list args)
 {
+    GET_VALIDATOR(args);
     for(size_t i = 0; i < match->cases->size; i++)
     {
         ASTNode_T* case_stmt = match->cases->items[i];
 
-        if(types_equal(match->data_type, case_stmt->data_type)) 
+        if(types_equal(v->context, match->data_type, case_stmt->data_type)) 
         {
             match->body = case_stmt->body;
             return;
@@ -986,13 +990,13 @@ static void using_start(ASTNode_T* using, va_list args)
         ASTObj_T* found = search_identifier(v, v->current_scope, id);
         if(!found)
         {
-            throw_error(ERR_UNDEFINED_UNCR, id->tok, "using undefined namespace `%s`", id->callee);
+            throw_error(v->context, ERR_UNDEFINED_UNCR, id->tok, "using undefined namespace `%s`", id->callee);
             return;
         }
 
         if(found->kind != OBJ_NAMESPACE)
         {
-            throw_error(ERR_UNDEFINED_UNCR, id->tok, "`%s` is a %s, can only have namespaces for `using`", id->callee, obj_kind_to_str(found->kind));
+            throw_error(v->context, ERR_UNDEFINED_UNCR, id->tok, "`%s` is a %s, can only have namespaces for `using`", id->callee, obj_kind_to_str(found->kind));
             return;
         }
 
@@ -1001,7 +1005,7 @@ static void using_start(ASTNode_T* using, va_list args)
             ASTObj_T* obj = found->objs->items[i];
             if(hashmap_put(v->current_scope->objs, obj->id->callee, obj) == EEXIST)
             {
-                throw_error(ERR_REDEFINITION_UNCR, id->tok, "namespace `%s` is trying to implement a %s `%s`, \nwhich is already defined in this scope", found->id->callee, obj_kind_to_str(obj->kind), obj->id->callee);
+                throw_error(v->context, ERR_REDEFINITION_UNCR, id->tok, "namespace `%s` is trying to implement a %s `%s`, \nwhich is already defined in this scope", found->id->callee, obj_kind_to_str(obj->kind), obj->id->callee);
                 continue;
             }
         }
@@ -1028,14 +1032,14 @@ static void with_end(ASTNode_T* with, va_list args)
     GET_VALIDATOR(args);
 
     if(!with->condition->data_type)
-        throw_error(ERR_TYPE_ERROR, with->obj->tok, "could not resolve data type for `%s`", with->obj->id->callee);
+        throw_error(v->context, ERR_TYPE_ERROR, with->obj->tok, "could not resolve data type for `%s`", with->obj->id->callee);
     
     ASTExitFnHandle_T* handle = find_exit_fn(v, with->condition->data_type);
     if(!handle)
     {
         char buf[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
-        throw_error(ERR_TYPE_ERROR_UNCR, with->obj->tok, "type `%s` does not have a registered exit function.\nRegister one by using the `exit_fn` compiler directive",
-            ast_type_to_str(buf, with->condition->data_type, LEN(buf)));
+        throw_error(v->context, ERR_TYPE_ERROR_UNCR, with->obj->tok, "type `%s` does not have a registered exit function.\nRegister one by using the `exit_fn` compiler directive",
+            ast_type_to_str(v->context, buf, with->condition->data_type, LEN(buf)));
     }
     with->exit_fn = handle->fn;
 
@@ -1048,8 +1052,8 @@ static void case_end(ASTNode_T* c_stmt, va_list args)
 
     if(c_stmt->condition && c_stmt->mode != TOKEN_EQ && !is_number(v, c_stmt->condition->data_type)) {
         char buf[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
-        throw_error(ERR_TYPE_ERROR_UNCR, c_stmt->tok, "match cases with special ranges are only supported with number types, got `%s`",
-            ast_type_to_str(buf, c_stmt->condition->data_type, LEN(buf)));
+        throw_error(v->context, ERR_TYPE_ERROR_UNCR, c_stmt->tok, "match cases with special ranges are only supported with number types, got `%s`",
+            ast_type_to_str(v->context, buf, c_stmt->condition->data_type, LEN(buf)));
     }
 }
 
@@ -1060,8 +1064,9 @@ static void expr_stmt(ASTNode_T* expr_stmt, va_list args)
 
 static void extern_c_block(ASTNode_T* block, va_list args)
 {
-    if(global.ct != CT_TRANSPILE)
-        throw_error(ERR_SYNTAX_ERROR_UNCR, block->tok, "`extern \"C\"` statements are only supported with the C transpiler backend.\nUse `-t` to use this backend.");
+    GET_VALIDATOR(args);
+    if(v->context->ct != CT_TRANSPILE)
+        throw_error(v->context, ERR_SYNTAX_ERROR_UNCR, block->tok, "`extern \"C\"` statements are only supported with the C transpiler backend.\nUse `-t` to use this backend.");
 }
 
 // expressions
@@ -1072,7 +1077,7 @@ static void call(ASTNode_T* call, va_list args)
 
     ASTType_T* call_type = expand_typedef(v, call->expr->data_type);
     if(!call_type)
-        throw_error(ERR_TYPE_ERROR, call->tok, "could not resolve data type of expression trying to call");
+        throw_error(v->context, ERR_TYPE_ERROR, call->tok, "could not resolve data type of expression trying to call");
 
     switch(call_type->kind)
     {
@@ -1083,7 +1088,7 @@ static void call(ASTNode_T* call, va_list args)
         default:
             {   
                 char buf[BUFSIZ] = {};
-                throw_error(ERR_TYPE_ERROR, call->tok, "cannot call expression of data type `%s`", ast_type_to_str(buf, call_type, LEN(buf)));
+                throw_error(v->context, ERR_TYPE_ERROR, call->tok, "cannot call expression of data type `%s`", ast_type_to_str(v->context, buf, call_type, LEN(buf)));
             } return;
     }
 
@@ -1096,16 +1101,16 @@ static void call(ASTNode_T* call, va_list args)
     if(is_variadic(call_type) && received_arg_num < expected_arg_num)
     {
         char buf[BUFSIZ] = {};
-        throw_error(ERR_CALL_ERROR_UNCR, call->tok, "type `%s` expects %lu or more call arguments, got %lu", ast_type_to_str(buf, call_type, LEN(buf)), expected_arg_num, received_arg_num);
+        throw_error(v->context, ERR_CALL_ERROR_UNCR, call->tok, "type `%s` expects %lu or more call arguments, got %lu", ast_type_to_str(v->context, buf, call_type, LEN(buf)), expected_arg_num, received_arg_num);
     }
     else if(!is_variadic(call_type) && received_arg_num != expected_arg_num)
     {
         char buf[BUFSIZ] = {};
-        throw_error(ERR_CALL_ERROR_UNCR, call->tok, "type `%s` expects %lu call arguments, got %lu", ast_type_to_str(buf, call_type, LEN(buf)), expected_arg_num, received_arg_num);
+        throw_error(v->context, ERR_CALL_ERROR_UNCR, call->tok, "type `%s` expects %lu call arguments, got %lu", ast_type_to_str(v->context, buf, call_type, LEN(buf)), expected_arg_num, received_arg_num);
     }
     
     // if we compile using the assembly compiler, a buffer for the return value is needed when handling big structs
-    if(global.ct == CT_ASM && call->data_type && expand_typedef(v, call->data_type)->kind == TY_STRUCT)
+    if(v->context->ct == CT_ASM && call->data_type && expand_typedef(v, call->data_type)->kind == TY_STRUCT)
     {
         ASTObj_T* ret_buf = init_ast_obj(OBJ_LOCAL, call->tok);
         ret_buf->data_type = call->data_type;
@@ -1122,7 +1127,7 @@ static void identifier(ASTNode_T* id, va_list args)
     ASTObj_T* referenced_obj = search_identifier(v, v->current_scope, id->id);
     if(!referenced_obj)
     {
-        throw_error(ERR_UNDEFINED, id->id->tok, "refferring to undefined identifier `%s`", id->id->callee);
+        throw_error(v->context, ERR_UNDEFINED, id->id->tok, "refferring to undefined identifier `%s`", id->id->callee);
         return;
     }
 
@@ -1139,7 +1144,7 @@ static void identifier(ASTNode_T* id, va_list args)
             break;
 
         default:
-            throw_error(ERR_TYPE_ERROR, id->id->tok, 
+            throw_error(v->context, ERR_TYPE_ERROR, id->id->tok, 
                 "identifier `%s` is of kind %s, expect variable or function name", 
                 id->id->callee, obj_kind_to_str(referenced_obj->kind)
             );
@@ -1175,7 +1180,7 @@ static void dereference(ASTNode_T* deref, va_list args)
     ASTType_T* right_dt = expand_typedef(v, deref->right->data_type);
     if(right_dt->kind != TY_PTR && right_dt->kind != TY_C_ARRAY)
     {
-        throw_error(ERR_TYPE_ERROR, deref->tok, "can only dereference variables with pointer type");
+        throw_error(v->context, ERR_TYPE_ERROR, deref->tok, "can only dereference variables with pointer type");
         return;
     }
 
@@ -1184,19 +1189,19 @@ static void dereference(ASTNode_T* deref, va_list args)
 
 static void member(ASTNode_T* member, va_list args)
 {
+    GET_VALIDATOR(args);
+
     if(!member->left->data_type)
     {
-        throw_error(ERR_TYPE_CAST_WARN, member->left->tok, "could not resolve data type for `%s`", member->right->id->callee);
+        throw_error(v->context, ERR_TYPE_CAST_WARN, member->left->tok, "could not resolve data type for `%s`", member->right->id->callee);
         return;
     }
-
-    GET_VALIDATOR(args);
 
     ASTNode_T* found = find_member_in_type(v, member->left->data_type, member->right);
     if(!found)
     {
         char buf[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
-        throw_error(ERR_TYPE_ERROR, member->tok, "type `%s` has no member named `%s`", ast_type_to_str(buf, member->left->data_type, LEN(buf)), member->right->id->callee);
+        throw_error(v->context, ERR_TYPE_ERROR, member->tok, "type `%s` has no member named `%s`", ast_type_to_str(v->context, buf, member->left->data_type, LEN(buf)), member->right->id->callee);
         return;
     }
     member->data_type = found->data_type;
@@ -1217,13 +1222,13 @@ static void bin_operation(ASTNode_T* op, va_list args)
 
     if(!is_number(v, op->left->data_type) && !is_ptr(v, op->left->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->tok, "left: expect integer or pointer type");
+        throw_error(v->context, ERR_TYPE_ERROR, op->tok, "left: expect integer or pointer type");
         return;
     }
 
     if(!is_number(v, op->right->data_type) && !is_ptr(v, op->right->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->tok, "right: expect integer or pointer type");
+        throw_error(v->context, ERR_TYPE_ERROR, op->tok, "right: expect integer or pointer type");
         return;
     }
 
@@ -1242,10 +1247,10 @@ static void modulo(ASTNode_T* mod, va_list args)
     GET_VALIDATOR(args);
 
     if(!v_is_integer(v, mod->left->data_type))
-        throw_error(ERR_TYPE_ERROR_UNCR, mod->tok, "left: expect integer type for modulo operation");
+        throw_error(v->context, ERR_TYPE_ERROR_UNCR, mod->tok, "left: expect integer type for modulo operation");
 
     if(!v_is_integer(v, mod->right->data_type))
-        throw_error(ERR_TYPE_ERROR_UNCR, mod->tok, "right: expect integer type for modulo operation");
+        throw_error(v->context, ERR_TYPE_ERROR_UNCR, mod->tok, "right: expect integer type for modulo operation");
 
     mod->data_type = mod->left->data_type;
 }
@@ -1255,7 +1260,7 @@ static void negate(ASTNode_T* neg, va_list args)
     GET_VALIDATOR(args);
 
     if(!is_number(v, neg->right->data_type))
-        throw_error(ERR_TYPE_ERROR_UNCR, neg->tok, "can only do bitwise operations on integer types");
+        throw_error(v->context, ERR_TYPE_ERROR_UNCR, neg->tok, "can only do bitwise operations on integer types");
 
     // todo: change type of unsigned integers
     neg->data_type = neg->right->data_type;
@@ -1266,7 +1271,7 @@ static void bitwise_negate(ASTNode_T* neg, va_list args)
     GET_VALIDATOR(args);
 
     if(!v_is_integer(v, neg->right->data_type))
-        throw_error(ERR_TYPE_ERROR_UNCR, neg->tok, "expect integer type for bitwise negation");
+        throw_error(v->context, ERR_TYPE_ERROR_UNCR, neg->tok, "expect integer type for bitwise negation");
 
     neg->data_type = neg->right->data_type;
 }
@@ -1287,13 +1292,13 @@ static void lt_gt(ASTNode_T* op, va_list args)
 
     if(!is_number(v, op->left->data_type) && !is_ptr(v, op->left->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->tok, "left: expect integer or pointer type");
+        throw_error(v->context, ERR_TYPE_ERROR, op->tok, "left: expect integer or pointer type");
         return;
     }
 
     if(!is_number(v, op->right->data_type) && !is_ptr(v, op->right->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->tok, "right: expect integer or pointer type");
+        throw_error(v->context, ERR_TYPE_ERROR, op->tok, "right: expect integer or pointer type");
         return;
     }
 
@@ -1311,13 +1316,13 @@ static void bitwise_op(ASTNode_T* op, va_list args)
 
     if(!v_is_integer(v, op->left->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->tok, "left: can only do bitwise operations on integer types");
+        throw_error(v->context, ERR_TYPE_ERROR, op->tok, "left: can only do bitwise operations on integer types");
         return;
     }
 
     if(!v_is_integer(v, op->right->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->tok, "right: can only do bitwise operations with integer types");
+        throw_error(v->context, ERR_TYPE_ERROR, op->tok, "right: can only do bitwise operations with integer types");
         return;
     }
 
@@ -1330,7 +1335,7 @@ static void inc_dec(ASTNode_T* op, va_list args)
 
     if(!is_number(v, op->left->data_type) && !is_ptr(v, op->left->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, op->tok, "expect a number type");
+        throw_error(v->context, ERR_TYPE_ERROR, op->tok, "expect a number type");
         return;
     }
 
@@ -1354,13 +1359,13 @@ static void index_(ASTNode_T* index, va_list args)
     if(!indexable(left_type->kind))
     {
         char buf[BUFSIZ];
-        throw_error(ERR_TYPE_ERROR, index->tok, "cannot get an index value from type `%s`", ast_type_to_str(buf, left_type, BUFSIZ));
+        throw_error(v->context, ERR_TYPE_ERROR, index->tok, "cannot get an index value from type `%s`", ast_type_to_str(v->context, buf, left_type, BUFSIZ));
         return;
     }
 
     if(!v_is_integer(v, index->expr->data_type))
     {
-        throw_error(ERR_TYPE_ERROR, index->tok, "expect an integer type for the index operator");
+        throw_error(v->context, ERR_TYPE_ERROR, index->tok, "expect an integer type for the index operator");
         return;
     }
     index->data_type = left_type->base;
@@ -1370,7 +1375,7 @@ static void index_(ASTNode_T* index, va_list args)
         if(left_type->kind != TY_C_ARRAY && left_type->kind != TY_ARRAY && left_type->kind != TY_VLA)
         {
             char buf[BUFSIZ] = {'\0'};
-            throw_error(ERR_TYPE_ERROR, index->tok, "cannot get reverse index of type `%s`, need fixed-size array", ast_type_to_str(buf, index->left->data_type, LEN(buf)));
+            throw_error(v->context, ERR_TYPE_ERROR, index->tok, "cannot get reverse index of type `%s`, need fixed-size array", ast_type_to_str(v->context, buf, index->left->data_type, LEN(buf)));
         }
     }
 }
@@ -1381,7 +1386,7 @@ static void local_initializer(Validator_T* v, ASTNode_T* assign, ASTObj_T* local
     {
         if(!assign->right->data_type)
         {
-            throw_error(ERR_TYPE_ERROR, local->id->tok, "could not resolve datatype for `%s`", local->id->callee);
+            throw_error(v->context, ERR_TYPE_ERROR, local->id->tok, "could not resolve datatype for `%s`", local->id->callee);
             return;
         }
         local->data_type = assign->right->data_type;
@@ -1389,7 +1394,7 @@ static void local_initializer(Validator_T* v, ASTNode_T* assign, ASTObj_T* local
     ASTType_T* expanded = expand_typedef(v, local->data_type);
 
     if(expanded->kind == TY_VOID)
-        throw_error(ERR_TYPE_ERROR, local->tok, "`void` type is not allowed for variables");
+        throw_error(v->context, ERR_TYPE_ERROR, local->tok, "`void` type is not allowed for variables");
     
     if(local->data_type->is_constant)
         local->is_constant = true;
@@ -1437,7 +1442,7 @@ static void assignment_end(ASTNode_T* assign, va_list args)
                 case OBJ_LOCAL:
                 case OBJ_FN_ARG:
                     //if(assigned_obj->is_constant)
-                    //    throw_error(ERR_CONST_ASSIGN, assigned_obj->tok, "cannot assign a value to constant %s `%s`", obj_kind_to_str(assigned_obj->kind), assigned_obj->id->callee);
+                    //    throw_error(v->context, ERR_CONST_ASSIGN, assigned_obj->tok, "cannot assign a value to constant %s `%s`", obj_kind_to_str(assigned_obj->kind), assigned_obj->id->callee);
                     if(assigned_obj->is_constant)
                         assigned_obj->data_type->is_constant = true;
                     break;
@@ -1447,25 +1452,25 @@ static void assignment_end(ASTNode_T* assign, va_list args)
                 case OBJ_ENUM_MEMBER:
                 case OBJ_TYPEDEF:
                 default:
-                    throw_error(ERR_MISC, assign->tok, "cannot assign value to %s `%s`", obj_kind_to_str(assigned_obj->kind), assigned_obj->id->callee);
+                    throw_error(v->context, ERR_MISC, assign->tok, "cannot assign value to %s `%s`", obj_kind_to_str(assigned_obj->kind), assigned_obj->id->callee);
             }
         } break;
 
         default:
-            throw_error(ERR_MISC, assign->left->tok, "cannot assign value to `%s`", assign->left->tok->value);
+            throw_error(v->context, ERR_MISC, assign->left->tok, "cannot assign value to `%s`", assign->left->tok->value);
     }
 
     assign->data_type = assign->left->data_type;
 
     if(expand_typedef(v, assign->data_type)->kind == TY_VOID)
-        throw_error(ERR_TYPE_ERROR, assign->tok, "cannot assign type `void`");
+        throw_error(v->context, ERR_TYPE_ERROR, assign->tok, "cannot assign type `void`");
 }
 
-static void anonymous_struct_lit(ASTNode_T* s_lit)
+static void anonymous_struct_lit(Validator_T* v, ASTNode_T* s_lit)
 {
     if(!s_lit->args->size)
     {
-        throw_error(ERR_TYPE_ERROR, s_lit->tok, "cannot resolve data type of empty anonymous struct literal `{}`");
+        throw_error(v->context, ERR_TYPE_ERROR, s_lit->tok, "cannot resolve data type of empty anonymous struct literal `{}`");
         return;
     }
     ASTType_T* type = init_ast_type(TY_STRUCT, s_lit->tok);
@@ -1487,7 +1492,7 @@ static void anonymous_struct_lit(ASTNode_T* s_lit)
             list_push(type->members, member);
         }
         else
-            throw_error(ERR_TYPE_ERROR, arg->tok, "cannot resolve data type");
+            throw_error(v->context, ERR_TYPE_ERROR, arg->tok, "cannot resolve data type");
     }
     s_lit->data_type = type;
 }
@@ -1497,9 +1502,9 @@ static void struct_lit(ASTNode_T* s_lit, va_list args)
     GET_VALIDATOR(args);
 
     if(!s_lit->data_type)
-        anonymous_struct_lit(s_lit);
+        anonymous_struct_lit(v, s_lit);
 
-    if(global.ct == CT_ASM && !s_lit->is_assigning)
+    if(v->context->ct == CT_ASM && !s_lit->is_assigning)
     {
         s_lit->buffer = init_ast_obj(OBJ_LOCAL, s_lit->tok);
         s_lit->buffer->data_type = s_lit->data_type;
@@ -1516,14 +1521,14 @@ static void array_lit(ASTNode_T* a_lit, va_list args)
     a_lit->data_type = init_ast_type(TY_ARRAY, a_lit->tok);
     
     if(a_lit->args->size == 0)
-        throw_error(ERR_UNDEFINED, a_lit->tok, "empty array literals are not allowed");
+        throw_error(v->context, ERR_UNDEFINED, a_lit->tok, "empty array literals are not allowed");
     
     ASTNode_T* first_arg = a_lit->args->items[0];
     if(first_arg->unpack_mode)
     {
         ASTType_T* base_type = expand_typedef(v, first_arg->data_type)->base;
         if(!base_type) {
-            throw_error(ERR_TYPE_ERROR_UNCR, first_arg->tok, "unpacking with `...` is only supported for array types\n");
+            throw_error(v->context, ERR_TYPE_ERROR_UNCR, first_arg->tok, "unpacking with `...` is only supported for array types\n");
         }
         a_lit->data_type->base = base_type;
     }
@@ -1545,7 +1550,7 @@ static void array_lit(ASTNode_T* a_lit, va_list args)
 
     a_lit->data_type->size = get_type_size(v, a_lit->data_type);
 
-    if(global.ct == CT_ASM && !a_lit->is_assigning && v->current_function)
+    if(v->context->ct == CT_ASM && !a_lit->is_assigning && v->current_function)
     {
         a_lit->buffer = init_ast_obj(OBJ_LOCAL, a_lit->tok);
         a_lit->buffer->data_type = a_lit->data_type;
@@ -1561,20 +1566,21 @@ static void ternary(ASTNode_T* ternary, va_list args)
     GET_VALIDATOR(args);
 
     if(!is_bool(v, ternary->condition->data_type))
-        throw_error(ERR_TYPE_ERROR_UNCR, ternary->condition->tok, "expect `bool` type for if condition");
+        throw_error(v->context, ERR_TYPE_ERROR_UNCR, ternary->condition->tok, "expect `bool` type for if condition");
     
     ternary->data_type = ternary->if_branch->data_type;
 
-    if(!types_equal(ternary->if_branch->data_type, ternary->else_branch->data_type))
-        throw_error(ERR_TYPE_ERROR_UNCR, ternary->tok, "data types for ternary branches do not match");
+    if(!types_equal(v->context, ternary->if_branch->data_type, ternary->else_branch->data_type))
+        throw_error(v->context, ERR_TYPE_ERROR_UNCR, ternary->tok, "data types for ternary branches do not match");
 }
 
 static void else_expr(ASTNode_T* else_expr, va_list args)
 {
+    GET_VALIDATOR(args);
     else_expr->data_type = else_expr->left->data_type;
 
-    if(!types_equal(else_expr->left->data_type, else_expr->right->data_type))
-        throw_error(ERR_TYPE_ERROR_UNCR, else_expr->tok, "data types of `else` branches do not match");
+    if(!types_equal(v->context, else_expr->left->data_type, else_expr->right->data_type))
+        throw_error(v->context, ERR_TYPE_ERROR_UNCR, else_expr->tok, "data types of `else` branches do not match");
 }
 
 static void len(ASTNode_T* len, va_list args)
@@ -1585,8 +1591,8 @@ static void len(ASTNode_T* len, va_list args)
     if(ty->kind != TY_C_ARRAY && ty->kind != TY_ARRAY && ty->kind != TY_VLA && !(ty->kind == TY_PTR && expand_typedef(v, ty->base)->kind == TY_CHAR))
     {
         char buf[BUFSIZ] = {'\0'};
-        throw_error(ERR_TYPE_ERROR, len->tok, "cannot get length of type `%s`, expect array or `&char`",
-            ast_type_to_str(buf, len->expr->data_type, LEN(buf)));
+        throw_error(v->context, ERR_TYPE_ERROR, len->tok, "cannot get length of type `%s`, expect array or `&char`",
+            ast_type_to_str(v->context, buf, len->expr->data_type, LEN(buf)));
     }
 }
 
@@ -1605,7 +1611,7 @@ static void pipe_end(ASTNode_T* pipe, va_list args)
 
     if(pipe->right->kind == ND_HOLE)
     {
-        throw_error(ERR_SYNTAX_WARNING, pipe->tok, "unnecessary `|>` expression");
+        throw_error(v->context, ERR_SYNTAX_WARNING, pipe->tok, "unnecessary `|>` expression");
         *pipe = *pipe->left;
     }
 
@@ -1616,10 +1622,10 @@ static void hole(ASTNode_T* hole, va_list args)
 {
     GET_VALIDATOR(args);
     if(!v->current_pipe)
-        throw_error(ERR_SYNTAX_ERROR, hole->tok, "hole expression not in pipe");
+        throw_error(v->context, ERR_SYNTAX_ERROR, hole->tok, "hole expression not in pipe");
     
     if(!v->current_pipe->left->data_type)
-        throw_error(ERR_TYPE_ERROR_UNCR, hole->tok, "cannot resolve data type of pipe input expression");
+        throw_error(v->context, ERR_TYPE_ERROR_UNCR, hole->tok, "cannot resolve data type of pipe input expression");
     hole->data_type = v->current_pipe->left->data_type;
     hole->referenced_obj = v->current_pipe->left->referenced_obj;
     hole->expr = v->current_pipe;
@@ -1639,7 +1645,7 @@ static void lambda_end(ASTNode_T* lambda, va_list args)
     GET_VALIDATOR(args);
     end_scope(v);
 
-    if(global.ct == CT_ASM)
+    if(v->context->ct == CT_ASM)
     {
         ASTObj_T* lambda_stack_ptr = init_ast_obj(OBJ_GLOBAL, lambda->tok);
         lambda_stack_ptr->data_type = (ASTType_T*) void_ptr_type;
@@ -1655,7 +1661,7 @@ static void lambda_end(ASTNode_T* lambda, va_list args)
 
         ASTType_T* return_type = expand_typedef(v, lambda->data_type->base);
         if(return_type->kind == TY_C_ARRAY) 
-            throw_error(ERR_TYPE_ERROR_UNCR, return_type->tok ? return_type->tok : lambda->tok, "cannot return an array type from a function");
+            throw_error(v->context, ERR_TYPE_ERROR_UNCR, return_type->tok ? return_type->tok : lambda->tok, "cannot return an array type from a function");
         else if(return_type->kind == TY_STRUCT && return_type->size > 16)
         {
             lambda->return_ptr = init_ast_obj(OBJ_LOCAL, lambda->data_type->base->tok);
@@ -1669,6 +1675,8 @@ static void lambda_end(ASTNode_T* lambda, va_list args)
 
 static void string_lit(ASTNode_T* str, va_list args)
 {
+    GET_VALIDATOR(args);
+
     // check for invalid escape sequences
     for(size_t i = 0; i < strlen(str->str_val); i++)
     {
@@ -1692,11 +1700,11 @@ static void string_lit(ASTNode_T* str, va_list args)
                 
                 case 'x':
                     if(!isxdigit(str->str_val[++i]) || !isxdigit(str->str_val[++i]))
-                        throw_error(ERR_SYNTAX_ERROR_UNCR, str->tok, "invalid escape sequence `\\x%c%c`, chars after `\\x` must be hexadecimal digits", str->str_val[i - 1], str->str_val[i]);
+                        throw_error(v->context, ERR_SYNTAX_ERROR_UNCR, str->tok, "invalid escape sequence `\\x%c%c`, chars after `\\x` must be hexadecimal digits", str->str_val[i - 1], str->str_val[i]);
                     continue;
 
                 default:
-                    throw_error(ERR_SYNTAX_ERROR_UNCR, str->tok, "invalid escape sequence `\\%c` found in string literal", str->str_val[i]);
+                    throw_error(v->context, ERR_SYNTAX_ERROR_UNCR, str->tok, "invalid escape sequence `\\%c` found in string literal", str->str_val[i]);
                     return;
             }
         }
@@ -1705,6 +1713,8 @@ static void string_lit(ASTNode_T* str, va_list args)
 
 static void char_lit(ASTNode_T* ch, va_list args)
 {
+    GET_VALIDATOR(args);
+
     // check for invalid escape sequences and evaluate them
     char c = ch->str_val[0];
 
@@ -1746,7 +1756,7 @@ static void char_lit(ASTNode_T* ch, va_list args)
                 c = '\0';
                 break;
             default:
-                throw_error(ERR_SYNTAX_ERROR_UNCR, ch->tok, "invalid escape sequence `\\%c` found in char literal", ch->str_val[1]);
+                throw_error(v->context, ERR_SYNTAX_ERROR_UNCR, ch->tok, "invalid escape sequence `\\%c` found in char literal", ch->str_val[1]);
                 return;
         }
     }
@@ -1765,10 +1775,10 @@ static void type_expr(ASTNode_T* cmp, va_list args)
     switch(cmp->cmp_kind)
     {
         case TOKEN_EQ:
-            result = types_equal(cmp->l_type, cmp->r_type);
+            result = types_equal(v->context, cmp->l_type, cmp->r_type);
             break;
         case TOKEN_NOT_EQ:
-            result = !types_equal(cmp->l_type, cmp->r_type);
+            result = !types_equal(v->context, cmp->l_type, cmp->r_type);
             break;
         case TOKEN_GT:
             result = cmp->l_type->size > cmp->r_type->size;
@@ -1830,7 +1840,7 @@ static void type_expr(ASTNode_T* cmp, va_list args)
                 ASTNode_T node = {
                     .kind = ND_STR,
                     .tok = cmp->tok,
-                    .str_val = strdup(ast_type_to_str(buf, cmp->r_type, LEN(buf))),
+                    .str_val = strdup(ast_type_to_str(v->context, buf, cmp->r_type, LEN(buf))),
                     .data_type = (ASTType_T*) char_ptr_type
                 };
                 *cmp = node;
@@ -1882,7 +1892,7 @@ static void resolve_struct_embeds(Validator_T* v, ASTType_T* s_type)
                 ASTType_T* embedded_type = expand_typedef(v, member->data_type);
                 if(embedded_type->kind != TY_STRUCT)
                 {
-                    throw_error(ERR_TYPE_ERROR, member->data_type->tok, "embedding types is only supported for structs, got `%s`", ast_type_to_str(buf, embedded_type, LEN(buf)));
+                    throw_error(v->context, ERR_TYPE_ERROR, member->data_type->tok, "embedding types is only supported for structs, got `%s`", ast_type_to_str(v->context, buf, embedded_type, LEN(buf)));
                     break;
                 }
 
@@ -1913,7 +1923,7 @@ static void struct_type(ASTType_T* s_type, va_list args)
         {
             case ND_STRUCT_MEMBER:
                 if(expanded->kind == TY_VOID)
-                    throw_error(ERR_TYPE_ERROR_UNCR, member->data_type->tok, "struct member cannot be of type `void`");
+                    throw_error(v->context, ERR_TYPE_ERROR_UNCR, member->data_type->tok, "struct member cannot be of type `void`");
 
                 scope_add_node(v, member);
                 break;
@@ -1938,7 +1948,7 @@ static void enum_type(ASTType_T* e_type, va_list args)
         ASTObj_T* member = e_type->members->items[i];
         if(member->value->kind != ND_NOOP)
         {
-            member->value->int_val = (i32) const_i64(member->value);
+            member->value->int_val = (i32) const_i64(v->context, member->value);
             member->value->kind = ND_INT;
         }
         else 
@@ -1955,7 +1965,7 @@ static void undef_type(ASTType_T* u_type, va_list args)
 
     ASTObj_T* found = search_identifier(v, v->current_scope, u_type->id);
     if(!found)
-        throw_error(ERR_TYPE_ERROR, u_type->tok, "could not find data type named `%s`", u_type->id->callee);
+        throw_error(v->context, ERR_TYPE_ERROR, u_type->tok, "could not find data type named `%s`", u_type->id->callee);
     
     u_type->referenced_obj = found;
     u_type->id->outer = found->id->outer;
@@ -1964,9 +1974,11 @@ static void undef_type(ASTType_T* u_type, va_list args)
 
 static void typeof_type(ASTType_T* typeof_type, va_list args)
 {
+    GET_VALIDATOR(args);
+
     ASTType_T* found = typeof_type->num_indices_node->data_type;
     if(!found)
-        throw_error(ERR_TYPE_ERROR, typeof_type->num_indices_node->tok, "could not resolve data type");
+        throw_error(v->context, ERR_TYPE_ERROR, typeof_type->num_indices_node->tok, "could not resolve data type");
     
     *typeof_type = *found;
     typeof_type->no_warnings = true;
@@ -1974,14 +1986,16 @@ static void typeof_type(ASTType_T* typeof_type, va_list args)
 
 static void array_type(ASTType_T* a_type, va_list args)
 {
+    GET_VALIDATOR(args);
     if(a_type->num_indices_node)
-        a_type->num_indices = const_u64(a_type->num_indices_node);
+        a_type->num_indices = const_u64(v->context, a_type->num_indices_node);
 }
 
 static void c_array_type(ASTType_T* ca_type, va_list args)
 {
+    GET_VALIDATOR(args);
     if(ca_type->num_indices_node)
-        ca_type->num_indices = const_u64(ca_type->num_indices_node);
+        ca_type->num_indices = const_u64(v->context, ca_type->num_indices_node);
 }
 
 static void type_end(ASTType_T* type, va_list args)
@@ -2014,7 +2028,7 @@ static i32 get_struct_size(Validator_T* v, ASTType_T* s_type, List_T** struct_ty
 
     if(list_contains(*struct_types, s_type)) {
         char buf[BUFSIZ] = {};
-        throw_error(ERR_TYPE_ERROR, s_type->tok, "detected recursive structs, encountered `%s` twice.", ast_type_to_str(buf, s_type, LEN(buf)));
+        throw_error(v->context, ERR_TYPE_ERROR, s_type->tok, "detected recursive structs, encountered `%s` twice.", ast_type_to_str(v->context, buf, s_type, LEN(buf)));
         return 0;
     }
 
@@ -2093,7 +2107,7 @@ static i32 get_type_size_impl(Validator_T* v, ASTType_T* type, List_T** struct_t
             return 0;
     }
     
-    throw_error(ERR_TYPE_ERROR, type->tok, "could not resolve data type size");
+    throw_error(v->context, ERR_TYPE_ERROR, type->tok, "could not resolve data type size");
     return 0;
 }
 

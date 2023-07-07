@@ -1,5 +1,6 @@
 #include "ast/ast.h"
 #include "ast/types.h"
+#include "context.h"
 #include "parser/parser.h"
 #include "preprocessor/preprocessor.h"
 #define PARSER_TESTS {"parsing simple main function", test_parsing_simple_main_func},    \
@@ -8,13 +9,15 @@
 
 #define PARSER_TEST_FUNC(name, src, code)        \
     void name(void) {                            \
-        global.silent = true;                    \
+        Context_T context;                       \
+        init_context(&context);                  \
+        context.flags.silent = true;             \
         ASTProg_T prog = {0};                    \
-        initialization_pass(&prog);              \
+        initialization_pass(&context, &prog);    \
         list_push(prog.files, get_file(1, src)); \
-        lexer_pass(&prog);                       \
-        preprocessor_pass(&prog);                \
-        parser_pass(&prog);                      \
+        lexer_pass(&context, &prog);             \
+        preprocessor_pass(&context, &prog);      \
+        parser_pass(&context, &prog);            \
         { code }                                 \
     }                                                                
 

@@ -1,4 +1,5 @@
 #include "panic.h"
+#include "context.h"
 
 static PanicHandlerFn_T PANIC_HANDLER = default_panic_handler;
 
@@ -12,6 +13,6 @@ PanicHandlerFn_T get_panic_handler(void)
     return PANIC_HANDLER;
 }
 
-void panic(void) {
-    throw(global.main_error_exception);
+void panic(Context_T* context) {
+    throw(context->main_error_exception);
 }

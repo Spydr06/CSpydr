@@ -3,6 +3,6 @@
 
 #include "ast/ast.h"
 
-i32 parser_pass(ASTProg_T* ast);
+i32 parser_pass(Context_T* context, ASTProg_T* ast);
 
 #endif

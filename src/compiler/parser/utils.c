@@ -5,7 +5,6 @@
 #include "ast/types.h"
 #include "lexer/token.h"
 #include "list.h"
-#include "globals.h"
 #include "mem/mem.h"
 #include "toolchain.h"
 

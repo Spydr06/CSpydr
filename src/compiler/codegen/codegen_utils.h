@@ -18,8 +18,8 @@ char* find_libpath(void);
 bool unsigned_type(ASTType_T* ty);
 bool is_variadic(ASTType_T* ty);
 ASTType_T* unpack(ASTType_T* ty);
-bool should_emit(ASTObj_T* obj);
+bool should_emit(Context_T* context, ASTObj_T* obj);
 bool ptr_type(ASTType_T* ty);
-void print_linking_msg(const char* target, bool is_exec);
+void print_linking_msg(Context_T* context, const char* target, bool is_exec);
 
 #endif

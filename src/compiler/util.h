@@ -4,8 +4,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "config.h"
-
 #define LEN(arr) (sizeof(arr) / sizeof(*arr))
 
 /*

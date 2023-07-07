@@ -1,6 +1,5 @@
 #include "register.h"
 #include "debugger.h"
-#include <globals.h>
 #include <string.h>
 #include <io/log.h>
 #include <sys/ptrace.h>

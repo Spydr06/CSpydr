@@ -127,8 +127,9 @@ static Token_T* lexer_get_id(Lexer_T* lexer);
 static Token_T* lexer_get_number(Lexer_T* lexer);
 static Token_T* lexer_get_symbol(Lexer_T* lexer);
 
-void init_lexer(Lexer_T* lexer, File_T* src) 
+void init_lexer(Lexer_T* lexer, Context_T* context, File_T* src) 
 {
+    lexer->context = context;
     lexer->file = src;
 
     lexer->pos = 0;
@@ -136,14 +137,14 @@ void init_lexer(Lexer_T* lexer, File_T* src)
     lexer->c = get_char(lexer->file, lexer->line, lexer->pos);
 }
 
-i32 lexer_pass(ASTProg_T* ast)
+i32 lexer_pass(Context_T* context, ASTProg_T* ast)
 {
-    timer_start("lexing main file");
+    timer_start(context, "lexing main file");
 
     ast->tokens = init_list();
 
     Lexer_T lex;
-    init_lexer(&lex, ast->files->items[0]);
+    init_lexer(&lex, context, ast->files->items[0]);
 
     Token_T* tok;
     for(tok = lexer_next_token(&lex); tok->type != TOKEN_EOF; tok = lexer_next_token(&lex))
@@ -152,7 +153,7 @@ i32 lexer_pass(ASTProg_T* ast)
     // push EOF token
     list_push(ast->tokens, tok);
     
-    timer_stop();
+    timer_stop(context);
     return 0;
 }
 
@@ -230,7 +231,7 @@ static void lexer_skip_multiline_comment(Lexer_T* lexer)
         if(lexer->c == '\0')
         {   
             //end of file
-            throw_error(ERR_SYNTAX_ERROR,  init_token("#[", start_line, start_pos + 1, TOKEN_ID, lexer->file), "unterminated multiline comment");
+            throw_error(lexer->context, ERR_SYNTAX_ERROR,  init_token("#[", start_line, start_pos + 1, TOKEN_ID, lexer->file), "unterminated multiline comment");
             return;
         }
         lexer_advance(lexer);
@@ -296,7 +297,7 @@ static Token_T* lexer_get_id(Lexer_T* lexer)
     Token_T* id_token = init_token(buffer, lexer->line, lexer->pos - 1, is_macro ? TOKEN_MACRO_CALL : lexer_get_id_type(buffer), lexer->file);
 
     if(str_starts_with(id_token->value, "__csp_"))
-        throw_error(ERR_SYNTAX_WARNING, id_token, "Unsafe identifier name:\nidentifiers starting with `__csp_` may be used internally");
+        throw_error(lexer->context, ERR_SYNTAX_WARNING, id_token, "Unsafe identifier name:\nidentifiers starting with `__csp_` may be used internally");
 
     return id_token;
 }
@@ -352,7 +353,7 @@ static Token_T* lexer_get_decimal(Lexer_T* lexer)
             }
 
             if(type == TOKEN_FLOAT)
-                throw_error(ERR_SYNTAX_ERROR,  &(Token_T){.line = lexer->line, .pos = lexer->pos, .source = lexer->file}, "multiple `.` found in number literal");
+                throw_error(lexer->context, ERR_SYNTAX_ERROR,  &(Token_T){.line = lexer->line, .pos = lexer->pos, .source = lexer->file}, "multiple `.` found in number literal");
 
             type = TOKEN_FLOAT;
         }
@@ -402,7 +403,7 @@ static Token_T* lexer_get_str(Lexer_T* lexer)
         lexer_advance(lexer);
 
         if(lexer->c == '\0')
-            throw_error(ERR_SYNTAX_ERROR, init_token("\"", start_line, start_pos, TOKEN_STRING, lexer->file), "unterminated string literal, expect `\"`");        
+            throw_error(lexer->context, ERR_SYNTAX_ERROR, init_token("\"", start_line, start_pos, TOKEN_STRING, lexer->file), "unterminated string literal, expect `\"`");        
     }
     lexer_advance(lexer);
 
@@ -417,7 +418,7 @@ static Token_T* lexer_get_char(Lexer_T* lexer)
 
     if(lexer->c == '\'')
     {
-        throw_error(ERR_SYNTAX_ERROR,  &(Token_T){.line = lexer->line, .pos = lexer->pos, .source = lexer->file}, "empty char literal");
+        throw_error(lexer->context, ERR_SYNTAX_ERROR,  &(Token_T){.line = lexer->line, .pos = lexer->pos, .source = lexer->file}, "empty char literal");
         return init_token("EOF", lexer->line, lexer->pos, TOKEN_EOF, lexer->file);
     }
 
@@ -451,7 +452,7 @@ static Token_T* lexer_get_char(Lexer_T* lexer)
 
     if(lexer->c != '\'')
     {
-        throw_error(ERR_SYNTAX_ERROR, init_token("'", lexer->line, lexer->pos, TOKEN_CHAR, lexer->file), "unterminated char literal, expect `'`");
+        throw_error(lexer->context, ERR_SYNTAX_ERROR, init_token("'", lexer->line, lexer->pos, TOKEN_CHAR, lexer->file), "unterminated char literal, expect `'`");
         return init_token("EOF", lexer->line, lexer->pos, TOKEN_EOF, lexer->file); 
     }
     lexer_advance(lexer);
@@ -502,7 +503,7 @@ static Token_T* lexer_get_symbol(Lexer_T* lexer)
                 return init_token("EOF", lexer->line, lexer->pos, TOKEN_EOF, lexer->file);
             }
             else
-                throw_error(ERR_SYNTAX_ERROR, init_token(&lexer->c, lexer->line, lexer->pos, TOKEN_ERROR, lexer->file), "unknown token `%c` (id: %d)", lexer->c, lexer->c);
+                throw_error(lexer->context, ERR_SYNTAX_ERROR, init_token(&lexer->c, lexer->line, lexer->pos, TOKEN_ERROR, lexer->file), "unknown token `%c` (id: %d)", lexer->c, lexer->c);
         }
     }
     // satisfy -Wall

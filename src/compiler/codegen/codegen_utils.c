@@ -5,7 +5,6 @@
 #include "mem/mem.h"
 #include "io/log.h"
 #include "io/io.h"
-#include "globals.h"
 #include "platform/platform_bindings.h"
 #include "timer/timer.h"
 
@@ -149,9 +148,9 @@ bool is_variadic(ASTType_T* ty)
     return ty && ty->is_variadic;
 }
 
-bool should_emit(ASTObj_T* obj)
+bool should_emit(Context_T* context, ASTObj_T* obj)
 {
-    return global.optimize ? obj->referenced : true;
+    return context->flags.optimize ? obj->referenced : true;
 }
 
 bool ptr_type(ASTType_T* ty)
@@ -160,17 +159,17 @@ bool ptr_type(ASTType_T* ty)
     return ty->kind == TY_PTR || ty->kind == TY_VLA;
 }
 
-void print_linking_msg(const char* target, bool is_exec) 
+void print_linking_msg(Context_T* context, const char* target, bool is_exec) 
 {
     LOG_OK_F(COLOR_BOLD_BLUE "  Linking   " COLOR_RESET " %s " COLOR_BOLD_WHITE "(%s)" COLOR_RESET, target, is_exec ? "executable" : "library");
-    if(global.linker_flags->size > 0)
+    if(context->linker_flags->size > 0)
     {
         LOG_OK(COLOR_RESET " (");
-        for(size_t i = 0; i < global.linker_flags->size; i++) 
+        for(size_t i = 0; i < context->linker_flags->size; i++) 
         {
-            char* lib = global.linker_flags->items[i];
+            char* lib = context->linker_flags->items[i];
             if(lib[0] == '-' && lib[1] == 'l') {
-                LOG_OK_F(COLOR_RESET "%s%s", (char*) lib + 2, global.linker_flags->size - i <= 1 ? ")" : ", ");
+                LOG_OK_F(COLOR_RESET "%s%s", (char*) lib + 2, context->linker_flags->size - i <= 1 ? ")" : ", ");
             }
         }
     }

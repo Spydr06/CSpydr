@@ -1,34 +1,33 @@
-#include "config.h"
+#include "context.h"
 #include "error.h"
 #include "ast/ast.h"
 #include "io/file.h"
 #include "io/log.h"
-#include "globals.h"
 #include "util.h"
 
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
 
-static void print_current_fn(void) {
+static void print_current_fn(Context_T* context) {
     static ASTObj_T* last_obj = NULL; // remember the last function to eliminate duplication in multiple errors of the same function
-    if(global.current_obj && *global.current_obj && *global.current_obj != last_obj) 
+    if(context->current_obj && *context->current_obj && *context->current_obj != last_obj) 
     {
         char buf[BUFSIZ] = {};
         fprintf(
             ERR_OUTPUT_STREAM,
             COLOR_MAGENTA "In %s " COLOR_BOLD_MAGENTA "%s%s" COLOR_RESET COLOR_MAGENTA ":\n" COLOR_RESET,
-            obj_kind_to_str((*global.current_obj)->kind),
-            ast_id_to_str(buf, (*global.current_obj)->id, LEN(buf)),
-            (*global.current_obj)->kind == OBJ_FUNCTION ? "()" : ""
+            obj_kind_to_str((*context->current_obj)->kind),
+            ast_id_to_str(buf, (*context->current_obj)->id, LEN(buf)),
+            (*context->current_obj)->kind == OBJ_FUNCTION ? "()" : ""
         );
-        last_obj = *global.current_obj;
+        last_obj = *context->current_obj;
     }
     else
         last_obj = NULL;
 }
 
-void default_error_handler(ErrorType_T ty, Token_T* tok, const char* format, va_list args, bool is_error, const char* error_str)
+void default_error_handler(Context_T* context, ErrorType_T ty, Token_T* tok, const char* format, va_list args, bool is_error, const char* error_str)
 {
     if(!tok)
     {
@@ -56,7 +55,7 @@ void default_error_handler(ErrorType_T ty, Token_T* tok, const char* format, va_
     u32 character = tok->pos + 1;
 
     // print the error
-    print_current_fn();
+    print_current_fn(context);
 
     fprintf(ERR_OUTPUT_STREAM, err_tmp1, source_file_path, (long) line, (long) character, is_error ? COLOR_BOLD_RED : COLOR_BOLD_YELLOW, error_str);
     vfprintf(ERR_OUTPUT_STREAM, format, args);
@@ -68,22 +67,22 @@ void default_error_handler(ErrorType_T ty, Token_T* tok, const char* format, va_
     fprintf(ERR_OUTPUT_STREAM, err_tmp3);
 }
 
-void default_panic_handler(void) 
+void default_panic_handler(Context_T* context) 
 {
     // Emit an error summary
-    if(!global.silent)
+    if(!context->flags.silent)
     {
-        if(global.emitted_errors && global.emitted_warnings)
+        if(context->emitted_errors && context->emitted_warnings)
         {
-            LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " %u error%s and %u warning%s thrown during code validation; aborting.\n", global.emitted_errors, global.emitted_errors == 1 ? "" : "s", global.emitted_warnings, global.emitted_warnings == 1 ? "" : "s");
+            LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " %u error%s and %u warning%s thrown during code validation; aborting.\n", context->emitted_errors, context->emitted_errors == 1 ? "" : "s", context->emitted_warnings, context->emitted_warnings == 1 ? "" : "s");
             exit(1);
         }
-        else if(global.emitted_errors)
+        else if(context->emitted_errors)
         {
-            LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " %u error%s thrown during code validation; aborting.\n", global.emitted_errors, global.emitted_errors == 1 ? "" : "s");
+            LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " %u error%s thrown during code validation; aborting.\n", context->emitted_errors, context->emitted_errors == 1 ? "" : "s");
             exit(1);
         }
-        else if(global.emitted_warnings)
-            LOG_WARN_F(COLOR_BOLD_YELLOW "[Warning]" COLOR_RESET COLOR_YELLOW " %u warning%s thrown during code validation\n", global.emitted_warnings, global.emitted_warnings == 1 ? "" : "s");
+        else if(context->emitted_warnings)
+            LOG_WARN_F(COLOR_BOLD_YELLOW "[Warning]" COLOR_RESET COLOR_YELLOW " %u warning%s thrown during code validation\n", context->emitted_warnings, context->emitted_warnings == 1 ? "" : "s");
     }
 }

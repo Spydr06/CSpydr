@@ -3,7 +3,6 @@
 #include "io/io.h"
 #include "ast/ast_iterator.h"
 #include "list.h"
-#include "globals.h"
 
 #include <json-c/json_object.h>
 #include <stdarg.h>
@@ -16,9 +15,9 @@ typedef json_object* (*IndexFn)(void*);
 json_object* gen_ast_prog(ASTProg_T* ast);
 json_object* gen_ast_type(ASTType_T* type);
 
-i32 serializer_pass(ASTProg_T* ast)
+i32 serializer_pass(Context_T* context, ASTProg_T* ast)
 {
-    ast_to_json(ast, global.target, global.print_code);
+    ast_to_json(ast, context->paths.target, context->flags.print_code);
     return 0;
 }
 

@@ -3,6 +3,7 @@
 
 #include "ast/ast.h"
 #include "config.h"
+#include "context.h"
 
 typedef enum COMPILE_TYPE_ENUM
 {
@@ -16,9 +17,9 @@ typedef enum COMPILE_TYPE_ENUM
 
 typedef struct PASS_STRUCT {
     const char* desc;
-    i32 (*func)(ASTProg_T* ast);
+    i32 (*func)(Context_T* context, ASTProg_T* ast);
 } Pass_T;
 
-void compile(char* input_file, char* output_file);
+void compile(Context_T* context, char* input_file, char* output_file);
 
 #endif

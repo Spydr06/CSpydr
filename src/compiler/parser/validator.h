@@ -2,6 +2,7 @@
 #define CSPYDR_VALIDATOR_H
 
 #include "ast/ast.h"
+#include "config.h"
 #include "hashmap.h"
 
 // validator structs
@@ -15,6 +16,7 @@ struct SCOPE_STRUCT
 
 typedef struct VALIDATOR_STRUCT 
 {
+    Context_T* context;
     ASTProg_T* ast;
 
     Scope_T* current_scope;
@@ -26,7 +28,7 @@ typedef struct VALIDATOR_STRUCT
     u32 scope_depth;  // depth of the current scope
 } Validator_T;
 
-i32 validator_pass(ASTProg_T* ast);
+i32 validator_pass(Context_T* context, ASTProg_T* ast);
 ASTType_T* expand_typedef(Validator_T* v, ASTType_T* type);
 
 #endif

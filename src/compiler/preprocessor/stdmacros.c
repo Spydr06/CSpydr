@@ -3,17 +3,16 @@
 #include "../version.h"
 #include "../lexer/token.h"
 #include "../toolchain.h"
-#include "../globals.h"
 #include "../ast/types.h"
 
 #include <time.h>
 #include <string.h>
 #include <stdio.h>
 
-const char* get_date_str(void);
-const char* get_time_str(void);
-const char* get_compile_type(void);
-const char* get_main_file(void);
+const char* get_date_str(Context_T* context);
+const char* get_time_str(Context_T* context);
+const char* get_compile_type(Context_T* context);
+const char* get_main_file(Context_T* context);
 
 char current_time[128] = { '\0' };
 char current_date[128] = { '\0' };
@@ -22,7 +21,7 @@ struct {
     const char* id;
     union {
         const char* value;
-        const char* (*fn)(void);
+        const char* (*fn)(Context_T*);
     };
     enum {
         INTEGER,
@@ -62,7 +61,7 @@ macros[] = {
     {NULL, {NULL}, 0}
 };
 
-void define_std_macros(List_T *macro_list)
+void define_std_macros(Context_T* context, List_T *macro_list)
 {
     for(i32 i = 0; macros[i].id; i++)
     {
@@ -82,7 +81,7 @@ void define_std_macros(List_T *macro_list)
                 replacement_token = init_token((char*) macros[i].value, 0, 0, TOKEN_STRING, NULL);
                 break;
             case STRING_FN:
-                replacement_token = init_token((char*) macros[i].fn(), 0, 0, TOKEN_STRING, NULL);
+                replacement_token = init_token((char*) macros[i].fn(context), 0, 0, TOKEN_STRING, NULL);
                 break;
             case CURRENT_FN:
                 replacement_token = init_token("__func__", 0, 0, TOKEN_CURRENT_FN, NULL);
@@ -94,7 +93,7 @@ void define_std_macros(List_T *macro_list)
     }
 }
 
-const char* get_time_str(void)
+const char* get_time_str(Context_T* context)
 {
     if(!current_time[0])
     {
@@ -110,7 +109,7 @@ const char* get_time_str(void)
     return current_time;
 }
 
-const char* get_date_str(void)
+const char* get_date_str(Context_T* context)
 {
     if(!current_date[0])
     {
@@ -126,9 +125,9 @@ const char* get_date_str(void)
     return current_date;
 }
 
-const char* get_compile_type(void)
+const char* get_compile_type(Context_T* context)
 {
-    switch(global.ct)
+    switch(context->ct)
     {
         case CT_ASM:
             return "asm";
@@ -139,7 +138,7 @@ const char* get_compile_type(void)
     }
 }
 
-const char* get_main_file(void)
+const char* get_main_file(Context_T* context)
 {
-    return global.main_src_file ? global.main_src_file : "nil";
+    return context->paths.main_src_file ? context->paths.main_src_file : "nil";
 }

@@ -1,3 +1,4 @@
+#include "config.h"
 #ifdef CSPYDR_USE_LLVM
 
 #include <string.h>
@@ -12,13 +13,13 @@
 #include "io/log.h"
 #include "llvm_codegen.h"
 #include "llvm_includes.h"
-#include "globals.h"
 #include "timer/timer.h"
 
 #define GET_GENERATOR(args) LLVMCodegenData_T* cg = va_arg(args, LLVMCodegenData_T*)
 
 typedef struct 
 {
+    Context_T* context;
     ASTProg_T* ast;
     
     LLVMModuleRef module;
@@ -45,9 +46,10 @@ static ASTIteratorList_T iterator = {
     }
 };
 
-static void init_llvm_codegen(LLVMCodegenData_T* cg, ASTProg_T* ast)
+static void init_llvm_codegen(LLVMCodegenData_T* cg, Context_T* context, ASTProg_T* ast)
 {
     memset(cg, 0, sizeof(LLVMCodegenData_T));
+    cg->context = context;
     cg->ast = ast;
     cg->module = LLVMModuleCreateWithName(ast->main_file_path);
     LLVMSetDataLayout(cg->module, "");
@@ -58,19 +60,19 @@ static void free_llvm_codegen(LLVMCodegenData_T* cg)
 {
 }
 
-i32 llvm_codegen_pass(ASTProg_T* ast)
+i32 llvm_codegen_pass(Context_T* context, ASTProg_T* ast)
 {
-    timer_start("llvm code generation");
-    generate_llvm(ast, global.target, global.print_code, global.silent);
-    timer_stop();
+    timer_start(context, "llvm code generation");
+    generate_llvm(context, ast, context->paths.target, context->flags.print_code, context->flags.silent);
+    timer_stop(context);
 
     return 0;
 }
 
-void generate_llvm(ASTProg_T *ast, char *output_file, bool print_code, bool is_silent)
+void generate_llvm(Context_T* context, ASTProg_T *ast, char *output_file, bool print_code, bool is_silent)
 { 
     LLVMCodegenData_T cg;
-    init_llvm_codegen(&cg, ast);
+    init_llvm_codegen(&cg, context, ast);
 
     char* target = LLVMGetDefaultTargetTriple();
     LLVMSetTarget(cg.module, target);
@@ -88,7 +90,7 @@ void generate_llvm(ASTProg_T *ast, char *output_file, bool print_code, bool is_s
 
     ast_iterate(&iterator, ast, &cg);
 
-    if(global.optimize)
+    if(context->flags.optimize)
         optimize_llvm(&cg);
 
     if(print_code)
@@ -100,12 +102,12 @@ void generate_llvm(ASTProg_T *ast, char *output_file, bool print_code, bool is_s
 
     char* file = NULL;
 
-    if(!global.do_assemble)
+    if(!context->flags.do_assembling)
         goto finish;
     
     file = llvm_emit_bc(&cg, output_file);
 
-    if(!global.do_link)
+    if(!context->flags.do_linking)
         goto finish;
     
     if(!is_silent)
@@ -273,11 +275,11 @@ static LLVMValueRef gen_global_initializer(LLVMCodegenData_T* cg, ASTNode_T* nod
         
         case ND_ARRAY:
         case ND_STRUCT:
-            throw_error(ERR_CODEGEN, node->tok, "not implemented");
+            throw_error(cg->context, ERR_CODEGEN, node->tok, "not implemented");
             break;
 
         default:
-            throw_error(ERR_CODEGEN, node->tok, "cannot generate relocation for `%s` (%d)", node->tok->value, node->kind);
+            throw_error(cg->context, ERR_CODEGEN, node->tok, "cannot generate relocation for `%s` (%d)", node->tok->value, node->kind);
     }
 
     return LLVMConstNull(type);
@@ -288,7 +290,7 @@ static void gen_global(ASTObj_T* global, va_list args)
     GET_GENERATOR(args);
     LLVMTypeRef type = llvm_gen_type(cg, global->data_type);
     LLVMValueRef value = LLVMAddGlobal(cg->module, type, llvm_gen_identifier(cg, global->id));
-    if(!global->is_extern && should_emit(global))
+    if(!global->is_extern && should_emit(cg->context, global))
         LLVMSetInitializer(value, gen_global_initializer(cg, global->value, type));
 }
 

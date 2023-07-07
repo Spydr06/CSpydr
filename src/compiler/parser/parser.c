@@ -19,7 +19,6 @@
 #include "toolchain.h"
 #include "codegen/codegen_utils.h"
 #include "utils.h"
-#include "globals.h"
 #include "optimizer/constexpr.h"
 #include "timer/timer.h"
 #include "codegen/transpiler/c_codegen.h"
@@ -35,6 +34,7 @@
 
 typedef struct PARSER_STRUCT
 {
+    Context_T* context;
     List_T* tokens;
     size_t token_i;
     ASTProg_T* root_ref;
@@ -286,9 +286,10 @@ static inline Precedence_T get_precedence(TokenType_T tt)
 // helperfunctions             //
 /////////////////////////////////
 
-static void init_parser(Parser_T* parser, ASTProg_T* ast)
+static void init_parser(Parser_T* parser, Context_T* context, ASTProg_T* ast)
 {
     memset(parser, 0, sizeof(struct PARSER_STRUCT));
+    parser->context = context;
     parser->root_ref = ast;
     parser->tokens = ast->tokens;
     parser->tok = ast->tokens->items[0];
@@ -308,7 +309,7 @@ static inline Token_T* parser_advance(Parser_T* p)
 {
     p->tok = p->tokens->items[++p->token_i];
     if(p->tok->type == TOKEN_SEMICOLON && streq(p->tok->value, ";"))
-        throw_error(ERR_SYNTAX_WARNING, p->tok, "found `;` (greek question mark) instead of `;` (semicolon)");
+        throw_error(p->context, ERR_SYNTAX_WARNING, p->tok, "found `;` (greek question mark) instead of `;` (semicolon)");
     return p->tok;
 }
 
@@ -327,7 +328,7 @@ static inline bool tok_is(Parser_T* p, TokenType_T type)
 Token_T* parser_consume(Parser_T* p, TokenType_T type, const char* msg)
 {
     if(!tok_is(p, type))
-        throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, %s", p->tok->value,  msg);
+        throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, %s", p->tok->value,  msg);
 
     return parser_advance(p);
 }
@@ -409,26 +410,26 @@ static ASTObj_T* get_compatible_tuple(Parser_T* p, ASTType_T* tuple)
 static void parse_obj(Parser_T* p, List_T* obj_list);
 static void parse_compiler_directives(Parser_T* p, List_T* obj_list);
 
-i32 parser_pass(ASTProg_T* ast)
+i32 parser_pass(Context_T* context, ASTProg_T* ast)
 {
-    if(!global.silent)
+    if(!context->flags.silent)
     {
         LOG_OK_F(COLOR_BOLD_GREEN "\33[2K\r  Compiling " COLOR_RESET " %s\n", ((File_T*) ast->files->items[0])->path);
     }
 
-    global.total_source_lines = 0;
+    context->total_source_lines = 0;
     for(size_t i = 0; i < ast->files->size; i++)
     {
         File_T* file = ast->files->items[i];
-        global.total_source_lines += file->num_lines;
+        context->total_source_lines += file->num_lines;
     }
     
     // initialize the parser;
-    timer_start("parsing");
+    timer_start(context, "parsing");
     Parser_T parser;
-    init_parser(&parser, ast);
+    init_parser(&parser, context, ast);
 
-    global.current_obj = &parser.cur_obj;
+    context->current_obj = &parser.cur_obj;
 
     // parse
     while(!tok_is(&parser, TOKEN_EOF))
@@ -445,13 +446,13 @@ i32 parser_pass(ASTProg_T* ast)
         }
     }
 
-    global.current_obj = NULL;
+    context->current_obj = NULL;
 
     // dispose
     free_list(ast->tokens);
     free_parser(&parser);
 
-    timer_stop();
+    timer_stop(context);
 
     return 0;
 }
@@ -463,28 +464,14 @@ i32 parser_pass(ASTProg_T* ast)
 static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, List_T* obj_list)
 {
     if(streq(field->value, "link"))
-    {
-        pkg_config(value, field);
-        //char* link_flag = calloc(strlen(value) + 3, sizeof(char));
-        //sprintf(link_flag, "-l%s", value);
-        //
-        //for(size_t i = 0; i < global.linker_flags->size; i++)
-        //    if(streq(global.linker_flags->items[i], link_flag))
-        //    {
-        //        free(link_flag);
-        //        return;
-        //    }
-        //
-        //mem_add_ptr(link_flag);
-        //list_push(global.linker_flags, link_flag);
-    }
+        pkg_config(p->context, value, field);
     else if(streq(field->value, "link_dir"))
     {
         char* link_flag = calloc(strlen(value) + 3, sizeof(char));
         sprintf(link_flag, "-L%s", value);
         mem_add_ptr(link_flag);
 
-        list_push(global.linker_flags, link_flag);
+        list_push(p->context->linker_flags, link_flag);
     }
     else if(streq(field->value, "link_obj"))
     {
@@ -493,7 +480,7 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, Li
 
         char* full_fp = mem_malloc((strlen(working_dir) + strlen(DIRECTORY_DELIMS) + strlen(value) + 2) * sizeof(char));
         sprintf(full_fp, "%s" DIRECTORY_DELIMS "%s", working_dir, value);
-        list_push(global.linker_flags, full_fp);
+        list_push(p->context->linker_flags, full_fp);
 
         free(abs_path);
     }
@@ -512,7 +499,7 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, Li
             else if(streq(obj->id->callee, value))
             {
                 if(obj->kind != OBJ_FUNCTION)
-                    throw_error(ERR_TYPE_ERROR, p->tok, "`%s` is not a function, thus cannot have the `no_return` attribute", value);
+                    throw_error(p->context, ERR_TYPE_ERROR, p->tok, "`%s` is not a function, thus cannot have the `no_return` attribute", value);
 
                 obj->no_return = true;
                 return;
@@ -520,7 +507,7 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, Li
         }
         
         if(!all)
-            throw_error(ERR_SYNTAX_ERROR, p->tok, "could not find function `%s` in current scope", value);        
+            throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "could not find function `%s` in current scope", value);        
     }
     else if(streq(field->value, "exit_fn"))
     {
@@ -542,7 +529,7 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, Li
                 return;
             }
         }
-        throw_error(ERR_SYNTAX_ERROR, p->tok, "could not find function `%s` in current scope", value);
+        throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "could not find function `%s` in current scope", value);
     }
     else if(streq(field->value, "cfg"))
     {   
@@ -552,7 +539,7 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, Li
     {
         char* abs_path = get_absolute_path(p->tok->source->path);
         char* working_dir = get_path_from_file(abs_path);
-        if(!global.silent) 
+        if(!p->context->flags.silent) 
             LOG_OK_F(COLOR_BOLD_CYAN "  Command   " COLOR_RESET " \"%s %s\"\n", cc, value);
 
         List_T* args = init_list();
@@ -571,7 +558,7 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, Li
         
         i32 exit_code = subprocess(cc, (char* const*) args->items, false);
         if(exit_code)
-            throw_error(ERR_MISC, parser_peek(p, -1), "command %s %s failed with exit code %d", cc, value, exit_code);
+            throw_error(p->context, ERR_MISC, parser_peek(p, -1), "command %s %s failed with exit code %d", cc, value, exit_code);
 
         chdir(current_dir);
         free_list(args);
@@ -584,7 +571,7 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, Li
         char* to = p->tok->value;
         parser_consume(p, TOKEN_STRING, "expect string literal after `=>`");
 
-        if(!global.silent) 
+        if(!p->context->flags.silent) 
             LOG_OK_F(COLOR_BOLD_CYAN "  Command" COLOR_RESET "    \"cp -r %s %s\"\n", from, to);
 
         char* abs_path = get_absolute_path(p->tok->source->path);
@@ -602,14 +589,14 @@ static void eval_compiler_directive(Parser_T* p, Token_T* field, char* value, Li
         };
         i32 exit_code = subprocess(args[0], args, false);
         if(exit_code)
-            throw_error(ERR_MISC, parser_peek(p, -1), "copy failed with exit code %d", exit_code);
+            throw_error(p->context, ERR_MISC, parser_peek(p, -1), "copy failed with exit code %d", exit_code);
 
         chdir(current_dir);
         free(abs_path);
     }
 #endif
     else
-        throw_error(ERR_SYNTAX_WARNING, field, "undefined compiler directive `%s`", field->value);
+        throw_error(p->context, ERR_SYNTAX_WARNING, field, "undefined compiler directive `%s`", field->value);
 }
 
 static bool handle_compiler_cfg(Parser_T* p, const char* field)
@@ -618,26 +605,26 @@ static bool handle_compiler_cfg(Parser_T* p, const char* field)
     {
         const Config_T* cfg = &configurations[i];
         if(strcmp(cfg->name, field) == 0)
-            return cfg->set();
+            return cfg->set(p->context);
     }
 
-    throw_error(ERR_UNDEFINED_UNCR, p->tok, "undefined `cfg` directive `%s`", field);
+    throw_error(p->context, ERR_UNDEFINED_UNCR, p->tok, "undefined `cfg` directive `%s`", field);
     return false;
 }
 
-static void export_fn(ASTObj_T* obj, Token_T* export_name)
+static void export_fn(Context_T* context, ASTObj_T* obj, Token_T* export_name)
 {
     if(!obj || !export_name)
         return;
     
     if(obj->kind != OBJ_FUNCTION)
-        throw_error(ERR_TYPE_ERROR_UNCR, export_name, "`export` compiler directive expects object of type function, got `%s`", obj_kind_to_str(obj->kind));
+        throw_error(context, ERR_TYPE_ERROR_UNCR, export_name, "`export` compiler directive expects object of type function, got `%s`", obj_kind_to_str(obj->kind));
 
     obj->exported = export_name->value;
     obj->referenced = true;
 
-    if(!obj->is_extern && !obj->is_extern_c && global.req_entrypoint)
-        throw_error(ERR_MISC, export_name, "`export` can only be used in libraries or with `extern` functions currently");
+    if(!obj->is_extern && !obj->is_extern_c && context->flags.require_entrypoint)
+        throw_error(context, ERR_MISC, export_name, "`export` can only be used in libraries or with `extern` functions currently");
 }
 
 static void parse_compiler_directives(Parser_T* p, List_T* obj_list)
@@ -678,7 +665,7 @@ static void parse_compiler_directives(Parser_T* p, List_T* obj_list)
     {
         u64 size_before = obj_list->size;
         parse_obj(p, obj_list);
-        export_fn(list_last(obj_list), export_name);
+        export_fn(p->context, list_last(obj_list), export_name);
         if(!keep_obj && size_before < obj_list->size)
             list_pop(obj_list);
     }
@@ -1047,7 +1034,7 @@ static ASTObj_T* parse_extern_def(Parser_T *p, bool is_extern_c)
             ext_var->is_extern_c = is_extern_c;
 
             if(ext_var->value)
-                throw_error(ERR_SYNTAX_WARNING, ext_var->value->tok, "cannot set a value to an extern variable");
+                throw_error(p->context, ERR_SYNTAX_WARNING, ext_var->value->tok, "cannot set a value to an extern variable");
             return ext_var;
         }
         case TOKEN_FN:
@@ -1061,7 +1048,7 @@ static ASTObj_T* parse_extern_def(Parser_T *p, bool is_extern_c)
             return ext_fn;
         }
         default:
-            throw_error(ERR_SYNTAX_ERROR, p->tok, "expect function or variable declaration");
+            throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "expect function or variable declaration");
             break;
     }
 
@@ -1077,7 +1064,7 @@ static void parse_extern(Parser_T* p, List_T* objs)
     if(extern_c)
         parser_advance(p);
     else if(tok_is(p, TOKEN_STRING))
-        throw_error(ERR_SYNTAX_ERROR, p->tok, "invalid `extern` parameter `\"%s\"`, expect `\"C\"` or `{`", p->tok->value);
+        throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "invalid `extern` parameter `\"%s\"`, expect `\"C\"` or `{`", p->tok->value);
 
     if(tok_is(p, TOKEN_LBRACE)) {
         parser_advance(p);
@@ -1106,7 +1093,7 @@ List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok, ASTIdentifier_T** 
             parser_advance(p);
 
             if(!tok_is(p, end_tok))
-                throw_error(ERR_SYNTAX_ERROR, p->tok, "expect `...` to be the last function argument");
+                throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "expect `...` to be the last function argument");
 
             break;
         }
@@ -1170,7 +1157,7 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
     mem_add_list(fn->data_type->arg_types);
     fn->data_type->is_variadic = fn->va_area != NULL;
 
-    if(global.ct == CT_ASM)
+    if(p->context->ct == CT_ASM)
         fn->alloca_bottom = &alloca_bottom;
 
     return fn;
@@ -1184,7 +1171,7 @@ static ASTObj_T* parse_fn(Parser_T* p)
     p->cur_obj = fn;
     fn->body = parse_stmt(p, true);
 
-    if(global.ct == CT_ASM)
+    if(p->context->ct == CT_ASM)
     {
         fn->objs = init_list();
         mem_add_list(fn->objs);
@@ -1207,7 +1194,7 @@ static ASTObj_T* parse_global(Parser_T* p)
         parser_advance(p);
     }
     else
-        throw_error(ERR_SYNTAX_ERROR, p->tok, "expect `let` keyword for variable definition");
+        throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "expect `let` keyword for variable definition");
     
     global->id = parse_simple_identifier(p);
 
@@ -1300,7 +1287,7 @@ static void parse_obj(Parser_T* p, List_T* obj_list)
             parse_compiler_directives(p, obj_list);
             break;
         default:
-            throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect [import, type, let, const, fn]", p->tok->value);
+            throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect [import, type, let, const, fn]", p->tok->value);
     }
 
     
@@ -1343,7 +1330,7 @@ static ASTNode_T* parse_return(Parser_T* p, bool needs_semicolon)
     if(!tok_is(p, TOKEN_SEMICOLON))
     {
         if((p->cur_obj && p->cur_obj->return_type->kind == TY_VOID))
-            throw_error(ERR_TYPE_ERROR_UNCR, ret->tok, "cannot return value from function with type `void`, expect `;`");
+            throw_error(p->context, ERR_TYPE_ERROR_UNCR, ret->tok, "cannot return value from function with type `void`, expect `;`");
         ret->return_val = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
     }
     if(needs_semicolon)
@@ -1424,7 +1411,7 @@ static ASTNode_T* parse_for(Parser_T* p, bool needs_semicolon)
         {
             ASTNode_T* init_stmt = parse_stmt(p, true);
             if(init_stmt->kind != ND_EXPR_STMT)
-                throw_error(ERR_SYNTAX_ERROR, init_stmt->tok, "can only have expression-like statements in for-loop initializer");
+                throw_error(p->context, ERR_SYNTAX_ERROR, init_stmt->tok, "can only have expression-like statements in for-loop initializer");
             loop->init_stmt = init_stmt;
         }
         else {
@@ -1520,7 +1507,7 @@ static ASTNode_T* parse_type_match(Parser_T* p, ASTNode_T* match)
         if(case_stmt->is_default_case)
         {
             if(match->default_case)
-                throw_error(ERR_REDEFINITION, p->tok, "redefinition of default case `_`.");
+                throw_error(p->context, ERR_REDEFINITION, p->tok, "redefinition of default case `_`.");
             
             match->default_case = case_stmt;
             continue;
@@ -1556,7 +1543,7 @@ static ASTNode_T* parse_match(Parser_T* p)
         if(case_stmt->is_default_case)
         {
             if(match->default_case)
-                throw_error(ERR_REDEFINITION, p->tok, "redefinition of default case `_`.");
+                throw_error(p->context, ERR_REDEFINITION, p->tok, "redefinition of default case `_`.");
 
             match->default_case = case_stmt;
             continue;
@@ -1576,7 +1563,7 @@ static ASTNode_T* parse_expr_stmt(Parser_T* p, bool needs_semicolon)
 
     if(!is_executable(stmt->expr)) {
         printf("%d\n", stmt->expr->kind);
-        throw_error(ERR_SYNTAX_ERROR, stmt->expr->tok, "cannot treat `%s` as a statement, expect function call, assignment or similar", stmt->expr->tok->value);
+        throw_error(p->context, ERR_SYNTAX_ERROR, stmt->expr->tok, "cannot treat `%s` as a statement, expect function call, assignment or similar", stmt->expr->tok->value);
     }
     if(needs_semicolon)
         parser_consume(p, TOKEN_SEMICOLON, "expect `;` after expression statement");
@@ -1594,7 +1581,7 @@ static ASTNode_T* parse_local(Parser_T* p)
         parser_advance(p);
     }
     else
-        throw_error(ERR_SYNTAX_ERROR, p->tok, "expect `let` keyword for variable definition");
+        throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "expect `let` keyword for variable definition");
     
     ASTNode_T* id = init_ast_node(ND_ID, p->tok);
     local->id = parse_simple_identifier(p);
@@ -1638,7 +1625,7 @@ static ASTNode_T* parse_local(Parser_T* p)
     parser_consume(p, TOKEN_SEMICOLON, "expect `;` after variable definition");
                                                             // ND_FOR only for the for loop initializer
     if(!p->cur_block || (p->cur_block->kind != ND_BLOCK && p->cur_block->kind != ND_FOR))
-        throw_error(ERR_SYNTAX_ERROR, local->tok, "cannot define a local variable outside a block statement");
+        throw_error(p->context, ERR_SYNTAX_ERROR, local->tok, "cannot define a local variable outside a block statement");
     list_push(p->cur_block->locals, local);
 
     return value;
@@ -1716,7 +1703,7 @@ static ASTNode_T* parse_do(Parser_T* p, bool needs_semicolon)
             do_stmt = init_ast_node(ND_DO_WHILE, p->tok);
             break;
         default:
-            throw_error(ERR_SYNTAX_ERROR, p->tok, "exect either `while` or `unless` after `do`-stmt body");
+            throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "exect either `while` or `unless` after `do`-stmt body");
     }
 
     parser_advance(p);
@@ -1749,7 +1736,7 @@ static ASTNode_T* parse_using(Parser_T* p, bool needs_semicolon)
     mem_add_list(using->ids);
 
     if(tok_is(p, TOKEN_COMMA))
-        throw_error(ERR_SYNTAX_ERROR, p->tok, "expect identifier after `using`");
+        throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "expect identifier after `using`");
 
     do {
         if(tok_is(p, TOKEN_COMMA))
@@ -1774,9 +1761,9 @@ static ASTNode_T* parse_extern_c_block(Parser_T* p, bool needs_semicolon)
     parser_advance(p);
 
     if(!tok_is(p, TOKEN_STRING))
-        throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect string literal", p->tok->value);
+        throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect string literal", p->tok->value);
     if(!streq(p->tok->value, "c") && !streq(p->tok->value, "C"))
-        throw_error(ERR_UNDEFINED, p->tok, "undefined `extern` mode `\"%s\"`, expect`\"C\"`", p->tok->value);
+        throw_error(p->context, ERR_UNDEFINED, p->tok, "undefined `extern` mode `\"%s\"`, expect`\"C\"`", p->tok->value);
     parser_advance(p);
 
     parser_consume(p, TOKEN_LPAREN, "expect `(` after `extern \"C\"`");
@@ -1816,7 +1803,7 @@ static ASTNode_T* parse_inline_asm(Parser_T* p, bool needs_semicolon)
                 list_push(asm_stmt->args, parse_id(p));
                 break;
             default:
-                throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s` in `asm` statement", p->tok->value);
+                throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s` in `asm` statement", p->tok->value);
         }
     }
 
@@ -1904,7 +1891,7 @@ static ASTNode_T* parse_expr(Parser_T* p, Precedence_T prec, TokenType_T end_tok
     PrefixParseFn_T prefix = get_PrefixParseFn_T(p->tok->type);
 
     if(!prefix)
-        throw_error(ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect expression", p->tok->value);
+        throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect expression", p->tok->value);
 
     ASTNode_T* left_expr = prefix(p);
 
@@ -1937,7 +1924,7 @@ static List_T* parse_expr_list(Parser_T* p, TokenType_T end_tok, bool allow_unpa
 
         if(allow_unpacking_operators && tok_is(p, TOKEN_VA_LIST)) {
             if(umode)
-                throw_error(ERR_SYNTAX_ERROR_UNCR, p->tok, "already unpacking front-to-back, cannot unpack twice");
+                throw_error(p->context, ERR_SYNTAX_ERROR_UNCR, p->tok, "already unpacking front-to-back, cannot unpack twice");
             parser_advance(p);
             umode = UMODE_BTOF;
         }
@@ -2173,7 +2160,7 @@ static ASTNode_T* parse_const_lambda(Parser_T* p)
 
     char* id;
 
-    if(global.ct == CT_ASM)
+    if(p->context->ct == CT_ASM)
     {
         id = calloc(34, sizeof(char));
         sprintf(id, "const.lambda.%ld", count++);
@@ -2217,7 +2204,7 @@ static ASTNode_T* parse_const_lambda(Parser_T* p)
 
     lambda_fn->body = parse_stmt(p, false);
     collect_locals(lambda_fn->body, lambda_fn->objs);
-    if(global.ct == CT_ASM)
+    if(p->context->ct == CT_ASM)
         lambda_fn->alloca_bottom = &alloca_bottom;
     list_push(p->root_ref->objs, lambda_fn);
 
@@ -2384,7 +2371,7 @@ static ASTNode_T* parse_hole(Parser_T* p)
 {
     Token_T* tok = p->tok;
     if(!parser_holes_enabled(p))
-        throw_error(ERR_SYNTAX_ERROR, tok, "cannot have `$` here, only use `$` in pipe expressions");
+        throw_error(p->context, ERR_SYNTAX_ERROR, tok, "cannot have `$` here, only use `$` in pipe expressions");
     parser_consume(p, TOKEN_DOLLAR, "expect `$`");
     return init_ast_node(ND_HOLE, tok);
 }
@@ -2400,7 +2387,7 @@ static ASTNode_T* parse_const_expr(Parser_T* p)
             return parse_const_lambda(p);
         
         default:
-            throw_error(ERR_SYNTAX_ERROR, p->tok, "unknown const expression");
+            throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "unknown const expression");
             return NULL;
     }
 }
@@ -2453,7 +2440,7 @@ static ASTNode_T* parse_builtin_type_exprs(Parser_T* p, ASTNode_T* expr)
         expr->data_type = (ASTType_T*) char_ptr_type; 
     }
     else
-        throw_error(ERR_UNDEFINED, p->tok, "Undefined builtin type expression `%s`", p->tok->value);
+        throw_error(p->context, ERR_UNDEFINED, p->tok, "Undefined builtin type expression `%s`", p->tok->value);
 
 
     parser_consume(p, TOKEN_ID, "expect identifier");
@@ -2490,7 +2477,7 @@ static ASTNode_T* parse_type_expr(Parser_T* p)
                 break;
 
             default:
-                throw_error(ERR_SYNTAX_ERROR, p->tok, "expect one of `==` `!=` `>` `>=` `<` `<=`, got `%s`", p->tok->value);
+                throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "expect one of `==` `!=` `>` `>=` `<` `<=`, got `%s`", p->tok->value);
         }
 
         expr->r_type = parse_type(p);
@@ -2574,7 +2561,7 @@ static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left)
     member->right = parse_expr(p, MEMBER, TOKEN_SEMICOLON);
 
     if(member->right->kind != ND_ID)
-        throw_error(ERR_SYNTAX_ERROR, member->right->tok, "expect identifier");
+        throw_error(p->context, ERR_SYNTAX_ERROR, member->right->tok, "expect identifier");
 
     return member;
 }
@@ -2611,7 +2598,7 @@ static ASTNode_T* parse_pow_2(Parser_T* p, ASTNode_T* left)
     mult->left = left;
     mult->right = left;
 
-    if(global.ct == CT_TRANSPILE)
+    if(p->context->ct == CT_TRANSPILE)
     {
         ASTNode_T* closure = init_ast_node(ND_CLOSURE, p->tok);
         closure->exprs = init_list();
@@ -2635,7 +2622,7 @@ static ASTNode_T* parse_pow_3(Parser_T* p, ASTNode_T* left)
     mult_b->left = left;
     mult_b->right = left;
 
-    if(global.ct == CT_TRANSPILE)
+    if(p->context->ct == CT_TRANSPILE)
     {
         ASTNode_T* closure = init_ast_node(ND_CLOSURE, p->tok);
         closure->exprs = init_list();

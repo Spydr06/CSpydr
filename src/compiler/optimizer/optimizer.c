@@ -6,7 +6,6 @@
 #include "error/error.h"
 #include "io/log.h"
 #include "list.h"
-#include "globals.h"
 #include "timer/timer.h"
 #include <stdarg.h>
 
@@ -19,9 +18,9 @@
 static void remove_dead_code(ASTProg_T* ast);
 void evaluate_const_exprs(ASTProg_T* ast);
 
-i32 optimizer_pass(ASTProg_T *ast)
+i32 optimizer_pass(Context_T* context, ASTProg_T *ast)
 {
-    timer_start("code optimization");
+    timer_start(context, "code optimization");
 
     static struct {
         void (*fn)(ASTProg_T*);
@@ -35,7 +34,7 @@ i32 optimizer_pass(ASTProg_T *ast)
 
     for(u32 i = 0; i < count; i++)
     {
-        if(!global.silent)
+        if(!context->flags.silent)
         {
             LOG_OK_F("%s" COLOR_BOLD_GREEN "  Optimizing" COLOR_RESET " (%d/%d) %s", i ? "\33[2K\r" : "", i + 1, count, passes[i].description);
             fflush(OUTPUT_STREAM);
@@ -43,12 +42,12 @@ i32 optimizer_pass(ASTProg_T *ast)
         passes[i].fn(ast);
     }
 
-    if(count && !global.silent)
+    if(count && !context->flags.silent)
         fprintf(OUTPUT_STREAM, "\n");
     
-    timer_stop();
+    timer_stop(context);
 
-    return global.emitted_errors;
+    return context->emitted_errors;
 }
 
 static void add_func_to_node_stack(ASTObj_T* function, va_list ap) {

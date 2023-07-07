@@ -166,7 +166,7 @@ const char* type_kind_to_str(ASTTypeKind_T kind)
     }
 }
 
-char* ast_type_to_str(char* dest, ASTType_T* ty, size_t size)
+char* ast_type_to_str(Context_T* context, char* dest, ASTType_T* ty, size_t size)
 {
     if(size - strlen(dest) < 32) // if not enough memory is left, return
     {
@@ -184,26 +184,26 @@ char* ast_type_to_str(char* dest, ASTType_T* ty, size_t size)
             break;
         case TY_PTR:
             strcat(dest, "&");
-            ast_type_to_str(dest, ty->base, size);
+            ast_type_to_str(context, dest, ty->base, size);
             break;
         case TY_C_ARRAY:
-            ast_type_to_str(dest, ty->base, size);
+            ast_type_to_str(context, dest, ty->base, size);
             strcat(dest, " 'c[");
             
             {
                 char buf[128] = {'\0'};
-                sprintf(buf, "%lu", const_u64(ty->num_indices_node));
+                sprintf(buf, "%lu", const_u64(context, ty->num_indices_node));
                 strcat(dest, buf);
             }            
             
             strcat(dest, "]");
             break;
         case TY_ARRAY:
-            ast_type_to_str(dest, ty->base, size);            
+            ast_type_to_str(context, dest, ty->base, size);            
             sprintf(dest + strlen(dest), "[%lu]", ty->num_indices);
             break;
         case TY_VLA:
-            ast_type_to_str(dest, ty->base, size);
+            ast_type_to_str(context, dest, ty->base, size);
             strcat(dest, "[]");
             break;
         case TY_STRUCT:
@@ -220,12 +220,12 @@ char* ast_type_to_str(char* dest, ASTType_T* ty, size_t size)
                         strcat(dest, ": ");
                     }
 
-                    ast_type_to_str(dest, member->data_type, size);
+                    ast_type_to_str(context, dest, member->data_type, size);
                     break;
 
                 case ND_EMBED_STRUCT:
                     strcat(dest, "embed ");
-                    ast_type_to_str(dest, member->data_type, size);
+                    ast_type_to_str(context, dest, member->data_type, size);
                     break;
                 default:
                     unreachable();
@@ -244,11 +244,11 @@ char* ast_type_to_str(char* dest, ASTType_T* ty, size_t size)
             break;
         case TY_FN:
             strcat(dest, "fn<");
-            ast_type_to_str(dest, ty->base, size);
+            ast_type_to_str(context, dest, ty->base, size);
             strcat(dest, ">(");
             for(size_t i = 0; i < ty->arg_types->size; i++)
             {
-                ast_type_to_str(dest, ty->arg_types->items[i], size);
+                ast_type_to_str(context, dest, ty->arg_types->items[i], size);
                 if(ty->arg_types->size - i > 1)
                     strcat(dest, ", ");
             }

@@ -5,6 +5,6 @@
 #include "util.h"
 
 u8 escape_sequence(char c, const char* str, size_t* i);
-void gen_relocation(ASTNode_T* node, size_t target_size, u8* buffer);
+void gen_relocation(Context_T* context, ASTNode_T* node, size_t target_size, u8* buffer);
 
 #endif

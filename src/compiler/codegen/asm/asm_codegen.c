@@ -10,7 +10,6 @@
 #include "ast/types.h"
 #include "ast/ast.h"
 #include "config.h"
-#include "globals.h"
 #include "list.h"
 #include "../relocation.h"
 #include "timer/timer.h"
@@ -188,12 +187,13 @@ static void asm_gen_lambda(ASMCodegenData_T* cg, ASTObj_T* lambda);
 static void asm_load(ASMCodegenData_T* cg, ASTType_T *ty);
 static void asm_gen_string_literals(ASMCodegenData_T* cg);
 
-void init_asm_cg(ASMCodegenData_T* cg, ASTProg_T* ast)
+void init_asm_cg(ASMCodegenData_T* cg, Context_T* context, ASTProg_T* ast)
 {
     memset(cg, 0, sizeof(struct ASM_CODEGEN_DATA_STRUCT));
 
+    cg->context = context;
     cg->ast = ast;
-    cg->embed_file_locations = global.embed_debug_info;
+    cg->embed_file_locations = context->flags.embed_debug_info;
     cg->code_buffer = open_memstream(&cg->buf, &cg->buf_len);
     cg->string_literals = init_list();
 }
@@ -242,7 +242,7 @@ static void write_code(ASMCodegenData_T* cg, const char* target, bool cachefile)
         if(make_dir(cache_dir))
         {
             LOG_ERROR("error creating cache directory `" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "`.\n");
-            throw(global.main_error_exception);
+            throw(cg->context->main_error_exception);
         }
         sprintf(file_path, "%s" DIRECTORY_DELIMS "%s.s", cache_dir, target);
     }
@@ -256,15 +256,15 @@ static void write_code(ASMCodegenData_T* cg, const char* target, bool cachefile)
     fclose(out);
 }
 
-i32 asm_codegen_pass(ASTProg_T* ast)
+i32 asm_codegen_pass(Context_T* context, ASTProg_T* ast)
 {
     ASMCodegenData_T cg;
-    init_asm_cg(&cg, ast);
-    cg.silent = global.silent;
-    cg.print = global.print_code;
+    init_asm_cg(&cg, context, ast);
+    cg.silent = context->flags.silent;
+    cg.print = context->flags.print_code;
     cg.link_exec = ast->entry_point != NULL;
 
-    asm_gen_code(&cg, global.target);
+    asm_gen_code(&cg, context->paths.target);
     free_asm_cg(&cg);
 
     return 0;
@@ -272,7 +272,7 @@ i32 asm_codegen_pass(ASTProg_T* ast)
 
 void asm_gen_code(ASMCodegenData_T* cg, const char* target)
 {
-    timer_start("assembly code generation");
+    timer_start(cg->context, "assembly code generation");
     char platform[1024] = { '\0' };
     get_build(platform);
     if(!cg->silent)
@@ -289,7 +289,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         asm_println(cg, "%s", asm_start_text[cg->ast->mfk]);
     asm_gen_text(cg, cg->ast->objs);
     asm_gen_string_literals(cg);
-    write_code(cg, target, global.do_assemble);
+    write_code(cg, target, cg->context->flags.do_assembling);
 
     if(cg->print)
     {
@@ -298,18 +298,18 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         fprintf(OUTPUT_STREAM, "%s", cg->buf);
     }
 
-    timer_stop();
+    timer_stop(cg->context);
 
-    if(!global.do_assemble)
+    if(!cg->context->flags.do_assembling)
         return;
 
-    timer_start("assembling");
+    timer_start(cg->context, "assembling");
 
     char asm_source_file[BUFSIZ] = {'\0'};
     get_cached_file_path(asm_source_file, target, ".s");
 
     char obj_file[BUFSIZ] = {'\0'};
-    if(global.do_link)
+    if(cg->context->flags.do_linking)
         get_cached_file_path(obj_file, target, ".o");
     else
         sprintf(obj_file, "%s.o", target);
@@ -334,15 +334,15 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         if(exit_code != 0)
         {
             LOG_ERROR_F("error assembling code. (exit code %d)\n", exit_code);
-            throw(global.main_error_exception);
+            throw(cg->context->main_error_exception);
         }
     }
 
-    timer_stop();
+    timer_stop(cg->context);
 
     // run the linker
-    if(global.do_link) 
-        link_obj(target, obj_file, cg->silent, cg->link_exec);
+    if(cg->context->flags.do_linking) 
+        link_obj(cg->context, target, obj_file, cg->silent, cg->link_exec);
 }
 
 static char* asm_gen_identifier(ASTIdentifier_T* id)
@@ -483,7 +483,7 @@ static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var)
     ASTNode_T* value = var->value;
     size_t target_size = var->data_type->size;
     u8* buffer = calloc(target_size, sizeof(u8));
-    gen_relocation(value, target_size, buffer);
+    gen_relocation(cg->context, value, target_size, buffer);
     for(size_t i = 0; i < target_size; i++) 
         asm_println(cg, "  .byte %d", (int) buffer[i]);
     
@@ -510,7 +510,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
                     for(size_t i = 0; i < ty->members->size; i++)
                     {
                         ASTObj_T* member = ty->members->items[i];
-                        if(!should_emit(member))
+                        if(!should_emit(cg->context, member))
                             continue;
                         char* id = asm_gen_identifier(member->id);
                         asm_println(cg, "  .globl %s", id);
@@ -525,7 +525,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
             } break;
 
             case OBJ_GLOBAL:
-                if(obj->is_extern || !should_emit(obj))
+                if(obj->is_extern || !should_emit(cg->context, obj))
                     continue;
                 {
                     char* id = asm_gen_identifier(obj->id);
@@ -713,7 +713,7 @@ static void asm_gen_function(ASMCodegenData_T* cg, ASTObj_T* obj)
     asm_gen_stmt(cg, obj->body);
     if(cg->depth != 0) {
         cg->depth = 0;
-        throw_error(ERR_CODEGEN_WARN, obj->tok, "cg->depth is not 0");
+        throw_error(cg->context, ERR_CODEGEN_WARN, obj->tok, "cg->depth is not 0");
     }
     cg->current_fn_name = NULL;
 
@@ -737,7 +737,7 @@ static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs)
                 break;
 
             case OBJ_FUNCTION:
-                if(obj->is_extern || !should_emit(obj)) 
+                if(obj->is_extern || !should_emit(cg->context, obj)) 
                     continue;
                 asm_gen_function(cg, obj);
                 break;
@@ -846,7 +846,7 @@ static void asm_gen_index(ASMCodegenData_T* cg, ASTNode_T* index, bool gen_addre
             break;
 
         default:
-            throw_error(ERR_CODEGEN, index->tok, "wrong index type");
+            throw_error(cg->context, ERR_CODEGEN, index->tok, "wrong index type");
     }
 
     asm_println(cg, "  add %%rdi, %%rax");
@@ -910,7 +910,7 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
                     return;
                 
                 default:
-                    throw_error(ERR_CODEGEN, node->tok, "`%s` reference object of unexpected kind", node->id->callee);
+                    throw_error(cg->context, ERR_CODEGEN, node->tok, "`%s` reference object of unexpected kind", node->id->callee);
             }
             return;
         
@@ -951,7 +951,7 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_gen_addr(cg, node->left);
             return;
         default:
-            throw_error(ERR_CODEGEN, node->tok, "cannot generate address from node of kind %d", node->kind);
+            throw_error(cg->context, ERR_CODEGEN, node->tok, "cannot generate address from node of kind %d", node->kind);
             break;
     }
 }
@@ -1672,7 +1672,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                         // fall through
 
                     default:
-                        throw_error(ERR_CODEGEN, node->tok, "`len` operator not implemented for this data type");
+                        throw_error(cg->context, ERR_CODEGEN, node->tok, "`len` operator not implemented for this data type");
                 }
             } return;
         
@@ -1722,7 +1722,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
 
         case ND_ADD:
             if(unpack(node->left->data_type)->base && unpack(node->right->data_type)->base)
-                throw_error(ERR_SYNTAX_ERROR, node->tok, "cannot add two pointer types together");
+                throw_error(cg->context, ERR_SYNTAX_ERROR, node->tok, "cannot add two pointer types together");
             if(ptr_type(node->left->data_type) && unpack(node->left->data_type)->base->size > 1)
             {
                 // if we add a number to a pointer, multiply the second argument with the base type size
@@ -2675,7 +2675,7 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
             break;
     }
 
-    throw_error(ERR_CODEGEN, node->tok, "unexpected statement");
+    throw_error(cg->context, ERR_CODEGEN, node->tok, "unexpected statement");
 }
 
 static void asm_store_fp(ASMCodegenData_T* cg, i32 r, i32 offset, i32 sz)

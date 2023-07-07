@@ -8,7 +8,6 @@
 #include "lexer/token.h"
 #include "error/error.h"
 #include "platform/platform_bindings.h"
-#include "globals.h"
 #include "timer/timer.h"
 #include "io/log.h"
 #include "io/io.h"
@@ -33,6 +32,8 @@
 
 typedef struct PREPROCESSOR_STRUCT 
 {
+    Context_T* context; 
+
     List_T* files;
 
     List_T* tokens;
@@ -114,15 +115,16 @@ static void free_import(Import_T* imp)
     free(imp);
 }
  
-void init_preprocessor(Preprocessor_T* pp, ASTProg_T* ast)
+void init_preprocessor(Context_T* context, Preprocessor_T* pp, ASTProg_T* ast)
 {
+    pp->context = context;
     pp->macros = init_list();
     pp->imports = init_list();
     pp->tokens = ast->tokens;
     pp->files = ast->files;
-    pp->is_silent = global.silent;
+    pp->is_silent = context->flags.silent;
 
-    define_std_macros(pp->macros);
+    define_std_macros(context, pp->macros);
 }
 
 static void free_preprocessor(Preprocessor_T* pp)
@@ -145,7 +147,7 @@ static inline void push_tok(Preprocessor_T* pp, Token_T* tok)
 // Import parsing and lexing
 //
 
-static char* get_full_import_path(char* origin, Token_T* import_file)
+static char* get_full_import_path(Context_T* context, char* origin, Token_T* import_file)
 {
     // first get the full directory of the origin
     char* abs_path = get_absolute_path(origin);
@@ -164,11 +166,11 @@ static char* get_full_import_path(char* origin, Token_T* import_file)
         // if the file does not exist locally, search for it in the STD path
 
         const char* std_tmp = "%s" DIRECTORY_DELIMS "%s";
-        char* std_path = calloc(strlen(global.std_path) + strlen(import_file->value) + 2, sizeof(char));
-        sprintf(std_path, std_tmp, global.std_path, import_file->value);
+        char* std_path = calloc(strlen(context->paths.std_path) + strlen(import_file->value) + 2, sizeof(char));
+        sprintf(std_path, std_tmp, context->paths.std_path, import_file->value);
         
         if(!file_exists(std_path))
-            throw_error(ERR_SYNTAX_ERROR, import_file, "Error reading imported file \"%s\", no such file or directory", import_file->value);
+            throw_error(context, ERR_SYNTAX_ERROR, import_file, "Error reading imported file \"%s\", no such file or directory", import_file->value);
         return std_path;
     }
 
@@ -194,13 +196,13 @@ static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
 
     Token_T* next = token_list->items[(*i)++];
     if(next->type != TOKEN_STRING)
-        throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `\"<import file>\"` as a string", next->value);
+        throw_error(pp->context, ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `\"<import file>\"` as a string", next->value);
     Import_T* imp = init_import(next);
 
     next = token_list->items[(*i)];
 
     // generate the full path to the import
-    imp->import_path = get_full_import_path((char*) imp->tok->source->path, imp->tok);
+    imp->import_path = get_full_import_path(pp->context, (char*) imp->tok->source->path, imp->tok);
 
     // check if the file was already included
     if(find_import(pp, imp))
@@ -220,7 +222,7 @@ static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
     mem_add_ptr(import_file->path);
 
     Lexer_T import_lexer;
-    init_lexer(&import_lexer, import_file);
+    init_lexer(&import_lexer, pp->context, import_file);
     
     if(!pp->is_silent) {
         LOG_OK_F("\33[2K\r" COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s", imp->tok->value);
@@ -245,7 +247,7 @@ static Macro_T* parse_macro_def(Preprocessor_T* pp, size_t* i)
 
     Token_T* next = pp->tokens->items[(*i)++];
     if(next->type != TOKEN_ID)
-        throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect macro name", next->value);
+        throw_error(pp->context, ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect macro name", next->value);
     Macro_T* macro = init_macro(next);
 
      next = pp->tokens->items[(*i)++];    
@@ -254,11 +256,11 @@ static Macro_T* parse_macro_def(Preprocessor_T* pp, size_t* i)
         for(next = pp->tokens->items[(*i)++]; next->type != TOKEN_EOF && next->type != TOKEN_RPAREN; next = pp->tokens->items[(*i)++]) 
         {
             if(next->type != TOKEN_ID)
-                throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect macro argument name", next->value);
+                throw_error(pp->context, ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect macro argument name", next->value);
             if(macro_has_arg(macro, next->value))
-                throw_error(ERR_REDEFINITION, next, "duplicate macro argument `%s`", next->value);
+                throw_error(pp->context, ERR_REDEFINITION, next, "duplicate macro argument `%s`", next->value);
             if(macro->argc >= __CSP_MAX_FN_NUM_ARGS)
-                throw_error(ERR_MISC, next, "too many macro arguments, maximal argument count is `%d`", __CSP_MAX_FN_NUM_ARGS);
+                throw_error(pp->context, ERR_MISC, next, "too many macro arguments, maximal argument count is `%d`", __CSP_MAX_FN_NUM_ARGS);
 
             macro->args[macro->argc++] = next;
 
@@ -267,17 +269,17 @@ static Macro_T* parse_macro_def(Preprocessor_T* pp, size_t* i)
                 break;
 
             if(next->type != TOKEN_COMMA)
-                throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `,` between macro arguments", next->value);
+                throw_error(pp->context, ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `,` between macro arguments", next->value);
         }
 
         if(next->type != TOKEN_RPAREN)
-            throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `)` after macro arguments", next->value);
+            throw_error(pp->context, ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `)` after macro arguments", next->value);
 
         next = pp->tokens->items[(*i)++];
     }
 
     if(next->type != TOKEN_LBRACE)
-        throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `{` to begin the macro body", next->value);
+        throw_error(pp->context, ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `{` to begin the macro body", next->value);
 
     size_t depth = 0;
     for(next = pp->tokens->items[(*i)++]; next->type != TOKEN_EOF; next = pp->tokens->items[(*i)++])
@@ -295,13 +297,13 @@ static Macro_T* parse_macro_def(Preprocessor_T* pp, size_t* i)
     }
 
     if(next->type != TOKEN_RBRACE)
-        throw_error(ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `}` to end the macro body", next->value);
+        throw_error(pp->context, ERR_SYNTAX_ERROR, next, "unexpected token `%s`, expect `}` to end the macro body", next->value);
 
     Macro_T* found = find_macro(pp, macro->tok->value, macro->argc);
     if(found && found->tok)
-        throw_error(ERR_REDEFINITION, macro->tok, "redefinition of macro `%s` with %d arguments\nfirst defined in `%s` at line %d", macro->tok->value, macro->argc, found->tok->source->path ? found->tok->source->path : found->tok->source->short_path, found->tok->line + 1);
+        throw_error(pp->context, ERR_REDEFINITION, macro->tok, "redefinition of macro `%s` with %d arguments\nfirst defined in `%s` at line %d", macro->tok->value, macro->argc, found->tok->source->path ? found->tok->source->path : found->tok->source->short_path, found->tok->line + 1);
     else if(found)
-        throw_error(ERR_SYNTAX_ERROR, macro->tok, "redefinition of macro `%s` with %d arguments", macro->tok->value, macro->argc);
+        throw_error(pp->context, ERR_SYNTAX_ERROR, macro->tok, "redefinition of macro `%s` with %d arguments", macro->tok->value, macro->argc);
 
     return macro;
 }
@@ -350,7 +352,7 @@ static void parse_macro_call(Preprocessor_T* pp, MacroCall_T* call, List_T* toke
                 (*i)++;
 
                 if((*i) + 1 >= token_list->size)
-                    throw_error(ERR_SYNTAX_ERROR, next, "unexpected end of macro body, expect `)`");
+                    throw_error(pp->context, ERR_SYNTAX_ERROR, next, "unexpected end of macro body, expect `)`");
 
                 TokenType_T closing_paren = next->type + 1;
                 int64_t depth = 0, arg_start = (*i) + 1, arg_end = (*i) + 1;
@@ -363,7 +365,7 @@ static void parse_macro_call(Preprocessor_T* pp, MacroCall_T* call, List_T* toke
                     if(next->type == TOKEN_COMMA && depth == 0) 
                     {
                         if(call->argc >= __CSP_MAX_FN_NUM_ARGS)
-                            throw_error(ERR_SYNTAX_ERROR, next, "too many arguments for macro call");
+                            throw_error(pp->context, ERR_SYNTAX_ERROR, next, "too many arguments for macro call");
 
                         call->args[call->argc].start_idx = arg_start;
                         call->args[call->argc++].end_idx = arg_end - 1;
@@ -371,7 +373,7 @@ static void parse_macro_call(Preprocessor_T* pp, MacroCall_T* call, List_T* toke
                     }
                     else if(next->type == TOKEN_EOF)
                     {
-                        throw_error(ERR_SYNTAX_ERROR, next, "unexpected end of file, expect closing `%c` after macro call",
+                        throw_error(pp->context, ERR_SYNTAX_ERROR, next, "unexpected end of file, expect closing `%c` after macro call",
                                     closing_paren == TOKEN_RPAREN ? ')' : closing_paren == TOKEN_RBRACKET ? ']' : '}');
                     }
                     else {
@@ -381,7 +383,7 @@ static void parse_macro_call(Preprocessor_T* pp, MacroCall_T* call, List_T* toke
                 }
 
                 if((*i) + 1 >= token_list->size && (next->type != closing_paren || depth != 0))
-                    throw_error(ERR_SYNTAX_ERROR, next, "unexpected end of macro body, expect `)`");
+                    throw_error(pp->context, ERR_SYNTAX_ERROR, next, "unexpected end of macro body, expect `)`");
 
                 if(has_arg) 
                 {
@@ -396,7 +398,7 @@ static void parse_macro_call(Preprocessor_T* pp, MacroCall_T* call, List_T* toke
 finalize:
     if(!(call->macro = find_macro(pp, call->tok->value, call->argc)))
     {
-        throw_error(ERR_SYNTAX_ERROR, call->tok, "undefined macro `%s` with `%d` arguments", call->tok->value, call->argc);
+        throw_error(pp->context, ERR_SYNTAX_ERROR, call->tok, "undefined macro `%s` with `%d` arguments", call->tok->value, call->argc);
     }
     else
         call->macro->used = true;
@@ -418,8 +420,8 @@ static bool concatenateable(Token_T* tok) {
 
 static void expand_macro_call(Preprocessor_T* pp, MacroCall_T call, List_T* src_list, List_T* dest_list)
 {
-    if(pp->macro_call_depth++ > global.max_macro_call_depth)
-        throw_error(ERR_SYNTAX_ERROR, call.tok, "too many macro calls, maximum is %d.\nIf you need a larger call depth, use --set-mmcd", global.max_macro_call_depth);
+    if(pp->macro_call_depth++ > pp->context->max_macro_call_depth)
+        throw_error(pp->context, ERR_SYNTAX_ERROR, call.tok, "too many macro calls, maximum is %d.\nIf you need a larger call depth, use --set-mmcd", pp->context->max_macro_call_depth);
     
     for(size_t i = 0; i < call.macro->replacing_tokens->size; i++)
     {
@@ -478,7 +480,7 @@ static void expand_macro_call(Preprocessor_T* pp, MacroCall_T call, List_T* src_
         ){
             Token_T* current = dest_list->items[dest_list->size - 1];
             if(!concatenateable(current)) {
-                throw_error(ERR_SYNTAX_ERROR, current, "cannot concatenate token `%s` to identifier using `@`", current->value);
+                throw_error(pp->context, ERR_SYNTAX_ERROR, current, "cannot concatenate token `%s` to identifier using `@`", current->value);
                 continue;
             }
 
@@ -496,12 +498,12 @@ static void expand_macro_call(Preprocessor_T* pp, MacroCall_T call, List_T* src_
 // Main Preprocessor function
 //
 
-i32 preprocessor_pass(ASTProg_T* ast)
+i32 preprocessor_pass(Context_T* context, ASTProg_T* ast)
 {
-    timer_start("lexing import files");
+    timer_start(context, "lexing import files");
 
     Preprocessor_T pp;
-    init_preprocessor(&pp, ast);
+    init_preprocessor(context, &pp, ast);
 
     /**************************************
     * Stage 1: lex and import all files   *
@@ -519,8 +521,8 @@ i32 preprocessor_pass(ASTProg_T* ast)
 
     push_tok(&pp, eof);
 
-    timer_stop();
-    timer_start("preprocessing");
+    timer_stop(context);
+    timer_start(context, "preprocessing");
 
     /***************************************
     * Stage 2: parse macro definitions     *
@@ -563,7 +565,7 @@ i32 preprocessor_pass(ASTProg_T* ast)
     free_list(token_stage_2); // free from stage 2
     free_preprocessor(&pp);
 
-    timer_stop();
+    timer_stop(context);
 
     ast->tokens = token_stage_3;
 

@@ -9,7 +9,6 @@
 
 #include <codegen/asm/asm_codegen.h>
 #include <config.h>
-#include <globals.h>
 #include <platform/platform_bindings.h>
 #include <io/log.h>
 #include <io/io.h>
@@ -203,12 +202,13 @@ const char* c_start_text[] = {
         "}\n"
 };
 
-void init_c_cg(CCodegenData_T* cg, ASTProg_T* ast)
+void init_c_cg(CCodegenData_T* cg, Context_T* context, ASTProg_T* ast)
 {
     memset(cg, 0, sizeof(struct C_CODEGEN_DATA_STRUCT));
 
+    cg->context = context;
     cg->ast = ast;
-    cg->silent = global.silent;
+    cg->silent = context->flags.silent;
     cg->code_buffer = open_memstream(&cg->buf, &cg->buf_len);
     cg->unique_id = 0;
     cg->blocks = init_list();
@@ -276,7 +276,7 @@ static void write_code(CCodegenData_T* cg, const char* target, bool cachefile)
         if(make_dir(cache_dir))
         {
             LOG_ERROR("error creating cache directory `" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "`.\n");
-            throw(global.main_error_exception);
+            throw(cg->context->main_error_exception);
         }
         sprintf(file_path, "%s" DIRECTORY_DELIMS "%s.c", cache_dir, target);
     }
@@ -290,14 +290,14 @@ static void write_code(CCodegenData_T* cg, const char* target, bool cachefile)
     fclose(out);
 }
 
-i32 transpiler_pass(ASTProg_T* ast)
+i32 transpiler_pass(Context_T* context, ASTProg_T* ast)
 {
     CCodegenData_T cg;
-    init_c_cg(&cg, ast);
-    cg.print = global.print_code;
-    cg.silent = global.silent;
+    init_c_cg(&cg, context, ast);
+    cg.print = context->flags.print_code;
+    cg.silent = context->flags.silent;
     
-    c_gen_code(&cg, global.target);
+    c_gen_code(&cg, context->paths.target);
     free_c_cg(&cg);
 
     return 0;
@@ -305,7 +305,7 @@ i32 transpiler_pass(ASTProg_T* ast)
 
 void c_gen_code(CCodegenData_T* cg, const char* target)
 {
-    timer_start("C code generation");
+    timer_start(cg->context, "C code generation");
 
     char platform[1024] = { '\0' };
     get_build(platform);
@@ -326,7 +326,7 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
     c_gen_functions(cg, cg->ast->objs);
     if(cg->ast->entry_point)
         c_println(cg, "%s", c_start_text[cg->ast->mfk]);
-    write_code(cg, target, global.do_assemble);
+    write_code(cg, target, cg->context->flags.do_assembling);
 
     if(cg->print)
     {
@@ -335,21 +335,21 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
         fprintf(OUTPUT_STREAM, "%s", cg->buf);
     }
 
-    timer_stop();
+    timer_stop(cg->context);
 
-    if(!global.do_assemble)
+    if(!cg->context->flags.do_assembling)
         return;
 
-    timer_start("compiling C code");
+    timer_start(cg->context, "compiling C code");
 
     char c_source_file[BUFSIZ] = {'\0'};
     get_cached_file_path(c_source_file, target, ".c");
 
     // run the compiler
-    if(global.do_link)
+    if(cg->context->flags.do_linking)
     {
         if(!cg->silent)
-            print_linking_msg(target, global.req_entrypoint);
+            print_linking_msg(cg->context, target, cg->context->flags.require_entrypoint);
 
 
         const char* args[] = {
@@ -362,17 +362,17 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
         };
         List_T* arg_list = init_list_with((void**) args, LEN(args));
 
-        if(global.embed_debug_info)
+        if(cg->context->flags.embed_debug_info)
             list_push(arg_list, "-g");
         
-        if(!global.req_entrypoint)
+        if(!cg->context->flags.require_entrypoint)
             list_push(arg_list, "-shared");
 
-        if(global.optimize)
+        if(cg->context->flags.optimize)
             list_push(arg_list, "-O2");
         
-        for(size_t i = 0; i < global.linker_flags->size; i++)
-            list_push(arg_list, global.linker_flags->items[i]);
+        for(size_t i = 0; i < cg->context->linker_flags->size; i++)
+            list_push(arg_list, cg->context->linker_flags->items[i]);
         
         list_push(arg_list, NULL);
         
@@ -381,7 +381,7 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
         if(exit_code != 0)
         {
             LOG_ERROR_F("error compiling code. (exit code %d)\n", exit_code);
-            throw(global.main_error_exception);
+            throw(cg->context->main_error_exception);
         }
 
         free_list(arg_list);
@@ -402,7 +402,7 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
             NULL
         };
 
-        if(global.embed_debug_info)
+        if(cg->context->flags.embed_debug_info)
             args[LEN(args) - 2] = "-g";
         
         i32 exit_code = subprocess(args[0], (char* const*) args, false);
@@ -410,11 +410,11 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
         if(exit_code != 0)
         {
             LOG_ERROR_F("error compiling code. (exit code %d)\n", exit_code);
-            throw(global.main_error_exception);
+            throw(cg->context->main_error_exception);
         }
     }
 
-    timer_stop();
+    timer_stop(cg->context);
 }
 
 static char* c_gen_identifier(ASTIdentifier_T* id)
@@ -567,9 +567,9 @@ static void c_gen_structs(CCodegenData_T* cg, List_T* objs)
     }
 }
 
-static void c_hash_array(char buffer[BUFSIZ], ASTType_T* type)
+static void c_hash_array(CCodegenData_T* cg, char buffer[BUFSIZ], ASTType_T* type)
 {
-    ast_type_to_str(buffer, type, BUFSIZ);
+    ast_type_to_str(cg->context, buffer, type, BUFSIZ);
 }
 
 static void c_gen_array_typedef(ASTType_T* type, va_list custom_args)
@@ -581,7 +581,7 @@ static void c_gen_array_typedef(ASTType_T* type, va_list custom_args)
         return;
     
     char buffer[BUFSIZ] = {0};
-    c_hash_array(buffer, type);
+    c_hash_array(cg, buffer, type);
 
     if(hashmap_get(cg->arrays, buffer))
         return;
@@ -635,13 +635,13 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* type)
     case TY_VLA:
     {
         char buffer[BUFSIZ] = {0};
-        c_hash_array(buffer, type);
+        c_hash_array(cg, buffer, type);
         c_print(cg, "_array_%" PRIx64 "*", (u64) hashmap_get(cg->arrays, buffer));
     } break;
     case TY_ARRAY:
     {
         char buffer[BUFSIZ] = {0};
-        c_hash_array(buffer, type);
+        c_hash_array(cg, buffer, type);
         c_print(cg, "_array_%" PRIx64, (u64) hashmap_get(cg->arrays, buffer));
     } break;
     case TY_C_ARRAY:
@@ -737,7 +737,7 @@ static void c_gen_globals(CCodegenData_T* cg, List_T* objs)
                     for(size_t i = 0; i < ty->members->size; i++)
                     {
                         ASTObj_T* member = ty->members->items[i];
-                        if(!should_emit(member))
+                        if(!should_emit(cg->context, member))
                             continue;
                         char* id = c_gen_identifier(member->id);
                         c_print(cg, "int %s = ", id);
@@ -747,7 +747,7 @@ static void c_gen_globals(CCodegenData_T* cg, List_T* objs)
             } break;
             
             case OBJ_GLOBAL:
-            if(!should_emit(obj))
+            if(!should_emit(cg->context, obj))
                 continue;
             {
                 if(obj->is_extern)
@@ -802,7 +802,7 @@ static void c_gen_function_definitions(CCodegenData_T* cg, List_T* objs)
             c_gen_function_definitions(cg, obj->objs);
             break;
         case OBJ_FUNCTION:
-            if(!should_emit(obj))
+            if(!should_emit(cg->context, obj))
                 continue;
             c_gen_function_declaration(cg, obj);
             if(obj->exported)
@@ -908,7 +908,7 @@ static void c_gen_function(CCodegenData_T* cg, ASTObj_T* fn)
         char* ap_id = c_gen_identifier(fn->va_area->id);
 
         if(fn->args->size == 0)
-            throw_error(ERR_CODEGEN, fn->va_area->tok, "cannot have variadic function without at least one argument");
+            throw_error(cg->context, ERR_CODEGEN, fn->va_area->tok, "cannot have variadic function without at least one argument");
         
         ASTObj_T* last_arg = fn->args->items[fn->args->size - 1];
         char* param_id = c_gen_identifier(last_arg->id);
@@ -937,7 +937,7 @@ static void c_gen_functions(CCodegenData_T* cg, List_T* objs)
             break;
         
         case OBJ_FUNCTION:
-            if(obj->is_extern || !should_emit(obj))
+            if(obj->is_extern || !should_emit(cg->context, obj))
                 continue;
             c_gen_function(cg, obj);
             break;
@@ -1097,7 +1097,7 @@ static void c_gen_index2(CCodegenData_T* cg, ASTNode_T* node, ASTNode_T* index)
             break;
 
         default:
-            throw_error(ERR_CODEGEN, node->tok, "wrong index type");
+            throw_error(cg->context, ERR_CODEGEN, node->tok, "wrong index type");
     }
 }
 
@@ -1242,7 +1242,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node, bool with_casts)
         case ND_ARRAY:
         {
             char buffer[BUFSIZ] = {0};
-            c_hash_array(buffer, node->data_type);
+            c_hash_array(cg, buffer, node->data_type);
             if(with_casts)
                 c_print(cg, "(_array_%" PRIx64 ")", (u64) hashmap_get(cg->arrays, buffer));
             c_print(cg, "{%lu,{", (u64) unpack(node->data_type)->num_indices);

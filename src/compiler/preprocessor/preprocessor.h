@@ -16,7 +16,7 @@ typedef struct MACRO_STRUCT
     bool used : 1;
 } __attribute__((packed)) Macro_T;
 
-i32 preprocessor_pass(ASTProg_T* ast);
+i32 preprocessor_pass(Context_T* context, ASTProg_T* ast);
 Macro_T* init_macro(Token_T* tok);
 
 #endif

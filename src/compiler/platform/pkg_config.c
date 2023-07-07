@@ -8,10 +8,10 @@
 #include "error/error.h"
 #include "hashmap.h"
 #include "io/log.h"
-#include "globals.h"
 #include "lexer/token.h"
 #include "list.h"
 #include "mem/mem.h"
+#include "context.h"
 
 // list of libraries known to not work with pkgconf which should be present on all systems
 const char* OVERRIDES[] = {
@@ -21,12 +21,17 @@ const char* OVERRIDES[] = {
     NULL
 };
 
-static bool pkg_error_handler(const char* msg, const pkgconf_client_t* client, const void *data) {
-    if(!data)
-        return false;
-    Token_T* token = (Token_T*) data;
+typedef struct PKG_ERROR_HANDLER_DATA_STRUCT {
+    Context_T* context;
+    Token_T* token;
+} PkgErrorHandlerData_T;
 
-    throw_error(ERR_PKG_CONFIG, token, msg);
+static bool pkg_error_handler(const char* msg, const pkgconf_client_t* client, const void *raw_data) {
+    if(!raw_data)
+        return false;
+    PkgErrorHandlerData_T* data = (PkgErrorHandlerData_T*) raw_data;
+
+    throw_error(data->context, ERR_PKG_CONFIG, data->token, msg);
     return true;
 }
 
@@ -90,7 +95,7 @@ static char* fragment_quote(const pkgconf_fragment_t *frag)
 	return out;
 }
 
-static void pkg_try_alternative(const char* name, Token_T* token)
+static void pkg_try_alternative(Context_T* context, const char* name, Token_T* token)
 {
     bool emit_warning = true;
     for(const char** lib = OVERRIDES; *lib != NULL; lib++)
@@ -103,28 +108,28 @@ static void pkg_try_alternative(const char* name, Token_T* token)
     }
 
     if(emit_warning)
-        throw_error(ERR_PKG_CONFIG_WARN, token, "could not find package named `%s`, trying `-l%s`", name, name);
+        throw_error(context, ERR_PKG_CONFIG_WARN, token, "could not find package named `%s`, trying `-l%s`", name, name);
     
     size_t len = strlen(name) + 3;
     char* buf = calloc(len, sizeof(char));
     snprintf(buf, len, "-l%s", name);
-    list_push(global.linker_flags, buf);
+    list_push(context->linker_flags, buf);
 } 
 
-void pkg_config(const char* name, Token_T* token)
+void pkg_config(Context_T* context, const char* name, Token_T* token)
 {
-    if(hashmap_get(global.included_libs, (char*) name) == (void*) 1)
+    if(hashmap_get(context->included_libs, (char*) name) == (void*) 1)
         return;
-    hashmap_put(global.included_libs, (char*) name, (void*) 1);
+    hashmap_put(context->included_libs, (char*) name, (void*) 1);
 
     // resolve package
-    pkgconf_client_t* client = pkgconf_client_new(pkg_error_handler, token, pkgconf_cross_personality_default());
+    pkgconf_client_t* client = pkgconf_client_new(pkg_error_handler, &(PkgErrorHandlerData_T){.token = token, .context = context}, pkgconf_cross_personality_default());
     pkgconf_client_dir_list_build(client, pkgconf_cross_personality_default());
 
     pkgconf_pkg_t* package = pkgconf_pkg_find(client, name);
     if(!package)
     {
-        pkg_try_alternative(name, token);
+        pkg_try_alternative(context, name, token);
         goto free_pkg;
     }
 
@@ -147,7 +152,7 @@ void pkg_config(const char* name, Token_T* token)
         mem_add_ptr(buf);
 
         snprintf(buf, len, "-%c%s", fragment->type, quoted);
-        list_push(global.linker_flags, buf);
+        list_push(context->linker_flags, buf);
         free(quoted);
     }
 

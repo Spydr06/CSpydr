@@ -2,10 +2,10 @@
 #include "ast/ast.h"
 #include "error/error.h"
 
-static u64 const_u64_infix(ASTNode_T* node)
+static u64 const_u64_infix(Context_T* context, ASTNode_T* node)
 {
-    u64 a = const_u64(node->left);
-    u64 b = const_u64(node->right);
+    u64 a = const_u64(context, node->left);
+    u64 b = const_u64(context, node->right);
 
     switch(node->kind)
     {
@@ -46,14 +46,14 @@ static u64 const_u64_infix(ASTNode_T* node)
         case ND_BIT_AND:
             return a & b;
         default:
-            throw_error(ERR_CONSTEXPR, node->tok, "`%s` is not a compile type constant", node->tok->value);
+            throw_error(context, ERR_CONSTEXPR, node->tok, "`%s` is not a compile type constant", node->tok->value);
             return 0;
     }
 }
 
-static i64 const_i64_prefix(ASTNode_T* node)
+static i64 const_i64_prefix(Context_T* context, ASTNode_T* node)
 {
-    i64 a = const_u64(node->right);
+    i64 a = const_u64(context, node->right);
 
     switch(node->kind)
     {
@@ -64,18 +64,18 @@ static i64 const_i64_prefix(ASTNode_T* node)
         case ND_BIT_NEG:
             return ~a;
         default:
-            throw_error(ERR_CONSTEXPR, node->tok, "`%s` is not a compile type constant", node->tok->value);
+            throw_error(context, ERR_CONSTEXPR, node->tok, "`%s` is not a compile type constant", node->tok->value);
             return 0;
     }
 }
 
-u64 const_u64(ASTNode_T* node)
+u64 const_u64(Context_T* context, ASTNode_T* node)
 {
     if(!node) return 0;
     switch(node->kind)
     {
         case ND_CLOSURE:
-            return const_u64(node->exprs->items[node->exprs->size - 1]);
+            return const_u64(context, node->exprs->items[node->exprs->size - 1]);
         case ND_INT:
             return node->int_val;
         case ND_LONG:
@@ -94,29 +94,29 @@ u64 const_u64(ASTNode_T* node)
             return 0;
         case ND_ADD...ND_MOD:
         case ND_EQ...ND_BIT_AND:
-            return const_u64_infix(node);
+            return const_u64_infix(context, node);
         case ND_NEG:
         case ND_NOT:
         case ND_BIT_NEG:
-            return const_i64_prefix(node);
+            return const_i64_prefix(context, node);
         case ND_SIZEOF:
             return node->the_type->size;
         case ND_CAST:
-            return const_u64(node->left);
+            return const_u64(context, node->left);
         case ND_ID:
             if(node->referenced_obj && node->referenced_obj->kind == OBJ_GLOBAL && node->referenced_obj->is_constant)
-                return const_u64(node->referenced_obj->value);
+                return const_u64(context, node->referenced_obj->value);
             // fall through
         default:
-            throw_error(ERR_CONSTEXPR, node->tok, "`%s` is not a compile-time constant", node->tok->value);
+            throw_error(context, ERR_CONSTEXPR, node->tok, "`%s` is not a compile-time constant", node->tok->value);
             return 0;
     }
 }
 
-static i64 const_i64_infix(ASTNode_T* node)
+static i64 const_i64_infix(Context_T* context, ASTNode_T* node)
 {
-    i64 a = const_i64(node->left);
-    i64 b = const_i64(node->right);
+    i64 a = const_i64(context, node->left);
+    i64 b = const_i64(context, node->right);
 
     switch(node->kind)
     {
@@ -157,17 +157,17 @@ static i64 const_i64_infix(ASTNode_T* node)
         case ND_BIT_AND:
             return a & b;
         default:
-            throw_error(ERR_CONSTEXPR, node->tok, "`%s` is not a compile type constant", node->tok->value);
+            throw_error(context, ERR_CONSTEXPR, node->tok, "`%s` is not a compile type constant", node->tok->value);
             return 0;
     }
 }
 
-i64 const_i64(ASTNode_T* node)
+i64 const_i64(Context_T* context, ASTNode_T* node)
 {
     switch(node->kind)
     {
         case ND_CLOSURE:
-            return const_i64(node->exprs->items[node->exprs->size - 1]);
+            return const_i64(context, node->exprs->items[node->exprs->size - 1]);
         case ND_INT:
             return node->int_val;
         case ND_LONG:
@@ -186,28 +186,28 @@ i64 const_i64(ASTNode_T* node)
             return 0;
         case ND_ADD...ND_MOD:
         case ND_EQ...ND_BIT_AND:
-            return const_i64_infix(node);
+            return const_i64_infix(context, node);
         case ND_NEG:
         case ND_NOT:
         case ND_BIT_NEG:
-            return const_i64_prefix(node);
+            return const_i64_prefix(context, node);
         case ND_SIZEOF:
             return node->the_type->size;
         case ND_CAST:
-            return const_i64(node->left);
+            return const_i64(context, node->left);
         case ND_ID:
             if(!node->referenced_obj)
             {
-                throw_error(ERR_CONSTEXPR, node->tok, "`%s` is not a compile-time constant", node->tok->value);
+                throw_error(context, ERR_CONSTEXPR, node->tok, "`%s` is not a compile-time constant", node->tok->value);
                 return 0;
             }
             if(node->referenced_obj->kind == OBJ_GLOBAL && node->referenced_obj->is_constant)
-                return const_i64(node->referenced_obj->value);
+                return const_i64(context, node->referenced_obj->value);
             if(node->referenced_obj->kind == OBJ_ENUM_MEMBER)
-                return const_i64(node->referenced_obj->value);
+                return const_i64(context, node->referenced_obj->value);
             // fall through
         default:
-            throw_error(ERR_CONSTEXPR, node->tok, "`%s` is not a compile-time constant", node->tok->value);
+            throw_error(context, ERR_CONSTEXPR, node->tok, "`%s` is not a compile-time constant", node->tok->value);
             return 0;
     }
 }

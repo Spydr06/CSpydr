@@ -1,3 +1,4 @@
+#include "context.h"
 #define PREPROCESSOR_TESTS  {"preprocessing simple file", test_preprocessing_simple_file}, \
                             {"preprocessing simple macro", test_processing_simple_macro},  \
                             {"preprocessing two macros", test_preprocessing_two_macros}
@@ -8,12 +9,14 @@
 
 #define PREPROCESSOR_TEST_FUNC(name, src, code)  \
     void name(void) {                            \
-        global.silent = true;                    \
+        Context_T context;                       \
+        init_context(&context);                  \
+        context.flags.silent = true;             \
         ASTProg_T prog = {0};                    \
-        initialization_pass(&prog);              \
+        initialization_pass(&context, &prog);    \
         list_push(prog.files, get_file(1, src)); \
-        lexer_pass(&prog);                       \
-        preprocessor_pass(&prog);                \
+        lexer_pass(&context, &prog);             \
+        preprocessor_pass(&context, &prog);      \
         List_T* tokens = prog.tokens;            \
         { code }                                 \
     }

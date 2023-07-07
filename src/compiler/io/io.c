@@ -4,7 +4,6 @@
 #include "file.h"
 #include "log.h"
 #include "platform/platform_bindings.h"
-#include "globals.h"
 
 #include <stdio.h>
 #include <errno.h>
@@ -129,12 +128,12 @@ bool question(const char* question, ...)
     return answer == 'y' || answer == 'Y';
 }
 
-void clear_cache(void)
+void clear_cache(Context_T* context)
 {
     char buffer[BUFSIZ] = {'\0'};
     get_cache_dir(buffer);
 
-    if(!global.silent)
+    if(!context->flags.silent)
         LOG_OK_F(COLOR_BOLD_RED "  Deleting" COLOR_RESET "   %s\n", buffer);
 
     bool failure = remove_directory(buffer) == -1;

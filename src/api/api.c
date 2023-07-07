@@ -1,7 +1,7 @@
 #include "api.h"
+#include "context.h"
 #include "include/cspydr.h"
 #include <mem/mem.h>
-#include <globals.h>
 #include <io/io.h>
 #include <parser/parser.h>
 
@@ -14,7 +14,7 @@ Compiler_T* csp_init_compiler()
     Compiler_T* compiler = malloc(sizeof(struct CSPYDR_COMPILER_STRUCT));
     memset(compiler, 0, sizeof(struct CSPYDR_COMPILER_STRUCT));
 
-    init_globals();
+    init_context(&compiler->context);
 
     compiler->initialized = true;
     compiler->status = COMPILER_INIT;
@@ -23,7 +23,6 @@ Compiler_T* csp_init_compiler()
 
 void csp_free_compiler(Compiler_T* compiler)
 {
-    globals_exit_hook();
     free(compiler);
 }
 

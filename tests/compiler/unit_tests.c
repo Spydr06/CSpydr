@@ -4,7 +4,6 @@
 #include "preprocessor/preprocessor.h"
 #include "parser/parser.h"
 #include "passes.h"
-#include "globals.h"
 #include <stdarg.h>
 #include <string.h>
 

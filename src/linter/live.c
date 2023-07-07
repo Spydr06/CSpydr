@@ -1,9 +1,10 @@
 #include "live.h"
 #include "ast/ast.h"
+#include "config.h"
+#include "context.h"
 #include "error/panic.h"
 
 #include <list.h>
-#include <globals.h>
 #include <io/io.h>
 #include <io/log.h>
 #include <mem/mem.h>
@@ -23,13 +24,13 @@
 static ASTProg_T AST = {0};
 static bool prompt_on_quit = true;
 
-static inline void cleanup(void)
+static inline void cleanup(Context_T* context)
 {
-    cleanup_pass(&AST);
+    cleanup_pass(context, &AST);
     mem_free();
 }
 
-static void free_ast(int fd) 
+static void free_ast(Context_T* context, int fd) 
 {
     if(AST.files != NULL)
     {
@@ -42,42 +43,42 @@ static void free_ast(int fd)
         }
     }
 
-    cleanup();
-    globals_exit_hook();
+    cleanup(context);
 }
 
+static Context_T* __sighandler_context_ptr = 0;
 static void sigint_handler(int dummy /* unused */) 
 {
     if(prompt_on_quit && !question("\rDo you really want to quit?")) 
         return;
 
-    cleanup();
+    cleanup(__sighandler_context_ptr);
     exit(0);
 }
 
-void lint_watched(const char* filepath, const char* std_path)
+void lint_watched(Context_T* context, const char* filepath, const char* std_path)
 {
-    init_globals();
-    global.read_main_file_on_init = true;
-    global.main_src_file = (char*) filepath;
-    global.std_path = (char*) std_path;
-    global.target = "/dev/null";
+    init_context(context);
+    context->flags.read_main_file_on_init = true;
+    context->paths.main_src_file = (char*) filepath;
+    context->paths.std_path = (char*) std_path;
+    context->paths.target = "/dev/null";
 
     memset(&AST, 0, sizeof(ASTProg_T));
 
-    try(global.main_error_exception)
+    try(context->main_error_exception)
     {
-        initialization_pass(&AST);
-        lexer_pass(&AST);
-        preprocessor_pass(&AST);
-        parser_pass(&AST);
-        validator_pass(&AST);
-        typechecker_pass(&AST);
-        if(global.emitted_errors)
-            panic();
+        initialization_pass(context, &AST);
+        lexer_pass(context, &AST);
+        preprocessor_pass(context, &AST);
+        parser_pass(context, &AST);
+        validator_pass(context, &AST);
+        typechecker_pass(context, &AST);
+        if(context->emitted_errors)
+            panic(context);
     }
     catch {
-        get_panic_handler()();
+        get_panic_handler()(context);
         return;
     };
 
@@ -105,7 +106,7 @@ static bool get_event(int fd)
     return len > 0;
 }
 
-void live_session(const char* filepath, const char* std_path, bool _prompt_on_quit)
+void live_session(Context_T* context, const char* filepath, const char* std_path, bool _prompt_on_quit)
 {
     prompt_on_quit = _prompt_on_quit;
 #ifndef CSPYDR_LINUX
@@ -113,6 +114,7 @@ void live_session(const char* filepath, const char* std_path, bool _prompt_on_qu
     exit(1);
 #else
 
+    __sighandler_context_ptr = context;
     signal(SIGINT, sigint_handler);
 
     int fd = inotify_init();
@@ -134,12 +136,12 @@ void live_session(const char* filepath, const char* std_path, bool _prompt_on_qu
                 first_time = false;
             else
             {
-                free_ast(fd);
+                free_ast(context, fd);
                 close(fd);
                 fd = inotify_init();
             }
 
-            lint_watched(filepath, std_path);
+            lint_watched(context, filepath, std_path);
             for(size_t i = 0; i < AST.files->size; i++)
             {
                 File_T* file = AST.files->items[i];
