@@ -1547,14 +1547,22 @@ static void asm_gen_id_ptr(ASMCodegenData_T* cg, ASTNode_T* id)
 
 static void asm_gen_struct_lit(ASMCodegenData_T* cg, ASTNode_T* node)
 {
+    ASTType_T* struct_type = unpack(node->data_type);
+    size_t last_offset = 0;
+
     for(size_t i = 0; i < node->args->size; i++)
     {
         ASTNode_T* arg = node->args->items[i];
+        size_t arg_offset = ((ASTNode_T*) struct_type->members->items[i])->offset;
+
+        if(arg_offset - last_offset)
+            asm_println(cg, "  add $%d, %%rax", arg_offset - last_offset);
+        last_offset = arg_offset;
+
         asm_push(cg);
         asm_gen_expr(cg, arg);
         asm_store(cg, arg->data_type);
         asm_println(cg, "  mov %%rdi, %%rax");
-        asm_println(cg, "  add $%d, %%rax", arg->data_type->size);
     }
 }
 

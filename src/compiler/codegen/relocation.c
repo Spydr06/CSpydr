@@ -101,12 +101,13 @@ void gen_relocation(Context_T* context, ASTNode_T* node, size_t target_size, u8*
 
         case ND_STRUCT:
         {
-            size_t offset = 0;
+            ASTType_T* struct_type = unpack(node->data_type);
             for(size_t i = 0; i < node->args->size; i++)
             {
                 ASTNode_T* arg = node->args->items[i];
+                size_t offset = ((ASTNode_T*) struct_type->members->items[i])->offset;
+
                 gen_relocation(context, arg, arg->data_type->size, buffer + offset);
-                offset += arg->data_type->size;
             }  
         } break;
         
