@@ -192,6 +192,7 @@ struct AST_TYPE_STRUCT
             bool is_variadic  : 1;
             bool no_warnings  : 1;
             bool generated    : 1;
+            bool no_return    : 1;
         };
         u8 flags;
     };
@@ -229,9 +230,10 @@ struct AST_OBJ_STRUCT
             bool is_extern_c    : 1;
             bool referenced     : 1;
             bool is_entry_point : 1;
-            bool no_return      : 1;
             bool ignore_unused  : 1;
             bool generated      : 1;
+
+            bool __unused__     : 1;
         };
         u8 flags;
     };

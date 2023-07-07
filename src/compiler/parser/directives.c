@@ -356,6 +356,6 @@ EVAL_FN(link)
 
 EVAL_FN(no_return)
 {
-    obj->no_return = true;
+    obj->data_type->no_return = true;
     return false;
 }

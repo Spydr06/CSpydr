@@ -706,6 +706,7 @@ namespace std {
             <- res;
         }
 
+        [no_return]
         fn exit(status: i32)
             syscall!(Syscall::EXIT, status);
         

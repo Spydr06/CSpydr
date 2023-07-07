@@ -116,6 +116,7 @@ namespace std {
             let __at_exit_cnt: u32;
         }
         
+        [no_return]
         fn die(msg: const &char)
         {
             if msg != nil
@@ -123,6 +124,7 @@ namespace std {
             exit(ExitCode::FAILURE);
         }
 
+        [no_return]
         fn die_with_location(file: const &char, line: u32, reason: const &char, msg: const &char)
         {
             if file != nil
@@ -135,6 +137,7 @@ namespace std {
             exit(ExitCode::FAILURE);
         }
 
+        [no_return]
         fn exit(exit_code: ExitCode) 
         {
             using __static;

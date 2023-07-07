@@ -683,6 +683,8 @@ static bool stmt_returns_value(Validator_T* v, ASTNode_T* node)
     {
         case ND_RETURN:
             return true;
+        case ND_CALL:
+            return node->expr->data_type->no_return;
         case ND_BLOCK:
             for(size_t i = 0; i < node->stmts->size; i++)
             {
@@ -715,6 +717,8 @@ static bool stmt_returns_value(Validator_T* v, ASTNode_T* node)
             }
         case ND_FOR_RANGE:
             return stmt_returns_value(v, node->body);
+        case ND_EXPR_STMT:
+            return stmt_returns_value(v, node->expr);
         default: 
             return false;
     }
@@ -764,7 +768,7 @@ static void fn_end(ASTObj_T* fn, va_list args)
 
     end_scope(v);
 
-    if(return_type->kind != TY_VOID && !fn->is_extern && !fn->no_return && !stmt_returns_value(v, fn->body))
+    if(return_type->kind != TY_VOID && !fn->is_extern && !stmt_returns_value(v, fn->body))
         throw_error(v->context, ERR_NORETURN, fn->tok, "function `%s` does not return a value", fn->id->callee);
 
     v->current_function = NULL;
