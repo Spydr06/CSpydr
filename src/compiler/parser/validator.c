@@ -1135,6 +1135,9 @@ static void identifier(ASTNode_T* id, va_list args)
         return;
     }
 
+    if(referenced_obj->private && id->id->outer)
+        throw_error(v->context, ERR_CALL_ERROR_UNCR, id->id->tok, "referring to private identifier `%s`", id->id->callee);
+
     switch(referenced_obj->kind)
     {
         case OBJ_GLOBAL:

@@ -36,6 +36,7 @@ EVAL_FN(link_dir);
 EVAL_FN(link_obj);
 EVAL_FN(link);
 EVAL_FN(no_return);
+EVAL_FN(private);
 
 static const Directive_T DIRECTIVES[] = {
     {
@@ -91,6 +92,12 @@ static const Directive_T DIRECTIVES[] = {
         0,
         OBJ_FUNCTION,
         eval_no_return,
+    },
+    {
+        "private",
+        0,
+        OBJ_ANY,
+        eval_private
     }
 };
 
@@ -357,5 +364,11 @@ EVAL_FN(link)
 EVAL_FN(no_return)
 {
     obj->data_type->no_return = true;
+    return false;
+}
+
+EVAL_FN(private)
+{
+    obj->private = true;
     return false;
 }

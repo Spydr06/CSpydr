@@ -843,6 +843,24 @@ static ASTObj_T* parse_extern_def(Parser_T *p, bool is_extern_c)
 
             return ext_fn;
         }
+        case TOKEN_LBRACKET:
+        {
+            List_T* dummy = init_list();
+            parse_directives(p, dummy);
+
+            if(dummy->size)
+            {
+                ASTObj_T* obj = dummy->items[0];
+                if(obj->kind == OBJ_FUNCTION || obj->kind == OBJ_GLOBAL)
+                {
+                    free_list(dummy);
+                    obj->is_extern = true;
+                    obj->is_extern_c = is_extern_c;
+                    return obj;
+                }
+            }
+            free_list(dummy);
+        }
         default:
             throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "expect function or variable declaration");
             break;

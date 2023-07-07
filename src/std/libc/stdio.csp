@@ -55,6 +55,7 @@ extern "C" {
     fn tmpfile(): &libc::FILE;
     fn tmpnam(s: &char): &char;
 
+    [drop]
     fn fclose(stream: &libc::FILE): i32;
     fn fflush(stream: &libc::FILE): i32;
     fn fopen(filename: const &char, mode: const &char): &libc::FILE;
@@ -107,6 +108,4 @@ extern "C" {
     fn perror(s: const &char): i32;
 
 }
-
-[exit_fn("fclose": &libc::FILE)]
 }

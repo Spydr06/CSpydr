@@ -232,8 +232,7 @@ struct AST_OBJ_STRUCT
             bool is_entry_point : 1;
             bool ignore_unused  : 1;
             bool generated      : 1;
-
-            bool __unused__     : 1;
+            bool private        : 1;
         };
         u8 flags;
     };
