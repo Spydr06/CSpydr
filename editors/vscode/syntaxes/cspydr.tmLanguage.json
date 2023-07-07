@@ -96,6 +96,36 @@
 					]
 				},
 				{
+					"name": "meta.type.interface.cspydr",
+					"begin": "\\b(interface)\\s*(\\{)",
+					"beginCaptures": {
+						"1": {
+							"name": "storage.type.interface.cspydr"
+						},
+						"2": {
+							"name": "punctuation.begin.brace.cspydr"
+						}
+					},
+					"end": "(\\})",
+					"endCaptures": {
+						"1": {
+							"name": "punctuation.end.brace.cspydr"		
+						}
+					},
+					"patterns": [
+						{
+							"include": "#comment"
+						},
+						{
+							"include": "#function"
+						},
+						{
+							"name": "punctuation.comma.cspydr",
+							"match": ","
+						}
+					]
+				},
+				{
 					"name": "meta.type.enum.cspydr",
 					"begin": "\\b(enum)\\s*(\\{)",
 					"beginCaptures": {
