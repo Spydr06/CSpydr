@@ -1,8 +1,10 @@
 #include "directives.h"
 #include "ast/ast.h"
+#include "ast/types.h"
 #include "config.h"
 #include "error/error.h"
 #include "list.h"
+#include "optimizer/constexpr.h"
 #include "parser/parser.h"
 #include "platform/pkg_config.h"
 #include "platform/platform_bindings.h"
@@ -32,6 +34,7 @@ EVAL_FN(cfg);
 EVAL_FN(copy);
 EVAL_FN(drop);
 EVAL_FN(export);
+EVAL_FN(flag);
 EVAL_FN(link_dir);
 EVAL_FN(link_obj);
 EVAL_FN(link);
@@ -68,6 +71,12 @@ static const Directive_T DIRECTIVES[] = {
         1,
         OBJ_FUNCTION | OBJ_GLOBAL,
         eval_export,
+    },
+    {
+        "flag",
+        0,
+        OBJ_TYPEDEF,
+        eval_flag,
     },
     {
         "link_dir",
@@ -322,6 +331,42 @@ EVAL_FN(export)
 {
     obj->exported = data->arguments->items[0];
     obj->referenced = true;
+    return false;
+}
+
+EVAL_FN(flag)
+{
+    if(obj->data_type->kind != TY_ENUM)
+    {
+        throw_error(context, ERR_TYPE_ERROR_UNCR, data->name_token, "`[flag]` can only be applied to `enum` types");
+        return false;
+    }
+
+    u64 offset = 0;
+    bool errored = false;
+    for(size_t i = 0; i < obj->data_type->members->size; i++)
+    {
+        ASTObj_T* member = obj->data_type->members->items[i];
+        
+        if(member->value->kind != ND_NOOP)
+        {
+            offset = const_i64(context, member->value);
+            errored = false;
+        }
+
+        ASTNode_T* new_value = init_ast_node(ND_INT, member->value->tok);
+        new_value->data_type = (ASTType_T*) primitives[TY_U32];
+        new_value->long_val = 1 << offset;
+
+        member->value = new_value;
+
+        if(offset++ >= (ENUM_S * 8) && !errored)
+        {
+            throw_error(context, ERR_OVERFLOW_UNCR, member->tok, "offset greater than %d in `[flag]` enum; `1 << %d` yields an overflow", ENUM_S * 8 - 1, offset - 1);
+            errored = true;
+        }
+    }
+
     return false;
 }
 

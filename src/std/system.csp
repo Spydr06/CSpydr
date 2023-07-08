@@ -18,11 +18,11 @@ macro UTSLEN { 65 }
 
 namespace std { 
     type UTSName: struct {
-        sysname: char    'c[UTSLEN!],  # OS name (i.e. "Linux")
+        sysname: char    'c[UTSLEN!], # OS name (i.e. "Linux")
         nodename: char   'c[UTSLEN!], # node name
-        release: char    'c[UTSLEN!],  # OS release (i.e. "4.1.0")
-        version: char    'c[UTSLEN!],  # OS version
-        machine: char    'c[UTSLEN!],  # hardware identifier
+        release: char    'c[UTSLEN!], # OS release (i.e. "4.1.0")
+        version: char    'c[UTSLEN!], # OS version
+        machine: char    'c[UTSLEN!], # hardware identifier
         domainname: char 'c[UTSLEN!], # NIS or YP domain name
     };
 

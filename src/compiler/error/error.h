@@ -33,6 +33,7 @@ typedef enum ERROR_TYPE
     ERR_CALL_ERROR_UNCR,
     ERR_PKG_CONFIG,      // error when resolving library packages
     ERR_PKG_CONFIG_WARN, // library resolving warning
+    ERR_OVERFLOW_UNCR,   // integer overflow detected
 
     ERR_ILLEGAL_TYPE_CAST, // illegal cast from/to a type
     ERR_TYPE_CAST_WARN,    // warning when casting (implicit casts, etc.)

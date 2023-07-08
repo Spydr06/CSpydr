@@ -11,12 +11,14 @@
 ]#
 
 namespace std {
+    [flag]
     type Platform: enum {
         LINUX,
         WINDOWS,
         MACOS
     };
 
+    [flag]
     type Codegen: enum {
         ASSEMBLY,
         C
