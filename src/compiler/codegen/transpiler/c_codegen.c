@@ -104,6 +104,10 @@ static const char c_header_text[] =
     "#include <stdarg.h>\n"
     "#include <stdint.h>\n"
     "\n"
+    "#ifndef NULL\n"
+    "  #define NULL ((void*) 0)\n"
+    "#endif\n"
+    "\n"
     "struct _lambda {\n"
     "  void** __args;\n"
     "  void(*__fn)(void** arguments, ...);\n"
@@ -166,7 +170,7 @@ static const char* c_start_text[] =
         _START_EXIT
 };
 */
-static char* c_primitive_types[TY_KIND_LEN] = {
+static const char* c_primitive_types[TY_KIND_LEN] = {
     [TY_U8]  = "uint8_t",
     [TY_U16] = "uint16_t",
     [TY_U32] = "uint32_t",
@@ -181,6 +185,29 @@ static char* c_primitive_types[TY_KIND_LEN] = {
     [TY_VOID] = "void",
     [TY_CHAR] = "char",
     [TY_BOOL] = "_Bool"
+};
+
+static const char* default_type_init[TY_KIND_LEN] = {
+    [TY_BOOL]    = "0",
+    [TY_U8]      = "0",
+    [TY_I8]      = "0",
+    [TY_U16]     = "0",
+    [TY_I16]     = "0",
+    [TY_U32]     = "0u",
+    [TY_I32]     = "0",
+    [TY_U64]     = "0ull",
+    [TY_I64]     = "0ll",
+    [TY_CHAR]    = "'\\0'",
+    [TY_ENUM]    = "0",
+    [TY_F32]     = "0.0f",
+    [TY_F64]     = "0.0",
+    [TY_F80]     = "0.0l",
+    [TY_PTR]     = "NULL",
+    [TY_VLA]     = "NULL",
+    [TY_FN]      = "NULL",
+    [TY_ARRAY]   = "{0}",
+    [TY_C_ARRAY] = "{0}",
+    [TY_STRUCT]  = "{0}",
 };
 
 const char* c_start_text[] = {
@@ -231,7 +258,7 @@ void free_c_cg(CCodegenData_T* cg)
 #ifdef __GNUC__
 __attribute((format(printf, 2, 3)))
 #endif
-static void c_print(CCodegenData_T* cg, char* fmt, ...)
+static void c_print(CCodegenData_T* cg, const char* fmt, ...)
 {
     va_list va;
     va_start(va, fmt);
@@ -242,7 +269,7 @@ static void c_print(CCodegenData_T* cg, char* fmt, ...)
 #ifdef __GNUC__
 __attribute((format(printf, 2, 3)))
 #endif
-static void c_println(CCodegenData_T* cg, char* fmt, ...)
+static void c_println(CCodegenData_T* cg, const char* fmt, ...)
 {
     va_list va;
     va_start(va, fmt);
@@ -1406,41 +1433,11 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node, bool with_casts)
 
 static void c_init_zero(CCodegenData_T* cg, ASTType_T* ty)
 {
-    switch(unpack(ty)->kind)
-    {
-    case TY_U8:
-    case TY_I8:
-    case TY_U16:
-    case TY_I16:
-    case TY_U32:
-    case TY_I32:
-    case TY_U64:
-    case TY_I64:
-    case TY_BOOL:
-    case TY_CHAR:
-    case TY_ENUM:
-        c_putc(cg, '0');
-        break;
-    case TY_F32:
-        c_print(cg, "0.0f");
-        break;
-    case TY_F64:
-    case TY_F80:
-        c_print(cg, "0.0");
-        break;
-    case TY_PTR:
-    case TY_VLA:
-    case TY_FN:
-        c_print(cg, "(void*) 0");
-        break;
-    case TY_ARRAY:
-    case TY_C_ARRAY:
-    case TY_STRUCT:
-        c_print(cg, "{0}");
-        break;
-    default:
+    const char* init = default_type_init[unpack(ty)->kind];
+    if(init)
+        c_print(cg, init);
+    else
         unreachable();
-    }
 }
 
 static void c_gen_pipe_buffer(ASTNode_T* node, va_list custom_args)

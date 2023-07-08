@@ -140,7 +140,7 @@ static ASTType_T* parse_type(Parser_T* p);
 static ASTObj_T* parse_fn_def(Parser_T* p);
 
 
-static struct { 
+static const struct { 
     PrefixParseFn_T pfn; 
     InfixParseFn_T ifn; 
     Precedence_T prec; 
@@ -207,7 +207,7 @@ static struct {
     [TOKEN_CURRENT_FN] = {parse_current_fn_token, NULL, LOWEST},
 }; 
 
-static ASTNodeKind_T unary_ops[TOKEN_EOF + 1] = {
+static const ASTNodeKind_T unary_ops[TOKEN_EOF + 1] = {
     [TOKEN_MINUS] = ND_NEG,
     [TOKEN_BANG]  = ND_NOT,
     [TOKEN_TILDE] = ND_BIT_NEG,
@@ -215,7 +215,7 @@ static ASTNodeKind_T unary_ops[TOKEN_EOF + 1] = {
     [TOKEN_STAR]  = ND_DEREF
 };
 
-static TokenType_T assign_to_op[TOKEN_EOF + 1] = {
+static const TokenType_T assign_to_op[TOKEN_EOF + 1] = {
     [TOKEN_RSHIFT_ASSIGN]  = TOKEN_RSHIFT,
     [TOKEN_LSHIFT_ASSIGN]  = TOKEN_LSHIFT,
     [TOKEN_XOR_ASSIGN]     = TOKEN_XOR,
@@ -228,7 +228,7 @@ static TokenType_T assign_to_op[TOKEN_EOF + 1] = {
     [TOKEN_DIV]            = TOKEN_SLASH,
 };
 
-static ASTNodeKind_T infix_ops[TOKEN_EOF + 1] = {
+static const ASTNodeKind_T infix_ops[TOKEN_EOF + 1] = {
     [TOKEN_MINUS] = ND_SUB,
     [TOKEN_PLUS]  = ND_ADD,
     [TOKEN_STAR]  = ND_MUL,
