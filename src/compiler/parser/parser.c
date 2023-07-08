@@ -2095,31 +2095,27 @@ static ASTNode_T* parse_bool_op(Parser_T* p, ASTNode_T* left)
     return infix;
 }
 
-static ASTNode_T* generate_assignment_op_rval(Parser_T* p, ASTNode_T* left, TokenType_T op)
-{
-    ASTNode_T* rval = init_ast_node(infix_ops[op], p->tok);
-    parser_advance(p);
-    rval->left = left;
-    rval->right = parse_expr(p, expr_parse_fns[op].prec, TOKEN_EOF);
-
-    return rval;
-}
-
 static ASTNode_T* parse_assignment(Parser_T* p, ASTNode_T* left)
 {
     ASTNode_T* assign = init_ast_node(ND_ASSIGN, p->tok);
     assign->left = left;
+    
+    TokenType_T op = p->tok->type;
+    parser_advance(p);
 
-    switch(p->tok->type)
+    ASTNode_T* right = parse_expr(p, LOWEST, TOKEN_EOF);
+    if(op == TOKEN_ASSIGN)
     {
-        case TOKEN_ASSIGN:
-            parser_advance(p);
-            assign->right = parse_expr(p, expr_parse_fns[p->tok->type].prec, TOKEN_EOF);
-            assign->right->is_assigning = assign->right->kind == ND_ARRAY || assign->right->kind == ND_STRUCT;
-            break;
-        default:   
-            assign->right = generate_assignment_op_rval(p, left, assign_to_op[p->tok->type]);
-            break;
+        assign->right = right;
+        assign->right->is_assigning = assign->right->kind == ND_ARRAY || assign->right->kind == ND_STRUCT;
+    }
+    else
+    {
+        ASTNode_T* assign_op = init_ast_node(infix_ops[assign_to_op[op]], p->tok);
+        assign_op->left = left;
+        assign_op->right = right;
+
+        assign->right = assign_op;
     }
 
     return assign;

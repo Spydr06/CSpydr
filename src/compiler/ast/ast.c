@@ -159,6 +159,8 @@ const char* type_kind_to_str(ASTTypeKind_T kind)
             return "enum";
         case TY_FN:
             return "fn";
+        case TY_INTERFACE:
+            return "interface";
         case TY_UNDEF:
             return "<undefined>";
         default:
