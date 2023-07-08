@@ -71,7 +71,7 @@ static const char* asm_start_text[] =
         
 };
 
-static char* jmp_mode[TOKEN_EOF] = {
+static const char* jmp_mode[TOKEN_EOF] = {
     [TOKEN_EQ] = "je",
     [TOKEN_NOT_EQ] = "jne",
     [TOKEN_LT] = "jl",
@@ -80,62 +80,62 @@ static char* jmp_mode[TOKEN_EOF] = {
     [TOKEN_GT_EQ] = "jge",
 };
 
-static char* argreg8[]  = {"%dil", "%sil", "%dl", "%cl", "%r8b", "%r9b"};
-static char* argreg16[] = {"%di", "%si", "%dx", "%cx", "%r8w", "%r9w"};
-static char* argreg32[] = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d"};
-static char* argreg64[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
-static char call_reg[] = "%r10";
-static char pipe_reg[] = "%r15";
+static const char* argreg8[]  = {"%dil", "%sil", "%dl", "%cl", "%r8b", "%r9b"};
+static const char* argreg16[] = {"%di", "%si", "%dx", "%cx", "%r8w", "%r9w"};
+static const char* argreg32[] = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d"};
+static const char* argreg64[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
+static const char call_reg[] = "%r10";
+static const char pipe_reg[] = "%r15";
 
 // The table for type casts
-static char i32i8[]  = "movsbl %al, %eax";
-static char i32u8[]  = "movzbl %al, %eax";
-static char i32i16[] = "movswl %ax, %eax";
-static char i32u16[] = "movzwl %ax, %eax";
-static char i32f32[] = "cvtsi2ssl %eax, %xmm0";
-static char i32i64[] = "movsxd %eax, %rax";
-static char i32f64[] = "cvtsi2sdl %eax, %xmm0";
-static char i32f80[] = "mov %eax, -4(%rsp); fildl -4(%rsp)";
+static const char i32i8[]  = "movsbl %al, %eax";
+static const char i32u8[]  = "movzbl %al, %eax";
+static const char i32i16[] = "movswl %ax, %eax";
+static const char i32u16[] = "movzwl %ax, %eax";
+static const char i32f32[] = "cvtsi2ssl %eax, %xmm0";
+static const char i32i64[] = "movsxd %eax, %rax";
+static const char i32f64[] = "cvtsi2sdl %eax, %xmm0";
+static const char i32f80[] = "mov %eax, -4(%rsp); fildl -4(%rsp)";
 
-static char u32f32[] = "mov %eax, %eax; cvtsi2ssq %rax, %xmm0";
-static char u32i64[] = "mov %eax, %eax";
-static char u32f64[] = "mov %eax, %eax; cvtsi2sdq %rax, %xmm0";
-static char u32f80[] = "mov %eax, %eax; mov %rax, -8(%rsp); fildll -8(%rsp)";
+static const char u32f32[] = "mov %eax, %eax; cvtsi2ssq %rax, %xmm0";
+static const char u32i64[] = "mov %eax, %eax";
+static const char u32f64[] = "mov %eax, %eax; cvtsi2sdq %rax, %xmm0";
+static const char u32f80[] = "mov %eax, %eax; mov %rax, -8(%rsp); fildll -8(%rsp)";
 
-static char i64f32[] = "cvtsi2ssq %rax, %xmm0";
-static char i64f64[] = "cvtsi2sdq %rax, %xmm0";
-static char i64f80[] = "movq %rax, -8(%rsp); fildll -8(%rsp)";
+static const char i64f32[] = "cvtsi2ssq %rax, %xmm0";
+static const char i64f64[] = "cvtsi2sdq %rax, %xmm0";
+static const char i64f80[] = "movq %rax, -8(%rsp); fildll -8(%rsp)";
 
-static char u64f32[] = "cvtsi2ssq %rax, %xmm0";
-static char u64f64[] =
+static const char u64f32[] = "cvtsi2ssq %rax, %xmm0";
+static const char u64f64[] =
   "test %rax,%rax; js 1f; pxor %xmm0,%xmm0; cvtsi2sd %rax,%xmm0; jmp 2f; "
   "1: mov %rax,%rdi; and $1,%eax; pxor %xmm0,%xmm0; shr %rdi; "
   "or %rax,%rdi; cvtsi2sd %rdi,%xmm0; addsd %xmm0,%xmm0; 2:";
-static char u64f80[] =
+static const char u64f80[] =
   "mov %rax, -8(%rsp); fildq -8(%rsp); test %rax, %rax; jns 1f;"
   "mov $1602224128, %eax; mov %eax, -4(%rsp); fadds -4(%rsp); 1:";
 
-static char f32i8[]  = "cvttss2sil %xmm0, %eax; movsbl %al, %eax";
-static char f32u8[]  = "cvttss2sil %xmm0, %eax; movzbl %al, %eax";
-static char f32i16[] = "cvttss2sil %xmm0, %eax; movswl %ax, %eax";
-static char f32u16[] = "cvttss2sil %xmm0, %eax; movzwl %ax, %eax";
-static char f32i32[] = "cvttss2sil %xmm0, %eax";
-static char f32u32[] = "cvttss2siq %xmm0, %rax";
-static char f32i64[] = "cvttss2siq %xmm0, %rax";
-static char f32u64[] = "cvttss2siq %xmm0, %rax";
-static char f32f64[] = "cvtss2sd %xmm0, %xmm0";
-static char f32f80[] = "movss %xmm0, -4(%rsp); flds -4(%rsp)";
+static const char f32i8[]  = "cvttss2sil %xmm0, %eax; movsbl %al, %eax";
+static const char f32u8[]  = "cvttss2sil %xmm0, %eax; movzbl %al, %eax";
+static const char f32i16[] = "cvttss2sil %xmm0, %eax; movswl %ax, %eax";
+static const char f32u16[] = "cvttss2sil %xmm0, %eax; movzwl %ax, %eax";
+static const char f32i32[] = "cvttss2sil %xmm0, %eax";
+static const char f32u32[] = "cvttss2siq %xmm0, %rax";
+static const char f32i64[] = "cvttss2siq %xmm0, %rax";
+static const char f32u64[] = "cvttss2siq %xmm0, %rax";
+static const char f32f64[] = "cvtss2sd %xmm0, %xmm0";
+static const char f32f80[] = "movss %xmm0, -4(%rsp); flds -4(%rsp)";
 
-static char f64i8[]  = "cvttsd2sil %xmm0, %eax; movsbl %al, %eax";
-static char f64u8[]  = "cvttsd2sil %xmm0, %eax; movzbl %al, %eax";
-static char f64i16[] = "cvttsd2sil %xmm0, %eax; movswl %ax, %eax";
-static char f64u16[] = "cvttsd2sil %xmm0, %eax; movzwl %ax, %eax";
-static char f64i32[] = "cvttsd2sil %xmm0, %eax";
-static char f64u32[] = "cvttsd2siq %xmm0, %rax";
-static char f64i64[] = "cvttsd2siq %xmm0, %rax";
-static char f64u64[] = "cvttsd2siq %xmm0, %rax";
-static char f64f32[] = "cvtsd2ss %xmm0, %xmm0";
-static char f64f80[] = "movsd %xmm0, -8(%rsp); fldl -8(%rsp)";
+static const char f64i8[]  = "cvttsd2sil %xmm0, %eax; movsbl %al, %eax";
+static const char f64u8[]  = "cvttsd2sil %xmm0, %eax; movzbl %al, %eax";
+static const char f64i16[] = "cvttsd2sil %xmm0, %eax; movswl %ax, %eax";
+static const char f64u16[] = "cvttsd2sil %xmm0, %eax; movzwl %ax, %eax";
+static const char f64i32[] = "cvttsd2sil %xmm0, %eax";
+static const char f64u32[] = "cvttsd2siq %xmm0, %rax";
+static const char f64i64[] = "cvttsd2siq %xmm0, %rax";
+static const char f64u64[] = "cvttsd2siq %xmm0, %rax";
+static const char f64f32[] = "cvtsd2ss %xmm0, %xmm0";
+static const char f64f80[] = "movsd %xmm0, -8(%rsp); fldl -8(%rsp)";
 
 #define FROM_F80_1                                           \
   "fnstcw -10(%rsp); movzwl -10(%rsp), %eax; or $12, %ah; " \
@@ -143,18 +143,18 @@ static char f64f80[] = "movsd %xmm0, -8(%rsp); fldl -8(%rsp)";
 
 #define FROM_F80_2 " -24(%rsp); fldcw -10(%rsp); "
 
-static char f80i8[]  = FROM_F80_1 "fistps" FROM_F80_2 "movsbl -24(%rsp), %eax";
-static char f80u8[]  = FROM_F80_1 "fistps" FROM_F80_2 "movzbl -24(%rsp), %eax";
-static char f80i16[] = FROM_F80_1 "fistps" FROM_F80_2 "movzbl -24(%rsp), %eax";
-static char f80u16[] = FROM_F80_1 "fistpl" FROM_F80_2 "movswl -24(%rsp), %eax";
-static char f80i32[] = FROM_F80_1 "fistpl" FROM_F80_2 "mov -24(%rsp), %eax";
-static char f80u32[] = FROM_F80_1 "fistpl" FROM_F80_2 "mov -24(%rsp), %eax";
-static char f80i64[] = FROM_F80_1 "fistpq" FROM_F80_2 "mov -24(%rsp), %rax";
-static char f80u64[] = FROM_F80_1 "fistpq" FROM_F80_2 "mov -24(%rsp), %rax";
-static char f80f32[] = "fstps -8(%rsp); movss -8(%rsp), %xmm0";
-static char f80f64[] = "fstpl -8(%rsp); movsd -8(%rsp), %xmm0";
+static const char f80i8[]  = FROM_F80_1 "fistps" FROM_F80_2 "movsbl -24(%rsp), %eax";
+static const char f80u8[]  = FROM_F80_1 "fistps" FROM_F80_2 "movzbl -24(%rsp), %eax";
+static const char f80i16[] = FROM_F80_1 "fistps" FROM_F80_2 "movzbl -24(%rsp), %eax";
+static const char f80u16[] = FROM_F80_1 "fistpl" FROM_F80_2 "movswl -24(%rsp), %eax";
+static const char f80i32[] = FROM_F80_1 "fistpl" FROM_F80_2 "mov -24(%rsp), %eax";
+static const char f80u32[] = FROM_F80_1 "fistpl" FROM_F80_2 "mov -24(%rsp), %eax";
+static const char f80i64[] = FROM_F80_1 "fistpq" FROM_F80_2 "mov -24(%rsp), %rax";
+static const char f80u64[] = FROM_F80_1 "fistpq" FROM_F80_2 "mov -24(%rsp), %rax";
+static const char f80f32[] = "fstps -8(%rsp); movss -8(%rsp), %xmm0";
+static const char f80f64[] = "fstpl -8(%rsp); movsd -8(%rsp), %xmm0";
 
-static char *cast_table[LAST][LAST] = {
+static const char *cast_table[LAST][LAST] = {
   // i8   i16     i32     i64     u8     u16     u32     u64     f32     f64     f80
   {NULL,  NULL,   NULL,   i32i64, i32u8, i32u16, NULL,   i32i64, i32f32, i32f64, i32f80}, // i8
   {i32i8, NULL,   NULL,   i32i64, i32u8, i32u16, NULL,   i32i64, i32f32, i32f64, i32f80}, // i16
@@ -581,7 +581,7 @@ static void asm_push(ASMCodegenData_T* cg)
     cg->depth++;
 }
 
-static void asm_pop(ASMCodegenData_T* cg, char *arg) 
+static void asm_pop(ASMCodegenData_T* cg, const char* arg) 
 {
     asm_println(cg, "  pop %s", arg);
     cg->depth--;
