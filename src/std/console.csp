@@ -158,15 +158,8 @@ namespace std {
             std::io::printf("\e[1;1H\e[2J");
         }
 
-        fn get_output_speed(console: &Console): Speed 
-        {
-            <- console.cflag & CBAUD;
-        }
-
-        fn get_input_speed(console: &Console): Speed 
-        {
-            <- console.cflag & CBAUD;
-        }
+        fn get_output_speed(console: &Console): Speed = console.cflag & CBAUD;
+        fn get_input_speed(console: &Console): Speed = console.cflag & CBAUD;
 
         fn set_output_speed(console: &Console, speed: Speed): i32 
         {
@@ -180,15 +173,9 @@ namespace std {
             <- 0;
         }
 
-        fn set_input_speed(console: &Console, speed: Speed): i32
-        {
-            <- if speed != 0 => set_output_speed(console, speed) else 0;
-        }
+        fn set_input_speed(console: &Console, speed: Speed): i32 = if speed != 0 => set_output_speed(console, speed) else 0;
 
-        fn get_attribute(fd: i32, console: &Console): i32
-        {
-            <- if io::ioctl(fd, io::TCGETS, console) == 0 => 0 else -1;
-        }
+        fn get_attribute(fd: i32, console: &Console): i32 = if io::ioctl(fd, io::TCGETS, console) == 0 => 0 else -1;
 
         fn set_attribute(fd: i32, act: i32, console: &Console): i32
         {
@@ -200,35 +187,14 @@ namespace std {
             <- io::ioctl(fd, io::TCSETS + act, console);
         }
 
-        fn get_window_size(fd: i32, winsize: &WindowSize): i32
-        {
-            <- syscall::ioctl(fd, io::TIOCGWINSZ, winsize: u64);
-        }
+        fn get_window_size(fd: i32, winsize: &WindowSize): i32 = syscall::ioctl(fd, io::TIOCGWINSZ, winsize: u64);
+        fn set_window_size(fd: i32, winsize: &const WindowSize): i32 = syscall::ioctl(fd, io::TIOCSWINSZ, winsize: u64);
 
-        fn set_window_size(fd: i32, winsize: &const WindowSize): i32
-        {
-            <- syscall::ioctl(fd, io::TIOCSWINSZ, winsize: u64);
-        }
+        fn send_break(fd: i32, _dur: i32): i32 = io::ioctl(fd, io::TCSBRK, 0);
 
-        fn send_break(fd: i32, _dur: i32): i32
-        {
-            <- io::ioctl(fd, io::TCSBRK, 0);
-        }
-
-        fn drain(fd: i32): i32
-        {
-            <- syscall::ioctl(fd, io::TCSBRK, 1);
-        }
-
-        fn flush(fd: i32, queue: i32): i32
-        {
-            <- io::ioctl(fd, io::TCFLSH, queue);
-        }
-
-        fn flow(fd: i32, action: i32): i32
-        {
-            <- io::ioctl(fd, io::TCXONC, action);
-        }
+        fn drain(fd: i32): i32 = syscall::ioctl(fd, io::TCSBRK, 1);
+        fn flush(fd: i32, queue: i32): i32 = io::ioctl(fd, io::TCFLSH, queue);
+        fn flow(fd: i32, action: i32): i32 = io::ioctl(fd, io::TCXONC, action);
 
         fn get_sid(fd: i32): pid_t {
             let sid = 0;

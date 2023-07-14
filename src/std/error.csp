@@ -228,9 +228,6 @@ namespace std {
             }
         }
 
-        fn is_some(): bool {
-            using __static;
-            <- __error.kind == Errno::NONE;
-        }
+        fn is_some(): bool = __static::__error.kind == Errno::NONE;
     }
 }

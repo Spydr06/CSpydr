@@ -205,9 +205,7 @@ namespace std {
             }
         }
 
-        fn get(map: &Template, key: &u8): &u8 {
-            <- find_pair(map, key, false) |> if $ == nil => $ else $ + (map.data.ksize: u64);
-        }
+        fn get(map: &Template, key: &u8): &u8 = find_pair(map, key, false) |> if $ == nil => $ else $ + (map.data.ksize: u64);
 
         fn keys(map: &Template): &u8 {
             let v = vec!{u8};

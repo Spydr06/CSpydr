@@ -26,53 +26,33 @@ namespace std {
 
     namespace cfg {
         [cfg("linux")]
-        fn platform(): std::Platform {
-            <- std::Platform::LINUX;
-        }
+        fn platform(): std::Platform = std::Platform::LINUX;
 
         [cfg("linux")]
-        fn platform_str(): &const char {
-            <- "linux";
-        }
+        fn platform_str(): &const char = "linux";
         
         [cfg("windows")]
-        fn platform_str(): &const char {
-            <- "windows";
-        }
+        fn platform_str(): &const char = "windows";
 
         [cfg("windows")]
-        fn platform(): std::Platform {
-            <- std::Platform::WINDOWS;
-        }
+        fn platform(): std::Platform = std::Platform::WINDOWS;
 
         [cfg("macos")]
-        fn platform_str(): &const char {
-            <- "macos";
-        }
+        fn platform_str(): &const char = "macos";
 
         [cfg("macos")]
-        fn platform(): std::Platform {
-            <- std::Platform::MACOS;
-        }
+        fn platform(): std::Platform = std::Platform::MACOS;
 
         [cfg("codegen_asm")]
-        fn codegen(): std::Codegen {
-            <- std::Codegen::ASSEMBLY;
-        }
+        fn codegen(): std::Codegen = std::Codegen::ASSEMBLY;
 
         [cfg("codegen_asm")]
-        fn codegen_str(): &const char {
-            <- "asm";
-        }
+        fn codegen_str(): &const char = "asm";
 
         [cfg("codegen_c")]
-        fn codegen(): std::Codegen {
-            <- std::Codegen::C;
-        }
+        fn codegen(): std::Codegen = std::Codegen::C;
 
         [cfg("codegen_c")]
-        fn codegen_str(): &const char {
-            <- "c_codegen";
-        }
+        fn codegen_str(): &const char = "c_codegen";
     }
 }

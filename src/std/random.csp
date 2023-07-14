@@ -12,13 +12,8 @@
 
 namespace std {
     namespace random {
-        fn lcg32(x: u32): u32 {
-            <- (1103515245 * x + 12345) & 0x7fffffff;
-        }
-
-        fn lcg64(x: u64): u64 {
-            <- 6364136223846793005: u64 * x + 1;
-        }
+        fn lcg32(x: u32): u32 = (1103515245 * x + 12345) & 0x7fffffff;
+        fn lcg64(x: u64): u64 = 6364136223846793005: u64 * x + 1;
 
         fn rand(): i64 {
             using __static;

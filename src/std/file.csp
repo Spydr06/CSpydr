@@ -90,10 +90,7 @@ namespace std {
             <- written;
         }
 
-        fn writef(file: &File, fmt: &const char, args: ...): i64
-        {
-            <- vwritef(file, fmt, &args);
-        }
+        fn writef(file: &File, fmt: &const char, args: ...): i64 = vwritef(file, fmt, &args);
 
         fn vwritef(file: &File, fmt: &const char, args: &VAList): i64
         {
@@ -157,10 +154,7 @@ namespace std {
             <- stat.size;
         }
 
-        fn read_all(file: &File): String
-        {
-            <- size(file) |> read(file, string::init_sized($), $);
-        }
+        fn read_all(file: &File): String = size(file) |> read(file, string::init_sized($), $);
 
         const SEEK_SET: u8 = 0;
         const SEEK_CUR: u8 = 1; 

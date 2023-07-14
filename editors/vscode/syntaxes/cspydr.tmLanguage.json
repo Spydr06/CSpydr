@@ -416,13 +416,13 @@
 				},
 				{
 					"name": "meta.function.short-body.cspydr",
-					"begin": "(?<=fn.*?)(\\=)",
+					"begin": "(?<=fn.*?)(=)",
 					"beginCaptures": {
 						"1": {
 							"name": "punctuation.begin.assign.cspydr"
 						}
 					},
-					"end": "(\\;)",
+					"end": "(;)",
 					"endCaptures": {
 						"1": {
 							"name": "punctuation.end.semicolon.cspydr"
@@ -430,7 +430,10 @@
 					},
 					"patterns": [
 						{
-							"include": "$self"
+							"include": "#macro-call"
+						},
+						{
+							"include": "#expressions"
 						}
 					]
 				},

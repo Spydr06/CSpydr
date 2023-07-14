@@ -180,8 +180,7 @@ namespace std {
         fn eputs(str: &const char) fputs(str, stderr!);
         fn eputc(c: char)          fputc(c, stderr!);
 
-        fn getc(): char 
-            ret fgetc(stdin!);
+        fn getc(): char = fgetc(stdin!);
 
         fn fputs(str: &const char, fd: i32)
         {
@@ -189,10 +188,7 @@ namespace std {
             write(fd, "\n");
         }
 
-        fn fputc(c: char, fd: i32)
-        {
-            syscall::write(fd, &c, 1);
-        }
+        fn fputc(c: char, fd: i32) = syscall::write(fd, &c, 1);
 
         fn fgetc(fd: i32): char
         {
@@ -201,22 +197,13 @@ namespace std {
             <- c;
         }
 
-        fn newline()
-            syscall::write(stdout, "\n", 1);
+        fn newline() syscall::write(stdout, "\n", 1);
 
-        fn close(fd: i32)
-        {
-            syscall::close(fd); # error handling
-        }
+        fn close(fd: i32) syscall::close(fd); # error handling
 
-        fn printf(fmt: &const char, args: ...): i32
-            <- vfprintf(stdout, fmt, &args);
-
-        fn eprintf(fmt: &const char, args: ...): i32
-            <- vfprintf(stderr, fmt, &args);
-
-        fn fprintf(fd: i32, fmt: &const char, args: ...): i32
-            <- vfprintf(fd, fmt, &args);
+        fn printf(fmt: &const char, args: ...): i32 = vfprintf(stdout, fmt, &args);
+        fn eprintf(fmt: &const char, args: ...): i32 = vfprintf(stderr, fmt, &args);
+        fn fprintf(fd: i32, fmt: &const char, args: ...): i32 = vfprintf(fd, fmt, &args);
 
         fn vfprintf(fd: i32, fmt: &const char, args: &VAList): i32
         {

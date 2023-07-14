@@ -27,13 +27,8 @@ namespace std {
             let __strtok_old: &char = nil;
         }
 
-        fn strlen(str: &const char): std::usize
-        {
-            <- len str;
-        }
-        
-        fn strnlen(s: &const char, _n: usize): std::usize
-            <- strlen(s);
+        fn strlen(str: &const char): std::usize = len str;
+        fn strnlen(s: &const char, _n: usize): std::usize = strlen(s);
 
         # similar to c_str::copy
         fn copy(dest: &char, src: &const char)

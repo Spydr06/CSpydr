@@ -41,9 +41,7 @@ namespace std {
     };
 
     namespace directory {
-        fn fd(d: &Directory): i32 {
-            <- if d == nil => -1 else d.fd;
-        }
+        fn fd(d: &Directory): i32 = if d == nil => -1 else d.fd;
 
         fn fopen(fd: i32): &Directory 
         {

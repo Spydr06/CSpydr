@@ -36,8 +36,7 @@ namespace std {
             "%E" => insert the current error set at std::error::__static::__error
             "%t" => inserts a formatted time string
         ]#
-        fn format(fmt: &const char, args: ...): std::String
-            <- va_format(fmt, &args);
+        fn format(fmt: &const char, args: ...): std::String = va_format(fmt, &args);
 
         fn va_format(fmt: &const char, args: &VAList): std::String
         {

@@ -103,10 +103,8 @@ namespace std {
             <- r;
         }
 
-        fn abs(a: i32): i32
-            <- if a > 0 => a else -a;
+        fn abs(a: i32): i32 = if a > 0 => a else -a;
         
-        fn abs64(a: i64): i64
-            <- if a > 0 => a else -a;
+        fn abs64(a: i64): i64 = if a > 0 => a else -a;
     }
 }

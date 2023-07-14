@@ -160,50 +160,24 @@ namespace std {
             <- true;
         }
 
-        fn getpid(): pid_t
-            <- syscall::getpid();
+        fn getpid(): pid_t = syscall::getpid();
+        fn waitpid(pid: pid_t, status: &i32, options: i32): pid_t = syscall::wait4(pid, status, options, 0);
         
-        fn clone(func: fn<i32>(&void), stack: &void, flags: i32, arg: &void): i32
-            <- syscall::clone(func, stack, flags, arg);
+        fn fork(): pid_t = syscall::fork();
+        fn vfork(): pid_t = syscall::vfork();
 
-        fn fork(): pid_t
-            <- syscall::fork();
-
-        fn vfork(): pid_t
-            <- syscall::vfork();
-
-        fn execve(pathname: &const char, argv: &&const char, envp: &&const char): i32
-            <- syscall::execve(pathname, argv, envp); 
+        fn clone(func: fn<i32>(&void), stack: &void, flags: i32, arg: &void): i32 = syscall::clone(func, stack, flags, arg);
+        fn execve(pathname: &const char, argv: &&const char, envp: &&const char): i32 = syscall::execve(pathname, argv, envp); 
+        fn kill(pid: pid_t, sig: i32): i32 = syscall::kill(pid, sig);
         
-        fn kill(pid: pid_t, sig: i32): i32
-            <- syscall::kill(pid, sig);
-        
-        fn waitpid(pid: pid_t, status: &i32, options: i32): pid_t
-            <- syscall::wait4(pid, status, options, 0);
+        fn exit_status(status: i32): i32 = (status & 0xff00) >> 8;
 
-        fn exit_status(status: i32): i32 {
-            <- (status & 0xff00) >> 8;
-        }
+        fn term_sig(status: i32): i32 = status & 0x7f;
+        fn stop_sig(status: i32): i32 = (status & 0xff00) >> 8;
 
-        fn term_sig(status: i32): i32 {
-            <- status & 0x7f;
-        }
-
-        fn stop_sig(status: i32): i32 {
-            <- (status & 0xff00) >> 8;
-        }
-
-        fn exited(status: i32): bool {
-            <- term_sig(status) == 0;
-        }
-
-        fn signaled(status: i32): bool {
-            <- (((status & 0x7f) + 1): i8 >> 1) > 0;
-        }
-
-        fn stopped(status: i32): bool {
-            <- (status & 0xff) == 0x7f;
-        }
+        fn exited(status: i32): bool = term_sig(status) == 0;
+        fn signaled(status: i32): bool = (((status & 0x7f) + 1): i8 >> 1) > 0;
+        fn stopped(status: i32): bool = (status & 0xff) == 0x7f;
 
         fn signum_str(num: i32): &const char {
             match num {

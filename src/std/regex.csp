@@ -144,10 +144,7 @@ namespace std {
             <- RegexMatch::{-1, matchlength};
         }
 
-        fn matches(pattern: &const char, text: &const char): std::RegexMatch
-        {
-            <- match_pattern(compile(pattern), text);
-        }
+        fn matches(pattern: &const char, text: &const char): std::RegexMatch = match_pattern(compile(pattern), text);
 
         fn print(pattern: &Regex) 
         {
@@ -248,10 +245,7 @@ namespace std {
                     c <= str[2];
             }
 
-            fn match_dot(c: char): bool
-            {
-                <- c != '\n' && c != '\r';
-            }
+            fn match_dot(c: char): bool = c != '\n' && c != '\r';
 
             fn match_metachar(c: char, str: &const char): bool
             {
