@@ -407,10 +407,30 @@
 							"name": "punctuation.colon.cspydr"
 						}
 					},
-					"end": "(?=\\{|$)",
+					"end": "(?=[\\{=]|$)",
 					"patterns": [
 						{
 							"include": "#types"
+						}
+					]
+				},
+				{
+					"name": "meta.function.short-body.cspydr",
+					"begin": "(?<=fn.*?)(\\=)",
+					"beginCaptures": {
+						"1": {
+							"name": "punctuation.begin.assign.cspydr"
+						}
+					},
+					"end": "(\\;)",
+					"endCaptures": {
+						"1": {
+							"name": "punctuation.end.semicolon.cspydr"
+						}
+					},
+					"patterns": [
+						{
+							"include": "$self"
 						}
 					]
 				},

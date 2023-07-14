@@ -983,7 +983,17 @@ static ASTObj_T* parse_fn(Parser_T* p)
 
     ASTObj_T* last_obj = p->cur_obj;
     p->cur_obj = fn;
-    fn->body = parse_stmt(p, true);
+    
+    if(tok_is(p, TOKEN_ASSIGN))
+    {
+        fn->body = init_ast_node(ND_RETURN, p->tok);
+        parser_advance(p);
+
+        fn->body->return_val = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+        parser_consume(p, TOKEN_SEMICOLON, "expect `;` after short function body");
+    }
+    else
+        fn->body = parse_stmt(p, true);
 
     if(p->context->ct == CT_ASM)
     {
