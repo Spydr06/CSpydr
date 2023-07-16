@@ -47,6 +47,10 @@ macro swap(a, b) {
     }
 }
 
+macro either(a, b) {
+    ((a) |> if $: bool => $ else (b))
+}
+
 # converts any type to a string
 macro ttos(ty) {
     (type::__to_str(ty))

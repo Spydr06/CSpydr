@@ -1385,10 +1385,8 @@ static ASTNode_T* parse_expr_stmt(Parser_T* p, bool needs_semicolon)
     ASTNode_T* stmt = init_ast_node(ND_EXPR_STMT, p->tok);
     stmt->expr = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
 
-    if(!is_executable(stmt->expr)) {
-        printf("%d\n", stmt->expr->kind);
-        throw_error(p->context, ERR_SYNTAX_ERROR, stmt->expr->tok, "cannot treat `%s` as a statement, expect function call, assignment or similar", stmt->expr->tok->value);
-    }
+    if(!is_executable(stmt->expr))
+        throw_error(p->context, ERR_SYNTAX_ERROR_UNCR, stmt->expr->tok, "cannot treat `%s` as a statement, expect function call, assignment or similar", stmt->expr->tok->value);
     if(needs_semicolon)
         parser_consume(p, TOKEN_SEMICOLON, "expect `;` after expression statement");
     return stmt;
@@ -1527,7 +1525,7 @@ static ASTNode_T* parse_do(Parser_T* p, bool needs_semicolon)
             do_stmt = init_ast_node(ND_DO_WHILE, p->tok);
             break;
         default:
-            throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "exect either `while` or `unless` after `do`-stmt body");
+            throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "expect either `while` or `unless` after `do`-stmt body");
     }
 
     parser_advance(p);
@@ -1958,11 +1956,21 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p)
     }
 
     lambda->data_type->base = (ASTType_T*) primitives[TY_VOID];
-    if(!tok_is(p, TOKEN_ARROW)) 
+    if(!tok_is(p, TOKEN_ARROW) && !tok_is(p, TOKEN_ASSIGN)) 
         lambda->data_type->base = parse_type(p);
-    parser_consume(p, TOKEN_ARROW, "expect `=>` after definition");
+    if(tok_is(p, TOKEN_ASSIGN))
+    {
+        lambda->body = init_ast_node(ND_RETURN, p->tok);
+        parser_advance(p);
 
-    lambda->body = parse_stmt(p, false);
+        lambda->body->return_val = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+    }
+    else
+    {
+        parser_consume(p, TOKEN_ARROW, "expect `=>` after definition");
+        lambda->body = parse_stmt(p, false);
+    }
+
     return lambda;
 }
 
@@ -2022,11 +2030,22 @@ static ASTNode_T* parse_const_lambda(Parser_T* p)
     }
 
     lambda_fn->data_type->base = lambda_fn->return_type = (ASTType_T*) primitives[TY_VOID];
-    if(!tok_is(p, TOKEN_ARROW)) 
+    if(!tok_is(p, TOKEN_ARROW) && !tok_is(p, TOKEN_ASSIGN)) 
         lambda_fn->data_type->base = lambda_fn->return_type = parse_type(p);
-    parser_consume(p, TOKEN_ARROW, "expect `=>` after definition");
 
-    lambda_fn->body = parse_stmt(p, false);
+    if(tok_is(p, TOKEN_ASSIGN))
+    {
+        lambda_fn->body = init_ast_node(ND_RETURN, p->tok);
+        parser_advance(p);
+
+        lambda_fn->body->return_val = parse_expr(p, LOWEST, TOKEN_SEMICOLON);
+    }
+    else
+    {
+        parser_consume(p, TOKEN_ARROW, "expect `=>` after definition");
+        lambda_fn->body = parse_stmt(p, false);
+    }
+
     collect_locals(lambda_fn->body, lambda_fn->objs);
     if(p->context->ct == CT_ASM)
         lambda_fn->alloca_bottom = &alloca_bottom;

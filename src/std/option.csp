@@ -14,12 +14,10 @@
 import "memory.csp";
 
 macro option(ty) {
-    (
-        struct {
-            is_some: bool,
-            value: (ty)
-        }
-    )
+    (struct {
+        is_some: bool,
+        value: (ty)
+    })
 }
 
 macro none(ty) {
@@ -32,12 +30,7 @@ macro none(ty) {
 }
 
 macro some(val) {
-    (
-        {true, (val)}: struct {
-            is_some: bool,
-            value: typeof (val)
-        }
-    )
+    ({true, (val)})
 }
 
 macro is_some(option) {
