@@ -14,6 +14,7 @@
 import "syscall.csp";
 import "types.csp";
 import "utils.csp";
+import "error.csp";
 
 # macros for quick access
 macro alloc(size) { (::std::memory::alloc(size)) }
@@ -67,8 +68,6 @@ namespace std {
     };
 
     namespace memory {
-        let unfreed_allocs: u64 = 0;
-
         const MMAP_FAILED: &void = (-1): &void;
         
         # TODO: implement correct values
@@ -82,15 +81,28 @@ namespace std {
         const SHM_REMAP: i32 = 0;
         const SHM_RDONLY: i32 = 0;
 
-        fn alloc(size: usize): &void
-        {
-            unfreed_allocs++;
+        [private]
+        let unfreed_allocs: i32 = 0;
 
-            let length = size + sizeof usize;
-            let plen: &usize = syscall::mmap(nil, length, Prot::READ | Prot::WRITE, MMap::PRIVATE | MMap::ANONYMOUS, 0, 0);
-            if plen == MMAP_FAILED ret nil;
-            
+        const ALIGN: u64 = 16;
+
+        [cfg("linux")]
+        fn alloc(n: usize): &void
+        {
+            if n > u64_max! / 2 {
+                error::new(std::Errno::NOMEM, "allocation too big");
+                <- nil;
+            }
+
+            let length = n + sizeof usize;
+            let plen: &usize = syscall::mmap(nil, length, Prot::READ | Prot::WRITE, MMap::PRIVATE | MMap::ANONYMOUS, -1, 0);
+            if plen == MMAP_FAILED {
+                error::new(std::Errno::NOMEM, "mmap failed");
+                <- nil;
+            }
             *plen = length;
+            
+            unfreed_allocs++;
             <- (&plen[1]): &void;
         }
 

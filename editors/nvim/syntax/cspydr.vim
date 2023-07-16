@@ -55,7 +55,7 @@ syn match cspydrConstIdent "[A-Z_][A-Z0-9_]*"
 hi def link cspydrConstIdent Constant
 
 " default types
-syn keyword cspydrPrimitiveType void i8 u8 i16 u16 i32 u32 i64 u64 bool f32 f64 f80
+syn keyword cspydrPrimitiveType void bool char i8 u8 i16 u16 i32 u32 i64 u64 f32 f64 f80
 hi def link cspydrPrimitiveType Type
 
 syn keyword cspydrStructure enum interface struct union
