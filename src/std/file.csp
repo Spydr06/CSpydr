@@ -130,7 +130,7 @@ namespace std {
         }
 
         [drop]
-        fn close(file: &File): Error
+        fn close(file: &std::File): Error
         {
             do
                 <- error::new(std::Errno::NILPTR, "`file` is nil")

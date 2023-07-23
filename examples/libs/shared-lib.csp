@@ -1,0 +1,17 @@
+[export("lib_test")]
+fn test() {
+    used();
+}
+
+fn used() {
+
+}
+
+fn unused() {
+
+}
+
+[export("lib_test2")]
+fn test2() {
+    used();
+}

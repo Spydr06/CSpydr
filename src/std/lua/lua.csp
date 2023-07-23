@@ -102,6 +102,8 @@ namespace lua {
 
         # state manipulation
         fn lua_newstate(f: Alloc, ud: &void): &State;
+
+        [drop]
         fn lua_close(l: &State);
         fn lua_newthread(l: &State): &State;
         fn lua_atpanic(l: &State, panicf: CFunction): CFunction;

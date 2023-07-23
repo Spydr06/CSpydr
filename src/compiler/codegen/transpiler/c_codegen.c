@@ -1567,7 +1567,8 @@ static void c_gen_stmt(CCodegenData_T* cg, ASTNode_T* node)
     case ND_RETURN:
         if(node->return_val) 
         {
-            c_print(cg, "return ");
+            if(unpack(node->return_val->data_type)->kind != TY_VOID)
+                c_print(cg, "return ");
             c_gen_expr(cg, node->return_val, true);
             c_println(cg, ";");
         }

@@ -6,16 +6,15 @@ macro LUA_PATH { "examples/assets/test.lua" }
 fn main(): i32 {
     using lua, std::io;
 
-    let l: &lua::State = luaL_newstate();
+    with l = luaL_newstate() {
+        printf("Lua Version: %i\n", lua_version(l): i32);
 
-    printf("Lua Version: %i\n", lua_version(l): i32);
-    
-    luaL_openlibs(l);
-    if luaL_loadfile(l, LUA_PATH!)
-        eputs("Error reading '" LUA_PATH! "'");
-    if lua_pcall(l, 0, 0, 0)
-        eputs("Error running Lua code");
+        luaL_openlibs(l);
+        if luaL_loadfile(l, LUA_PATH!)
+            eputs("Error reading '" LUA_PATH! "'");
+        if lua_pcall(l, 0, 0, 0)
+            eputs("Error running Lua code");
+    }
 
-    lua_close(l);
     <- 0;
 }
