@@ -5,7 +5,7 @@
 #include "error/exception.h"
 #include "hashmap.h"
 #include "util.h"
-#include "cspydr.h"
+//#include "cspydr.h"
 
 Flags_T default_flags(void);
 

@@ -355,9 +355,9 @@ static void run(Context_T* context, char* filename)
 
     const char* argv[context->args.argc + 2];
     argv[0] = cmd;
-    argv[1] = NULL;
     if(context->args.argc && context->args.argv != NULL)
         memcpy(argv + 1, context->args.argv, context->args.argc * sizeof(const char*));
+    argv[context->args.argc + 1] = NULL;
 
     context->last_exit_code = subprocess(cmd, (char* const*) argv, !context->flags.silent);
     timer_stop(context);
