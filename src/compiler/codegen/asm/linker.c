@@ -26,7 +26,7 @@ void link_obj(Context_T* context, const char* target, char* obj_file, bool silen
     timer_stop(context);
 }
 
-static int dynamic_linker_flags(Context_T* context, List_T* args) {
+static void dynamic_linker_flags(Context_T* context, List_T* args) {
     list_push(args, "-L/usr/lib64");
     list_push(args, "-L/lib64");
     list_push(args, "-L/usr/lib");

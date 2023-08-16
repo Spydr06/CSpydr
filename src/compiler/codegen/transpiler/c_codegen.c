@@ -6,12 +6,13 @@
 #include <string.h>
 #include <stdarg.h>
 #include <inttypes.h>
+#include <libgen.h>
 
-#include <codegen/asm/asm_codegen.h>
-#include <config.h>
-#include <platform/platform_bindings.h>
-#include <io/log.h>
-#include <io/io.h>
+#include "codegen/asm/asm_codegen.h"
+#include "config.h"
+#include "platform/platform_bindings.h"
+#include "io/log.h"
+#include "io/io.h"
 #include "../codegen_utils.h"
 #include "ast/ast.h"
 #include "ast/ast_iterator.h"
@@ -305,10 +306,10 @@ static void write_code(CCodegenData_T* cg, const char* target, bool cachefile)
             LOG_ERROR("error creating cache directory `" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "`.\n");
             throw(cg->context->main_error_exception);
         }
-        sprintf(file_path, "%s" DIRECTORY_DELIMS "%s.c", cache_dir, target);
+        sprintf(file_path, "%s" DIRECTORY_DELIMS "%s.c", cache_dir, basename((char*) target));
     }
     else
-        sprintf(file_path, "%s.c", target);
+        sprintf(file_path, "%s.c", basename((char*) target));
 
     fclose(cg->code_buffer);
 

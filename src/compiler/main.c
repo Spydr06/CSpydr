@@ -35,6 +35,7 @@
 */
 
 // std includes
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -108,7 +109,7 @@ const char help_text[] = "%s"
                        "  -h, --help             | Displays this help text and quits\n"
                        "  -v, --version          | Displays the version of CSpydr and quits\n"
                        "  -i, --info             | Displays information text and quits\n"
-                       "  -o, --output [file]    | Sets the target output file (default: `" DEFAULT_OUTPUT_FILE "`)\n"
+                       "  -o, --output [file]    | Sets the target output file\n"
                        "  -t, --transpile        | Instructs the compiler to compile to C source code (deprecated)\n"
                        "  -a, --asm              | Instructs the compiler to compile to x86_64 gnu assembly code\n"
 #ifdef CSPYDR_USE_LLVM
@@ -152,7 +153,7 @@ const struct {
 static void run(Context_T* context, char* file);
 static void evaluate_info_flags(Context_T* context, char* argv);
 static void store_exec_args(Context_T* context, i32 argc, char* argv[], Action_T action);
-static char* default_output_file(Action_T action);
+static char* default_output_file(Action_T action, const char* input_file);
 
 // entry point
 i32 main(i32 argc, char* argv[])
@@ -189,11 +190,8 @@ i32 main(i32 argc, char* argv[])
     }
     context.flags.require_entrypoint = action != AC_LIB;
 
-    // declare the input/output files
-    char* output_file = default_output_file(action);
-    char* input_file;
-
-    input_file = argv[2];
+    // declare the input files
+    char* input_file = argv[2];
     if(!file_exists(input_file))
     {
         LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " error opening file \"%s\": No such file or directory\n", input_file);
@@ -202,6 +200,9 @@ i32 main(i32 argc, char* argv[])
     // remove the first three flags form argc/argv
     argc -= 3;
     argv += 3;
+
+    // get default output file
+    char* output_file = default_output_file(action, input_file);
 
     // get all the other flags
     for(i32 i = 0; i < argc; i++)
@@ -376,12 +377,22 @@ static void store_exec_args(Context_T* context, i32 argc, char* argv[], Action_T
     context->args.argc = argc;
 }
 
-static char* default_output_file(Action_T action)
+static char* default_output_file(Action_T action, const char* input_file)
 {
-    switch(action) {
-    case AC_LIB:
-        return "a.so";
-    default:
-        return "a.out";
-    }
+    const char* fileext = EXEC_FILEEXT;
+    if(action == AC_LIB)
+        fileext = SHARED_LIB_FILEEXT;
+
+    uintptr_t extptr = (uintptr_t) strrchr(input_file, '.');
+    if(!extptr)
+        extptr = (uintptr_t) input_file + strlen(input_file);
+    uintptr_t base_length = extptr - (uintptr_t) input_file;
+
+    char* filename = calloc(base_length + strlen(fileext) + 1, sizeof(char));
+    mem_add_ptr(filename);
+    
+    strncpy(filename, input_file, base_length);
+    strcat(filename, fileext);
+
+    return filename;
 }

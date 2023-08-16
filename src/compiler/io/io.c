@@ -3,6 +3,7 @@
 #include "config.h"
 #include "file.h"
 #include "log.h"
+#include "platform/linux/linux_platform.h"
 #include "platform/platform_bindings.h"
 
 #include <stdio.h>
@@ -11,6 +12,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <libgen.h>
 #include <errno.h>
 
 File_T* read_file(const char* path)
@@ -156,7 +158,8 @@ char* get_cached_file_path(char* buffer, const char* filename, const char* filee
 {
     get_cache_dir(buffer);
     strcat(buffer, DIRECTORY_DELIMS);
-    strcat(buffer, filename);
+
+    strcat(buffer, basename((char*) filename));
     if(fileextension)
         strcat(buffer, fileextension);
     return buffer;

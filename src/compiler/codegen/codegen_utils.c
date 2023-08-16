@@ -11,6 +11,7 @@
 #include <libgen.h>
 #include <string.h>
 #include <glob.h>
+#include <libgen.h>
 
 static void cat_id(char* callee, ASTIdentifier_T* id)
 {
@@ -161,7 +162,7 @@ bool ptr_type(ASTType_T* ty)
 
 void print_linking_msg(Context_T* context, const char* target, bool is_exec) 
 {
-    LOG_OK_F(COLOR_BOLD_BLUE "  Linking   " COLOR_RESET " %s " COLOR_BOLD_WHITE "(%s)" COLOR_RESET, target, is_exec ? "executable" : "library");
+    LOG_OK_F(COLOR_BOLD_BLUE "  Linking   " COLOR_RESET " %s " COLOR_BOLD_WHITE "(%s)" COLOR_RESET, basename((char*) target), is_exec ? "executable" : "library");
     if(context->linker_flags->size > 0)
     {
         LOG_OK(COLOR_RESET " (");

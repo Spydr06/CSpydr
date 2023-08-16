@@ -3,6 +3,7 @@
 #include "io/io.h"
 #include "ast/ast_iterator.h"
 #include "optimizer/constexpr.h"
+#include "platform/linux/linux_platform.h"
 #include "platform/platform_bindings.h"
 #include "../codegen_utils.h"
 #include "error/error.h"
@@ -18,6 +19,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <libgen.h>
 
 #define either(a, b) ((a) ? (a) : (b))
 
@@ -244,10 +246,10 @@ static void write_code(ASMCodegenData_T* cg, const char* target, bool cachefile)
             LOG_ERROR("error creating cache directory `" DIRECTORY_DELIMS CACHE_DIR DIRECTORY_DELIMS "`.\n");
             throw(cg->context->main_error_exception);
         }
-        sprintf(file_path, "%s" DIRECTORY_DELIMS "%s.s", cache_dir, target);
+        sprintf(file_path, "%s" DIRECTORY_DELIMS "%s.s", cache_dir, basename((char*) target));
     }
     else
-        sprintf(file_path, "%s.s", target);
+        sprintf(file_path, "%s.s", basename((char*) target));
 
     fclose(cg->code_buffer);
 

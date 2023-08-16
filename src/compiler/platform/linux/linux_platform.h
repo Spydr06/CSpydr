@@ -10,8 +10,9 @@
 #include <stdbool.h>
 #include "../../util.h"
 
-// the default output file used for code generation
-#define DEFAULT_OUTPUT_FILE "a.out"
+#define EXEC_FILEEXT ".out"
+#define SHARED_LIB_FILEEXT ".so"
+
 // the characters between directories e.g.: /home/usr/...
 #define DIRECTORY_DELIMS "/"
 

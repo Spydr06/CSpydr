@@ -860,7 +860,7 @@ static ASTObj_T* parse_extern_def(Parser_T *p, bool is_extern_c)
                 }
             }
             free_list(dummy);
-        }
+        } // fall through
         default:
             throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "expect function or variable declaration");
             break;
