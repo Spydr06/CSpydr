@@ -34,6 +34,7 @@ static struct { const char* as_str; bool force_exit; bool is_error; } error_type
     [ERR_UNDEFINED_UNCR]    = { "undef",        false, true  },
     [ERR_UNDEFINED]         = { "undef",        true , true  },
     [ERR_UNREACHABLE]       = { "unreachable",  false, false },
+    [ERR_DEPRECATED]        = { "deprecated",   false, false },
     [ERR_UNUSED]            = { "unused",       false, false },
 };
 

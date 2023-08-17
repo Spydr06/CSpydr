@@ -222,7 +222,6 @@ struct AST_OBJ_STRUCT
     i32 offset;
     i32 stack_size;
 
-    // variables
     union {
         struct {
             bool is_constant    : 1;
@@ -233,8 +232,10 @@ struct AST_OBJ_STRUCT
             bool ignore_unused  : 1;
             bool generated      : 1;
             bool private        : 1;
+            bool deprecated     : 1;
+            u8 __unused__       : 7;
         };
-        u8 flags;
+        u16 flags;
     };
 
     ASTType_T* data_type;

@@ -280,6 +280,12 @@ static ASTObj_T* search_in_scope(Scope_T* scope, char* id)
     return search_in_scope(scope->prev, id);
 }
 
+static inline ASTObj_T* check_is_deprecated(Validator_T* v, ASTObj_T* obj, Token_T* location) {
+    if(obj->deprecated)
+        throw_error(v->context, ERR_DEPRECATED, location, "%s `%s` is deprecated", obj_kind_to_str(obj->kind), obj->id->callee);
+    return obj;
+}
+
 // FIXME:
 // type definitions will not be found if contained in an namespace which is defined after the calling function
 static ASTObj_T* search_identifier(Validator_T* v, Scope_T* scope, ASTIdentifier_T* id)
@@ -307,7 +313,7 @@ static ASTObj_T* search_identifier(Validator_T* v, Scope_T* scope, ASTIdentifier
                         {
                             ASTObj_T* member = expanded->members->items[i];
                             if(strcmp(member->id->callee, id->callee) == 0)
-                                return member;
+                                return check_is_deprecated(v, member, id->tok);
                         }
                     }
                     throw_error(v->context, ERR_UNDEFINED, id->outer->tok, "type `%s` has no member called `%s`", outer_obj->id->callee, id->callee);
@@ -318,7 +324,7 @@ static ASTObj_T* search_identifier(Validator_T* v, Scope_T* scope, ASTIdentifier
                     {
                         ASTObj_T* obj = outer_obj->objs->items[i];
                         if(strcmp(obj->id->callee, id->callee) == 0)
-                            return obj;
+                            return check_is_deprecated(v, obj, id->tok);
                     }
                 } break;
             default: 
@@ -331,7 +337,7 @@ static ASTObj_T* search_identifier(Validator_T* v, Scope_T* scope, ASTIdentifier
     {
         ASTObj_T* found = search_in_current_scope(scope, id->callee);
         if(found)
-            return found;
+            return check_is_deprecated(v, found, id->tok);
         return search_identifier(v, scope->prev, id);
     }
 }

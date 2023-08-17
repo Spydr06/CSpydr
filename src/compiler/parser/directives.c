@@ -12,9 +12,11 @@
 #include "context.h"
 #include "io/log.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 #define ANY (-1)
 #define EVAL_FN(name) static bool eval_##name(DirectiveData_T* data, Context_T* context, ASTProg_T* ast, ASTObj_T* obj)
@@ -32,6 +34,7 @@ typedef struct DIRECTIVE_STRUCT {
 EVAL_FN(cc);
 EVAL_FN(cfg);
 EVAL_FN(copy);
+EVAL_FN(deprecated);
 EVAL_FN(drop);
 EVAL_FN(export);
 EVAL_FN(flag);
@@ -59,6 +62,12 @@ static const Directive_T DIRECTIVES[] = {
         2,
         0,
         eval_copy,
+    },
+    {
+        "deprecated",
+        ANY,
+        OBJ_ANY,
+        eval_deprecated
     },
     {
         "drop",
@@ -304,6 +313,89 @@ EVAL_FN(copy)
 #else
     throw_error(context, ERR_INTERNAL, data->name_token, "directive `cc` is only implemented for linux as of now");
 #endif
+    return false;
+}
+
+static const int days_in_month[12] = {
+    31, // January
+    29, // February
+    31, // March
+    30, // April
+    31, // May
+    30, // June
+    31, // July
+    31, // August
+    30, // September
+    31, // October
+    30, // November
+    31, // December
+};
+
+static const char* month_names[12] = {
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December"
+};
+
+EVAL_FN(deprecated)
+{
+    switch(data->arguments->size) {
+        case 1: {
+            struct tm deadline;
+            memset(&deadline, 0, sizeof(struct tm));
+
+            const char* date_str = data->arguments->items[0];
+            int parsed = sscanf(date_str, "%04d-%02d-%02d", &deadline.tm_year, &deadline.tm_mon, &deadline.tm_mday);
+            if(parsed != 3) {
+                throw_error(context, ERR_SYNTAX_ERROR_UNCR, data->name_token, "could not parse date `%s`: make sure it matches the format `yyyy-mm-dd`", date_str);
+                return false;
+            }
+
+            // align date correctly
+            deadline.tm_mon--;
+            deadline.tm_year -= 1900;
+
+            if(deadline.tm_mon < 0 || deadline.tm_mon > 11)
+            {
+                throw_error(context, ERR_SYNTAX_ERROR_UNCR, data->name_token, "`%s` is not a valid date string: month `%d` does not exist", date_str, deadline.tm_mon + 1);
+                return false;
+            }   
+
+            if(deadline.tm_mday < 1 || deadline.tm_mday > days_in_month[deadline.tm_mon])
+            {
+                throw_error(context, ERR_SYNTAX_ERROR_UNCR, data->name_token, "`%s` is not a valid date string: day `%d` does not exist in %s", date_str, deadline.tm_mday, month_names[deadline.tm_mon]);
+                return false;
+            }
+
+            time_t deadline_tv = mktime(&deadline);
+            time_t current_tv;
+            time(&current_tv);
+
+            // check if deadline passed
+            if(current_tv <= deadline_tv)
+                return false;
+        }
+        // fall through
+            
+        case 0:
+            if(obj->deprecated)
+                throw_error(context, ERR_SYNTAX_WARNING, data->name_token, "%s `%s` is already marked as deprecated", obj_kind_to_str(obj->kind), obj->id->callee);
+            obj->deprecated = true;
+            break;
+
+        default:
+            throw_error(context, ERR_SYNTAX_ERROR_UNCR, data->name_token, "`[deprecated]` expects 0 or 1 argument, got %lu\n", data->arguments->size);
+    }
+
     return false;
 }
 

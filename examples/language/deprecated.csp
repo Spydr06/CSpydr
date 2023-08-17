@@ -1,0 +1,11 @@
+import "io.csp";
+
+[deprecated("2023-01-01")]
+fn greet(name: &const char) {
+    std::io::printf("Hello, %s\n", name);
+}
+
+fn main(): i32 {
+    greet("you");
+    <- 0;
+}
