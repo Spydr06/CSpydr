@@ -672,13 +672,78 @@ static void check_main_fn(Validator_T* v, ASTObj_T* main_fn)
     }
 }
 
+static void before_main_fn(Validator_T* v, ASTObj_T* fn)
+{
+    if(!v->ast->before_main)
+    {
+        v->ast->before_main = init_list();
+        mem_add_list(v->ast->before_main);
+    }
+
+    list_push(v->ast->before_main, fn);
+    fn->referenced = true;
+    
+    switch(fn->args->size)
+    {
+        case 0:
+            break;
+        case 2:
+        {
+            // TODO: implement this (argc/argv to [before_main])
+            throw_error(v->context, ERR_INTERNAL, fn->tok, "`[before_main]` directive functions with 2 arguments are not supported yet");
+        } break;
+        default:
+        {
+            char buf[BUFSIZ] = {0};
+            throw_error(v->context, ERR_TYPE_ERROR_UNCR, fn->tok, "`[before_main]` directive expects function `%s` to have 0 or 2 arguments, got %d", ast_id_to_str(buf, fn->id, LEN(buf)), fn->args->size);
+        } break;
+    }
+}
+
+static void after_main_fn(Validator_T* v, ASTObj_T* fn)
+{
+    if(!fn->after_main)
+        return;
+
+    if(!v->ast->after_main)
+    {
+        v->ast->after_main = init_list();
+        mem_add_list(v->ast->after_main);
+    }
+
+    list_push(v->ast->after_main, fn);
+    fn->referenced = true;
+    
+    switch(fn->args->size)
+    {
+        case 0:
+            break;
+        case 1:
+        {
+            ASTObj_T* arg = fn->args->items[0];
+            if(expand_typedef(v, arg->data_type)->kind != TY_I32)
+                throw_error(v->context, ERR_TYPE_ERROR_UNCR, arg->tok, "`[after_main]` directive requires argument `%s` to be of type `i32`", arg->id->callee);
+        } break;
+        default:
+        {
+            char buf[BUFSIZ] = {0};
+            throw_error(v->context, ERR_TYPE_ERROR_UNCR, fn->tok, "`[after_main]` directive expects function `%s` to have 0..1 arguments, got %d", ast_id_to_str(buf, fn->id, LEN(buf)), fn->args->size);
+        } break;
+    }
+}
+
 static void fn_start(ASTObj_T* fn, va_list args)
 {
     GET_VALIDATOR(args);
     begin_scope(v, fn->id);
     v->current_function = fn;
 
-    
+    if(fn->after_main)
+        after_main_fn(v, fn);
+
+    if(fn->before_main)
+        before_main_fn(v, fn);
+
     if(fn->data_type->is_variadic && !fn->is_extern)
         scope_add_obj(v, fn->va_area);
 }

@@ -31,6 +31,8 @@ typedef struct DIRECTIVE_STRUCT {
     EvalDirectiveFn_T eval;
 } Directive_T;
 
+EVAL_FN(after_main);
+EVAL_FN(before_main);
 EVAL_FN(cc);
 EVAL_FN(cfg);
 EVAL_FN(copy);
@@ -45,6 +47,18 @@ EVAL_FN(no_return);
 EVAL_FN(private);
 
 static const Directive_T DIRECTIVES[] = {
+    {
+        "after_main",
+        0,
+        OBJ_FUNCTION,
+        eval_after_main
+    },
+    {
+        "before_main",
+        0,
+        OBJ_FUNCTION,
+        eval_before_main
+    },
     {
         "cc", 
         ANY,
@@ -235,6 +249,30 @@ DirectiveData_T* parse_directive(Parser_T* p)
         throw_error(parser_context(p), ERR_UNDEFINED, name_tok, "directive `%s` expects %d arguments, got %lu", name, directive->num_args, args->size);
 
     return directive_data(directive, name_tok, args);
+}
+
+EVAL_FN(after_main)
+{
+    if(obj->after_main)
+    {
+        char buf[BUFSIZ];
+        throw_error(context, ERR_SYNTAX_WARNING, data->name_token, "function `%s` already marked as `[after_main]`", ast_id_to_str(buf, obj->id, sizeof(buf)));
+    }
+    obj->after_main = true;
+
+    return false;
+}
+
+EVAL_FN(before_main)
+{
+    if(obj->before_main)
+    {
+        char buf[BUFSIZ];
+        throw_error(context, ERR_SYNTAX_WARNING, data->name_token, "function `%s` already marked as `[before_main]`", ast_id_to_str(buf, obj->id, sizeof(buf)));
+    }
+    obj->before_main = true;
+
+    return false;
 }
 
 EVAL_FN(cc)

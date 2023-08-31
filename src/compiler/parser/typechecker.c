@@ -395,9 +395,9 @@ enum IMPLICIT_CAST_RESULT implicitly_castable(Context_T* context, Token_T* tok, 
     if(is_integer(from) && is_integer(to))
     {
         //if(from->size > to->size)
-        //    throw_error(t->context, ERR_TYPE_CAST_WARN, tok, "implicitly casting from `%s` to `%s`: possible data loss",
-        //        ast_type_to_str(t->context, buf1, from, LEN(buf1)),
-        //        ast_type_to_str(t->context, buf2, to, LEN(buf2))
+        //    throw_error(context, ERR_TYPE_CAST_WARN, tok, "implicitly casting from `%s` to `%s`: possible data loss",
+        //        ast_type_to_str(context, buf1, from, LEN(buf1)),
+        //        ast_type_to_str(context, buf2, to, LEN(buf2))
         //    );
         return CAST_OK;
     }

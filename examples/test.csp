@@ -1,0 +1,16 @@
+import "std.csp";
+
+[before_main]
+fn test_before() {
+}
+
+[after_main]
+fn test_after(a: i32) {
+    std::io::printf("main() exited with `%i`\n", a);
+}
+
+[after_main]
+fn test_after2() {
+}
+
+fn main(): i32 = 0;

@@ -1,0 +1,94 @@
+import "std.csp";
+import "libc/stdio.csp";
+
+[cc("-c words.S -o words.o")]
+[link_obj("words.o")]
+
+extern "C" fn words_addr(); # function whose address points to the words buffer
+
+fn main(argc: i32, argv: &&char): i32 {
+    using std;
+
+    if argc > 1 {
+        hangman::run(argv[1]);
+        <- 0;
+    }
+
+    # set the seed to a semi-random number (time in this case)
+    random::seed(time::unix::secs().tv_sec);
+
+    with words = str!{(words_addr: &void)} {
+        let lines = string::split(words, "\n");
+        let num_words = vec::size(lines) - 1;
+
+        let word = lines[random::rand() % num_words];
+        hangman::run(word);
+
+        vec_free!(lines);
+    }
+
+    <- 0;
+}
+
+namespace hangman {
+    type Result: enum {
+        WON, LOST
+    };
+
+    macro NUM_GUESSES { 8 }
+
+    fn run(word: &char): hangman::Result {
+        using std;
+
+        with state = string::init_sized_with(len word, '_') {
+            let wrong_guesses: i32;
+           # let wrong_chars: char[NUM_GUESSES!];
+
+            while wrong_guesses < NUM_GUESSES!() {
+                draw(state, wrong_guesses);#, wrong_chars);
+
+                let c: char;
+                libc::scanf(" %c", &c); # cspydr currently has no way of doing this
+
+                if !character::isalpha(c) {
+                    io::printf("`%c` is not a letter or number.", c);
+                    continue;
+                }
+
+                let found = 0;
+                for let i = 0; i < len word; i++; {
+                    if word[i] == c {
+                        state[i] = c;
+                        found++;
+                    }
+                }
+
+                if found == 0 {
+                   # wrong_chars[wrong_guesses] = c;
+                    wrong_guesses++;
+                }
+                if !string::contains_char(state, '_') {
+                    using std::io::color for io::printf("%s** Great, you guessed the right word :)\n   The word was: %s%s%s\n", &GREEN[0], &BOLD[0], word, &RESET[0]);
+                    <- hangman::Result::WON;
+                }
+            }
+        }
+
+        using std::io::color for io::printf("%s!! You did not guess the right word :(\n   The word was: %s%s%s\n", &RED[0], &BOLD[0], word, &RESET[0]);
+        <- hangman::Result::LOST;
+    }
+
+    fn draw(state: &char, wrong_guesses: i32#[, wrong_chars: char[]]#) {
+        using std, io::color;
+        console::clear();
+
+        let color = if wrong_guesses < 3 => &GREEN[0]
+            else if wrong_guesses > 6 => &RED[0] 
+            else &YELLOW[0];
+        io::printf("%sWrong guesses: %s%i%s (%i remaining)\n\n", color, &BOLD[0], wrong_guesses, &RESET[0], NUM_GUESSES! - wrong_guesses);
+
+        io::printf("%sWord: %s%s%s\n", &WHITE[0], &BOLD[0], state, &RESET[0]);
+
+        io::printf("\nEnter letter to reveal: ");
+    }
+}

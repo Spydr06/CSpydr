@@ -233,7 +233,9 @@ struct AST_OBJ_STRUCT
             bool generated      : 1;
             bool private        : 1;
             bool deprecated     : 1;
-            u8 __unused__       : 7;
+            bool after_main     : 1;
+            bool before_main    : 1;
+            u8 __unused__       : 5;
         };
         u16 flags;
     };
@@ -275,6 +277,9 @@ typedef struct AST_PROG_STRUCT
     ASTObj_T* entry_point;
 
     List_T* objs;   // list of ASTObj_Ts
+
+    List_T* before_main;
+    List_T* after_main;
 
     MainFunctionKind_T mfk;
 } ASTProg_T;

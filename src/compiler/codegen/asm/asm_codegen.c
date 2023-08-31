@@ -27,42 +27,25 @@
 
 enum { I8, I16, I32, I64, U8, U16, U32, U64, F32, F64, F80, LAST };
 
-static const char* asm_start_text[] = 
+static const char* asm_main_call[] = 
 {
     [MFK_NO_ARGS] =
-        "  .globl _start\n"
-        "  .text\n"
-        "_start:\n"
-        "  call .main\n"
-        "  movq %rax, %rdi\n"
-        "  movq $60, %rax\n"
-        "  syscall",
+        "  call .main\n",
 
     [MFK_ARGV_PTR] =
-        "  .globl _start\n"
-        "  .text\n"
-        "_start:\n"
         "  xorl %ebp, %ebp\n"
         "  popq %rdi\n"
         "  movq %rsp, %rdi\n"
-        "  call .main\n"
-        "  movq %rax, %rdi\n"
-        "  movq $60, %rax\n"
-        "  syscall",
+        "  call .main\n",
 
     [MFK_ARGC_ARGV_PTR] =
-        "  .globl _start\n"
-        "  .text\n"
-        "_start:\n"
         "  xorl %ebp, %ebp\n"
         "  popq %rdi\n"
         "  movq %rsp, %rsi\n"
         "  andq $~15, %rsp\n"
-        "  call .main\n"
-        "  movq %rax, %rdi\n"
-        "  movq $60, %rax\n"
-        "  syscall",
+        "  call .main\n",
     
+    // TODO
     [MFK_ARGS_ARRAY] =
         "  .globl _start\n"
         "  .text\n"
@@ -70,7 +53,6 @@ static const char* asm_start_text[] =
         "  xorl %ebp, %ebp\n"
         "  popq %rdi\n"
         "  movq %rsp, %rsi\n",
-        
 };
 
 static const char* jmp_mode[TOKEN_EOF] = {
@@ -174,6 +156,7 @@ static const char *cast_table[LAST][LAST] = {
 };
 
 static void asm_gen_file_descriptors(ASMCodegenData_T* cg);
+static void asm_gen_entry_point(ASMCodegenData_T* cg);
 static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs);
 static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs);
 static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node);
@@ -287,8 +270,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         asm_gen_file_descriptors(cg);
     asm_assign_lvar_offsets(cg, cg->ast->objs);
     asm_gen_data(cg, cg->ast->objs);
-    if(cg->ast->entry_point)
-        asm_println(cg, "%s", asm_start_text[cg->ast->mfk]);
+    asm_gen_entry_point(cg);
     asm_gen_text(cg, cg->ast->objs);
     asm_gen_string_literals(cg);
     write_code(cg, target, cg->context->flags.do_assembling);
@@ -361,6 +343,59 @@ static void asm_gen_file_descriptors(ASMCodegenData_T* cg)
         File_T* file = cg->ast->files->items[i];
         asm_println(cg, "  .file %d \"%s\"", file->file_no + 1, file->path);
     }
+}
+
+static void asm_push(ASMCodegenData_T* cg) 
+{
+    asm_println(cg, "  push %%rax");
+    cg->depth++;
+}
+
+static void asm_pop(ASMCodegenData_T* cg, const char* arg) 
+{
+    asm_println(cg, "  pop %s", arg);
+    cg->depth--;
+}
+
+static void asm_gen_entry_point(ASMCodegenData_T* cg)
+{
+    if(!cg->ast->entry_point)
+        return;
+
+    asm_println(cg, "  .globl _start");
+    asm_println(cg, "  .text");
+    asm_println(cg, "_start:");
+
+    if(cg->ast->before_main && cg->ast->before_main->size)
+    {
+        for(size_t i = 0; i < cg->ast->before_main->size; i++)
+        {
+            char* const id = asm_gen_identifier(((ASTObj_T*) cg->ast->before_main->items[i])->id);
+            asm_println(cg, "  call %s", id);
+        }
+    }
+
+    asm_println(cg, "%s", asm_main_call[cg->ast->mfk]);
+
+    if(cg->ast->after_main && cg->ast->after_main->size)
+    {
+        asm_push(cg);
+        for(size_t i = 0; i < cg->ast->after_main->size; i++)
+        {
+            const ASTObj_T* fn = cg->ast->after_main->items[i];
+            const char* id = asm_gen_identifier(fn->id);
+
+            if(fn->args->size)
+                asm_println(cg, "  movq (%%rsp), %s", argreg64[0]);
+            asm_println(cg, "  call %s", id);
+        }
+        asm_pop(cg, "%rdi");
+    }
+    else
+        asm_println(cg, "  movq %rax, %rdi");
+
+    asm_println(cg, "  movq $60, %rax");
+    asm_println(cg, "  syscall");
 }
 
 static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
@@ -575,18 +610,6 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
                 continue;
         }
     }
-}
-
-static void asm_push(ASMCodegenData_T* cg) 
-{
-    asm_println(cg, "  push %%rax");
-    cg->depth++;
-}
-
-static void asm_pop(ASMCodegenData_T* cg, const char* arg) 
-{
-    asm_println(cg, "  pop %s", arg);
-    cg->depth--;
 }
 
 static void asm_gen_defer(ASMCodegenData_T* cg, List_T* deferred) 

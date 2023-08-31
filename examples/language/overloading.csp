@@ -1,0 +1,17 @@
+import "io.csp";
+
+type Foo: struct {
+    sum: i32
+};
+
+[operator("+")]
+fn foo_add(foo: &Foo, a: i32): &Foo {
+    foo.sum += a;
+    <- foo;
+}
+
+fn main() {
+    let x = &Foo::{0};
+    x = x + 50;
+    std::io::printf("foo: %i\n", x.sum);
+}

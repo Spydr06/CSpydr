@@ -36,6 +36,7 @@
 
 #define GET_CG(args) CCodegenData_T* cg = va_arg(args, CCodegenData_T*)
 
+static void c_gen_entry_point(CCodegenData_T* cg);
 static void c_gen_typedefs(CCodegenData_T* cg, List_T* objs);
 static void c_gen_structs(CCodegenData_T* cg, List_T* objs);
 static void c_gen_globals(CCodegenData_T* cg, List_T* objs);
@@ -211,23 +212,11 @@ static const char* default_type_init[TY_KIND_LEN] = {
     [TY_STRUCT]  = "{0}",
 };
 
-const char* c_start_text[] = {
-    [MFK_NO_ARGS] =
-        "int main(void){\n"
-        "  return __csp_main();\n"
-        "}\n",
-    [MFK_ARGV_PTR] =
-        "int main(int _, char** argv){\n"
-        "  return __csp_main(argv);\n"
-        "}\n",
-    [MFK_ARGC_ARGV_PTR] =
-        "int main(int argc, char** argv){\n"
-        "  return __csp_main(argc, argv);\n"
-        "}\n",
-    [MFK_ARGS_ARRAY] =
-        "int main(){\n"
-        "  return __csp_main();\n"
-        "}\n"
+const char* c_main_call[] = {
+    [MFK_NO_ARGS]       = "__csp_main()",
+    [MFK_ARGV_PTR]      = "__csp_main(argv)",
+    [MFK_ARGC_ARGV_PTR] = "__csp_main(argc, argv)",
+    [MFK_ARGS_ARRAY]    = "__csp_main()"
 };
 
 void init_c_cg(CCodegenData_T* cg, Context_T* context, ASTProg_T* ast)
@@ -352,8 +341,7 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
     c_gen_function_definitions(cg, cg->ast->objs);
     c_gen_lambdas(cg);
     c_gen_functions(cg, cg->ast->objs);
-    if(cg->ast->entry_point)
-        c_println(cg, "%s", c_start_text[cg->ast->mfk]);
+    c_gen_entry_point(cg);
     write_code(cg, target, cg->context->flags.do_assembling);
 
     if(cg->print)
@@ -450,6 +438,39 @@ static char* c_gen_identifier(ASTIdentifier_T* id)
     char* str = gen_identifier(id, "_", ID_PREFIX);
     mem_add_ptr(str);
     return str;
+}
+
+static void c_gen_entry_point(CCodegenData_T* cg)
+{
+    if(!cg->ast->entry_point)
+        return;
+        
+    c_println(cg, "int main(int argc, char** argv){");
+
+    if(cg->ast->before_main && cg->ast->before_main->size)
+    {
+        for(size_t i = 0; i < cg->ast->before_main->size; i++)
+        {
+            char* const id = c_gen_identifier(((ASTObj_T*) cg->ast->before_main->items[i])->id);
+            c_println(cg, "  %s();", id);
+        }
+    }
+
+    c_println(cg, "  int32_t exit_code = %s;", c_main_call[cg->ast->mfk]);
+    
+    if(cg->ast->after_main && cg->ast->after_main->size)
+    {
+        for(size_t i = 0; i < cg->ast->after_main->size; i++)
+        {
+            const ASTObj_T* fn = cg->ast->after_main->items[i];
+            const char* id = c_gen_identifier(fn->id);
+
+            c_println(cg, fn->args->size ? "  %s(exit_code);" : "  %s();", id);
+        }
+    }
+    
+    c_println(cg, "  return exit_code;");
+    c_println(cg, "}");
 }
 
 static void c_gen_array_typedef(ASTType_T* type, va_list custom_args);
