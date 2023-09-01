@@ -188,7 +188,7 @@ namespace std {
             write(fd, "\n");
         }
 
-        fn fputc(c: char, fd: i32) = syscall::write(fd, &c, 1);
+        fn fputc(c: char, fd: i32) syscall::write(fd, &c, 1);
 
         fn fgetc(fd: i32): char
         {

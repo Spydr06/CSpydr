@@ -59,7 +59,7 @@ namespace std {
                 error::new(std::Errno::NOTDIR, "");
                 <- nil;
             } unless S_ISDIR!(st.mode);
-            do ret 0 unless dir = memory::calloc(1, sizeof Directory);
+            do ret nil unless dir = memory::calloc(1, sizeof Directory);
 
             fcntl2(fd, io::F_SETFD, io::FD_CLOEXEC);
             dir.fd = fd;

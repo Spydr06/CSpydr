@@ -1,5 +1,6 @@
 #include "typechecker.h"
 
+#include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -7,6 +8,8 @@
 #include "ast/ast.h"
 #include "config.h"
 #include "error/error.h"
+#include "lexer/token.h"
+#include "list.h"
 #include "optimizer/constexpr.h"
 #include "parser/validator.h"
 #include "utils.h"
@@ -15,11 +18,14 @@
 #include "ast/types.h"
 #include "timer/timer.h"
 
+#define either(a, b) ((a) ? (a) : (b))
+
 #define GET_TYPECHECKER(va) TypeChecker_T* t = va_arg(va, TypeChecker_T*)
 
 typedef struct TYPECHECKER_STRUCT {
     Context_T* context;
     ASTObj_T* current_fn;
+    List_T* return_type_stack;
 } TypeChecker_T;
 
 static void set_fn(ASTObj_T* fn, va_list args);
@@ -34,6 +40,9 @@ static void typecheck_struct_lit(ASTNode_T* a_lit, va_list args);
 static void typecheck_inc(ASTNode_T* inc, va_list args);
 static void typecheck_dec(ASTNode_T* dec, va_list args);
 static void typecheck_for_range(ASTNode_T* loop, va_list args);
+static void typecheck_lambda_entry(ASTNode_T* lambda, va_list args);
+static void typecheck_lambda_exit(ASTNode_T* lambda, va_list args);
+static void typecheck_return(ASTNode_T* ret, va_list args);
 bool types_equal_strict(Context_T* context, ASTType_T* a, ASTType_T* b);
 
 static const ASTIteratorList_T iterator = {
@@ -42,6 +51,9 @@ static const ASTIteratorList_T iterator = {
     },
     .obj_end_fns = {
         [OBJ_FUNCTION] = unset_fn
+    },
+    .node_start_fns = {
+        [ND_LAMBDA] = typecheck_lambda_entry
     },
     .node_end_fns = {
         [ND_CALL] = typecheck_call,
@@ -52,6 +64,8 @@ static const ASTIteratorList_T iterator = {
         [ND_INC] = typecheck_inc,
         [ND_DEC] = typecheck_dec,
         [ND_FOR_RANGE] = typecheck_for_range,
+        [ND_RETURN] = typecheck_return,
+        [ND_LAMBDA] = typecheck_lambda_exit,
     }
 };
 
@@ -61,26 +75,46 @@ i32 typechecker_pass(Context_T* context, ASTProg_T* ast)
 
     TypeChecker_T typechecker = {
         context,
-        NULL
+        NULL,
+        init_list()
     };
     context->current_obj = &typechecker.current_fn;
 
     ast_iterate(&iterator, ast, &typechecker);
+    free_list(typechecker.return_type_stack);
     timer_stop(context);
 
     return context->emitted_errors;
+}
+
+static inline ASTType_T* current_return_type(TypeChecker_T* t)
+{
+    return list_last(t->return_type_stack);
+}
+
+static inline void push_return_type(TypeChecker_T* t, ASTType_T* type)
+{
+    list_push(t->return_type_stack, type);
+}
+
+static inline ASTType_T* pop_return_type(TypeChecker_T* t)
+{
+    return list_pop(t->return_type_stack);
 }
 
 static void set_fn(ASTObj_T* fn, va_list args)
 {
     GET_TYPECHECKER(args);
     t->current_fn = fn;
+    push_return_type(t, fn->return_type);
 }
 
 static void unset_fn(ASTObj_T* fn, va_list args)
 {
     GET_TYPECHECKER(args);
     t->current_fn = NULL;
+    ASTType_T* popped = pop_return_type(t);
+    assert(fn->return_type == popped);
 }
 
 static bool is_const_len_array(ASTType_T* arr)
@@ -120,8 +154,8 @@ static void typecheck_for_range(ASTNode_T* loop, va_list args)
 static void typecheck_assignment(ASTNode_T* assignment, va_list args)
 {
     GET_TYPECHECKER(args);
-    char buf1[BUFSIZ] = {};
-    char buf2[BUFSIZ] = {};
+    char buf1[BUFSIZ] = {'\0'};
+    char buf2[BUFSIZ] = {'\0'};
 
     if(unpack(assignment->left->data_type)->is_constant && !assignment->is_initializing)
         throw_error(t->context, 
@@ -154,7 +188,7 @@ static void typecheck_assignment(ASTNode_T* assignment, va_list args)
 
 static ASTNode_T* typecheck_arg_pass(TypeChecker_T* t, ASTType_T* expected, ASTNode_T* received)
 {
-    char buf1[BUFSIZ] = {};
+    char buf1[BUFSIZ] = {'\0'};
     if(received->unpack_mode)
     {
         if(!is_const_len_array(received->data_type))
@@ -169,7 +203,7 @@ static ASTNode_T* typecheck_arg_pass(TypeChecker_T* t, ASTType_T* expected, ASTN
     if(implicitly_castable(t->context, received->tok, received->data_type, expected) == CAST_OK)
         return implicit_cast(received->tok, received, expected);
     
-    char buf2[BUFSIZ] = {};
+    char buf2[BUFSIZ] = {'\0'};
     throw_error(t->context, ERR_TYPE_ERROR_UNCR, received->tok, "cannot implicitly cast from `%s` to `%s`", 
         ast_type_to_str(t->context, buf1, received->data_type, LEN(buf1)),
         ast_type_to_str(t->context, buf2, expected, LEN(buf2))    
@@ -182,7 +216,7 @@ static void typecheck_explicit_cast(ASTNode_T* cast, va_list args)
 {
     GET_TYPECHECKER(args);
     // Buffer for warnings and errors
-    char buf1[BUFSIZ] = {};
+    char buf1[BUFSIZ] = {'\0'};
 
     if(types_equal_strict(t->context, cast->left->data_type, cast->data_type) && !cast->data_type->no_warnings)
     {
@@ -302,6 +336,54 @@ static void typecheck_dec(ASTNode_T* dec, va_list args)
         throw_error(t->context, ERR_TYPE_ERROR_UNCR, dec->tok, "cannot decrement constant type `%s`", ast_type_to_str(t->context, buf, dec->data_type, LEN(buf)));
 }
 
+static void typecheck_lambda_entry(ASTNode_T* lambda, va_list args)
+{
+    GET_TYPECHECKER(args);
+    push_return_type(t, lambda->data_type->base);
+}
+
+static void typecheck_lambda_exit(ASTNode_T* lambda, va_list args)
+{
+    GET_TYPECHECKER(args);
+    ASTType_T* popped = pop_return_type(t);
+    assert(lambda->data_type->base == popped);
+}
+
+static void typecheck_return(ASTNode_T* ret, va_list args)
+{
+    GET_TYPECHECKER(args);
+    ASTType_T* expected = unpack(current_return_type(t));
+    char buf1[BUFSIZ] = {'\0'};
+
+    if(!ret->return_val)
+    {
+        if(expected->kind != TY_VOID)
+            throw_error(t->context, ERR_TYPE_ERROR_UNCR, ret->tok, "need to return value of type `%s`", ast_type_to_str(t->context, buf1, expected, LEN(buf1)));
+
+        return;
+    }
+
+    Token_T* ret_tok = either(ret->return_val->tok, ret->tok);
+    if(!ret->return_val->data_type) {
+        throw_error(t->context, ERR_INTERNAL, ret_tok, "no type");
+    }
+
+    if(types_equal(t->context, expected, ret->return_val->data_type))
+        return;
+    
+    if(implicitly_castable(t->context,ret_tok, ret->return_val->data_type, expected) == CAST_OK)
+    {
+        ret->return_val = implicit_cast(ret_tok, ret->return_val, expected);
+        return;
+    }
+
+    char buf2[BUFSIZ] = {'\0'};
+    throw_error(t->context, ERR_TYPE_ERROR_UNCR, ret_tok, "cannot implicitly cast from `%s` to `%s`", 
+        ast_type_to_str(t->context, buf1, ret->return_val->data_type, LEN(buf1)),
+        ast_type_to_str(t->context, buf2, expected, LEN(buf2))    
+    );
+}
+
 bool types_equal_strict(Context_T* context, ASTType_T* a, ASTType_T* b)
 {
     if(!types_equal(context, a, b))
@@ -389,8 +471,8 @@ enum IMPLICIT_CAST_RESULT implicitly_castable(Context_T* context, Token_T* tok, 
         return CAST_DELETING_CONST;
     
     // Buffer for warnings and errors
-    char buf1[BUFSIZ] = {};
-    char buf2[BUFSIZ] = {};
+    char buf1[BUFSIZ] = {'\0'};
+    char buf2[BUFSIZ] = {'\0'};
 
     if(is_integer(from) && is_integer(to))
     {

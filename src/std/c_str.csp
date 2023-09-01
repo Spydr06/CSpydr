@@ -144,7 +144,7 @@ namespace std {
             let size: usize = 0;
 
             if (str == nil) || (reject == nil)
-                <- nil;
+                <- 0;
             
             while *str {
                 if strchr(reject, *str)
@@ -170,7 +170,7 @@ namespace std {
             <- nil;
         }
 
-        fn strrchr(s: &char, in_c: i32): &char
+        fn strrchr(s: &char, in_c: i32): &const char
         {
             let c = in_c: u8;
             if c == '\0'

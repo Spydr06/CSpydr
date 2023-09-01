@@ -84,11 +84,11 @@ namespace toml {
         <- __internal::toml_parse(conf, errbuf, errbufsz);
     }
 
-    fn free(table: &Table) 
+    [drop]
+    fn free(table: &toml::Table) 
     {
         __internal::toml_free(table);
     }
-    [exit_fn("free": &toml::Table)]
 
     namespace __internal {
         extern "C" {
@@ -123,7 +123,7 @@ namespace toml {
 
             # misc
             fn toml_utf8_to_ucs(orig: &const char, _len: i32, return: &i64): i32;
-            fn toml_ucs_to_utf8(code: i64, buf: &char);
+            fn toml_ucs_to_utf8(code: i64, buf: &char): i32;
             fn toml_set_memutil(xxmalloc: const fn<&void>(u64), xxfree: const fn(&void));
         }
     }

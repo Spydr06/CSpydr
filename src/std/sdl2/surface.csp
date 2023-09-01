@@ -72,9 +72,10 @@ namespace sdl {
         fn SDL_CreateRGBSurfaceWithFormat(flags: u32, width: i32, height: i32, depth: i32, format: u32): &SDL_Surface;
         fn SDL_CreateRGBSurfaceFrom(pixels: &void, width: i32, height: i32, depth: i32, pitch: i32, Rmask: u32, Gmask: u32, Bmask: u32, Amask: u32): &SDL_Surface;
         fn SDL_CreateRGBSurfaceWithFormatFrom(pixels: &void, width: i32, height: i32, depth: i32, pitch: i32, format: u32): &SDL_Surface;
-        fn SDL_FreeSurface(surface: &SDL_Surface);
+        
+        [drop]
+        fn SDL_FreeSurface(surface: &sdl::SDL_Surface);
     }
-    [exit_fn("SDL_FreeSurface": &sdl::SDL_Surface)]
 
     extern "C" {
         

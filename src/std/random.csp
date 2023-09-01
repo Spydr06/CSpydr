@@ -57,7 +57,7 @@ namespace std {
             using __static;
             __init();
             x[-1] = ((n << 16) | (i << 8) | j);
-            <- x - 1;
+            <- (x - 1): &u32;
         }
 
         fn load_state(state: &u32) {
@@ -82,7 +82,7 @@ namespace std {
             __init();
 
             if size < 8
-                <- 0;
+                <- nil;
             let old = save_state();
             if size < 32
                 n = 0;

@@ -847,7 +847,7 @@ namespace std {
 
         fn getcwd(buf: &char, size: usize): &char
         {
-            let res: i64;
+            let res: &char;
             syscall_r!(res, Syscall::GETCWD, buf, size);
             <- res;
         }
