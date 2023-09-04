@@ -224,6 +224,8 @@ static void typecheck_explicit_cast(ASTNode_T* cast, va_list args)
         //if((cast->left->tok && cast->left->tok->in_macro_expansion) ||
         //    (cast->right->tok && cast->right->tok->in_macro_expansion))
         //    return;   
+        if(cast->left->data_type == cast->data_type && cast->data_type->kind == TY_STRUCT)
+            return; // skip pointer-identical anonymous structs
 
         throw_error(t->context, ERR_TYPE_CAST_WARN, cast->tok, "unnecessary type cast: expression is already of type `%s`",
             ast_type_to_str(t->context, buf1, cast->data_type, LEN(buf1))
@@ -360,7 +362,6 @@ static void typecheck_return(ASTNode_T* ret, va_list args)
     {
         if(expected->kind != TY_VOID)
             throw_error(t->context, ERR_TYPE_ERROR_UNCR, ret->tok, "need to return value of type `%s`", ast_type_to_str(t->context, buf1, expected, LEN(buf1)));
-
         return;
     }
 
@@ -370,16 +371,12 @@ static void typecheck_return(ASTNode_T* ret, va_list args)
     }
 
     if(types_equal(t->context, expected, ret->return_val->data_type))
-    {
-        if(expected->kind == TY_STRUCT)
-            unpack_closure_and_casts(ret->return_val)->data_type = expected;
-        return;
-    }
+        goto patch_anon_struct;
     
     if(implicitly_castable(t->context,ret_tok, ret->return_val->data_type, expected) == CAST_OK)
     {
         ret->return_val = implicit_cast(ret_tok, ret->return_val, expected);
-        return;
+        goto patch_anon_struct;
     }
 
     char buf2[BUFSIZ] = {'\0'};
@@ -387,6 +384,10 @@ static void typecheck_return(ASTNode_T* ret, va_list args)
         ast_type_to_str(t->context, buf1, ret->return_val->data_type, LEN(buf1)),
         ast_type_to_str(t->context, buf2, expected, LEN(buf2))    
     );
+
+patch_anon_struct:
+    if(expected->kind == TY_STRUCT)
+        unpack_closure_and_casts(ret->return_val)->data_type = expected;
 }
 
 bool types_equal_strict(Context_T* context, ASTType_T* a, ASTType_T* b)

@@ -8,7 +8,6 @@
 #include <inttypes.h>
 #include <libgen.h>
 
-#include "codegen/asm/asm_codegen.h"
 #include "config.h"
 #include "platform/platform_bindings.h"
 #include "io/log.h"
