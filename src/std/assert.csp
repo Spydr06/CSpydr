@@ -55,7 +55,7 @@ namespace std {
                 msg, 
                 &RESET[0]
             );
-            exit(std::Errno::ASSERT);
+            exit(Errno::ASSERT);
         }
 
         # enable/disable asserts

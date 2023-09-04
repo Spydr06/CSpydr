@@ -21,6 +21,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -121,6 +122,38 @@ static void c_array_type(ASTType_T* ca_type, va_list args);
 static void type_end(ASTType_T* type, va_list args);
 static i32 get_type_size(Validator_T* v, ASTType_T* type);
 static i32 get_type_size_impl(Validator_T* v, ASTType_T* type, List_T** struct_types);
+
+static const ASTIteratorList_T pre_iterator_list = {
+    .type_fns = 
+    {
+        [TY_STRUCT] = struct_type,
+        [TY_ENUM]   = enum_type,
+        [TY_UNDEF]  = undef_type,
+        [TY_TYPEOF] = typeof_type,
+        [TY_ARRAY] = array_type,
+        [TY_C_ARRAY] = c_array_type,
+    },
+
+    .obj_start_fns = 
+    {
+        [OBJ_NAMESPACE] = namespace_start,
+        [OBJ_TYPEDEF]   = typedef_start,
+        [OBJ_GLOBAL]    = global_start,
+    },
+
+    .obj_end_fns = 
+    {
+        [OBJ_NAMESPACE] = namespace_end,
+        [OBJ_TYPEDEF]   = typedef_end,
+        [OBJ_GLOBAL]    = global_end,
+    },
+
+    .id_use_fn = id_use,
+
+    .type_end = type_end,
+
+    .iterate_only_objs = true
+};
 
 // iterator configuration
 static const ASTIteratorList_T main_iterator_list = 
@@ -244,10 +277,11 @@ i32 validator_pass(Context_T* context, ASTProg_T* ast)
     context->current_obj = &v.current_function;
 
     // iterate over the AST, resolve types and check semantics
+    ast_iterate(&pre_iterator_list, ast, &v); // iterate over some objs twice to assure correct dispatching of types
     ast_iterate(&main_iterator_list, ast, &v);
+    end_scope(&v);
 
     // end the validator
-    end_scope(&v);
     v.global_scope = NULL;
     v.current_function = NULL;
 
@@ -1148,6 +1182,8 @@ static void extern_c_block(ASTNode_T* block, va_list args)
 
 static void call(ASTNode_T* call, va_list args)
 {
+    va_list saved_args;
+    va_copy(saved_args, args);
     GET_VALIDATOR(args);
 
     ASTType_T* call_type = expand_typedef(v, call->expr->data_type);
@@ -1157,7 +1193,14 @@ static void call(ASTNode_T* call, va_list args)
     switch(call_type->kind)
     {
         case TY_FN:
-            call->data_type = call_type->base ? call_type->base : (ASTType_T*) primitives[TY_VOID];
+            if(call_type->base)
+            {
+                call->data_type = call_type->base;
+                if(call->data_type->kind == TY_UNDEF)
+                    undef_type(call->data_type, saved_args);
+            }
+            else
+                call->data_type = (ASTType_T*) primitives[TY_VOID];
             call->called_obj = call->expr->referenced_obj;
             break;
         default:
@@ -1182,6 +1225,16 @@ static void call(ASTNode_T* call, va_list args)
     {
         char buf[BUFSIZ] = {};
         throw_error(v->context, ERR_CALL_ERROR_UNCR, call->tok, "type `%s` expects %lu call arguments, got %lu", ast_type_to_str(v->context, buf, call_type, LEN(buf)), expected_arg_num, received_arg_num);
+    }
+
+    // if we compile using the assembly compiler, a buffer for the return value is needed when handling big structs
+    if(v->context->ct == CT_ASM && call->data_type && expand_typedef(v, call->data_type)->kind == TY_STRUCT)
+    {
+        ASTObj_T* ret_buf = init_ast_obj(OBJ_LOCAL, call->tok);
+        ret_buf->data_type = call->data_type;
+        
+        list_push(v->current_function->objs, ret_buf);
+        call->return_buffer = ret_buf;
     }
 }
 
@@ -2032,8 +2085,9 @@ static void undef_type(ASTType_T* u_type, va_list args)
     GET_VALIDATOR(args);
 
     ASTObj_T* found = search_identifier(v, v->current_scope, u_type->id);
-    if(!found)
+    if(!found) {
         throw_error(v->context, ERR_TYPE_ERROR, u_type->tok, "could not find data type named `%s`", u_type->id->callee);
+    }
     
     u_type->referenced_obj = found;
     u_type->id->outer = found->id->outer;

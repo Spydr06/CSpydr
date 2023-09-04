@@ -68,7 +68,7 @@ namespace std {
             buff: char 'c[0]
         };
 
-        fn init(value: String): ::std::String 
+        fn init(value: String): String 
         {
             let str_data: &StringData;
 
@@ -88,14 +88,14 @@ namespace std {
             <- &(str_data.buff[0]);
         }
 
-        fn init_sized(size: u64): ::std::String
+        fn init_sized(size: u64): String
         {
             let str_data: &StringData = memory::alloc(sizeof StringData + size + 1);
             str_data.alloc = size + 1;
             <- &(str_data.buff[0]);
         }
 
-        fn init_sized_with(size: u64, fill: char): ::std::String
+        fn init_sized_with(size: u64, fill: char): String
         {
             let str_data: &StringData = memory::alloc(sizeof StringData + size + 1);
             str_data.alloc = size + 1;
@@ -105,7 +105,7 @@ namespace std {
         }
 
         [drop]
-        fn free(str: std::String) 
+        fn free(str: String) 
         {
             memory::free(get_data(str));
         } 
@@ -148,7 +148,7 @@ namespace std {
             *dest = &(str_data.buff[0]);
         }
 
-        fn copy(str: String): ::std::String 
+        fn copy(str: String): String 
         {   
             <- init(str);
         }
@@ -185,7 +185,7 @@ namespace std {
         }
 
         # finds a char in a string and returns the index of the first found char
-        fn find_char(str: String, c: char): option!(std::usize)
+        fn find_char(str: String, c: char): option!(usize)
         {
             if !str ret none!(usize);
             for let i: usize = 0; i < c_str::strlen(str); i++; {
@@ -194,7 +194,7 @@ namespace std {
             <- none!(usize);
         }
 
-        fn split(str: String, delim: &char): &::std::String {
+        fn split(str: String, delim: &char): &String {
             let str_vec = vec![String];
  
             let token: &char;
@@ -211,7 +211,7 @@ namespace std {
             <- c_str::strlen(str);
         }
 
-        fn substr(str: ::std::String, from: i64, to: i64): ::std::String 
+        fn substr(str: String, from: i64, to: i64): String 
         {
             if to - from < 0 || to - from >= size(str)
                  ret nil;
@@ -227,7 +227,7 @@ namespace std {
             <- sub_str;
         }
 
-        fn trim(str: ::std::String): ::std::String {
+        fn trim(str: String): String {
             while(character::isspace(*str)) str++;
 
             let back = &str[len str];
@@ -237,34 +237,34 @@ namespace std {
             <- str;
         }
 
-        fn from_int(int: i64): ::std::String
+        fn from_int(int: i64): String
         {
             let buf: char 'c[100];
             c_str::from_int(int, buf, 10);
             <- str!{buf};
         }
 
-        fn from_uint(uint: u64): ::std::String
+        fn from_uint(uint: u64): String
         {
             let buf: char 'c[100];
             c_str::from_uint(uint, buf, 10);
             <- str!{buf};
         }
 
-        fn from_char(c: char): ::std::String
+        fn from_char(c: char): String
         {
             let buf: u16 = c << 8 | '\0';
             <- str!{(&buf): &char};
         }
         
-        fn from_f32(float: f32): ::std::String
+        fn from_f32(float: f32): String
         {
             let buf: char 'c[100];
             c_str::from_f32(float, 10, buf);
             <- str!{buf};
         }
 
-        fn from_f64(float: f64): ::std::String
+        fn from_f64(float: f64): String
         {
             let buf: char 'c[100];
             c_str::from_f64(float, 20, buf);

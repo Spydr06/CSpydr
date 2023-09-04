@@ -90,14 +90,14 @@ namespace std {
         fn alloc(n: usize): &void
         {
             if n > u64_max! / 2 {
-                error::new(std::Errno::NOMEM, "allocation too big");
+                error::new(Errno::NOMEM, "allocation too big");
                 <- nil;
             }
 
             let length = n + sizeof usize;
             let plen: &usize = syscall::mmap(nil, length, Prot::READ | Prot::WRITE, MMap::PRIVATE | MMap::ANONYMOUS, -1, 0);
             if plen == MMAP_FAILED {
-                error::new(std::Errno::NOMEM, "mmap failed");
+                error::new(Errno::NOMEM, "mmap failed");
                 <- nil;
             }
             *plen = length;

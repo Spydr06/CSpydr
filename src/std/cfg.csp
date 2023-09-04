@@ -26,7 +26,7 @@ namespace std {
 
     namespace cfg {
         [cfg("linux")]
-        fn platform(): std::Platform = std::Platform::LINUX;
+        fn platform(): Platform = Platform::LINUX;
 
         [cfg("linux")]
         fn platform_str(): &const char = "linux";
@@ -35,22 +35,22 @@ namespace std {
         fn platform_str(): &const char = "windows";
 
         [cfg("windows")]
-        fn platform(): std::Platform = std::Platform::WINDOWS;
+        fn platform(): Platform = Platform::WINDOWS;
 
         [cfg("macos")]
         fn platform_str(): &const char = "macos";
 
         [cfg("macos")]
-        fn platform(): std::Platform = std::Platform::MACOS;
+        fn platform(): Platform = Platform::MACOS;
 
         [cfg("codegen_asm")]
-        fn codegen(): std::Codegen = std::Codegen::ASSEMBLY;
+        fn codegen(): Codegen = Codegen::ASSEMBLY;
 
         [cfg("codegen_asm")]
         fn codegen_str(): &const char = "asm";
 
         [cfg("codegen_c")]
-        fn codegen(): std::Codegen = std::Codegen::C;
+        fn codegen(): Codegen = Codegen::C;
 
         [cfg("codegen_c")]
         fn codegen_str(): &const char = "c_codegen";

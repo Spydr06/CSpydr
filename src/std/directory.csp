@@ -52,11 +52,11 @@ namespace std {
             if fstat(fd, &st) < 0
                 <- nil;
             if fcntl(fd, io::F_GETFL) & io::O_PATH {
-                error::new(std::Errno::BADF, "");
+                error::new(Errno::BADF, "");
                 <- nil;
             }
             do {
-                error::new(std::Errno::NOTDIR, "");
+                error::new(Errno::NOTDIR, "");
                 <- nil;
             } unless S_ISDIR!(st.mode);
             do ret nil unless dir = memory::calloc(1, sizeof Directory);
@@ -73,7 +73,7 @@ namespace std {
             let fd = 0;
             if fd = syscall::open(name, O_RDONLY | O_DIRECTORY | O_CLOEXEC, 0) < 0
             {
-                error::new(std::Errno::IO, "could not open directory");
+                error::new(Errno::IO, "could not open directory");
                 <- nil;
             }
 
@@ -98,7 +98,7 @@ namespace std {
         fn tell(dir: &Directory): i64 
         {
             do {
-                error::new(std::Errno::NILPTR, "`dir` argument is nil");
+                error::new(Errno::NILPTR, "`dir` argument is nil");
                 <- -1;
             } unless dir;
             <- dir.tell;
@@ -109,7 +109,7 @@ namespace std {
         fn seek(dir: &Directory, offset: i64): Error
         {
             do 
-                <- error::new(std::Errno::NILPTR, "`dir` argument is nil")
+                <- error::new(Errno::NILPTR, "`dir` argument is nil")
             unless dir;
             dir.tell = syscall::lseek(dir.fd, offset, SEEK_SET);
             dir.buf_pos = dir.buf_end = 0;
@@ -119,7 +119,7 @@ namespace std {
         fn rewind(dir: &Directory): Error 
         {
             do
-                <- error::new(std::Errno::NILPTR, "`dir` argument is nil")
+                <- error::new(Errno::NILPTR, "`dir` argument is nil")
             unless dir;
             syscall::lseek(dir.fd, 0, SEEK_SET);
             dir.buf_pos = dir.buf_end = 0;
@@ -132,7 +132,7 @@ namespace std {
             if dir.buf_pos > dir.buf_end {
                 let length = syscall::getdents(dir.fd, dir.buf, sizeof typeof dir.buf);
                 if length < 0 {
-                    error::new(std::Errno::IO, "error in `std::syscall::getdents()`");
+                    error::new(Errno::IO, "error in `std::syscall::getdents()`");
                     <- nil;
                 }
                 dir.buf_end = length;

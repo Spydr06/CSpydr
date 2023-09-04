@@ -23,7 +23,7 @@ namespace std {
     };
 
     namespace thread {
-        fn create(func: const fn(&Thread), userdata: &void): &std::Thread
+        fn create(func: const fn(&Thread), userdata: &void): &Thread
         {
             let thread: &Thread = memory::alloc(sizeof Thread);
             thread.userdata = userdata;
@@ -58,7 +58,7 @@ namespace std {
         fn join(t: &Thread): Error
         {
             do
-                <- error::new(std::Errno::NILPTR, "join(): `t` is nil")
+                <- error::new(Errno::NILPTR, "join(): `t` is nil")
             unless t;
 
             if t.running {
@@ -91,7 +91,7 @@ namespace std {
         fn get_pthread(t: &const Thread): libc::PThread
         {
             do {
-                error::new(std::Errno::NILPTR, "get_pthread(): `t` is nil");
+                error::new(Errno::NILPTR, "get_pthread(): `t` is nil");
                 <- nil;
             } unless t;
 
@@ -101,7 +101,7 @@ namespace std {
         fn get_userdata(t: &const Thread): &void
         {
             do {
-                error::new(std::Errno::NILPTR, "get_userdata(): `t` is nil");
+                error::new(Errno::NILPTR, "get_userdata(): `t` is nil");
                 <- nil;
             } unless t;
 

@@ -86,7 +86,7 @@ macro C_VA_ARGS_SIZE { 24 }
 
 # VAList implementation for the assembly and C backend
 namespace std {
-    type VAList: std::va::Element;
+    type VAList: va::Element;
 
     namespace va {
         [cfg("codegen_asm")]

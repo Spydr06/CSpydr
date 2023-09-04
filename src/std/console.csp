@@ -18,14 +18,14 @@ macro CONSOLE_NCCS { 32 }
 
 namespace std { 
     type Console: struct {
-        iflag:  std::console::Flag, # input mode flags
-        oflag:  std::console::Flag, # output mode flags
-        cflag:  std::console::Flag, # control mode flags
-        lflag:  std::console::Flag, # local mode flags
-        line:   std::console::CC,   # line discipline
-        cc:     std::console::CC'c[CONSOLE_NCCS!], # control characters
-        ispeed: std::console::Speed, # input speed
-        ospeed: std::console::Speed  # output speed
+        iflag:  console::Flag, # input mode flags
+        oflag:  console::Flag, # output mode flags
+        cflag:  console::Flag, # control mode flags
+        lflag:  console::Flag, # local mode flags
+        line:   console::CC,   # line discipline
+        cc:     console::CC'c[CONSOLE_NCCS!], # control characters
+        ispeed: console::Speed, # input speed
+        ospeed: console::Speed  # output speed
     };
 
     namespace console {
@@ -155,7 +155,7 @@ namespace std {
         const TCSAFLUSH: Flag = 2;
 
         fn clear() {
-            std::io::printf("\e[1;1H\e[2J");
+            io::printf("\e[1;1H\e[2J");
         }
 
         fn get_output_speed(console: &Console): Speed = console.cflag & CBAUD;
@@ -164,7 +164,7 @@ namespace std {
         fn set_output_speed(console: &Console, speed: Speed): i32 
         {
             if speed & ~CBAUD {
-                error::new(std::Errno::INVAL, "speed & ~CBAUD");
+                error::new(Errno::INVAL, "speed & ~CBAUD");
                 <- -1;
             }
 
@@ -180,7 +180,7 @@ namespace std {
         fn set_attribute(fd: i32, act: i32, console: &Console): i32
         {
             if act < 0 || act > 2 {
-                error::new(std::Errno::INVAL, "act < 0 || act > 2");
+                error::new(Errno::INVAL, "act < 0 || act > 2");
                 <- -1;
             }
 

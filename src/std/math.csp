@@ -72,13 +72,13 @@ namespace std {
             }
         }
 
-        fn div(num: i32, den: i32): std::Division
+        fn div(num: i32, den: i32): Division
             <- Division :: {
                 num / den,
                 num % den
             };
         
-        fn div64(num: i64, den: i64): std::Division64
+        fn div64(num: i64, den: i64): Division64
             <- Division64 :: {
                 num / den,
                 num % den

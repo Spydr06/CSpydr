@@ -18,7 +18,7 @@ macro INET6_ADDRSTRLEN { 46 }
 
 namespace std {
     type SockAddr: struct {
-        family: std::sa_family_t,
+        family: sa_family_t,
         data: u8 'c[14]
     };
 
@@ -27,7 +27,7 @@ namespace std {
     };
 
     type SockAddrIn: struct {
-        family: std::sa_family_t,
+        family: sa_family_t,
         port: in_port_t,
         addr: Address,
         zero: u8 'c[8]

@@ -36,14 +36,14 @@ namespace std {
             "%E" => insert the current error set at std::error::__static::__error
             "%t" => inserts a formatted time string
         ]#
-        fn format(fmt: &const char, args: ...): std::String = va_format(fmt, &args);
+        fn format(fmt: &const char, args: ...): String = va_format(fmt, &args);
 
-        fn va_format(fmt: &const char, args: &VAList): std::String
+        fn va_format(fmt: &const char, args: &VAList): String
         {
             using string;
             let str = str!{};
             do {
-                error::new(std::Errno::NILPTR, "`fmt` is nil");
+                error::new(Errno::NILPTR, "`fmt` is nil");
                 <- str;
             } unless fmt;
 
@@ -73,12 +73,12 @@ namespace std {
             "%s" => second
             "%u" => unix seconds (seconds since Jan 1st 1970)
         ]#
-        fn time(fmt: &const char, time: Time): std::String
+        fn time(fmt: &const char, time: Time): String
         {
             using string;
             let str = str!(nil);
             do {
-                error::new(std::Errno::NILPTR, "`fmt` is nil");
+                error::new(Errno::NILPTR, "`fmt` is nil");
                 <- str;
             } unless fmt;
 
@@ -120,7 +120,7 @@ namespace std {
                 }
             }
 
-            fn fmt(fmt: &const char, str: &String, args: &VAList): std::String {
+            fn fmt(fmt: &const char, str: &String, args: &VAList): String {
                 using string;
 
                 let buf: char 'c[100];

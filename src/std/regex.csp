@@ -118,7 +118,7 @@ namespace std {
             <- &compiled[0];
         }
 
-        fn match_pattern(pattern: &Regex, text: &const char): std::RegexMatch
+        fn match_pattern(pattern: &Regex, text: &const char): RegexMatch
         {
             if pattern == nil
                 <- RegexMatch::{-1, 0};
@@ -144,7 +144,7 @@ namespace std {
             <- RegexMatch::{-1, matchlength};
         }
 
-        fn matches(pattern: &const char, text: &const char): std::RegexMatch = match_pattern(compile(pattern), text);
+        fn matches(pattern: &const char, text: &const char): RegexMatch = match_pattern(compile(pattern), text);
 
         fn print(pattern: &Regex) 
         {

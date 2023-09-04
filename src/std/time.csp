@@ -29,7 +29,7 @@ namespace std {
 
     # represents time in a human-readable way
     type Time: struct {
-        ts: std::TimeVal,
+        ts: TimeVal,
         year: u16,  # 2022 (0 to 65535)
         month: u8,  # 02   (1 to 12)
         day: u8,    # 07   (1 to 31)
@@ -80,7 +80,7 @@ namespace std {
 
         namespace unix {
             # gets the current unix-time (time in seconds since 01.01.1970)
-            fn secs(): std::TimeVal = syscall::time(nil);
+            fn secs(): TimeVal = syscall::time(nil);
         }
     }
 
@@ -96,16 +96,16 @@ namespace std {
         }
 
         # get the current time of day
-        fn get_time(clk_id: Clock, ts: &TimeSpec): std::Errno {
+        fn get_time(clk_id: Clock, ts: &TimeSpec): Errno {
             let r = syscall::clock_gettime(clk_id, ts);
-            if r == -std::Errno::NOSYS {
+            if r == -Errno::NOSYS {
                 if clk_id == REALTIME {
                     syscall::gettimeofday(ts, 0);
                     ts.tv_nsec *= 1000;
                     <- 0;
                 } 
                 else
-                    r = -std::Errno::INVAL;
+                    r = -Errno::INVAL;
             }
             <- r;
         }

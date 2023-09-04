@@ -25,7 +25,7 @@ namespace std {
 
     # struct representing an arena
     type Arena: struct {
-        backend: const std::ArenaBackend, 
+        backend: const ArenaBackend, 
         begin: &arena::Region,
         end: &arena::Region
     };
@@ -43,16 +43,16 @@ namespace std {
         const REGION_DEFAULT_CAPACITY: u64 = 8096;
 
         # create a new region
-        fn new_region(backend: const ArenaBackend, capacity: u64): &std::arena::Region
+        fn new_region(backend: const ArenaBackend, capacity: u64): &arena::Region
         {
             let size_bytes = sizeof Region + sizeof UIntPtr * capacity;
 
             let region: &Region = nil;
             match backend {
-                std::ArenaBackend::LIBC_MALLOC => region = libc::malloc(size_bytes);
-                std::ArenaBackend::MMAP => region = memory::alloc(size_bytes);
+                ArenaBackend::LIBC_MALLOC => region = libc::malloc(size_bytes);
+                ArenaBackend::MMAP => region = memory::alloc(size_bytes);
                 _ => {
-                    error::new(std::Errno::INVAL, "Unknown ArenaBackend");
+                    error::new(Errno::INVAL, "Unknown ArenaBackend");
                     <- nil;
                 }
             }
@@ -67,12 +67,12 @@ namespace std {
         }
 
         # free a region
-        fn free_region(backend: const ArenaBackend, region: &Region): std::Error
+        fn free_region(backend: const ArenaBackend, region: &Region): Error
         {
             match backend {
-                std::ArenaBackend::LIBC_MALLOC => libc::free(region);
-                std::ArenaBackend::MMAP => memory::free(region);
-                _ => ret error::new(std::Errno::INVAL, "Unknown ArenaBackend");
+                ArenaBackend::LIBC_MALLOC => libc::free(region);
+                ArenaBackend::MMAP => memory::free(region);
+                _ => ret error::new(Errno::INVAL, "Unknown ArenaBackend");
             }
 
             <- error::none();

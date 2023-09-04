@@ -65,7 +65,7 @@ namespace std {
     };
     type __fd_mask: i64;
     type fd_set: struct {
-        fds_bits: std::__fd_mask 'c[1024 / (8 * sizeof(std::__fd_mask))]
+        fds_bits: __fd_mask 'c[1024 / (8 * sizeof(__fd_mask))]
     };
 
     type IntPtr: i64;

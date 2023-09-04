@@ -96,25 +96,25 @@ namespace std {
                         matched = true;
 
                         match flg.kind {
-                            std::flag::Kind::DEFAULT => {
+                            flag::Kind::DEFAULT => {
                                 flg.func(nil);
                             }
-                            std::flag::Kind::HELP => {
+                            flag::Kind::HELP => {
                                 __internal::handle_help(&flags[j], flags);
                             }
-                            std::flag::Kind::STRING => {
+                            flag::Kind::STRING => {
                                 if (i += 1) >= argc {
                                     using io::color;
                                     io::eprintf("%sExpect <string> after `%s`.%s\n", &RED[0], arg, &RESET[0]);
-                                    <- error::new(std::Errno::INVAL, "expected string");
+                                    <- error::new(Errno::INVAL, "expected string");
                                 }
                                 flg.func(argv[i]);
                             }
-                            std::flag::Kind::BOOL => {
+                            flag::Kind::BOOL => {
                                 if (i += 1) >= argc {
                                     using io::color;
                                     io::eprintf("%sExpect [true|false] after `%s`.%s\n", &RED[0], arg, &RESET[0]);
-                                    <- error::new(std::Errno::INVAL, "expected bool");
+                                    <- error::new(Errno::INVAL, "expected bool");
                                 }
                                 let bool_val = false;
                                 if string::equal(argv[i], "true")
@@ -123,15 +123,15 @@ namespace std {
                                 {
                                     using io::color;
                                     io::eprintf("%sExpect [true|false] after `%s`, got %s.%s\n", &RED[0], arg, argv[i], &RESET[0]);
-                                    <- error::new(std::Errno::INVAL, "expected bool");
+                                    <- error::new(Errno::INVAL, "expected bool");
                                 }
                                 flg.func(bool_val: &void);
                             }
-                            std::flag::Kind::INT => {
+                            flag::Kind::INT => {
                                 if (i += 1) >= argc {
                                     using io::color;
                                     io::eprintf("%sExpect <integer> after `%s`.%s\n", &RED[0], arg, &RESET[0]);
-                                    <- error::new(std::Errno::INVAL, "expected int");
+                                    <- error::new(Errno::INVAL, "expected int");
                                 }
                                 let int = c_str::to_i64(argv[i]);
                                 flg.func(int: &void);
@@ -164,9 +164,9 @@ namespace std {
                 for let i = 0; i < len flags; i++; {
                     let args: &char = "";
                     match flags[i].kind {
-                        std::flag::Kind::STRING => args = " <string>";
-                        std::flag::Kind::BOOL =>   args = " [true|false]";
-                        std::flag::Kind::INT =>    args = " <integer>";
+                        flag::Kind::STRING => args = " <string>";
+                        flag::Kind::BOOL =>   args = " [true|false]";
+                        flag::Kind::INT =>    args = " <integer>";
                         _ => {}
                     }
                     if &flags[i] == help_flag

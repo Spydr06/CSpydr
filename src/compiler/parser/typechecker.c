@@ -33,7 +33,6 @@ static void set_fn(ASTObj_T* fn, va_list args);
 static void unset_fn(ASTObj_T* fn, va_list args);
 
 static ASTNode_T* typecheck_arg_pass(TypeChecker_T* t, ASTType_T* expected, ASTNode_T* received);
-static void patch_call(ASTNode_T* call, va_list args);
 static void typecheck_call(ASTNode_T* call, va_list args);
 static void typecheck_explicit_cast(ASTNode_T* cast, va_list args);
 static void typecheck_assignment(ASTNode_T* assignment, va_list args);
@@ -56,7 +55,6 @@ static const ASTIteratorList_T iterator = {
     },
     .node_start_fns = {
         [ND_LAMBDA] = typecheck_lambda_entry,
-        [ND_CALL] = patch_call
     },
     .node_end_fns = {
         [ND_CALL] = typecheck_call,
@@ -124,20 +122,6 @@ static bool is_const_len_array(ASTType_T* arr)
 {
     arr = unpack(arr);
     return arr->kind == TY_ARRAY || arr->kind == TY_C_ARRAY;
-}
-
-static void patch_call(ASTNode_T* call, va_list args)
-{
-    GET_TYPECHECKER(args);
-    // if we compile using the assembly compiler, a buffer for the return value is needed when handling big structs
-    if(t->context->ct == CT_ASM && call->data_type && unpack(call->data_type)->kind == TY_STRUCT)
-    {
-        ASTObj_T* ret_buf = init_ast_obj(OBJ_LOCAL, call->tok);
-        ret_buf->data_type = call->data_type;
-        
-        list_push(t->current_fn->objs, ret_buf);
-        call->return_buffer = ret_buf;
-    }
 }
 
 static void typecheck_call(ASTNode_T* call, va_list args)

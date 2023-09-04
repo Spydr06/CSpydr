@@ -15,7 +15,7 @@ import "process.csp";
 
 namespace std {
     type Testing: struct {
-        tests: &(std::testing::Test[]),
+        tests: &(testing::Test[]),
         current: u64,
         errors: i32,
         skipped: u64,
@@ -33,7 +33,7 @@ namespace std {
             OK, SKIP, FAIL
         };
 
-        fn new(tests: Test[]): std::Testing {
+        fn new(tests: Test[]): Testing {
             <- Testing::{
                 &tests
             };
@@ -41,18 +41,18 @@ namespace std {
 
         fn run(t: &Testing, idx: u64): TestExit {
             do {
-                error::new(std::Errno::NILPTR, "argument t is nil or contains no tests");
+                error::new(Errno::NILPTR, "argument t is nil or contains no tests");
                 <- TestExit::FAIL;
             } unless t && t.tests;
 
             if idx >= len *t.tests {
-                error::new(std::Errno::INDEXOUTOFBOUNDS, "idx bigger than t.tests array");
+                error::new(Errno::INDEXOUTOFBOUNDS, "idx bigger than t.tests array");
                 <- TestExit::FAIL;
             }
 
             let test = (*t.tests)[idx];
             do {
-                error::new(std::Errno::NILPTR, "t.tests[idx] is nil");
+                error::new(Errno::NILPTR, "t.tests[idx] is nil");
                 <- TestExit::FAIL;
             } unless test.func && test.func;
 
@@ -66,7 +66,7 @@ namespace std {
             let skipped = false;
             match pid {
                 (-1): pid_t => {
-                    error::new(std::Errno::CHILD, "could not fork process");
+                    error::new(Errno::CHILD, "could not fork process");
                     <- TestExit::FAIL;
                 }
                 0 => {
@@ -124,7 +124,7 @@ namespace std {
 
         fn run_all(t: &Testing): u64 {
             do {
-                error::new(std::Errno::NILPTR, "argument t is nil or contains no tests");
+                error::new(Errno::NILPTR, "argument t is nil or contains no tests");
                 <- 0;
             } unless t && t.tests;
 
@@ -161,7 +161,7 @@ namespace std {
 
         fn va_assert(t: &Testing, condition: bool, error_msg: &const char, va_list: &VAList) {
             do {
-                error::new(std::Errno::NILPTR, "argument t is nil");
+                error::new(Errno::NILPTR, "argument t is nil");
                 ret;
             } unless t && t.tests;
 
@@ -184,7 +184,7 @@ namespace std {
 
         fn assert_fatal(t: &Testing, condition: bool, error_msg: &const char, args: ...) {
             do {
-                error::new(std::Errno::NILPTR, "argument t is nil");
+                error::new(Errno::NILPTR, "argument t is nil");
                 ret;
             } unless t && t.tests;
 

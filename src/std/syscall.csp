@@ -486,7 +486,7 @@ namespace std {
             <- res;
         }
 
-        fn time(time: &TimeVal): std::TimeVal
+        fn time(time: &TimeVal): TimeVal
         {
             let res: TimeVal;
             syscall_r!(res, Syscall::TIME, time);
