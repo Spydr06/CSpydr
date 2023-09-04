@@ -89,6 +89,11 @@ bool is_unsigned(ASTType_T* ty)
     return ty->kind == TY_U8 || ty->kind == TY_U16 || ty->kind == TY_U32 || ty->kind == TY_U64;
 }
 
+bool is_pointer(ASTType_T* ty)
+{
+    return ty->kind == TY_PTR;
+}
+
 static char *find_file(char *pattern) {
     char *path = NULL;
     glob_t buf = {};

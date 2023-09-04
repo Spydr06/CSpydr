@@ -3,6 +3,7 @@
 
 #include "ast/ast.h"
 #include "config.h"
+#include "hashmap.h"
 
 extern char* cc;
 extern char* cc_flags;
@@ -17,6 +18,7 @@ typedef struct C_CODEGEN_DATA_STRUCT
     u64 unique_id;
     
     HashMap_T* arrays;
+    HashMap_T* anon_structs;
     List_T* blocks;
 
     char* buf;

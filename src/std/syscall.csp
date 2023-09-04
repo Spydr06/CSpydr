@@ -486,9 +486,9 @@ namespace std {
             <- res;
         }
 
-        fn time(time: &TimeVal): TimeVal
+        fn time(time: &TimeVal): &TimeVal
         {
-            let res: TimeVal;
+            let res: &TimeVal;
             syscall_r!(res, Syscall::TIME, time);
             <- res;
         }
@@ -572,7 +572,7 @@ namespace std {
     
         fn alarm(seconds: u32): u32
         {
-            let res: u32;
+            let res: u64;
             syscall_r!(res, Syscall::ALARM, seconds);
             <- res;
         }

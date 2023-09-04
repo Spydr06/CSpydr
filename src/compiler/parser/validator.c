@@ -272,13 +272,15 @@ i32 validator_pass(Context_T* context, ASTProg_T* ast)
     Validator_T v;
     init_validator(&v, context);
     v.ast = ast;
+    context->current_obj = &v.current_function;
+    
     begin_obj_scope(&v, NULL, ast->objs);
     v.global_scope = v.current_scope;
-    context->current_obj = &v.current_function;
 
     // iterate over the AST, resolve types and check semantics
     ast_iterate(&pre_iterator_list, ast, &v); // iterate over some objs twice to assure correct dispatching of types
     ast_iterate(&main_iterator_list, ast, &v);
+    
     end_scope(&v);
 
     // end the validator

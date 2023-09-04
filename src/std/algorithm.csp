@@ -67,7 +67,7 @@ namespace std {
 
         fn bswap_16(x: u16): u16 = x << 8 | x >> 8;
         fn bswap_32(x: u32): u32 = x >> 24 | x >> 8 & 0xff00 | x << 8 & 0xff0000 | x << 24;
-        fn bswap_64(x: u64): u64 = bswap_32(x) << 32 | bswap_32(x >> 32);
+        fn bswap_64(x: u64): u64 = bswap_32(x): u64 << 32 | bswap_32(x >> 32);
     }
 
     type Uuid: u8[16];

@@ -77,3 +77,10 @@ bool identifiers_equal(ASTIdentifier_T* a, ASTIdentifier_T* b)
     else
         return true;
 }
+
+ASTNode_T* unpack_closure_and_casts(ASTNode_T* node)
+{
+    while(node->kind == ND_CLOSURE || node->kind == ND_CAST)
+        node = node->kind == ND_CLOSURE ? list_last(node->exprs) : node->left;
+    return node;
+}

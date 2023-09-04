@@ -93,15 +93,15 @@ namespace std {
             <- result;
         }
 
-        fn sqrt(n: f64): f64 
-        {
-            let r: f64 = 0.0;
-            asm "fldl " n ";" 
-                "fsqrt;"
-                "fstpl " r;
-            
-            <- r;
-        }
+       # fn sqrt(n: f64): f64 
+       # {
+       #     let r: f64 = 0.0;
+       #     asm "fldl " n ";" 
+       #         "fsqrt;"
+       #         "fstpl " r;
+       #     
+       #     <- r;
+       # }
 
         fn abs(a: i32): i32 = if a > 0 => a else -a;
         

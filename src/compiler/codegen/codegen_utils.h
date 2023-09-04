@@ -13,6 +13,7 @@ bool is_integer(ASTType_T *ty);
 bool is_flonum(ASTType_T *ty);
 bool is_numeric(ASTType_T *ty);
 bool is_unsigned(ASTType_T* ty);
+bool is_pointer(ASTType_T* ty);
 char* find_gcc_libpath(void);
 char* find_libpath(void);
 bool unsigned_type(ASTType_T* ty);

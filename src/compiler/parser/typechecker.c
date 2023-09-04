@@ -370,7 +370,11 @@ static void typecheck_return(ASTNode_T* ret, va_list args)
     }
 
     if(types_equal(t->context, expected, ret->return_val->data_type))
+    {
+        if(expected->kind == TY_STRUCT)
+            unpack_closure_and_casts(ret->return_val)->data_type = expected;
         return;
+    }
     
     if(implicitly_castable(t->context,ret_tok, ret->return_val->data_type, expected) == CAST_OK)
     {

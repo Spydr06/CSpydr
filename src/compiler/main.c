@@ -110,7 +110,7 @@ const char help_text[] = "%s"
                        "  -v, --version          | Displays the version of CSpydr and quits\n"
                        "  -i, --info             | Displays information text and quits\n"
                        "  -o, --output [file]    | Sets the target output file\n"
-                       "  -t, --transpile        | Instructs the compiler to compile to C source code (deprecated)\n"
+                       "  -t, --transpile        | Instructs the compiler to compile to C source code\n"
                        "  -a, --asm              | Instructs the compiler to compile to x86_64 gnu assembly code\n"
 #ifdef CSPYDR_USE_LLVM
                        "  -l, --llvm             | Instructs the compiler to use the llvm backend\n"
