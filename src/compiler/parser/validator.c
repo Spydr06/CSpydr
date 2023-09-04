@@ -1183,16 +1183,6 @@ static void call(ASTNode_T* call, va_list args)
         char buf[BUFSIZ] = {};
         throw_error(v->context, ERR_CALL_ERROR_UNCR, call->tok, "type `%s` expects %lu call arguments, got %lu", ast_type_to_str(v->context, buf, call_type, LEN(buf)), expected_arg_num, received_arg_num);
     }
-    
-    // if we compile using the assembly compiler, a buffer for the return value is needed when handling big structs
-    if(v->context->ct == CT_ASM && call->data_type && expand_typedef(v, call->data_type)->kind == TY_STRUCT)
-    {
-        ASTObj_T* ret_buf = init_ast_obj(OBJ_LOCAL, call->tok);
-        ret_buf->data_type = call->data_type;
-        
-        list_push(v->current_function->objs, ret_buf);
-        call->return_buffer = ret_buf;
-    }
 }
 
 static void identifier(ASTNode_T* id, va_list args)
