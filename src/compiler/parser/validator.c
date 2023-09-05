@@ -264,6 +264,32 @@ static const ASTIteratorList_T main_iterator_list =
     .iterate_over_right_members = false
 };
 
+typedef struct IDENTIFIER_SEARCH_RESULT_STRUCT {
+    bool found;
+    union {
+        ASTObj_T* obj; // `obj` when found
+        ASTIdentifier_T* error_on; // `last_existing` when not found
+    };
+} IdentifierSearchResult_T;
+
+static inline IdentifierSearchResult_T id_found(ASTObj_T* obj)
+{
+    return (IdentifierSearchResult_T){.found = true, .obj = obj};
+}
+
+static inline IdentifierSearchResult_T id_not_found(ASTIdentifier_T* error_on)
+{
+    return (IdentifierSearchResult_T){.found = false, .error_on = error_on};
+}
+
+static inline void report_missing_id(Context_T* context, IdentifierSearchResult_T* result, const char* what)
+{
+    if(result->found)
+        return;
+    
+    throw_error(context, ERR_UNDEFINED, result->error_on->tok, "%s `%s`", what, result->error_on->callee);
+}
+
 i32 validator_pass(Context_T* context, ASTProg_T* ast)
 {
     timer_start(context, "code validation");
@@ -322,22 +348,21 @@ static inline ASTObj_T* check_is_deprecated(Validator_T* v, ASTObj_T* obj, Token
     return obj;
 }
 
-// FIXME:
-// type definitions will not be found if contained in an namespace which is defined after the calling function
-static ASTObj_T* search_identifier(Validator_T* v, Scope_T* scope, ASTIdentifier_T* id)
+static IdentifierSearchResult_T search_identifier(Validator_T* v, Scope_T* scope, ASTIdentifier_T* id)
 {
     if(!v || !scope || !id)
-        return NULL;
+        return id_not_found(id);
     
     if(id->global_scope)
         scope = v->global_scope;
     
     if(id->outer)
     {
-        ASTObj_T* outer_obj = search_identifier(v, scope, id->outer);
-        if(!outer_obj)
-            return NULL;
-        
+        IdentifierSearchResult_T outer_result = search_identifier(v, scope, id->outer);
+        if(!outer_result.found)
+            return id_not_found(either(id->outer, id));
+        ASTObj_T* outer_obj = outer_result.obj;
+
         switch(outer_obj->kind)
         {
             case OBJ_TYPEDEF:
@@ -349,7 +374,7 @@ static ASTObj_T* search_identifier(Validator_T* v, Scope_T* scope, ASTIdentifier
                         {
                             ASTObj_T* member = expanded->members->items[i];
                             if(strcmp(member->id->callee, id->callee) == 0)
-                                return check_is_deprecated(v, member, id->tok);
+                                return id_found(check_is_deprecated(v, member, id->tok));
                         }
                     }
                     throw_error(v->context, ERR_UNDEFINED, id->outer->tok, "type `%s` has no member called `%s`", outer_obj->id->callee, id->callee);
@@ -360,20 +385,20 @@ static ASTObj_T* search_identifier(Validator_T* v, Scope_T* scope, ASTIdentifier
                     {
                         ASTObj_T* obj = outer_obj->objs->items[i];
                         if(strcmp(obj->id->callee, id->callee) == 0)
-                            return check_is_deprecated(v, obj, id->tok);
+                            return id_found(check_is_deprecated(v, obj, id->tok));
                     }
                 } break;
             default: 
                 break;
         }
 
-        return NULL;
+        return id_not_found(id);
     }
     else
     {
         ASTObj_T* found = search_in_current_scope(scope, id->callee);
         if(found)
-            return check_is_deprecated(v, found, id->tok);
+            return id_found(check_is_deprecated(v, found, id->tok));
         return search_identifier(v, scope->prev, id);
     }
 }
@@ -442,9 +467,9 @@ ASTType_T* expand_typedef(Validator_T* v, ASTType_T* type)
     if(type->base)
         return type->base;
 
-    ASTObj_T* ty_def = search_identifier(v, v->current_scope, type->id);
-    if(!ty_def)
-        throw_error(v->context, ERR_TYPE_ERROR, type->tok, "undefined data type `%s`", type->id->callee);
+    IdentifierSearchResult_T ty_def_result = search_identifier(v, v->current_scope, type->id);
+    report_missing_id(v->context, &ty_def_result, "undefined data type");
+    ASTObj_T* ty_def = ty_def_result.obj;
     if(ty_def->kind != OBJ_TYPEDEF)
         throw_error(v->context, ERR_TYPE_ERROR, type->tok, "identifier `%s` references object of kind `%s`, expect type", type->id->callee, obj_kind_to_str(ty_def->kind));
 
@@ -639,10 +664,8 @@ static void check_exit_fns(Validator_T* v)
 static void id_use(ASTIdentifier_T* id, va_list args)
 {
     GET_VALIDATOR(args);
-    ASTObj_T* found = search_identifier(v, v->current_scope, id);
-    if(!found) {
-        throw_error(v->context, ERR_UNDEFINED, id->tok, "undefined identifier `%s`.", id->callee);
-    }
+    IdentifierSearchResult_T result = search_identifier(v, v->current_scope, id);
+    report_missing_id(v->context, &result, "undefined identifier");
 }
 
 // obj
@@ -1098,12 +1121,13 @@ static void using_start(ASTNode_T* using, va_list args)
     for(size_t i = 0; i < using->ids->size; i++)
     {
         ASTIdentifier_T* id = using->ids->items[i];
-        ASTObj_T* found = search_identifier(v, v->current_scope, id);
-        if(!found)
+        IdentifierSearchResult_T result = search_identifier(v, v->current_scope, id);
+        if(!result.found)
         {
-            throw_error(v->context, ERR_UNDEFINED_UNCR, id->tok, "using undefined namespace `%s`", id->callee);
+            report_missing_id(v->context, &result, "using undefined namespace");
             return;
         }
+        ASTObj_T* found = result.obj;
 
         if(found->kind != OBJ_NAMESPACE)
         {
@@ -1244,12 +1268,13 @@ static void identifier(ASTNode_T* id, va_list args)
 {
     GET_VALIDATOR(args);
 
-    ASTObj_T* referenced_obj = search_identifier(v, v->current_scope, id->id);
-    if(!referenced_obj)
+    IdentifierSearchResult_T referenced_obj_result = search_identifier(v, v->current_scope, id->id);
+    if(!referenced_obj_result.found)
     {
-        throw_error(v->context, ERR_UNDEFINED, id->id->tok, "refferring to undefined identifier `%s`", id->id->callee);
+        report_missing_id(v->context, &referenced_obj_result, "referring to undefined identifier");
         return;
     }
+    ASTObj_T* referenced_obj = referenced_obj_result.obj;
 
     if(referenced_obj->private && id->id->outer)
         throw_error(v->context, ERR_CALL_ERROR_UNCR, id->id->tok, "referring to private identifier `%s`", id->id->callee);
@@ -2086,10 +2111,12 @@ static void undef_type(ASTType_T* u_type, va_list args)
 {
     GET_VALIDATOR(args);
 
-    ASTObj_T* found = search_identifier(v, v->current_scope, u_type->id);
-    if(!found) {
-        throw_error(v->context, ERR_TYPE_ERROR, u_type->tok, "could not find data type named `%s`", u_type->id->callee);
+    IdentifierSearchResult_T result = search_identifier(v, v->current_scope, u_type->id);
+    if(!result.found) {
+        report_missing_id(v->context, &result, "could not find data type named");
+        return;
     }
+    ASTObj_T* found = result.obj;
     
     u_type->referenced_obj = found;
     u_type->id->outer = found->id->outer;

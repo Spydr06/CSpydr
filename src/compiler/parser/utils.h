@@ -3,6 +3,8 @@
 
 #include "ast/ast.h"
 
+#define either(a, b) ((a) ? (a) : (b))
+
 extern ASTObj_T alloca_bottom;
 void collect_locals(ASTNode_T* stmt, List_T* locals);
 bool identifiers_equal(ASTIdentifier_T* a, ASTIdentifier_T* b);

@@ -394,14 +394,13 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
         list_push(arg_list, NULL);
         
         i32 exit_code = subprocess(arg_list->items[0], (char* const*) arg_list->items, false);
+        free_list(arg_list);
 
         if(exit_code != 0)
         {
             LOG_ERROR_F("error compiling code. (exit code %d)\n", exit_code);
             throw(cg->context->main_error_exception);
         }
-
-        free_list(arg_list);
     }
     else
     {

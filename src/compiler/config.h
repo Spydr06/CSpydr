@@ -32,7 +32,7 @@
 #define CSPYDR_ARCH_X86_64 1
 #elif defined(i386) || defined(__i386__) || defined(__i386) || defined(_M_IX86)
 #define CSPYDR_ARCH_X86_32 1
-#elif #elif defined(__aarch64__) || defined(_M_ARM64)
+#elif defined(__aarch64__) || defined(_M_ARM64)
 #define CSPYDR_ARCH_ARM64 1
 #elif defined(mips) || defined(__mips__) || defined(__mips)
 #define CSPYDR_ARCH_MIPS 1

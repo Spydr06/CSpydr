@@ -19,8 +19,6 @@
 #include "timer/timer.h"
 #include "toolchain.h"
 
-#define either(a, b) ((a) ? (a) : (b))
-
 #define GET_TYPECHECKER(va) TypeChecker_T* t = va_arg(va, TypeChecker_T*)
 
 typedef struct TYPECHECKER_STRUCT {
