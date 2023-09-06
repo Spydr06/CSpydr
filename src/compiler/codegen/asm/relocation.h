@@ -3,8 +3,9 @@
 
 #include "ast/ast.h"
 #include "util.h"
+#include "asm_codegen.h"
 
 u8 escape_sequence(char c, const char* str, size_t* i);
-void gen_relocation(Context_T* context, ASTNode_T* node, size_t target_size, u8* buffer);
+size_t gen_relocation(ASMCodegenData_T* cg, ASTNode_T* node, size_t target_size);
 
 #endif

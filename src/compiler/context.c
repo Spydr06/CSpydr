@@ -29,3 +29,8 @@ void init_context(Context_T* context)
     context->included_libs = hashmap_init();
     context->paths.std_path = DEFAULT_STD_PATH;
 }
+
+void free_context(Context_T *context)
+{
+    hashmap_free(context->included_libs);
+}

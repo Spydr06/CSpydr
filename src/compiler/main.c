@@ -307,6 +307,8 @@ i32 main(i32 argc, char* argv[])
 
     if(!streq(cc_flags, DEFAULT_CC_FLAGS))
         free(cc_flags);
+    
+    free_context(&context);
 
     return 0;
 }

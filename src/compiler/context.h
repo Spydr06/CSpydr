@@ -49,5 +49,6 @@ typedef struct CSPYDR_CONTEXT_STRUCT {
 } Context_T;
 
 void init_context(Context_T* context);
+void free_context(Context_T* context);
 
 #endif

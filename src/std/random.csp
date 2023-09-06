@@ -57,7 +57,7 @@ namespace std {
             using __static;
             __init();
             x[-1] = ((n << 16) | (i << 8) | j);
-            <- (x - 1): &u32;
+            <- x - 1;
         }
 
         fn load_state(state: &u32) {

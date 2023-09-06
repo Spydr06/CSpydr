@@ -1374,18 +1374,21 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node, bool with_casts)
             c_print(cg, "}}");
         } break;
         case ND_STRUCT:
-            if(with_casts)
-            {
+           // if(with_casts)
+           // {
                 if(node->data_type->kind == TY_UNDEF)
                     c_print(cg, "(%s)", c_gen_identifier(node->data_type->id));
+                else  if(node->referenced_obj) {
+                    
+                }
                 else {
                     char buffer[BUFSIZ] = {0};
                     c_hash_struct(cg, buffer, node->data_type);
                     u64 anon_struct_id = (u64) hashmap_get(cg->anon_structs, buffer);
-                    if(anon_struct_id)
+                   // if(anon_struct_id)
                         c_print(cg, "(_anon_struct_%" PRIx64 ")", anon_struct_id);
                 }
-            }
+           // }
 
             if(node->args->size == 0)
             {

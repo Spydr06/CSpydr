@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "io/log.h"
 #include "ast/ast.h"
 #include "config.h"
 #include "error/error.h"
@@ -42,6 +43,7 @@ static void typecheck_for_range(ASTNode_T* loop, va_list args);
 static void typecheck_lambda_entry(ASTNode_T* lambda, va_list args);
 static void typecheck_lambda_exit(ASTNode_T* lambda, va_list args);
 static void typecheck_return(ASTNode_T* ret, va_list args);
+static void typecheck_binop(ASTNode_T* op, va_list args);
 bool types_equal_strict(Context_T* context, ASTType_T* a, ASTType_T* b);
 
 static const ASTIteratorList_T iterator = {
@@ -64,7 +66,11 @@ static const ASTIteratorList_T iterator = {
         [ND_DEC] = typecheck_dec,
         [ND_FOR_RANGE] = typecheck_for_range,
         [ND_RETURN] = typecheck_return,
-        [ND_LAMBDA] = typecheck_lambda_exit
+        [ND_LAMBDA] = typecheck_lambda_exit,
+        [ND_ADD] = typecheck_binop,
+        [ND_SUB] = typecheck_binop,
+        [ND_MUL] = typecheck_binop,
+        [ND_DIV] = typecheck_binop
     }
 };
 
@@ -386,6 +392,80 @@ static void typecheck_return(ASTNode_T* ret, va_list args)
 patch_anon_struct:
     if(expected->kind == TY_STRUCT)
         unpack_closure_and_casts(ret->return_val)->data_type = expected;
+}
+
+static void typecheck_binop(ASTNode_T* op, va_list args)
+{
+    GET_TYPECHECKER(args);
+
+    if(types_equal(t->context, op->left->data_type, op->right->data_type))
+        return;
+
+    ASTType_T* from = types_equal(t->context, op->data_type, op->right->data_type) ? op->left->data_type : op->right->data_type;
+    ASTType_T* to = types_equal(t->context, op->data_type, op->right->data_type) ? op->right->data_type : op->left->data_type;
+    assert(from != to && "binop typecheck error"); // should never happen
+
+    ASTNode_T* from_node = from == op->left->data_type ? op->left : op->right;
+
+    char operator = operator_char(op);
+    switch(operator)
+    {
+        case '+':
+        case '-':
+            if(!(is_numeric(unpack(to)) || is_pointer(unpack(to))) || !(is_numeric(unpack(from)) || is_pointer(unpack(from))))
+            {
+                throw_error(t->context, ERR_TYPE_ERROR_UNCR, op->tok, "operator `%c` expects integer, float or pointer arguments", operator);
+                return;
+            }
+            break;
+        case '%':
+            if(!is_integer(unpack(to)) || !is_integer(unpack(from)))
+            {
+                throw_error(t->context, ERR_TYPE_ERROR_UNCR, op->tok, "operator `%%` expects integer arguments");
+                return;
+            }
+            break;
+        case '/':
+        case '*':
+            if(!is_numeric(unpack(to)) || !is_numeric(unpack(from)))
+            {
+                throw_error(t->context, ERR_TYPE_ERROR_UNCR, op->tok, "operator `%c` expects integer or float arguments", operator);
+                return;
+            }
+            break;
+    }
+
+    if(implicitly_castable(t->context, op->tok, from, to) == CAST_OK)
+    {
+        ASTNode_T* cast = implicit_cast(op->tok, from_node, to);
+        if(from_node == op->left)
+            op->left = cast;
+        else if(from_node == op->right)
+            op->right = cast;
+        else
+            unreachable();
+        return;
+    }
+
+    switch(operator)
+    {
+        case '+':
+            if(is_pointer(unpack(to)) && is_integer(unpack(from)))
+                return;
+            break;
+        case '-':
+            if(is_pointer(unpack(to)) && (is_pointer(unpack(from)) || is_integer(unpack(from))))
+                return;
+            break;
+    }
+
+    char buf1[BUFSIZ] = {'\0'};
+    char buf2[BUFSIZ] = {'\0'};
+    throw_error(t->context, ERR_TYPE_ERROR_UNCR, from_node->tok, "`%c`: cannot implicitly cast from `%s` to `%s`", 
+        operator,
+        ast_type_to_str(t->context, buf1, from, LEN(buf1)),
+        ast_type_to_str(t->context, buf2, to, LEN(buf2))    
+    );
 }
 
 bool types_equal_strict(Context_T* context, ASTType_T* a, ASTType_T* b)

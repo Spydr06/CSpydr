@@ -37,4 +37,16 @@ void init_asm_cg(ASMCodegenData_T* cg, Context_T* context, ASTProg_T* ast);
 void free_asm_cg(ASMCodegenData_T* cg);
 void asm_gen_code(ASMCodegenData_T* cg, const char* target);
 
+char* asm_gen_identifier(ASTIdentifier_T* id);
+
+#ifdef __GNUC__
+__attribute((format(printf, 2, 3)))
+#endif
+void asm_print(ASMCodegenData_T* cg, char* fmt, ...);
+
+#ifdef __GNUC__
+__attribute((format(printf, 2, 3)))
+#endif
+void asm_println(ASMCodegenData_T* cg, char* fmt, ...);
+
 #endif

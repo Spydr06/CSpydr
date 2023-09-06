@@ -12,7 +12,7 @@
 #include "ast/ast.h"
 #include "config.h"
 #include "list.h"
-#include "../relocation.h"
+#include "relocation.h"
 #include "timer/timer.h"
 #include "linker.h"
 
@@ -48,7 +48,7 @@ static const char* asm_main_call[] =
     // TODO
     [MFK_ARGS_ARRAY] =
         "  .globl _start\n"
-        "  .text\n"
+        "  .section .text\n"
         "_start:\n"
         "  xorl %ebp, %ebp\n"
         "  popq %rdi\n"
@@ -192,7 +192,7 @@ void free_asm_cg(ASMCodegenData_T* cg)
 #ifdef __GNUC__
 __attribute((format(printf, 2, 3)))
 #endif
-static void asm_print(ASMCodegenData_T* cg, char* fmt, ...)
+void asm_print(ASMCodegenData_T* cg, char* fmt, ...)
 {
     va_list va;
     va_start(va, fmt);
@@ -203,7 +203,7 @@ static void asm_print(ASMCodegenData_T* cg, char* fmt, ...)
 #ifdef __GNUC__
 __attribute((format(printf, 2, 3)))
 #endif
-static void asm_println(ASMCodegenData_T* cg, char* fmt, ...)
+void asm_println(ASMCodegenData_T* cg, char* fmt, ...)
 {
     va_list va;
     va_start(va, fmt);
@@ -329,7 +329,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         link_obj(cg->context, target, obj_file, cg->silent, cg->link_exec);
 }
 
-static char* asm_gen_identifier(ASTIdentifier_T* id)
+char* asm_gen_identifier(ASTIdentifier_T* id)
 {
     char* str = gen_identifier(id, ".", ".");
     mem_add_ptr(str);
@@ -363,7 +363,7 @@ static void asm_gen_entry_point(ASMCodegenData_T* cg)
         return;
 
     asm_println(cg, "  .globl _start");
-    asm_println(cg, "  .text");
+    asm_println(cg, "  .section .text");
     asm_println(cg, "_start:");
 
     if(cg->ast->before_main && cg->ast->before_main->size)
@@ -519,12 +519,7 @@ static void asm_gen_relocation(ASMCodegenData_T* cg, ASTObj_T* var)
 {
     ASTNode_T* value = var->value;
     size_t target_size = var->data_type->size;
-    u8* buffer = calloc(target_size, sizeof(u8));
-    gen_relocation(cg->context, value, target_size, buffer);
-    for(size_t i = 0; i < target_size; i++) 
-        asm_println(cg, "  .byte %d", (int) buffer[i]);
-    
-    free(buffer);
+    gen_relocation(cg, value, target_size);
 }
 
 static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
@@ -551,7 +546,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
                             continue;
                         char* id = asm_gen_identifier(member->id);
                         asm_println(cg, "  .globl %s", id);
-                        asm_println(cg, "  .data");
+                        asm_println(cg, "  .section .rodata");
                         asm_println(cg, "  .type %s, @object", id);
                         asm_println(cg, "  .size %s, 4", id);
                         asm_println(cg, "  .align 4");
@@ -572,7 +567,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
 
                     if(obj->value)
                     {
-                        asm_println(cg, "  .data");
+                        asm_println(cg, "  .section %s", obj->data_type->is_constant ? ".rodata" : ".data");
                         asm_println(cg, "  .type %s, @object", id);
                         asm_println(cg, "  .size %s, %d", id, obj->data_type->size);
                         asm_println(cg, "  .align %d", align);
@@ -584,7 +579,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
                     }
                     else if(unpack(obj->data_type)->kind == TY_ARRAY)
                     {
-                        asm_println(cg, "  .data");
+                        asm_println(cg, "  .section %s", obj->data_type->is_constant ? ".rodata" : ".data");
                         asm_println(cg, "  .type %s, @object", id);
                         asm_println(cg, "  .size %s, %d", id, obj->data_type->size);
                         asm_println(cg, "  .align %d", align);
@@ -599,7 +594,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
                     }
                     else
                     {
-                        asm_println(cg, "  .bss");    
+                        asm_println(cg, "  .section .bss");    
                         asm_println(cg, "  .align %d", align);
                         asm_println(cg, "%s:", id);
                         asm_println(cg, "  .zero %d", obj->data_type->size);
@@ -628,7 +623,7 @@ static void asm_gen_defer(ASMCodegenData_T* cg, List_T* deferred)
 static void asm_gen_function_signature(ASMCodegenData_T* cg, const char* fn_name)
 {
     asm_println(cg, "  .globl %s", fn_name);
-    asm_println(cg, "  .text");
+    asm_println(cg, "  .section .text");
     asm_println(cg, "  .type %s, @function", fn_name);
     asm_println(cg, "%s:", fn_name);
 }
@@ -2756,7 +2751,7 @@ static void asm_gen_lambda(ASMCodegenData_T* cg, ASTObj_T* lambda_obj)
     cg->current_fn_name = &(lambda_name[0]);
 
     asm_println(cg, "  .globl %s", lambda_name);
-    asm_println(cg, "  .text");
+    asm_println(cg, "  .section .text");
     asm_println(cg, "  .type %s, @function", lambda_name);
     asm_println(cg, "%s:", lambda_name);
     asm_println(cg, "  push %%rbp");

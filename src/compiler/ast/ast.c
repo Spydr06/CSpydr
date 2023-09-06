@@ -270,3 +270,16 @@ char* ast_type_to_str(Context_T* context, char* dest, ASTType_T* ty, size_t size
 
     return dest;
 }
+
+static const char OP_CHARS[ND_KIND_LEN] = {
+    [ND_ADD] = '+',
+    [ND_SUB] = '-',
+    [ND_MUL] = '*',
+    [ND_DIV] = '/',
+    [ND_MOD] = '%'
+};
+
+char operator_char(ASTNode_T* op)
+{
+    return OP_CHARS[op->kind];
+}
