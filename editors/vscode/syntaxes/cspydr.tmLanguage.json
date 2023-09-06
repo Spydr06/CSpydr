@@ -315,11 +315,24 @@
 		"struct-embed": {
 			"patterns": [
 				{
-					"name": "keyword.control.embed.cspydr",
-					"match": "\\bembed\\b"
-				},
-				{
-					"include": "#types"
+					"name": "meta.struct.embed.cspydr",
+					"begin": "\\b(embed)\\b",
+					"beginCaptures": {
+						"1": {
+							"name": "keyword.control.embed.cspydr"
+						}
+					},
+					"end": "(,|\\n)",
+					"endCaptures": {
+						"1": {
+							"name": "punctuation.comma.cspydr"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#types"
+						}
+					]
 				}
 			]
 		},
@@ -514,7 +527,7 @@
 						}
 					},
 					"patterns": [
-						{
+						{						
 							"include": "#types"
 						}
 					]
