@@ -13,6 +13,7 @@ typedef enum COMPILE_TYPE_ENUM
     CT_LLVM,
 #endif
     CT_TO_JSON,
+    CT_INTERPRETER
 } CompileType_T;
 
 typedef struct PASS_STRUCT {

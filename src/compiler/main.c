@@ -35,6 +35,7 @@
 */
 
 // std includes
+#include <ctype.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -106,28 +107,29 @@ const char help_text[] = "%s"
                        "  debug    Builds a cspydr program, then launches the debugger shell.\n"
                        "  lib      Builds a static or shared library.\n"
                        COLOR_BOLD_WHITE "Options:\n" COLOR_RESET
-                       "  -h, --help             | Displays this help text and quits\n"
-                       "  -v, --version          | Displays the version of CSpydr and quits\n"
-                       "  -i, --info             | Displays information text and quits\n"
-                       "  -o, --output [file]    | Sets the target output file\n"
-                       "  -t, --transpile        | Instructs the compiler to compile to C source code\n"
-                       "  -a, --asm              | Instructs the compiler to compile to x86_64 gnu assembly code\n"
+                       "  -h, --help                | Displays this help text and quits\n"
+                       "  -v, --version             | Displays the version of CSpydr and quits\n"
+                       "  -i, --info                | Displays information text and quits\n"
+                       "  -o, --output [file]       | Sets the target output file\n"
+                       "  -b, --backend [backend]   | Instructs the compiler to use a certain backend\n"
+                       "                            | Options: [C, assembly, "
 #ifdef CSPYDR_USE_LLVM
-                       "  -l, --llvm             | Instructs the compiler to use the llvm backend\n"
-#endif
-                       "      --to-json          | Emit the AST directly as a JSON file (for debugging purposes)\n"
-                       "      --print-code       | Prints the generated code (C | Assembly | LLVM IR)\n"
-                       "      --silent           | Disables all command line output except error messages\n"
-                       "      --cc [compiler]    | Sets the C compiler being used after transpiling (default: " DEFAULT_CC ")\n"
-                       "  -S                     | Comple only; do not assemble or link\n"
-                       "  -c                     | Compile and assemble, but do not link\n"
-                       "  -g -g0                 | Include/Exclude debug symbols in binary\n"
-                       "  -0, --no-opt           | Disables all code optimization\n"
-                       "      --set-mmcd [int]   | Sets the maximum macro call depth (default: %d) (unsafe: could cause stack overflow)\n"
-                       "      --show-timings     | Shows the duration the different compiler stages took\n"
-                       "  -p, --std-path         | Set the path of the standard library (default: " DEFAULT_STD_PATH ")\n"
-                       "      --clear-cache      | Clears the cache located at %s" DIRECTORY_DELIMS CACHE_DIR "\n"
-                       "      -- [arguments...]  | Define a list of arguments passed to the program when the `run` action is selected\n"
+    "llvm, "
+#endif          
+                                                    "interpreter, json]\n"
+                       "                            | Default: `assembly`\n"
+                       "      --print-code          | Prints the generated code (C | Assembly | LLVM IR)\n"
+                       "      --silent              | Disables all command line output except error messages\n"
+                       "      --cc [compiler]       | Sets the C compiler being used after transpiling (default: " DEFAULT_CC ")\n"
+                       "  -S                        | Comple only; do not assemble or link\n"
+                       "  -c                        | Compile and assemble, but do not link\n"
+                       "  -g -g0                    | Include/Exclude debug symbols in binary\n"
+                       "  -0, --no-opt              | Disables all code optimization\n"
+                       "      --set-mmcd [int]      | Sets the maximum macro call depth (default: %d) (unsafe: could cause stack overflow)\n"
+                       "      --show-timings        | Shows the duration the different compiler stages took\n"
+                       "  -p, --std-path            | Set the path of the standard library (default: " DEFAULT_STD_PATH ")\n"
+                       "      --clear-cache         | Clears the cache located at %s" DIRECTORY_DELIMS CACHE_DIR "\n"
+                       "      -- [arguments...]     | Define a list of arguments passed to the program when the `run` action is selected\n"
                        "\n"
                        "If you are unsure, what CSpydr is (or how to use it), please check out the GitHub repository: \n" CSPYDR_GIT_REPOSITORY "\n";
 
@@ -154,6 +156,7 @@ static void run(Context_T* context, char* file);
 static void evaluate_info_flags(Context_T* context, char* argv);
 static void store_exec_args(Context_T* context, i32 argc, char* argv[], Action_T action);
 static char* default_output_file(Action_T action, const char* input_file);
+static CompileType_T backend_opt(const char* arg);
 
 // entry point
 i32 main(i32 argc, char* argv[])
@@ -220,16 +223,25 @@ i32 main(i32 argc, char* argv[])
         }
         else if(streq(arg, "--print-code"))
             context.flags.print_code = true;
-        else if(streq(arg, "-t") || streq(arg, "--transpile"))
-            context.ct = CT_TRANSPILE;
-        else if(streq(arg, "-a") || streq(arg, "--asm"))
-            context.ct = CT_ASM;
-#ifdef CSPYDR_USE_LLVM
-        else if(streq(arg, "-l") || streq(arg, "--llvm"))
-            context.ct = CT_LLVM;
-#endif
-        else if(streq(arg, "--to-json"))
-            context.ct = CT_TO_JSON;
+        else if(streq(arg, "-b") || streq(arg, "--backend"))
+        {
+            if(!argv[++i])
+            {
+                LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " Expect backend name after `--backend`.\n");
+                exit(1);
+            }
+            context.ct = backend_opt(argv[i]);
+        }
+//        else if(streq(arg, "-t") || streq(arg, "--transpile"))
+//            context.ct = CT_TRANSPILE;
+//        else if(streq(arg, "-a") || streq(arg, "--asm"))
+//            context.ct = CT_ASM;
+//#ifdef CSPYDR_USE_LLVM
+//        else if(streq(arg, "-l") || streq(arg, "--llvm"))
+//            context.ct = CT_LLVM;
+//#endif
+        //else if(streq(arg, "--to-json"))
+        //    context.ct = CT_TO_JSON;
         else if(streq(arg, "--from-json"))
             context.flags.from_json = true;
         else if(streq(arg, "--silent"))
@@ -283,6 +295,12 @@ i32 main(i32 argc, char* argv[])
             evaluate_info_flags(&context, argv[i]);
     }
 
+    if(context.ct == CT_INTERPRETER && action != AC_RUN)
+    {
+        LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " using interpreter without code execution; aborting.\n");
+        exit(1);
+    }
+
     compile(&context, input_file, output_file);
 
     switch(action)
@@ -298,7 +316,7 @@ i32 main(i32 argc, char* argv[])
             remove(output_file);
             break;
         default:
-            LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED "unknown action `%d`\n", action);
+            LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " unknown action `%d`\n", action);
             break;
     }
 
@@ -333,6 +351,42 @@ static void evaluate_info_flags(Context_T* context, char* argv)
     }
 
     exit(0);
+}
+
+static CompileType_T backend_opt(const char* arg)
+{
+    char* uppercase = malloc(strlen(arg) * sizeof(char));
+    for(size_t i = 0; i < strlen(arg) + 1; i++)
+        uppercase[i] = toupper(arg[i]);
+
+    CompileType_T ct;
+    if(streq(uppercase, "ASSEMBLY"))
+        ct = CT_ASM;
+#ifdef CSPYDR_USE_LLVM
+    else if(streq(uppercase, "LLVM"))
+        ct = CT_LLVM;
+#endif
+    else if(streq(uppercase, "C") || streq(uppercase, "TRANSPILE"))
+        ct = CT_TRANSPILE;
+    else if(streq(uppercase, "JSON"))
+        ct = CT_TO_JSON;
+    else if(streq(uppercase, "INTERPRETER"))
+        ct = CT_INTERPRETER;
+    else
+    {
+        LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED 
+            " unknown `--backend` option `%s`, expect one of [C, "
+#ifdef CSPYDR_USE_LLVM
+"llvm, "
+#endif
+            "assembly, json, interpreter]\n",
+            arg
+        );
+        exit(1);
+    }
+
+    free(uppercase);
+    return ct;
 }
 
 static void run(Context_T* context, char* filename)

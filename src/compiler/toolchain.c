@@ -12,6 +12,7 @@
 #include "parser/typechecker.h"
 #include "optimizer/optimizer.h"
 #include "codegen/transpiler/c_codegen.h"
+#include "interpreter/interpreter.h"
 #include "codegen/asm/asm_codegen.h"
 #include "ast/ast_json.h"
 #include "io/log.h"
@@ -54,6 +55,9 @@ static i32 construct_passes(Context_T* context, Pass_T passes[])
 #endif
         case CT_TO_JSON:
             push_pass(serializer_pass);
+            break;
+        case CT_INTERPRETER:
+            push_pass(interpreter_pass);
             break;
         default:
             LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " Unknown compile type %d!\n", context->ct);
