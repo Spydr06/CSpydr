@@ -4,9 +4,6 @@
 #include <stdint.h>
 #include "ast/ast.h"
 
-#define MAX(a, b) ((a) < (b) ? (b) : (a))
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-
 u64 hash_64(const char* key);
 char* gen_identifier(ASTIdentifier_T* id, const char* combiner, const char* prefix);
 bool is_integer(ASTType_T *ty);

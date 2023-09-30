@@ -312,9 +312,11 @@ i32 main(i32 argc, char* argv[])
             debug_repl(&context, input_file, output_file);
             break;
         case AC_RUN:
-            run(&context, output_file);
-            remove(output_file);
-            break;
+            if(context.ct != CT_INTERPRETER)
+            {
+                run(&context, output_file);
+                remove(output_file);
+            } break;
         default:
             LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " unknown action `%d`\n", action);
             break;

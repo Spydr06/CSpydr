@@ -6,6 +6,9 @@
 
 #define LEN(arr) (sizeof(arr) / sizeof(*arr))
 
+#define MAX(a, b) ((a) < (b) ? (b) : (a))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
 /*
  * Type definitions
  */
