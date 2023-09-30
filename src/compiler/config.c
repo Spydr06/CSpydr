@@ -89,12 +89,17 @@ static bool assembly(Context_T* context) {
     return context->ct == CT_ASM;
 }
 
+static bool interpreted(Context_T* context) {
+    return context->ct == CT_INTERPRETER;
+}
+
 const Config_T configurations[] = {
     {"linux", linux_set},
     {"windows", windows_set},
     {"macos", macos_set},
     {"codegen_c", transpiling},
     {"codegen_asm", assembly},
+    {"interpreted", interpreted},
     {NULL, NULL}
 };
 

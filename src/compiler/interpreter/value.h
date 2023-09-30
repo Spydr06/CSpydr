@@ -58,20 +58,28 @@ typedef union INTERPRETER_FLOAT_VALUE_UNION
     f80 f80;
 } InterpreterFloatValue_T;
 
+typedef union INTERPRETER_VALUE_UNION
+{
+    bool boolean;
+    char character;
+    uintptr_t ptr;
+    InterpreterIntValue_T integer;
+    InterpreterUIntValue_T uinteger;
+    InterpreterFloatValue_T flt;
+} InterpreterValueUnion_T;
+
 typedef struct INTERPRETER_VALUE_STRUCT
 {
     const ASTType_T* type;
-    union {
-        bool boolean;
-        char character;
-        uintptr_t ptr;
-        InterpreterIntValue_T integer;
-        InterpreterUIntValue_T uinteger;
-        InterpreterFloatValue_T flt;
-    } value;
+    InterpreterValueUnion_T value;
 } InterpreterValue_T;
 
 void interpreter_value_to_str(InterpreterValue_T* value, char* dst, size_t len);
+bool interpreter_value_is_falsy(InterpreterValue_T value);
+
+#define interpreter_value_is_truthy(value) (!interpreter_value_is_falsy((value)))
+
+#define interpreter_values_equal(a, b) (memcmp(&(a).value, &(b).value, sizeof(InterpreterValueUnion_T)) == 0)
 
 #define ConstInterpeterValueList_M(sz) struct { \
         size_t size;                            \

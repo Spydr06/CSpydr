@@ -58,6 +58,49 @@ void interpreter_value_to_str(InterpreterValue_T* value, char* dst, size_t len)
     } 
 }
 
+bool interpreter_value_is_falsy(InterpreterValue_T value)
+{
+    switch(value.type->kind)
+    {
+        case TY_I8:
+        case TY_I16:
+        case TY_I32:
+        case TY_I64:
+            return value.value.integer.i64 == 0;
+
+        case TY_U8:
+        case TY_U16:
+        case TY_U32:
+        case TY_U64:
+            return value.value.uinteger.u64 == 0;
+
+        case TY_F32:
+            return value.value.flt.f32 == 0;
+
+        case TY_F64:
+            return value.value.flt.f64 == 0;
+        
+        case TY_F80:
+            return value.value.flt.f80 == 0;
+        
+        case TY_VOID:
+            return true;
+        
+        case TY_BOOL:
+            return !value.value.boolean;
+        
+        case TY_CHAR:
+            return value.value.character == '\0';
+        
+        case TY_PTR:
+            return value.value.ptr == 0;
+        
+        default:
+            assert(false);
+            return true;
+    }
+}
+
 InterpreterValueList_T* init_interpreter_value_list(size_t capacity)
 {
     InterpreterValueList_T* list = malloc(capacity * sizeof(InterpreterValue_T) + sizeof(InterpreterValueList_T));
