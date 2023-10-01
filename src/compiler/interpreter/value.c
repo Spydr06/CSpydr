@@ -1,4 +1,6 @@
 #include "value.h"
+#include "error/error.h"
+#include "io/log.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -98,6 +100,53 @@ bool interpreter_value_is_falsy(InterpreterValue_T value)
         default:
             assert(false);
             return true;
+    }
+}
+
+i64 interpreter_value_i64(InterpreterValue_T* value)
+{
+    switch(value->type->kind)
+    {
+        case TY_I8:
+        case TY_I16:
+        case TY_I32:
+        case TY_I64:
+            return value->value.integer.i64;
+
+        case TY_U8:
+        case TY_U16:
+        case TY_U32:
+        case TY_U64:
+            return (i64) value->value.uinteger.u64;
+
+        case TY_PTR:
+            return (i64) value->value.ptr;
+
+        case TY_CHAR:
+            return (i64) value->value.character;
+
+        default:
+            unreachable();
+            return 0;
+    }
+}
+
+f80 interpreter_value_f80(InterpreterValue_T* value)
+{
+    switch(value->type->kind)
+    {
+        case TY_F32:
+            return (f80) value->value.flt.f32;
+
+        case TY_F64:
+            return (f80) value->value.flt.f64;
+        
+        case TY_F80:
+            return value->value.flt.f80;
+        
+        default:
+            unreachable();
+            return 0.0L;
     }
 }
 

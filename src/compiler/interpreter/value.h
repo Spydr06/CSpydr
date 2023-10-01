@@ -76,6 +76,8 @@ typedef struct INTERPRETER_VALUE_STRUCT
 
 void interpreter_value_to_str(InterpreterValue_T* value, char* dst, size_t len);
 bool interpreter_value_is_falsy(InterpreterValue_T value);
+i64 interpreter_value_i64(InterpreterValue_T* value);
+f80 interpreter_value_f80(InterpreterValue_T* value);
 
 #define interpreter_value_is_truthy(value) (!interpreter_value_is_falsy((value)))
 

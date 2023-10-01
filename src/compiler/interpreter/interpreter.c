@@ -3,8 +3,10 @@
 #include <string.h>
 #include <assert.h>
 
+#include "ast/ast.h"
 #include "ast/ast_iterator.h"
 #include "ast/types.h"
+#include "codegen/codegen_utils.h"
 #include "config.h"
 #include "error/error.h"
 #include "hashmap.h"
@@ -14,6 +16,92 @@
 #include "list.h"
 #include "value.h"
 #include "context.h"
+
+#define PTR_TYPE(ty) ((ty)->kind == TY_PTR || (ty)->kind == TY_VLA)
+
+#define PREFIX_OP_CASE(csp_type, field, value, op)          \
+    case csp_type:                                          \
+        (value).value.field = (op ((value).value.field));   \
+        break
+
+#define INTEGER_PREFIX_OP_CASES(value, op)           \
+    PREFIX_OP_CASE(TY_I8,  integer.i8,  value, op);  \
+    PREFIX_OP_CASE(TY_I16, integer.i16, value, op);  \
+    PREFIX_OP_CASE(TY_I32, integer.i32, value, op);  \
+    PREFIX_OP_CASE(TY_I64, integer.i64, value, op)
+
+#define UINTEGER_PREFIX_OP_CASES(value, op)          \
+    PREFIX_OP_CASE(TY_U8,  uinteger.u8,  value, op); \
+    PREFIX_OP_CASE(TY_U16, uinteger.u16, value, op); \
+    PREFIX_OP_CASE(TY_U32, uinteger.u32, value, op); \
+    PREFIX_OP_CASE(TY_U64, uinteger.u64, value, op)
+
+#define INTLIKE_PREFIX_OP_CASES(value, op)          \
+    INTEGER_PREFIX_OP_CASES(value, op);             \
+    UINTEGER_PREFIX_OP_CASES(value, op);            \
+    PREFIX_OP_CASE(TY_CHAR, character, value, op);  \
+    PREFIX_OP_CASE(TY_PTR, character, value, op)
+
+#define FP_PREFIX_OP_CASE(value, op)                \
+    PREFIX_OP_CASE(TY_F32, flt.f32, value, op);     \
+    PREFIX_OP_CASE(TY_F64, flt.f64, value, op);     \
+    PREFIX_OP_CASE(TY_F80, flt.f80, value, op)
+
+#define NUMERIC_PREFIX_OP_CASES(value, op)          \
+    INTLIKE_PREFIX_OP_CASES(value, op);             \
+    FP_PREFIX_OP_CASE(value, op)
+
+#define INFIX_OP_CASE(csp_type, field, left_value, right_value, op)                             \
+    case csp_type:                                                                              \
+        (left_value).value.field = (((left_value).value.field) op ((right_value).value.field)); \
+        break
+
+#define INTEGER_INFIX_OP_CASES(left_value, right_value, op) \
+    INFIX_OP_CASE(TY_I8,  integer.i8,  left_value, right_value, op);  \
+    INFIX_OP_CASE(TY_I16, integer.i16, left_value, right_value, op);  \
+    INFIX_OP_CASE(TY_I32, integer.i32, left_value, right_value, op);  \
+    INFIX_OP_CASE(TY_I64, integer.i64, left_value, right_value, op)
+
+#define UINTEGER_INFIX_OP_CASES(left_value, right_value, op)          \
+    INFIX_OP_CASE(TY_U8,  uinteger.u8,  left_value, right_value, op); \
+    INFIX_OP_CASE(TY_U16, uinteger.u16, left_value, right_value, op); \
+    INFIX_OP_CASE(TY_U32, uinteger.u32, left_value, right_value, op); \
+    INFIX_OP_CASE(TY_U64, uinteger.u64, left_value, right_value, op)
+
+#define INTLIKE_INFIX_OP_CASES(left_value, right_value, op)         \
+    INTEGER_INFIX_OP_CASES(left_value, right_value, op);            \
+    UINTEGER_INFIX_OP_CASES(left_value, right_value, op);           \
+    INFIX_OP_CASE(TY_CHAR, character, left_value, right_value, op); \
+    INFIX_OP_CASE(TY_PTR, character, left_value, right_value, op)
+
+#define FP_INFIX_OP_CASES(left_value, right_value, op)              \
+    INFIX_OP_CASE(TY_F32, flt.f32, left_value, right_value, op);    \
+    INFIX_OP_CASE(TY_F64, flt.f64, left_value, right_value, op);    \
+    INFIX_OP_CASE(TY_F80, flt.f80, left_value, right_value, op)
+
+#define NUMERIC_INFIX_OP_CASES(left_value, right_value, op)         \
+    INTLIKE_INFIX_OP_CASES(left_value, right_value, op);            \
+    FP_INFIX_OP_CASES(left_value, right_value, op)
+
+#define COMPARISON_OP_CASE(node_kind, op) case node_kind: do {      \
+    InterpreterValue_T left_value = eval_expr(ictx, expr->left);    \
+    InterpreterValue_T right_value = eval_expr(ictx, expr->right);  \
+    switch(left_value.type->kind) {                                 \
+        case TY_F32: case TY_F64: case TY_F80:                      \
+            return BOOL_VALUE(interpreter_value_f80(&left_value) op interpreter_value_f80(&right_value)); \
+        default:                                                    \
+            return BOOL_VALUE(interpreter_value_i64(&left_value) op interpreter_value_i64(&right_value)); \
+    }} while(0)
+
+#define INTEGER_INFIX_OP_CASE(node_kind, op) case node_kind: do {       \
+        InterpreterValue_T left_value = eval_expr(ictx, expr->left);    \
+        InterpreterValue_T right_value = eval_expr(ictx, expr->right);  \
+        switch(left_value.type->kind) {                                 \
+            INTLIKE_INFIX_OP_CASES(left_value, right_value, op);        \
+            default: unreachable();                                     \
+        }                                                               \
+        return left_value;                                              \
+    } while(0)
 
 static void collect_string_literals(InterpreterContext_T* ictx);
 
@@ -237,6 +325,55 @@ static void eval_stmt(InterpreterContext_T* ictx, ASTNode_T* stmt)
     }
 }
 
+static inline InterpreterValue_T eval_add(InterpreterContext_T* ictx, ASTNode_T* expr)
+{
+    InterpreterValue_T left_value = eval_expr(ictx, expr->left);
+    InterpreterValue_T right_value = eval_expr(ictx, expr->right);
+    
+    ASTType_T* left_type = unpack(expr->left->data_type);
+    if(PTR_TYPE(left_type)) {
+        left_value.type = left_type;
+        left_value.value.ptr += interpreter_value_i64(&right_value) * left_type->base->size;
+        return left_value;
+    }
+
+    switch(left_value.type->kind)
+    {
+        NUMERIC_INFIX_OP_CASES(left_value, right_value, +);
+        default:
+            unreachable();
+    }
+    return left_value;
+}
+
+static inline InterpreterValue_T eval_sub(InterpreterContext_T* ictx, ASTNode_T* expr)
+{
+    InterpreterValue_T left_value = eval_expr(ictx, expr->left);
+    InterpreterValue_T right_value = eval_expr(ictx, expr->right);
+    
+    ASTType_T* left_type = unpack(expr->left->data_type);
+    ASTType_T* right_type = unpack(expr->right->data_type);
+    if(PTR_TYPE(left_type) && PTR_TYPE(right_type))
+    {
+        left_value.type = primitives[TY_I64];
+        left_value.value.integer.i64 = ((i64) left_value.value.ptr - (i64) right_value.value.ptr) / left_type->base->size;
+        return left_value;
+    }
+    else if(PTR_TYPE(left_type)) {
+        left_value.type = left_type;
+        left_value.value.ptr -= interpreter_value_i64(&right_value) * left_type->base->size;
+        return left_value;
+    }
+
+    switch(left_value.type->kind)
+    {
+        NUMERIC_INFIX_OP_CASES(left_value, right_value, -);
+        default:
+            unreachable();
+    }
+    return left_value;
+}
+
 static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr)
 {
     switch(expr->kind)
@@ -253,6 +390,7 @@ static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr)
             return BOOL_VALUE(expr->bool_val);
         case ND_CHAR:
             return CHAR_VALUE(expr->int_val);
+        // TODO: ND_STRING
         case ND_FLOAT:
             return F32_VALUE(expr->float_val);
         case ND_DOUBLE:
@@ -290,6 +428,89 @@ static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr)
             return BOOL_VALUE(interpreter_value_is_truthy(eval_expr(ictx, expr->left)) || interpreter_value_is_truthy(eval_expr(ictx, expr->right)));
         case ND_AND:
             return BOOL_VALUE(interpreter_value_is_truthy(eval_expr(ictx, expr->left)) && interpreter_value_is_truthy(eval_expr(ictx, expr->right)));
+        case ND_NEG:
+        {
+            InterpreterValue_T value = eval_expr(ictx, expr->right);
+            switch(value.type->kind)
+            {
+                NUMERIC_PREFIX_OP_CASES(value, -);
+                default: unreachable();
+            }
+            return value;
+        }
+        // TODO: ND_INDEX
+        // TODO: ND_INC, ND_DEC
+        // TODO: ND_LEN
+        case ND_ADD:
+            return eval_add(ictx, expr);
+        case ND_SUB:
+            return eval_sub(ictx, expr);
+        case ND_MUL:
+        {
+            InterpreterValue_T left_value = eval_expr(ictx, expr->left);
+            InterpreterValue_T right_value = eval_expr(ictx, expr->right);
+            switch(left_value.type->kind)
+            {
+                NUMERIC_INFIX_OP_CASES(left_value, right_value, *);
+                default: unreachable();
+            }
+            return left_value;
+        }
+        case ND_DIV:
+        {
+            InterpreterValue_T left_value = eval_expr(ictx, expr->left);
+            InterpreterValue_T right_value = eval_expr(ictx, expr->right);
+            switch(left_value.type->kind)
+            {
+                NUMERIC_INFIX_OP_CASES(left_value, right_value, /);
+                default: unreachable();
+            }
+            return left_value;
+        }
+        INTEGER_INFIX_OP_CASE(ND_MOD, %);
+        // TODO: ND_ID
+        // TODO: ND_MEMBER
+        // TODO: ND_ARRAY
+        // TODO: ND_STRUCT
+        // TODO: ND_REF
+        // TODO: ND_DEREF
+        // TODO: ND_ASSIGN
+        // TODO: ND_LAMBDA
+        // TODO: ND_CAST
+        case ND_NOT:
+            return BOOL_VALUE(interpreter_value_is_falsy(eval_expr(ictx, expr->right)));
+        case ND_BIT_NEG:
+        {
+            InterpreterValue_T value = eval_expr(ictx, expr->right);
+            switch(value.type->kind)
+            {
+                INTLIKE_PREFIX_OP_CASES(value, ~);
+                default: unreachable();
+            }
+            return value;
+        }
+        INTEGER_INFIX_OP_CASE(ND_BIT_AND, &);
+        INTEGER_INFIX_OP_CASE(ND_BIT_OR, |);
+        INTEGER_INFIX_OP_CASE(ND_LSHIFT, <<);
+        INTEGER_INFIX_OP_CASE(ND_RSHIFT, >>);
+        INTEGER_INFIX_OP_CASE(ND_XOR, ^);
+        case ND_EQ:
+        {
+            InterpreterValue_T left_value = eval_expr(ictx, expr->left);
+            InterpreterValue_T right_value = eval_expr(ictx, expr->right);
+            return BOOL_VALUE(interpreter_values_equal(left_value, right_value));
+        }
+        case ND_NE:
+        {
+            InterpreterValue_T left_value = eval_expr(ictx, expr->left);
+            InterpreterValue_T right_value = eval_expr(ictx, expr->right);
+            return BOOL_VALUE(!interpreter_values_equal(left_value, right_value));
+        }
+        COMPARISON_OP_CASE(ND_LT, <);
+        COMPARISON_OP_CASE(ND_LE, <=);
+        COMPARISON_OP_CASE(ND_GT, >);
+        COMPARISON_OP_CASE(ND_GE, >=);
+        // TODO: ND_CALL
         default:
             throw_error(ictx->context, ERR_INTERNAL, expr->tok, "interpreting this expr not implemented yet");
     }
