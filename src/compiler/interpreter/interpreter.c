@@ -1,4 +1,6 @@
 #include <stdarg.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -103,7 +105,75 @@
         return left_value;                                              \
     } while(0)
 
-static void collect_string_literals(InterpreterContext_T* ictx);
+#define NO_CAST_INT 1
+#define NO_CAST ((InterpreterValue_T (*const)(InterpreterContext_T*, InterpreterValue_T*)) NO_CAST_INT)
+
+#define PRIMITIVE_CAST_FN_DECL(from_c_type, to_c_type, to_csp_type, from_field, to_field)               \
+    static InterpreterValue_T from_c_type##to_c_type __attribute((maybe_unused)) (InterpreterContext_T* _, InterpreterValue_T* v) { \
+        return (InterpreterValue_T) {                                                                   \
+            .type = primitives[to_csp_type],                                                            \
+            .value = {.to_field = ((to_c_type) v->value.from_field)}                                    \
+        };                                                                                              \
+    }
+
+typedef i32 Enum;
+
+#define PRIMITIVE_CAST_FN_DECLS(ty, field)                         \
+    PRIMITIVE_CAST_FN_DECL(ty, i8,  TY_I8,  field, integer.i8 )    \
+    PRIMITIVE_CAST_FN_DECL(ty, i16, TY_I16, field, integer.i16)    \
+    PRIMITIVE_CAST_FN_DECL(ty, i32, TY_I32, field, integer.i32)    \
+    PRIMITIVE_CAST_FN_DECL(ty, i64, TY_I64, field, integer.i64)    \
+    PRIMITIVE_CAST_FN_DECL(ty, u8,  TY_U8,  field, uinteger.u8 )   \
+    PRIMITIVE_CAST_FN_DECL(ty, u16, TY_U16, field, uinteger.u16)   \
+    PRIMITIVE_CAST_FN_DECL(ty, u32, TY_U32, field, uinteger.u32)   \
+    PRIMITIVE_CAST_FN_DECL(ty, u64, TY_U64, field, uinteger.u64)   \
+    PRIMITIVE_CAST_FN_DECL(ty, f32, TY_F32, field, flt.f32)        \
+    PRIMITIVE_CAST_FN_DECL(ty, f64, TY_F64, field, flt.f64)        \
+    PRIMITIVE_CAST_FN_DECL(ty, f80, TY_F80, field, flt.f80)        \
+    PRIMITIVE_CAST_FN_DECL(ty, bool, TY_BOOL, field, boolean)      \
+    PRIMITIVE_CAST_FN_DECL(ty, char, TY_CHAR, field, character)    \
+    PRIMITIVE_CAST_FN_DECL(ty, Enum, TY_ENUM, field, integer.i32)
+
+#define PRIMITIVE_MAP_ENTRY(c_type) \
+    c_type##i8, c_type##i16, c_type##i32, c_type##i64, c_type##u8, c_type##u16, c_type##u32, c_type##u64, c_type##f32, c_type##f64, c_type##f80, c_type##bool, [TY_CHAR]=c_type##char, [TY_ENUM]=c_type##Enum
+
+PRIMITIVE_CAST_FN_DECLS(i8,  integer.i8 )
+PRIMITIVE_CAST_FN_DECLS(i16, integer.i16)
+PRIMITIVE_CAST_FN_DECLS(i32, integer.i32)
+PRIMITIVE_CAST_FN_DECLS(i64, integer.i64)
+
+PRIMITIVE_CAST_FN_DECLS(u8,  uinteger.u8 )
+PRIMITIVE_CAST_FN_DECLS(u16, uinteger.u16)
+PRIMITIVE_CAST_FN_DECLS(u32, uinteger.u32)
+PRIMITIVE_CAST_FN_DECLS(u64, uinteger.u64)
+
+PRIMITIVE_CAST_FN_DECLS(f32, flt.f32)
+PRIMITIVE_CAST_FN_DECLS(f64, flt.f64)
+PRIMITIVE_CAST_FN_DECLS(f80, flt.f80)
+
+PRIMITIVE_CAST_FN_DECLS(bool, boolean)
+PRIMITIVE_CAST_FN_DECLS(char, character)
+PRIMITIVE_CAST_FN_DECLS(Enum, integer.i32)
+
+static InterpreterValue_T (*const type_cast_map[TY_KIND_LEN][TY_KIND_LEN])(InterpreterContext_T*, InterpreterValue_T*) = {
+    [TY_I8]  = { PRIMITIVE_MAP_ENTRY(i8)  },
+    [TY_I16] = { PRIMITIVE_MAP_ENTRY(i16) },
+    [TY_I32] = { PRIMITIVE_MAP_ENTRY(i32) },
+    [TY_I64] = { PRIMITIVE_MAP_ENTRY(i64) },
+    [TY_U8]  = { PRIMITIVE_MAP_ENTRY(u8)  },
+    [TY_U16] = { PRIMITIVE_MAP_ENTRY(u16) },
+    [TY_U32] = { PRIMITIVE_MAP_ENTRY(u32) },
+    [TY_U64] = { PRIMITIVE_MAP_ENTRY(u64) },
+    [TY_F32] = { PRIMITIVE_MAP_ENTRY(f32) },
+    [TY_F64] = { PRIMITIVE_MAP_ENTRY(f64) },
+    [TY_F80] = { PRIMITIVE_MAP_ENTRY(f80) },
+    [TY_BOOL] = { PRIMITIVE_MAP_ENTRY(_Bool) },
+    [TY_VOID] = {0},
+    [TY_CHAR] = { PRIMITIVE_MAP_ENTRY(char) },
+    [TY_ENUM] = { PRIMITIVE_MAP_ENTRY(Enum) }
+};
+
+static void assign_lvar_offsets(InterpreterContext_T* ictx);
 
 static void eval_stmt(InterpreterContext_T* ictx, ASTNode_T* stmt);
 static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr);
@@ -163,7 +233,7 @@ i32 interpreter_pass(Context_T* context, ASTProg_T* ast)
         return 1;
     }
 
-    collect_string_literals(&ictx);
+    assign_lvar_offsets(&ictx);
 
     InterpreterValue_T return_value;
     switch(ast->mfk)
@@ -209,12 +279,12 @@ static void collect_string_literal(ASTNode_T* str_lit, va_list args)
     }
 }
 
-static void collect_string_literals(InterpreterContext_T* ictx)
+static void assign_lvar_offsets(InterpreterContext_T* ictx)
 {
     static const ASTIteratorList_T iterator = {
         .node_start_fns = {
             [ND_STR] = collect_string_literal
-        }
+        },
     };
     ast_iterate(&iterator, ictx->ast, ictx);
 }
@@ -476,7 +546,31 @@ static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr)
         // TODO: ND_DEREF
         // TODO: ND_ASSIGN
         // TODO: ND_LAMBDA
-        // TODO: ND_CAST
+        case ND_CAST:
+        {
+            InterpreterValue_T value = eval_expr(ictx, expr->left);
+            InterpreterValue_T (*const cast_fn)(InterpreterContext_T*, InterpreterValue_T*) = type_cast_map[value.type->kind][unpack(expr->data_type)->kind];
+            switch((uintptr_t) cast_fn) {
+                case 0: // no cast possible
+                {
+                    char* buf1 = malloc(BUFSIZ);
+                    char* buf2 = malloc(BUFSIZ);
+
+                    throw_error(ictx->context, ERR_INTERNAL, expr->tok, "(interpreter) cannot cast from `%s` to `%s`", 
+                        ast_type_to_str(ictx->context, buf1, value.type, BUFSIZ),
+                        ast_type_to_str(ictx->context, buf2, expr->data_type, BUFSIZ)
+                    );
+                    
+                    free(buf1);
+                    free(buf2);
+                    return VOID_VALUE;
+                }
+                case NO_CAST_INT: // no cast needed
+                    return value;
+                default:
+                    return cast_fn(ictx, &value);
+            }
+        }
         case ND_NOT:
             return BOOL_VALUE(interpreter_value_is_falsy(eval_expr(ictx, expr->right)));
         case ND_BIT_NEG:

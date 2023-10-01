@@ -149,7 +149,7 @@ ASTType_T* unpack(ASTType_T* ty)
     return ty && ty->kind == TY_UNDEF ? unpack(ty->base) : ty;
 }
 
-bool is_variadic(ASTType_T* ty)
+bool is_variadic(const ASTType_T* ty)
 {
     return ty && ty->is_variadic;
 }

@@ -1,4 +1,5 @@
 #include "value.h"
+#include "ast/types.h"
 #include "error/error.h"
 #include "io/log.h"
 

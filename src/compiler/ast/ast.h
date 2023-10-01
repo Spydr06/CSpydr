@@ -295,7 +295,7 @@ void init_ast_prog(ASTProg_T* prog, const char* main_file_path, const char* targ
 
 const char* obj_kind_to_str(ASTObjKind_T kind);
 const char* type_kind_to_str(ASTTypeKind_T kind);
-char* ast_type_to_str(Context_T* context, char* dest, ASTType_T* ty, size_t size);
+char* ast_type_to_str(Context_T* context, char* dest, const ASTType_T* ty, size_t size);
 char* ast_id_to_str(char* dest, ASTIdentifier_T* id, size_t size);
 
 char operator_char(ASTNode_T* op);
