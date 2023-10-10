@@ -223,12 +223,18 @@ static void lexer_skip_multiline_comment(Lexer_T* lexer)
     u32 start_line = lexer->line;
     u32 start_pos = lexer->pos;
 
+    u32 depth = 1;
+
     lexer_advance(lexer);
     lexer_advance(lexer);
 
-    while(lexer->c != ']' || lexer_peek(lexer, 1) != '#')
+    while(lexer->c != ']' || lexer_peek(lexer, 1) != '#' || depth != 1)
     {
-        if(lexer->c == '\0')
+        if(lexer->c == '#' && lexer_peek(lexer, 1) == '[')
+            depth++;
+        else if(lexer->c == ']' && lexer_peek(lexer, 1) == '#')
+            depth--;
+        else if(lexer->c == '\0')
         {   
             //end of file
             throw_error(lexer->context, ERR_SYNTAX_ERROR,  init_token("#[", start_line, start_pos + 1, TOKEN_ID, lexer->file), "unterminated multiline comment");
