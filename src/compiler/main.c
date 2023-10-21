@@ -232,16 +232,6 @@ i32 main(i32 argc, char* argv[])
             }
             context.ct = backend_opt(argv[i]);
         }
-//        else if(streq(arg, "-t") || streq(arg, "--transpile"))
-//            context.ct = CT_TRANSPILE;
-//        else if(streq(arg, "-a") || streq(arg, "--asm"))
-//            context.ct = CT_ASM;
-//#ifdef CSPYDR_USE_LLVM
-//        else if(streq(arg, "-l") || streq(arg, "--llvm"))
-//            context.ct = CT_LLVM;
-//#endif
-        //else if(streq(arg, "--to-json"))
-        //    context.ct = CT_TO_JSON;
         else if(streq(arg, "--from-json"))
             context.flags.from_json = true;
         else if(streq(arg, "--silent"))

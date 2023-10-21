@@ -13,9 +13,21 @@
 #include <glob.h>
 #include <libgen.h>
 
-static void cat_id(char* callee, ASTIdentifier_T* id)
+static void escape_callee(char* dst, ASTIdentifier_T* id)
 {
-    strcat(callee, id->callee);
+    for(char* c = id->callee; *c; c++)
+        switch(*c) {
+            case '?':
+                strcat(dst, "$qmark");
+                break;
+            case '\'':
+                strcat(dst, "$quote");
+                break;
+            default: {
+                char buf[2] = {*c, '\0'};
+                strcat(dst, buf);
+            } break;
+        }
 }
 
 static List_T* get_id_path(ASTIdentifier_T* id) {
@@ -47,10 +59,10 @@ char* gen_identifier(ASTIdentifier_T* id, const char* combiner, const char* pref
 
         for(size_t i = path->size - 1; i > 0; i--)
         {
-            cat_id(callee, path->items[i]);
+            escape_callee(callee, path->items[i]);
             strcat(callee, combiner);
         }
-        cat_id(callee, path->items[0]);
+        escape_callee(callee, path->items[0]);
 
         free_list(path);
 
@@ -61,7 +73,7 @@ char* gen_identifier(ASTIdentifier_T* id, const char* combiner, const char* pref
     {
         new_c = calloc(strlen(id->callee) + strlen(prefix) + 1, sizeof(char));
         strcat(new_c, prefix);
-        strcat(new_c, id->callee);
+        escape_callee(new_c, id);
     }
 
     return new_c;

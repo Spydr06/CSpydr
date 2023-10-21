@@ -24,7 +24,7 @@ hi def link cspydrLoopKeyword Repeat
 syn keyword cspydrLabelKeyword break continue
 hi def link cspydrLabelKeyword Label
 
-syn match cspydrEmptyOption "_[^a-zA-Z0-9_]"
+syn match cspydrEmptyOption "_[^a-zA-Z0-9?'_]"
 hi def link cspydrEmptyOption Label
 
 syn keyword cspydrOperatorKeyword alignof sizeof typeof len
@@ -44,14 +44,14 @@ syn keyword cspydrTopLevelKeyword fn interface namespace type
 hi def link cspydrTopLevelKeyword Keyword
 
 " macros
-syn match cspydrMacroIdent "[a-zA-Z_][a-zA-Z0-9_]*!"
+syn match cspydrMacroIdent "[a-zA-Z_][a-zA-Z0-9?'_]*!"
 hi def link cspydrMacroIdent Macro
 
 syn keyword cspydrPreprocessorKeyword macro import
 hi def link cspydrPreprocessorKeyword PreProc
 
 " constants
-syn match cspydrConstIdent "[A-Z_][A-Z0-9_]*"
+syn match cspydrConstIdent "[A-Z_][A-Z0-9?'_]*"
 hi def link cspydrConstIdent Constant
 
 " default types
@@ -64,7 +64,7 @@ hi def link cspydrStructure Structure
 syn keyword cspydrTypeModifier const embed extern let
 hi def link cspydrTypeModifier StorageClass
 
-syn match cspydrTypedef "[A-Z][a-zA-Z0-9_]*"
+syn match cspydrTypedef "[A-Z][a-zA-Z0-9?'_]*"
 hi def link cspydrTypedef Typedef
 
 " number literals:

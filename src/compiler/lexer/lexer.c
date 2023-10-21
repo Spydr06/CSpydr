@@ -287,7 +287,7 @@ static Token_T* lexer_get_id(Lexer_T* lexer)
 {
     char buffer[BUFSIZ] = {'\0'};
 
-    while(isalnum(lexer->c) || lexer->c == '_')
+    while(isalnum(lexer->c) || lexer->c == '_' || lexer->c == '?' || lexer->c == '\'')
     {
         strcat(buffer, (char[]){lexer->c, '\0'});
         lexer_advance(lexer);
