@@ -1,0 +1,16 @@
+import "std.csp";
+import "float.csp";
+
+fn main(): i32 {
+    using std::testing;
+
+    let tests = [
+        Test::{f32_eq, "f32 == f32"},
+        Test::{f64_eq, "f64 == f64"},
+    ];
+
+    let t = new(tests);
+    let failed = run_all(&t);
+
+    <- if failed == 0 => 0 else 1;
+}

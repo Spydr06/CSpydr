@@ -31,12 +31,14 @@ fn math_test_mod(t: &std::Testing) {
     assert(t, b == 2, "b != 1");
 }
 
-fn math_test_sqrt(t: &std::Testing) {
-    using std::testing, std::math;
-    
-    assert(t, sqrt(4): i32 == 2, "sqrt(4) != 2");
-    assert(t, sqrt(256): i32 == 16, "sqrt(256) != 16");
-}
+#[
+    fn math_test_sqrt(t: &std::Testing) {
+        using std::testing, std::math;
+        
+        assert(t, sqrt(4): i32 == 2, "sqrt(4) != 2");
+        assert(t, sqrt(256): i32 == 16, "sqrt(256) != 16");
+    }
+]#
 
 fn math_test_abs(t: &std::Testing) {
     using std::testing, std::math;

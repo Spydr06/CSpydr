@@ -1,0 +1,47 @@
+import "std.csp";
+
+fn f32_eq(t: &std::Testing) {
+    using std::testing;
+
+    let testdata = [
+        {0.0, 0.0, true},
+        {1.0, 0.0, false},
+        {1.0, 1.0, true},
+        {-10.0, -10.0, true},
+        {10.0, -10.0, false},
+        {0.001, 0.002, false},
+        {0.001, 0.001, true},
+        {0.001, -0.001, false},
+    ];
+
+    for let i = 0; i < len testdata; i++; {
+        let test = testdata[i];
+        assert(t, (test._0 == test._1) == test._2, "testdata[%i] failed", i);
+        assert(t, (test._0 != test._1) != test._2, "testdata[%i] (inverse) failed", i);
+    }
+}
+
+macro f64_eq_test_case(a, b, chk) {
+    {(a): f64, (b): f64, (chk)}
+}
+
+fn f64_eq(t: &std::Testing) {
+    using std::testing;
+
+    let testdata = [
+        f64_eq_test_case!{0.0, 0.0, true},
+        f64_eq_test_case!{1.0, 0.0, false},
+        f64_eq_test_case!{1.0, 1.0, true},
+        f64_eq_test_case!{-10.0, -10.0, true},
+        f64_eq_test_case!{10.0, -10.0, false},
+        f64_eq_test_case!{0.001, 0.002, false},
+        f64_eq_test_case!{0.001, 0.001, true},
+        f64_eq_test_case!{0.001, -0.001, false},
+    ];
+
+    for let i = 0; i < len testdata; i++; {
+        let test = testdata[i];
+        assert(t, (test._0 == test._1) == test._2, "testdata[%i] failed", i);
+        assert(t, (test._0 != test._1) != test._2, "testdata[%i] (inverse) failed", i);
+    }
+}

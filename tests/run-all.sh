@@ -38,33 +38,38 @@ if [ -f "$COMPILER_EXEC" ];
 then
     pushd $SCRIPT_DIR
 
-    TEST_EXEC="./std-tests.out" 
-    MAIN_FILE="./std/std_tests.csp"
+    function test_dir() {
+        TEST_NAME=$1
+        TEST_FILE=$2
+        TEST_EXEC=$3
 
-    # compile tests
-    echo "Compiling tests..."
+        echo "Compiling $TEST_NAME..."
 
-    if $COMPILER_EXEC build $MAIN_FILE -p $STD_DIRECTORY -o $TEST_EXEC --show-timings;
-    then
-        # compilation was successful, we can continue testing
-        echo "Successfully compiled \`$TEST_EXEC\` from \`$MAIN_FILE\`"
-    else
-        # compilation error
-        echo "Failed to compile standard library tests from $MAIN_FILE."
-        exit 1
-    fi
+        if $COMPILER_EXEC build $TEST_FILE -p $STD_DIRECTORY -o $TEST_EXEC --show-timings;
+        then
+            # compilation was successful, we can continue testing
+            echo "Successfully compiled \`$TEST_EXEC\` from \`$TEST_FILE\`"
+        else
+            # compilation error
+            echo "Failed to compile $TEST_NAME from $MAIN_FILE."
+            exit 1
+        fi
 
-    if $TEST_EXEC;
-    then
-        # std tests successful
-        echo "All standard library tests finished successfully."
-    else
-        echo "Some standard library tests failed."
-        exit 1
-    fi
+        if $TEST_EXEC;
+        then
+            # std tests successful
+            echo "All $TEST_NAME finished successfully."
+        else
+            echo "Some $TEST_NAME failed."
+            exit 1
+        fi
 
-    # delete the test file
-    rm $TEST_EXEC
+        # delete the test file
+        rm $TEST_EXEC
+    }
+
+    test_dir "Language Tests" "language/language_tests.csp" ./language_tests
+    test_dir "Standard Library Tests" "std/std_tests.csp" ./std_tests    
 
     popd
 else

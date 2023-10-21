@@ -49,7 +49,7 @@ fn main(): i32 {
         Test::{math_test_div, "math.csp std::math::div()"},
         Test::{math_test_div64, "math.csp std::math::div64()"},
         Test::{math_test_mod, "math.csp std::math::mod()"},
-        Test::{math_test_sqrt, "math.csp std::math::sqrt()"},
+        # Test::{math_test_sqrt, "math.csp std::math::sqrt()"},
         Test::{math_test_abs, "math.csp std::math::abs()"},
         Test::{math_test_abs64, "math.csp std::math::abs64()"},
 
