@@ -251,7 +251,7 @@ i32 main(i32 argc, char* argv[])
                 LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " Expect C compiler name after --cc.\n");
                 exit(1);
             }
-            cc = argv[i];
+            context.cc = argv[i];
         }
         else if(streq(arg, "-0") || streq(arg, "--no-opt"))
             context.flags.optimize = false;
@@ -315,8 +315,8 @@ i32 main(i32 argc, char* argv[])
     if(context.flags.timer_enabled)
         timer_print_summary(&context);
 
-    if(!streq(cc_flags, DEFAULT_CC_FLAGS))
-        free(cc_flags);
+    if(!streq(context.cc_flags, DEFAULT_CC_FLAGS))
+        free((void*) context.cc_flags);
     
     free_context(&context);
 

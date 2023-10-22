@@ -1185,7 +1185,7 @@ static void case_end(ASTNode_T* c_stmt, va_list args)
 {
     GET_VALIDATOR(args);
 
-    if(c_stmt->condition && c_stmt->mode != TOKEN_EQ && !is_number(v, c_stmt->condition->data_type)) {
+    if(c_stmt->condition && c_stmt->mode != ND_EQ && !is_number(v, c_stmt->condition->data_type)) {
         char buf[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
         throw_error(v->context, ERR_TYPE_ERROR_UNCR, c_stmt->tok, "match cases with special ranges are only supported with number types, got `%s`",
             ast_type_to_str(v->context, buf, c_stmt->condition->data_type, LEN(buf)));
@@ -1921,25 +1921,25 @@ static void type_expr(ASTNode_T* cmp, va_list args)
 
     switch(cmp->cmp_kind)
     {
-        case TOKEN_EQ:
+        case ND_EQ:
             result = types_equal(v->context, cmp->l_type, cmp->r_type);
             break;
-        case TOKEN_NOT_EQ:
+        case ND_NE:
             result = !types_equal(v->context, cmp->l_type, cmp->r_type);
             break;
-        case TOKEN_GT:
+        case ND_GT:
             result = cmp->l_type->size > cmp->r_type->size;
             break;
-        case TOKEN_GT_EQ:
+        case ND_GE:
             result = cmp->l_type->size >= cmp->r_type->size;
             break;
-        case TOKEN_LT:
+        case ND_LT:
             result = cmp->l_type->size < cmp->r_type->size;
             break;
-        case TOKEN_LT_EQ:
+        case ND_LE:
             result = cmp->l_type->size <= cmp->r_type->size;
             break;
-        case TOKEN_BUILTIN_REG_CLASS:
+        case ND_BUILTIN_REG_CLASS:
             {
                 cmp->kind = ND_INT;
                 cmp->int_val = 2;
@@ -1950,38 +1950,38 @@ static void type_expr(ASTNode_T* cmp, va_list args)
                 else if(is_flonum(expanded))
                     cmp->int_val = 1;
             } return;
-        case TOKEN_BUILTIN_IS_INT...TOKEN_BUILTIN_IS_UNION:
+        case ND_BUILTIN_IS_INT...ND_BUILTIN_IS_UNION:
             {
                 cmp->kind = ND_BOOL;
                 ASTType_T* expanded = expand_typedef(v, cmp->r_type);
                 switch(cmp->cmp_kind)
                 {
-                    case TOKEN_BUILTIN_IS_INT:
+                    case ND_BUILTIN_IS_INT:
                         cmp->bool_val = is_integer(expanded) && !is_unsigned(expanded);
                         break;
-                    case TOKEN_BUILTIN_IS_UINT:
+                    case ND_BUILTIN_IS_UINT:
                         cmp->bool_val = is_integer(expanded) && is_unsigned(expanded);
                         break;
-                    case TOKEN_BUILTIN_IS_FLOAT:
+                    case ND_BUILTIN_IS_FLOAT:
                         cmp->bool_val = is_flonum(expanded);
                         break;
-                    case TOKEN_BUILTIN_IS_POINTER:
+                    case ND_BUILTIN_IS_POINTER:
                         cmp->bool_val = expanded->kind == TY_PTR;
                         break;
-                    case TOKEN_BUILTIN_IS_ARRAY:
+                    case ND_BUILTIN_IS_ARRAY:
                         cmp->bool_val = expanded->kind == TY_C_ARRAY || expanded->kind == TY_ARRAY || expanded->kind == TY_VLA;
                         break;
-                    case TOKEN_BUILTIN_IS_STRUCT:
+                    case ND_BUILTIN_IS_STRUCT:
                         cmp->bool_val = expanded->kind == TY_STRUCT && !expanded->is_union;
                         break;
-                    case TOKEN_BUILTIN_IS_UNION:
+                    case ND_BUILTIN_IS_UNION:
                         cmp->bool_val = expanded->kind == TY_STRUCT && expanded->is_union;
                         break;
                     default:
                         unreachable();
                 }
             } return;
-        case TOKEN_BUILTIN_TO_STR:
+        case ND_BUILTIN_TO_STR:
             {
                 char buf[BUFSIZ] = {'\0'}; // FIXME: could cause segfault with big structs | identifiers
                 ASTNode_T node = {

@@ -1,6 +1,7 @@
 #include "lexer.h"
 #include "ast/ast.h"
 #include "config.h"
+#include "error/error.h"
 #include "list.h"
 #include "mem/mem.h"
 #include "token.h"
@@ -62,61 +63,23 @@ const struct {
     const char* symbol; 
     TokenType_T type;
 } symbols[] = {
-    {"++", TOKEN_INC},
-    {"+=", TOKEN_ADD},
-    {"+", TOKEN_PLUS},
-    {"--", TOKEN_DEC},
-    {"-=", TOKEN_SUB},
-    {"-", TOKEN_MINUS},
-    {"*=", TOKEN_MULT},
-    {"*", TOKEN_STAR},
-    {"%=", TOKEN_MOD},
-    {"%", TOKEN_PERCENT},
-    {"/=", TOKEN_DIV},
-    {"/", TOKEN_SLASH},
-    {"&=", TOKEN_BIT_AND_ASSIGN},
-    {"&&", TOKEN_AND},
-    {"&", TOKEN_REF},
-    {"^=", TOKEN_XOR_ASSIGN},
-    {"^", TOKEN_XOR},
-    {"<<=", TOKEN_LSHIFT_ASSIGN},
-    {"<<", TOKEN_LSHIFT},
-    {">>=", TOKEN_RSHIFT_ASSIGN},
-    {">>", TOKEN_RSHIFT},
-    {"||", TOKEN_OR},
-    {"|=", TOKEN_BIT_OR_ASSIGN},
-    {"|>", TOKEN_PIPE},
-    {"|", TOKEN_BIT_OR},
-    {"==", TOKEN_EQ},
-    {"=>", TOKEN_ARROW},
-    {"=", TOKEN_ASSIGN},
-    {"!=", TOKEN_NOT_EQ},
-    {"!", TOKEN_BANG},
-    {">=", TOKEN_GT_EQ},
-    {">", TOKEN_GT},
-    {"<=", TOKEN_LT_EQ},
-    {"<-", TOKEN_RETURN},
-    {"<", TOKEN_LT},
     {"(", TOKEN_LPAREN},
     {")", TOKEN_RPAREN},
     {"{", TOKEN_LBRACE},
     {"}", TOKEN_RBRACE},
     {"[", TOKEN_LBRACKET},
     {"]", TOKEN_RBRACKET},
-    {"~", TOKEN_TILDE},
     {",", TOKEN_COMMA},
     {";", TOKEN_SEMICOLON},
     {";", TOKEN_SEMICOLON}, // greek question mark (;)
     {"_", TOKEN_UNDERSCORE},
-    {"::", TOKEN_STATIC_MEMBER},
-    {":", TOKEN_COLON},
-    {"...", TOKEN_VA_LIST},
-    {"..", TOKEN_RANGE},
-    {".", TOKEN_DOT},
     {"²", TOKEN_POW_2},
     {"³", TOKEN_POW_3},
     {"$", TOKEN_DOLLAR},
     {"@", TOKEN_AT},
+    {"...", TOKEN_VA_LIST},
+    {"<-", TOKEN_RETURN},
+    {"=>", TOKEN_ARROW},
     {"`", TOKEN_INFIX_CALL},
     {NULL, TOKEN_EOF}   // the last one has to be null as an indicator for the end of the array
 };  
@@ -466,6 +429,46 @@ static Token_T* lexer_get_char(Lexer_T* lexer)
     return token;
 }
 
+static bool is_operator_char(char c)
+{
+    switch(c)
+    {
+        case '+':
+        case '-':
+        case '*':
+        case '/':
+        case '%':
+        case '=':
+        case '&':
+        case '^':
+        case '<':
+        case '>':
+        case '|':
+        case '!':
+        case '?':
+        case '.':
+        case ':':
+        case '~':
+            return true;
+        default:
+            return false;
+    }
+}
+
+static Token_T* lexer_get_operator(Lexer_T* lexer)
+{
+    char buffer[BUFSIZ] = {'\0'};
+
+    while(is_operator_char(lexer->c))
+    {
+        strcat(buffer, (char[]){lexer->c, '\0'});
+        lexer_advance(lexer);
+    }
+
+    Token_T* operator = init_token(buffer, lexer->line, lexer->pos - 1, TOKEN_OPERATOR, lexer->file);
+    return operator;
+}
+
 static Token_T* lexer_get_symbol(Lexer_T* lexer)
 {
     for(i32 i = 0; symbols[i].symbol != NULL; i++)
@@ -490,6 +493,9 @@ static Token_T* lexer_get_symbol(Lexer_T* lexer)
                 )
             );
     }
+
+    if(is_operator_char(lexer->c))
+        return lexer_get_operator(lexer);
 
     switch(lexer->c) {
 

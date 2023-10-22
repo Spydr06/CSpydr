@@ -281,9 +281,9 @@ EVAL_FN(cc)
     char* abs_path = get_absolute_path(data->name_token->source->path);
     char* working_dir = get_path_from_file(abs_path);
     if(!context->flags.silent) 
-        LOG_OK_F(COLOR_BOLD_CYAN "  Command   " COLOR_RESET " \"%s %s\"\n", cc, (const char*) data->arguments->items[0]);
+        LOG_OK_F(COLOR_BOLD_CYAN "  Command   " COLOR_RESET " \"%s %s\"\n", context->cc, (const char*) data->arguments->items[0]);
     List_T* args = init_list();
-    list_push(args, cc);
+    list_push(args, (void*) context->cc);
     
     char* ch = strtok(data->arguments->items[0], " ");
     while(ch != NULL)
@@ -295,9 +295,9 @@ EVAL_FN(cc)
     getcwd(current_dir, LEN(current_dir));
     chdir(working_dir);
     
-    i32 exit_code = subprocess(cc, (char* const*) args->items, false);
+    i32 exit_code = subprocess(context->cc, (char* const*) args->items, false);
     if(exit_code)
-        throw_error(context, ERR_MISC, data->name_token, "command %s %s failed with exit code %d", cc, (const char*) data->arguments->items[0], exit_code);
+        throw_error(context, ERR_MISC, data->name_token, "command %s %s failed with exit code %d", context->cc, (const char*) data->arguments->items[0], exit_code);
     chdir(current_dir);
     free_list(args);
     free(abs_path);

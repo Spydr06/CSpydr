@@ -51,9 +51,6 @@ static void c_gen_lambdas(CCodegenData_T* cg);
 static void c_gen_array_types(CCodegenData_T* cg);
 static void c_gen_typed_name_str(CCodegenData_T* cg, const char* id, ASTType_T* type);
 
-char* cc = DEFAULT_CC;
-char* cc_flags = DEFAULT_CC_FLAGS;
-
 static const char* reg_names[C_NUM_REGISTERS] = {
     "%rax", "%rbx", "%rcx", "%rdx",
     "%rdi", "%rsi",
@@ -64,12 +61,12 @@ static const char* reg_names[C_NUM_REGISTERS] = {
 };
 
 static const char* cmp_mode[TOKEN_EOF] = {
-    [TOKEN_EQ] = "==",
-    [TOKEN_NOT_EQ] = "!=",
-    [TOKEN_LT] = "<",
-    [TOKEN_LT_EQ] = "<=",
-    [TOKEN_GT] = ">",
-    [TOKEN_GT_EQ] = ">=",
+    [ND_EQ] = "==",
+    [ND_NE] = "!=",
+    [ND_LT] = "<",
+    [ND_LE] = "<=",
+    [ND_GT] = ">",
+    [ND_GE] = ">=",
 };
 
 static const char* op_symbols[ND_KIND_LEN] = {
@@ -370,7 +367,7 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
 
 
         const char* args[] = {
-            cc,
+            cg->context->cc,
             c_source_file,
             "-std=c99",
             "-o",
@@ -408,7 +405,7 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
         get_cached_file_path(obj_file, target, ".o");
 
         const char* args[] = {
-            cc,
+            cg->context->cc,
             "-c",
             c_source_file,
             "-std=c99",

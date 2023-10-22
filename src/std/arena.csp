@@ -36,7 +36,7 @@ namespace std {
             next: &Region,
             count: u64,
             capacity: u64,
-            data: UIntPtr'c[0]
+            data: UIntPtr 'c[0]
         };
 
         # default size of a region

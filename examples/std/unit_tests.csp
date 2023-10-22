@@ -22,12 +22,12 @@ fn main(): i32 {
             },
             "test three"
         },
+        Test::{test_four, "test four"},
         Test::{
             const |t: &std::Testing| => {
-                using std::testing;
-                assert(t, 2 == 2, "2 != 2");
+                #*(nil: &u8) = 0;
             },
-            "test four"
+            "segfault test"
         }
     ];
 
@@ -35,4 +35,9 @@ fn main(): i32 {
     run_all(&t);
 
     <- 0;
+}
+
+fn test_four(t: &std::Testing) {
+    using std::testing;
+    assert(t, 2 == 2, "2 != 2");
 }

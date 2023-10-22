@@ -28,7 +28,7 @@ PREPROCESSOR_TEST_FUNC(test_preprocessing_simple_file, "fn main(): i32 {}",
     TEST_ASSERT(((Token_T*) tokens->items[1])->type == TOKEN_ID);
     TEST_ASSERT(((Token_T*) tokens->items[2])->type == TOKEN_LPAREN);
     TEST_ASSERT(((Token_T*) tokens->items[3])->type == TOKEN_RPAREN);
-    TEST_ASSERT(((Token_T*) tokens->items[4])->type == TOKEN_COLON);
+    TEST_ASSERT(((Token_T*) tokens->items[4])->type == TOKEN_OPERATOR);
     TEST_ASSERT(((Token_T*) tokens->items[5])->type == TOKEN_ID);
     TEST_ASSERT(((Token_T*) tokens->items[6])->type == TOKEN_LBRACE);
     TEST_ASSERT(((Token_T*) tokens->items[7])->type == TOKEN_RBRACE);

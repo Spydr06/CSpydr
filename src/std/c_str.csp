@@ -130,7 +130,7 @@ namespace std {
                 s++;
                 for p = accept; (*p) != '\0' && (*p) != *s; p++;
                     noop;
-                if !*p
+                if ! *p
                     break;
             }
 

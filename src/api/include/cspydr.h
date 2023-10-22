@@ -112,59 +112,15 @@ enum CSPYDR_TOKEN_TYPE {
     CSPYDR_TOKEN(LBRACKET),     // [
     CSPYDR_TOKEN(RBRACKET),     // ]
 
-    CSPYDR_TOKEN(GT),           // >
-    CSPYDR_TOKEN(LT),           // <
-    CSPYDR_TOKEN(EQ),           // ==
-    CSPYDR_TOKEN(NOT_EQ),       // !=
-    CSPYDR_TOKEN(GT_EQ),        // >=
-    CSPYDR_TOKEN(LT_EQ),        // <=
-    CSPYDR_TOKEN(BANG),         // !
+    CSPYDR_TOKEN(OPERATOR),     // operators like `+`, `-`, `!=`, ...
 
-    CSPYDR_TOKEN(PLUS),         // +
-    CSPYDR_TOKEN(MINUS),        // -
-    CSPYDR_TOKEN(STAR),         // *
-    CSPYDR_TOKEN(SLASH),        // /
-    CSPYDR_TOKEN(PERCENT),      // %
-    CSPYDR_TOKEN(ARROW),        // =>
-    CSPYDR_TOKEN(AND),          // &&
-    CSPYDR_TOKEN(OR),           // ||
-    CSPYDR_TOKEN(BIT_OR),       // |
-    CSPYDR_TOKEN(PIPE),         // |>
-    CSPYDR_TOKEN(REF),          // &
-    CSPYDR_TOKEN(TILDE),        // ~
-    CSPYDR_TOKEN(RANGE),        // ..
-    CSPYDR_TOKEN(VA_LIST),      // ...
-
-    CSPYDR_TOKEN(INC),          // ++
-    CSPYDR_TOKEN(DEC),          // --
-
-    CSPYDR_TOKEN(ASSIGN),       // =
-    CSPYDR_TOKEN(ADD),          // +=
-    CSPYDR_TOKEN(SUB),          // -=
-    CSPYDR_TOKEN(MULT),         // *=
-    CSPYDR_TOKEN(DIV),          // /=
-    CSPYDR_TOKEN(MOD),          // %=
-
-    CSPYDR_TOKEN(XOR),          // ^
-    CSPYDR_TOKEN(XOR_ASSIGN),   // ^=
-    CSPYDR_TOKEN(LSHIFT),       // <<
-    CSPYDR_TOKEN(RSHIFT),       // >>
-    
-    CSPYDR_TOKEN(LSHIFT_ASSIGN),// <<=
-    CSPYDR_TOKEN(RSHIFT_ASSIGN),// >>=
-
-    CSPYDR_TOKEN(BIT_AND_ASSIGN),// &=
-    CSPYDR_TOKEN(BIT_OR_ASSIGN), // |=
-
-    CSPYDR_TOKEN(COLON),        // :
     CSPYDR_TOKEN(COMMA),        // ,
-    CSPYDR_TOKEN(DOT),          // .
     CSPYDR_TOKEN(SEMICOLON),    // ;
     CSPYDR_TOKEN(UNDERSCORE),   // _
     CSPYDR_TOKEN(DOLLAR),       // $
     CSPYDR_TOKEN(AT),           // @
-
-    CSPYDR_TOKEN(STATIC_MEMBER),// ::
+    CSPYDR_TOKEN(VA_LIST),      // ...
+    CSPYDR_TOKEN(ARROW),        // =>
 
     CSPYDR_TOKEN(POW_2),        // ²
     CSPYDR_TOKEN(POW_3),        // ³
@@ -206,17 +162,6 @@ enum CSPYDR_TOKEN_TYPE {
     CSPYDR_TOKEN(WITH),         // with
 
     CSPYDR_TOKEN(CURRENT_FN),   // special token for the __func__! macro
-
-    // builtin functions used exclusively in type expressions
-    CSPYDR_TOKEN(BUILTIN_REG_CLASS),
-    CSPYDR_TOKEN(BUILTIN_IS_INT),
-    CSPYDR_TOKEN(BUILTIN_IS_UINT),
-    CSPYDR_TOKEN(BUILTIN_IS_FLOAT),
-    CSPYDR_TOKEN(BUILTIN_IS_POINTER),
-    CSPYDR_TOKEN(BUILTIN_IS_ARRAY),
-    CSPYDR_TOKEN(BUILTIN_IS_STRUCT),
-    CSPYDR_TOKEN(BUILTIN_IS_UNION),
-    CSPYDR_TOKEN(BUILTIN_TO_STR),
 
     CSPYDR_TOKEN(ERROR), // error handling token
     CSPYDR_TOKEN(EOF),   // end of file
@@ -339,6 +284,17 @@ enum CSPYDR_AST_NODE_KIND_ENUM {
     CSPYDR_ND(EXTERN_C_BLOCK), // extern "C" {}
 
     CSPYDR_ND(ASM), // inline assembly
+
+    // builtin functions used exclusively in type expressions
+    CSPYDR_ND(BUILTIN_REG_CLASS),
+    CSPYDR_ND(BUILTIN_IS_INT),
+    CSPYDR_ND(BUILTIN_IS_UINT),
+    CSPYDR_ND(BUILTIN_IS_FLOAT),
+    CSPYDR_ND(BUILTIN_IS_POINTER),
+    CSPYDR_ND(BUILTIN_IS_ARRAY),
+    CSPYDR_ND(BUILTIN_IS_STRUCT),
+    CSPYDR_ND(BUILTIN_IS_UNION),
+    CSPYDR_ND(BUILTIN_TO_STR),
 
     CSPYDR_ND(KIND_LEN)
 };

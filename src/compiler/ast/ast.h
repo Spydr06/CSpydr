@@ -55,7 +55,7 @@ struct AST_NODE_STRUCT
         bool bool_val;
         char* str_val;
 
-        TokenType_T cmp_kind; // kind of type comparisons
+        ASTNodeKind_T cmp_kind; // kind of type comparisons
     };
 
     union {
@@ -117,7 +117,7 @@ struct AST_NODE_STRUCT
         // with statement, single object
         ASTObj_T* obj;
 
-        TokenType_T mode; // case mode
+        ASTNodeKind_T mode; // case mode
     };
 
     union {

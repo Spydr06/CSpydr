@@ -23,7 +23,7 @@ namespace std {
         cflag:  console::Flag, # control mode flags
         lflag:  console::Flag, # local mode flags
         line:   console::CC,   # line discipline
-        cc:     console::CC'c[CONSOLE_NCCS!], # control characters
+        cc:     console::CC 'c[CONSOLE_NCCS!], # control characters
         ispeed: console::Speed, # input speed
         ospeed: console::Speed  # output speed
     };

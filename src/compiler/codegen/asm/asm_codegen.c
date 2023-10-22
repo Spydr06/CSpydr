@@ -56,12 +56,12 @@ static const char* asm_main_call[] =
 };
 
 static const char* jmp_mode[TOKEN_EOF] = {
-    [TOKEN_EQ] = "je",
-    [TOKEN_NOT_EQ] = "jne",
-    [TOKEN_LT] = "jl",
-    [TOKEN_LT_EQ] = "jle",
-    [TOKEN_GT] = "jg",
-    [TOKEN_GT_EQ] = "jge",
+    [ND_EQ] = "je",
+    [ND_NE] = "jne",
+    [ND_LT] = "jl",
+    [ND_LE] = "jle",
+    [ND_GT] = "jg",
+    [ND_GE] = "jge",
 };
 
 static const char* argreg8[]  = {"%dil", "%sil", "%dl", "%cl", "%r8b", "%r9b"};

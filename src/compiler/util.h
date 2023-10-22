@@ -42,5 +42,6 @@ bool str_ends_with(const char *s, const char *suffix);
 i64 align_to(i64 n, i64 align);
 char *str_replace(char *dest, const char *str1, const char *str2, const char *str3);
 u64 str_count_char(const char* s, char c);
+void trim_first_char(char* s);
 
 #endif

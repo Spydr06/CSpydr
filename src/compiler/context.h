@@ -33,6 +33,10 @@ typedef struct CSPYDR_CONTEXT_STRUCT {
         i32 argc;
     } args;
 
+    // c compiler configuration
+    const char* cc;
+    const char* cc_flags;
+
     ASTObj_T** current_obj;
 
     List_T* compiler_flags;

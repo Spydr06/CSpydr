@@ -9,7 +9,7 @@ HashMap_T* hashmap_init();
 HashMap_T* hashmap_init_sized(size_t size);
 void hashmap_free(HashMap_T* map);
 int hashmap_put(HashMap_T* map, char* key, void* val);
-void* hashmap_get(HashMap_T* map, char* key);
+void* hashmap_get(const HashMap_T* map, char* key);
 List_T* hashmap_values(HashMap_T* map);
 List_T* hashmap_keys(HashMap_T* map);
 

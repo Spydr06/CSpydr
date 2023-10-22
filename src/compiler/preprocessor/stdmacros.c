@@ -9,13 +9,13 @@
 #include <string.h>
 #include <stdio.h>
 
-const char* get_date_str(Context_T* context);
-const char* get_time_str(Context_T* context);
-const char* get_compile_type(Context_T* context);
-const char* get_main_file(Context_T* context);
+static const char* get_date_str(Context_T* context);
+static const char* get_time_str(Context_T* context);
+static const char* get_compile_type(Context_T* context);
+static const char* get_main_file(Context_T* context);
 
-char current_time[128] = { '\0' };
-char current_date[128] = { '\0' };
+static char current_time[128] = { '\0' };
+static char current_date[128] = { '\0' };
 
 struct {
     const char* id;
@@ -93,7 +93,7 @@ void define_std_macros(Context_T* context, List_T *macro_list)
     }
 }
 
-const char* get_time_str(Context_T* context)
+static const char* get_time_str(Context_T* context)
 {
     if(!current_time[0])
     {
@@ -109,7 +109,7 @@ const char* get_time_str(Context_T* context)
     return current_time;
 }
 
-const char* get_date_str(Context_T* context)
+static const char* get_date_str(Context_T* context)
 {
     if(!current_date[0])
     {
@@ -125,7 +125,7 @@ const char* get_date_str(Context_T* context)
     return current_date;
 }
 
-const char* get_compile_type(Context_T* context)
+static const char* get_compile_type(Context_T* context)
 {
     switch(context->ct)
     {
@@ -138,7 +138,7 @@ const char* get_compile_type(Context_T* context)
     }
 }
 
-const char* get_main_file(Context_T* context)
+static const char* get_main_file(Context_T* context)
 {
     return context->paths.main_src_file ? context->paths.main_src_file : "nil";
 }

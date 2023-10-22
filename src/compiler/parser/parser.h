@@ -16,8 +16,4 @@ bool tok_is(Parser_T* p, TokenType_T type);
 
 void parse_obj(Parser_T* p, List_T* obj_list);
 
-extern char* cc;
-extern char* cc_flags;
-
-
 #endif

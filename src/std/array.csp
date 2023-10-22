@@ -68,8 +68,9 @@ macro sum(a, b, c, d, e, f) {
 macro __sum_internal(arr, length, total_type) {
     {
         let total: total_type;
-        for let i = 0; i < length; i++;
+        for let i = 0; i < length; i++; {
             total += arr[i];
+        }
         <- total;
     }
 }

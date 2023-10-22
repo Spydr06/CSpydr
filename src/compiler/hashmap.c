@@ -30,7 +30,7 @@ struct HASHMAP_STRUCT
 
 static inline size_t hashmap_calc_size(HashMap_T* map);
 static inline void hashmap_rehash(HashMap_T* map, size_t size);
-static inline HashPair_T* hashmap_find_pair(HashMap_T* map, char* key, bool find_empty);
+static inline HashPair_T* hashmap_find_pair(const HashMap_T* map, char* key, bool find_empty);
 
 static size_t (*HASHMAP_HASH_FUNCTION)(char*) = hashmap_default_hash;
 
@@ -87,7 +87,7 @@ void hashmap_set_hash_function(size_t (*function)(char*))
     HASHMAP_HASH_FUNCTION = function;
 }
 
-void* hashmap_get(HashMap_T* map, char* key)
+void* hashmap_get(const HashMap_T* map, char* key)
 {
     HashPair_T* pair = hashmap_find_pair(map, key, false);
     return pair ? pair->value : NULL;
@@ -175,13 +175,13 @@ size_t hashmap_default_hash(char* data)
     return hash;
 }
 
-static inline size_t hashmap_calc_index(HashMap_T* map, char* key)
+static inline size_t hashmap_calc_index(const HashMap_T* map, char* key)
 {
     size_t index = HASHMAP_HASH_FUNCTION(key);
     return HASHMAP_SIZE_MOD(map, index);
 }
 
-static inline HashPair_T* hashmap_find_pair(HashMap_T* map, char* key, bool find_empty)
+static inline HashPair_T* hashmap_find_pair(const HashMap_T* map, char* key, bool find_empty)
 {
     size_t index = hashmap_calc_index(map, key);
 

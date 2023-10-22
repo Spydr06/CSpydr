@@ -29,7 +29,7 @@ namespace std {
         tell: i64,
         buf_pos: i32,
         buf_end: i32,
-        buf: u8'c[2048],
+        buf: u8 'c[2048],
     };
 
     type DirEntry: struct {
@@ -37,7 +37,7 @@ namespace std {
         off: i64,
         reclen: u16,
         type_: u8,
-        name: char'c[256]
+        name: char 'c[256]
     };
 
     namespace directory {

@@ -39,13 +39,10 @@ macro to_str(v) {
     (
         if type::is_int(typeof (v))
             => ::std::string::from_int(v)
-        else if type:is_uint(typeof (v))
+        else if type::is_uint(typeof (v))
             => ::std::string::from_uint(v)
         else if type::( (typeof (v)) == bool)
-            => if (v) == true =>
-                str!{"true"}
-            else
-                str!{"false"}
+            => if (v) => str!{"true"} else str!{"false"}
         else if type::((typeof (v)) == void)
             => str!{"void"}
         else if type::((typeof (v)) == char)
