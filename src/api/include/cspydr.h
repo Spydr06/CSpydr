@@ -160,6 +160,7 @@ enum CSPYDR_TOKEN_TYPE {
     CSPYDR_TOKEN(USING),        // using
     CSPYDR_TOKEN(WHILE),        // while
     CSPYDR_TOKEN(WITH),         // with
+    CSPYDR_TOKEN(OPERATOR_KW),   // operator keyword
 
     CSPYDR_TOKEN(CURRENT_FN),   // special token for the __func__! macro
 

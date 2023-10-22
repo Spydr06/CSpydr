@@ -393,11 +393,29 @@
 					}
 				},
 				{
+					"name": "meta.function-operator.declaration.cspydr",
+				"match": "(?:\\bextern\\s+)?(\\boperator)\\s+((?:\\+|\\-|\\*|/|%|=|&|<|>|\\^|\\||!|\\?|\\.|:|~)*)",
+					"captures": {
+						"1": {
+							"name": "keyword.operator.cspydr"
+						},
+						"2": {
+							"name": "entity.name.function.cspydr"
+						},
+						"3": {
+							"name": "punctuation.begin.bracket"
+						}
+					}
+				},
+				{
 					"name": "meta.function.argument-list.cspydr",
-					"begin": "(?<=fn.*?)(\\()",
+					"begin": "(?<=(fn|operator).*?)(\\()",
 					"beginCaptures": {
 						"1": {
 							"name": "punctuation.begin.bracket.cspydr"
+						},
+						"2": {
+							"name": "punctuation.begin.bracket"
 						}
 					},
 					"end": "(\\))",

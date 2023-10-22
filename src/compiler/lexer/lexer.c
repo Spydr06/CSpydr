@@ -45,6 +45,7 @@ const struct {
     {"namespace", TOKEN_NAMESPACE},
     {"nil", TOKEN_NIL},
     {"noop", TOKEN_NOOP},
+    {"operator", TOKEN_OPERATOR_KW},
     {"ret", TOKEN_RETURN},
     {"sizeof", TOKEN_SIZEOF},
     {"struct", TOKEN_STRUCT},
@@ -77,12 +78,19 @@ const struct {
     {"³", TOKEN_POW_3},
     {"$", TOKEN_DOLLAR},
     {"@", TOKEN_AT},
-    {"...", TOKEN_VA_LIST},
-    {"<-", TOKEN_RETURN},
-    {"=>", TOKEN_ARROW},
     {"`", TOKEN_INFIX_CALL},
     {NULL, TOKEN_EOF}   // the last one has to be null as an indicator for the end of the array
 };  
+
+const struct {
+    const char* symbol; 
+    TokenType_T type;
+} operator_overrides[] = {
+    {"...", TOKEN_VA_LIST},
+    {"<-", TOKEN_RETURN},
+    {"=>", TOKEN_ARROW},
+    {NULL, 0}
+};
 
 static void lexer_skip_whitespace(Lexer_T* lexer);
 static void lexer_skip_comment(Lexer_T* lexer);
@@ -429,7 +437,7 @@ static Token_T* lexer_get_char(Lexer_T* lexer)
     return token;
 }
 
-static bool is_operator_char(char c)
+static inline bool is_operator_char(char c)
 {
     switch(c)
     {
@@ -466,6 +474,14 @@ static Token_T* lexer_get_operator(Lexer_T* lexer)
     }
 
     Token_T* operator = init_token(buffer, lexer->line, lexer->pos - 1, TOKEN_OPERATOR, lexer->file);
+
+    for(size_t i = 0; operator_overrides[i].symbol; i++)
+        if(strcmp(operator->value, operator_overrides[i].symbol) == 0)
+        {
+            operator->type = operator_overrides[i].type;
+            break;
+        }
+
     return operator;
 }
 

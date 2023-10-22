@@ -59,6 +59,7 @@ typedef enum
 
     PREC_ASSIGN,            // x = y
     PREC_PIPE,              // x |> y
+    PREC_CUSTOM_OPERATOR,   // custom operators
     PREC_LOGIC_OR,          // x || y
     PREC_LOGIC_AND,         // x && y
     PREC_INFIX_CALL,        // x `y` z
@@ -129,6 +130,8 @@ static ASTNode_T* parse_type_expr(Parser_T* p);
 static ASTNode_T* parse_infix_call(Parser_T* p, ASTNode_T* left);
 
 static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left);
+static ASTNode_T* parse_custom_infix_operator(Parser_T* p, ASTNode_T* left);
+static ASTNode_T* parse_custom_prefix_operator(Parser_T* p);
 static ASTNode_T* parse_cast(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left);
 static ASTNode_T* parse_pipe(Parser_T* p, ASTNode_T* left);
@@ -287,10 +290,9 @@ static inline PrefixParseFn_T get_PrefixParseFn_T(Parser_T* p, Token_T* tok)
     if(tok->type == TOKEN_OPERATOR)
     {
         OperatorContext_T* context = hashmap_get(p->operator_context, tok->value);
-        if(!context)
-            throw_error(p->context, ERR_SYNTAX_ERROR, tok, "custom operators not supported yet");
-        
-        return context->pfn;
+        if(context)
+            return context->pfn;
+        return parse_custom_prefix_operator;
     }
     else
         return expr_parse_fns[tok->type].pfn;
@@ -301,10 +303,9 @@ static inline InfixParseFn_T get_InfixParseFn_T(Parser_T* p, Token_T* tok)
     if(tok->type == TOKEN_OPERATOR)
     {
         OperatorContext_T* context = hashmap_get(p->operator_context, tok->value);
-        if(!context)
-            throw_error(p->context, ERR_SYNTAX_ERROR, tok, "custom operators not supported yet");
-        
-        return context->ifn;
+        if(context)
+            return context->ifn;
+        return parse_custom_infix_operator;
     }
     else
         return expr_parse_fns[tok->type].ifn;
@@ -315,10 +316,9 @@ static inline Precedence_T get_precedence(Parser_T* p, Token_T* tok)
     if(tok->type == TOKEN_OPERATOR)
     {
         OperatorContext_T* context = hashmap_get(p->operator_context, tok->value);
-        if(!context)
-            throw_error(p->context, ERR_SYNTAX_ERROR, tok, "custom operators not supported yet");
-        
-        return context->precedence;
+        if(context)
+            return context->precedence;
+        return PREC_CUSTOM_OPERATOR;
     }
     else
         return expr_parse_fns[tok->type].prec;
@@ -558,7 +558,7 @@ static ASTIdentifier_T* __parse_identifier(Parser_T* p, ASTIdentifier_T* outer, 
     if(tok_is_operator(p, STATIC_MEMBER) && !is_simple && parser_peek(p, 1)->type == TOKEN_ID)
     {
         if(is_operator(parser_peek(p, 1), "<"))
-           return id; // :: followed by < would be a generic in a functon or -call 
+           return id; // :: followed by < would be a generic in a function call 
         
         parser_advance(p);
         return __parse_identifier(p, id, false);
@@ -917,6 +917,7 @@ static ASTObj_T* parse_extern_def(Parser_T *p, bool is_extern_c)
                 throw_error(p->context, ERR_SYNTAX_WARNING, ext_var->value->tok, "cannot set a value to an extern variable");
             return ext_var;
         }
+        case TOKEN_OPERATOR_KW:
         case TOKEN_FN:
         {
             ASTObj_T* ext_fn = parse_fn_def(p);
@@ -1017,15 +1018,33 @@ static ASTNode_T* parse_stmt(Parser_T* p, bool needs_semicolon);
 static ASTObj_T* parse_fn_def(Parser_T* p)
 {
     ASTObj_T* fn = init_ast_obj(OBJ_FUNCTION, p->tok);
-    parser_consume(p, TOKEN_FN, "expect `fn` keyword for a function definition");
+    bool is_operator_define = false;
 
-    fn->id = parse_simple_identifier(p);
+    if(tok_is(p, TOKEN_OPERATOR_KW))
+    {  
+        parser_advance(p);
+        fn->id = init_ast_identifier(p->tok, p->tok->value);
+        if(p->tok->type != TOKEN_OPERATOR)
+            throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "expect operator after `operator`");
+        if(hashmap_get(p->operator_context, p->tok->value))
+            throw_error(p->context, ERR_REDEFINITION, p->tok, "redefinition of built-in operator `%s`", p->tok->value);
+        parser_advance(p);
+        is_operator_define = true;
+    }
+    else 
+    {
+        parser_consume(p, TOKEN_FN, "expect `fn` keyword for a function definition");
+        fn->id = parse_simple_identifier(p);
+    }
 
     parser_consume(p, TOKEN_LPAREN, "expect `(` after function name");
-
+    
     ASTIdentifier_T* va_id = NULL;
     fn->args = parse_argument_list(p, TOKEN_RPAREN, &va_id);
     mem_add_list(fn->args);
+
+    if(is_operator_define && fn->args->size != 1 && fn->args->size != 2)
+        throw_error(p->context, ERR_SYNTAX_ERROR_UNCR, fn->tok, "`operator` functions can only take one or two arguments, got `%zu`", fn->args->size);
 
     if(va_id)
     {
@@ -1183,6 +1202,7 @@ void parse_obj(Parser_T* p, List_T* obj_list)
             list_push(obj_list, parse_global(p));
             break;
         case TOKEN_FN:
+        case TOKEN_OPERATOR_KW:
             list_push(obj_list, parse_fn(p));
             break;
         case TOKEN_EXTERN:  
@@ -2279,6 +2299,39 @@ static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left)
 
     call->args = parse_expr_list(p, TOKEN_RPAREN, true);
     parser_consume(p, TOKEN_RPAREN, "expect `)` after call arguments");
+
+    return call;
+}
+
+static ASTNode_T* parse_custom_prefix_operator(Parser_T* p)
+{
+    ASTNode_T* call = init_ast_node(ND_CALL, p->tok);
+    call->expr = init_ast_node(ND_ID, p->tok);
+    call->expr->id = init_ast_identifier(p->tok, p->tok->value);
+
+    parser_consume(p, TOKEN_OPERATOR, "expect operator");
+
+    ASTNode_T* arg = parse_expr(p, PREC_UNARY, TOKEN_SEMICOLON);
+
+    call->args = init_list();
+    list_push(call->args, arg);
+
+    return call;
+}
+
+static ASTNode_T* parse_custom_infix_operator(Parser_T* p, ASTNode_T* left)
+{
+    ASTNode_T* call = init_ast_node(ND_CALL, p->tok);
+    call->expr = init_ast_node(ND_ID, p->tok);
+    call->expr->id = init_ast_identifier(p->tok, p->tok->value);
+
+    parser_consume(p, TOKEN_OPERATOR, "expect operator");
+
+    ASTNode_T* right = parse_expr(p, PREC_CUSTOM_OPERATOR, TOKEN_SEMICOLON);
+
+    call->args = init_list();
+    list_push(call->args, left);
+    list_push(call->args, right);
 
     return call;
 }

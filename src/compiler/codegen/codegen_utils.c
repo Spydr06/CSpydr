@@ -9,6 +9,8 @@
 #include "timer/timer.h"
 
 #include <libgen.h>
+#include <ctype.h>
+#include <limits.h>
 #include <string.h>
 #include <glob.h>
 #include <libgen.h>
@@ -16,18 +18,10 @@
 static void escape_callee(char* dst, ASTIdentifier_T* id)
 {
     for(char* c = id->callee; *c; c++)
-        switch(*c) {
-            case '?':
-                strcat(dst, "$qmark");
-                break;
-            case '\'':
-                strcat(dst, "$quote");
-                break;
-            default: {
-                char buf[2] = {*c, '\0'};
-                strcat(dst, buf);
-            } break;
-        }
+        if(!isalnum(*c) && *c != '_')
+            snprintf(dst + strlen(dst), 4, "$%02x", (int) *c);
+        else
+            dst[strlen(dst)] = *c;
 }
 
 static List_T* get_id_path(ASTIdentifier_T* id) {
