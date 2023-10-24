@@ -170,7 +170,13 @@ $ cspc --help
 
 Editor support is found in the **[editors/](./editors)** subdirectory.
 
-Currently, only [Visual Studio Code](https://code.visualstudio.com/) is supported.
+Supported editors include:
+
+- [NeoVim/Vim](./editors/neovim)
+- [VSCode](./editors/vscode)
+
+> **Note**
+> For quick installation, use the `install.sh` script in the respective subdirectory.
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
