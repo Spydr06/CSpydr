@@ -177,4 +177,14 @@ namespace std {
             }
         }
     }
+
+    namespace args {
+        fn shift(argc: &i32, argv: &&const &const char): &const char {
+            do ret nil unless *argc > 0;
+            const first = * *argv;
+            (*argc)--;
+            (*argv)++;
+            <- first;
+        }
+    }
 }
