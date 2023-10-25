@@ -83,10 +83,10 @@ f80 interpreter_value_f80(InterpreterValue_T* value);
 
 #define interpreter_values_equal(a, b) (memcmp(&(a).value, &(b).value, sizeof(InterpreterValueUnion_T)) == 0)
 
-#define ConstInterpeterValueList_M(sz) struct { \
-        size_t size;                            \
-        size_t allocated;                       \
-        InterpreterValue_T data[sz];            \
+#define ConstInterpreterValueList_M(sz) struct { \
+        size_t size;                             \
+        size_t allocated;                        \
+        InterpreterValue_T data[sz];             \
     }
 
 typedef struct INTERPRETER_VALUE_LIST_STRUCT

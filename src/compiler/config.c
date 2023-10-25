@@ -89,6 +89,14 @@ static bool assembly(Context_T* context) {
     return context->ct == CT_ASM;
 }
 
+static bool llvm(Context_T* context) {
+#ifdef CSPYDR_USE_LLVM
+    return context->ct == CT_LLVM;
+#else
+    return false;
+#endif
+}
+
 static bool interpreted(Context_T* context) {
     return context->ct == CT_INTERPRETER;
 }
@@ -99,6 +107,7 @@ const Config_T configurations[] = {
     {"macos", macos_set},
     {"codegen_c", transpiling},
     {"codegen_asm", assembly},
+    {"codegen_llvm", llvm},
     {"interpreted", interpreted},
     {NULL, NULL}
 };

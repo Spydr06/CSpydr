@@ -271,7 +271,7 @@ static Token_T* lexer_get_id(Lexer_T* lexer)
         is_macro = true;
     }
 
-    Token_T* id_token = init_token(buffer, lexer->line, lexer->pos - 1, is_macro ? TOKEN_MACRO_CALL : lexer_get_id_type(buffer), lexer->file);
+    Token_T* id_token = init_token(buffer, lexer->line, lexer->pos - 1 - (int) is_macro, is_macro ? TOKEN_MACRO_CALL : lexer_get_id_type(buffer), lexer->file);
 
     if(str_starts_with(id_token->value, "__csp_"))
         throw_error(lexer->context, ERR_SYNTAX_WARNING, id_token, "Unsafe identifier name:\nidentifiers starting with `__csp_` may be used internally");

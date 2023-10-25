@@ -243,7 +243,7 @@ i32 interpreter_pass(Context_T* context, ASTProg_T* ast)
             break;
         case MFK_ARGV_PTR:
         {
-            const ConstInterpeterValueList_M(1) args = {
+            const ConstInterpreterValueList_M(1) args = {
                 .size = 1,
                 .data = {push_argv(&ictx)}
             };
@@ -251,7 +251,7 @@ i32 interpreter_pass(Context_T* context, ASTProg_T* ast)
         } break;
         case MFK_ARGC_ARGV_PTR:
         {
-            const ConstInterpeterValueList_M(2) args = {
+            const ConstInterpreterValueList_M(2) args = {
                 .size = 2,
                 .data = {I32_VALUE(context->args.argc), push_argv(&ictx)}
             };

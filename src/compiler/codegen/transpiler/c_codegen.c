@@ -25,8 +25,6 @@
 #include "debugger/register.h"
 #include "timer/timer.h"
 
-#define either(a, b) ((a) ? (a) : (b))
-
 #define ID_PREFIX  "__csp_"
 #define MAIN_FN_ID ID_PREFIX "main"
 #define UNIQUE_ID_FMT "_unique_id_%04" PRIx64
@@ -828,7 +826,7 @@ static void c_gen_globals(CCodegenData_T* cg, List_T* objs)
             {
                 if(obj->is_extern)
                     c_print(cg, "extern ");
-                c_gen_typed_name_str(cg, obj->is_extern ? either(obj->exported, obj->id->callee) : c_gen_identifier(obj->id), obj->data_type);
+                c_gen_typed_name_str(cg, obj->is_extern ? EITHER(obj->exported, obj->id->callee) : c_gen_identifier(obj->id), obj->data_type);
                 if(obj->value)
                 {
                     c_print(cg, " = ");
@@ -868,7 +866,7 @@ static void c_gen_function_declaration(CCodegenData_T* cg, ASTObj_T* obj)
     }
     else
         c_gen_type(cg, obj->return_type, false);
-    c_print(cg, " %s(", obj->is_extern ? either(obj->exported, obj->id->callee) : c_gen_identifier(obj->id));
+    c_print(cg, " %s(", obj->is_extern ? EITHER(obj->exported, obj->id->callee) : c_gen_identifier(obj->id));
     
     for(size_t i = 0; i < obj->args->size; i++)
     {
@@ -1415,7 +1413,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node, bool with_casts)
             c_putc(cg, ')');
             break;
         case ND_ID:
-            c_print(cg, "%s", node->referenced_obj && node->referenced_obj->is_extern ? either(node->referenced_obj->exported, node->id->callee) : c_gen_identifier(node->id));
+            c_print(cg, "%s", node->referenced_obj && node->referenced_obj->is_extern ? EITHER(node->referenced_obj->exported, node->id->callee) : c_gen_identifier(node->id));
             break;
         case ND_CALL:
         {

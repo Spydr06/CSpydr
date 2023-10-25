@@ -360,7 +360,7 @@ static IdentifierSearchResult_T search_identifier(Validator_T* v, Scope_T* scope
     {
         IdentifierSearchResult_T outer_result = search_identifier(v, scope, id->outer);
         if(!outer_result.found)
-            return id_not_found(either(id->outer, id));
+            return id_not_found(EITHER(id->outer, id));
         ASTObj_T* outer_obj = outer_result.obj;
 
         switch(outer_obj->kind)

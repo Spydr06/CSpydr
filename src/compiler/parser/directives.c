@@ -38,8 +38,12 @@ EVAL_FN(cfg);
 EVAL_FN(copy);
 EVAL_FN(deprecated);
 EVAL_FN(drop);
+EVAL_FN(env_defined);
+EVAL_FN(env_eq);
+EVAL_FN(env_ne);
 EVAL_FN(export);
 EVAL_FN(flag);
+EVAL_FN(immutable);
 EVAL_FN(link_dir);
 EVAL_FN(link_obj);
 EVAL_FN(link);
@@ -90,6 +94,24 @@ static const Directive_T DIRECTIVES[] = {
         eval_drop,
     },
     {
+        "env_defined",
+        1,
+        ANY,
+        eval_env_defined
+    },
+    {
+        "env_eq",
+        2,
+        ANY,
+        eval_env_eq
+    },
+    {
+        "env_ne",
+        2,
+        ANY,
+        eval_env_ne
+    },
+    {
         "export", 
         1,
         OBJ_FUNCTION | OBJ_GLOBAL,
@@ -100,6 +122,12 @@ static const Directive_T DIRECTIVES[] = {
         0,
         OBJ_TYPEDEF,
         eval_flag,
+    },
+    {
+        "immutable",
+        0,
+        OBJ_TYPEDEF,
+        eval_immutable
     },
     {
         "link_dir",
@@ -309,14 +337,22 @@ EVAL_FN(cc)
 
 EVAL_FN(cfg)
 {
+    const char* cfg_name = data->arguments->items[0];
+    if(strlen(cfg_name) == 0)
+        return true;
+    
+    bool inverse = *cfg_name == '!';
+    if(inverse)
+        cfg_name++;
+
     for(size_t i = 0; configurations[i].name; i++)
     {
         const Config_T* cfg = &configurations[i];
-        if(strcmp(cfg->name, data->arguments->items[0]) == 0)
-            return !cfg->set(context);
+        if(strcmp(cfg->name, cfg_name) == 0)
+            return inverse ? cfg->set(context) : !cfg->set(context);
     }
 
-    throw_error(context, ERR_UNDEFINED_UNCR, data->name_token, "undefined `cfg` directive `%s`", data->arguments->items[0]);
+    throw_error(context, ERR_UNDEFINED_UNCR, data->name_token, "undefined `cfg` directive `%s`", cfg_name);
     return false;
 }
 
@@ -457,6 +493,48 @@ EVAL_FN(drop)
     return false;   
 }
 
+EVAL_FN(env_defined)
+{
+    const char* env_name = data->arguments->items[0];
+    if(strlen(env_name) == 0)
+        return true;
+    
+    bool inverse = *env_name == '!';
+    if(inverse)
+        env_name++;
+
+    const char* env = getenv(env_name);
+    return inverse ? env != NULL : env == NULL;
+}
+
+EVAL_FN(env_eq)
+{
+    const char* env_name = data->arguments->items[0];
+    const char* cmp_val = data->arguments->items[1];
+    if(strlen(env_name) == 0)
+        return true;
+
+    const char* env = getenv(env_name);
+    if(!env)
+        return (bool) strlen(cmp_val);
+    
+    return (bool) strcmp(env, cmp_val);
+}
+
+EVAL_FN(env_ne)
+{
+    const char* env_name = data->arguments->items[0];
+    const char* cmp_val = data->arguments->items[1];
+    if(strlen(env_name) == 0)
+        return true;
+
+    const char* env = getenv(env_name);
+    if(!env)
+        return strlen(cmp_val) == 0;
+    
+    return strcmp(env, cmp_val) == 0;
+}
+
 EVAL_FN(export)
 {
     obj->exported = data->arguments->items[0];
@@ -495,6 +573,24 @@ EVAL_FN(flag)
             throw_error(context, ERR_OVERFLOW_UNCR, member->tok, "offset greater than %d in `[flag]` enum; `1 << %d` yields an overflow", ENUM_S * 8 - 1, offset - 1);
             errored = true;
         }
+    }
+
+    return false;
+}
+
+EVAL_FN(immutable)
+{
+    if(obj->data_type->kind != TY_STRUCT)
+    {
+        throw_error(context, ERR_TYPE_ERROR_UNCR, data->name_token, "`[immutable]` can only be applied to `enum` types");
+        return false;
+    }
+
+    for(size_t i = 0; i < obj->data_type->members->size; i++)
+    {
+        ASTNode_T* member = obj->data_type->members->items[i];
+        if(member->data_type->kind != TY_FN)
+            member->data_type->is_constant = true;
     }
 
     return false;

@@ -369,7 +369,7 @@ static void typecheck_return(ASTNode_T* ret, va_list args)
         return;
     }
 
-    Token_T* ret_tok = either(ret->return_val->tok, ret->tok);
+    Token_T* ret_tok = EITHER(ret->return_val->tok, ret->tok);
     if(!ret->return_val->data_type) {
         throw_error(t->context, ERR_INTERNAL, ret_tok, "no type");
     }

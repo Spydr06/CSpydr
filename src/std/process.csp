@@ -17,25 +17,34 @@ import "io.csp";
 macro MAX_EXIT_HANDLERS { 1024 }
 
 macro todo {
-    (::std::process::die_with_location(__file__!, __line__!, "reached todo!()", nil))
+    (::std::process::die_with_location(__file__, __line__, "reached todo!()", nil))
 }
 
 macro todo(reason) {
-    (::std::process::die_with_location(__file__!, __line__!, "reached todo!()", (reason)))
+    (::std::process::die_with_location(__file__, __line__, "reached todo!()", (reason)))
 }
 
 macro unreachable {
-    (::std::process::die_with_location(__file__!, __line__!, "reached unreachable!()", nil))
+    (::std::process::die_with_location(__file__, __line__, "reached unreachable!()", nil))
 }
 
 macro unreachable(reason) {
-    (::std::process::die_with_location(__file__!, __line__!, "reached unreachable!()", (reason)))
+    (::std::process::die_with_location(__file__, __line__, "reached unreachable!()", (reason)))
+}
+
+macro not_implemented {
+    (::std::process::die_with_location(__file__, __line__, __func__ "() is not implemented.", nil))
+}
+
+macro not_implemented(subject) {
+    (::std::process::die_with_location(__file__, __line__, subject " is not implemented.", nil))
 }
 
 namespace std {
     type ExitCode: enum {
         SUCCESS,
-        FAILURE
+        FAILURE,
+        PANIC
     };
 
     namespace process {
@@ -133,7 +142,7 @@ namespace std {
                 io::eprintf(": %s", reason);
             if msg != nil
                 io::eprintf(": %s", msg);
-            io::eputs("\n");
+            io::eputc('\n');
             exit(ExitCode::FAILURE);
         }
 
@@ -148,6 +157,15 @@ namespace std {
             }
             
             loop syscall::exit(exit_code);
+        }
+
+        [no_return]
+        fn panic(msg: &const char)
+        {
+            io::eputs("CSpydr panic:");
+            io::eputs(msg);
+            
+            loop syscall::exit(ExitCode::PANIC);
         }
 
         fn at_exit(func: fn(ExitCode)): bool 

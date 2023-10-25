@@ -15,15 +15,16 @@
 #include "relocation.h"
 #include "timer/timer.h"
 #include "linker.h"
+#include "util.h"
 
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
 #include <libgen.h>
 
-#define either(a, b) ((a) ? (a) : (b))
-
 #define CSPC_ASM_EXTERN_FN_POSTFIX "@GOTPCREL"
+
+#define LAMBDA_STACKPTR_FMT ".lambda$2estackptr$2e%ld"
 
 enum { I8, I16, I32, I64, U8, U16, U32, U64, F32, F64, F80, LAST };
 
@@ -910,9 +911,9 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
                     {
                         ASTObj_T* obj = node->call->referenced_obj;
                         if(obj->is_extern_c)
-                            asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", either(obj->exported, node->id->callee));
+                            asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", EITHER(obj->exported, node->id->callee));
                         else if(obj->is_extern)
-                            asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", either(obj->exported, asm_gen_identifier(node->id)));
+                            asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", EITHER(obj->exported, asm_gen_identifier(node->id)));
                         else if(obj->kind != OBJ_FUNCTION)
                         {
                             asm_println(cg, "  lea %d(%%rbp), %%rax", node->referenced_obj->offset);
@@ -922,9 +923,9 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
                             asm_println(cg, "  lea %s(%%rip), %%rax", asm_gen_identifier(node->id));
                     }
                     else if(node->referenced_obj->is_extern_c)
-                        asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", either(node->referenced_obj->exported, node->id->callee));
+                        asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", EITHER(node->referenced_obj->exported, node->id->callee));
                     else if(node->referenced_obj->is_extern)
-                        asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", either(node->referenced_obj->exported, asm_gen_identifier(node->id)));
+                        asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", EITHER(node->referenced_obj->exported, asm_gen_identifier(node->id)));
                     else
                         asm_println(cg, "  lea %s(%%rip), %%rax", asm_gen_identifier(node->id));
                     return;
@@ -1550,9 +1551,9 @@ static void asm_gen_id_ptr(ASMCodegenData_T* cg, ASTNode_T* id)
             break;
         case OBJ_FUNCTION:
             if(id->referenced_obj->is_extern_c)
-                asm_print(cg, "%s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip)", either(id->referenced_obj->exported, id->id->callee));
+                asm_print(cg, "%s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip)", EITHER(id->referenced_obj->exported, id->id->callee));
             else if(id->referenced_obj->is_extern)
-                asm_print(cg, "%s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip)", either(id->referenced_obj->exported, asm_gen_identifier(id->id)));
+                asm_print(cg, "%s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip)", EITHER(id->referenced_obj->exported, asm_gen_identifier(id->id)));
             else
                 asm_print(cg, "%s(%%rip)", asm_gen_identifier(id->id));
             break;
@@ -1948,7 +1949,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
 
         case ND_LAMBDA:
             {
-                asm_println(cg, "  mov %%rbp, .lambda.stackptr.%ld", node->long_val);
+                asm_println(cg, "  mov %%rbp, " LAMBDA_STACKPTR_FMT, node->long_val);
                 asm_println(cg, "  lea lambda.%ld(%%rip), %%rax", node->long_val);
 
                 ASTObj_T* impl = init_ast_obj(OBJ_LAMBDA, node->tok);
@@ -2755,7 +2756,7 @@ static void asm_gen_lambda(ASMCodegenData_T* cg, ASTObj_T* lambda_obj)
     asm_println(cg, "  .type %s, @function", lambda_name);
     asm_println(cg, "%s:", lambda_name);
     asm_println(cg, "  push %%rbp");
-    asm_println(cg, "  mov .lambda.stackptr.%ld, %%rbp", lambda->long_val);
+    asm_println(cg, "  mov " LAMBDA_STACKPTR_FMT ", %%rbp", lambda->long_val);
 
     // save passed-by-register arguments to the stack
     i32 gp = 0, fp = 0;
