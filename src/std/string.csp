@@ -31,7 +31,7 @@ macro str(chptr) {
 
 # a macro to concatenate two strings
 macro concat(a, b) {
-    (::std::string::concat(&(a), (b)));
+    (::std::string::concat(&(a), (b)))
 }
 
 # convert any given value to a string

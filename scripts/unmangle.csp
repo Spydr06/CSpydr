@@ -27,12 +27,8 @@ fn unmangle(ident: &const char): std::String {
             std::string::append(&unmangled, chr);
             ident += 2;
         }
-        '.' => {
-            concat!(unmangled, "::");
-        }
-        _ => {
-            std::string::append(&unmangled, *ident);    
-        }
+        '.' => std::string::concat(&unmangled, "::");
+        _   => std::string::append(&unmangled, *ident);    
     } while *(ident += 1);
 
     <- unmangled;
