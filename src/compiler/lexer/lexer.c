@@ -106,6 +106,15 @@ void init_lexer(Lexer_T* lexer, Context_T* context, File_T* src)
     lexer->pos = 0;
     lexer->line = 0;
     lexer->c = get_char(lexer->file, lexer->line, lexer->pos);
+
+    lexer->tmp_buffer_size = LEXER_TMP_BUFFER_DEFAULT_SIZE;
+    lexer->tmp_buffer = malloc(lexer->tmp_buffer_size * sizeof(char));
+    *lexer->tmp_buffer = '\0';
+}
+
+void free_lexer(Lexer_T* lexer)
+{
+    free(lexer->tmp_buffer);
 }
 
 i32 lexer_pass(Context_T* context, ASTProg_T* ast)
@@ -123,6 +132,8 @@ i32 lexer_pass(Context_T* context, ASTProg_T* ast)
 
     // push EOF token
     list_push(ast->tokens, tok);
+
+    free_lexer(&lex);
     
     timer_stop(context);
     return 0;
@@ -256,11 +267,11 @@ static TokenType_T lexer_get_id_type(char* id)
 
 static Token_T* lexer_get_id(Lexer_T* lexer)
 {
-    char buffer[BUFSIZ] = {'\0'};
+    *lexer->tmp_buffer = '\0';
 
     while(isalnum(lexer->c) || lexer->c == '_' || lexer->c == '?' || lexer->c == '\'')
     {
-        strcat(buffer, (char[]){lexer->c, '\0'});
+        strcat(lexer->tmp_buffer, (char[]){lexer->c, '\0'});
         lexer_advance(lexer);
     }
 
@@ -271,7 +282,7 @@ static Token_T* lexer_get_id(Lexer_T* lexer)
         is_macro = true;
     }
 
-    Token_T* id_token = init_token(buffer, lexer->line, lexer->pos - 1 - (int) is_macro, is_macro ? TOKEN_MACRO_CALL : lexer_get_id_type(buffer), lexer->file);
+    Token_T* id_token = init_token(lexer->tmp_buffer, lexer->line, lexer->pos - 1 - (int) is_macro, is_macro ? TOKEN_MACRO_CALL : lexer_get_id_type(lexer->tmp_buffer), lexer->file);
 
     if(str_starts_with(id_token->value, "__csp_"))
         throw_error(lexer->context, ERR_SYNTAX_WARNING, id_token, "Unsafe identifier name:\nidentifiers starting with `__csp_` may be used internally");
@@ -284,7 +295,7 @@ static Token_T* lexer_get_int(Lexer_T* lexer, const char* digits, i32 base)
     lexer_advance(lexer);    // cut the '0x'
     lexer_advance(lexer);
 
-    char buffer[BUFSIZ] = {'\0'};
+    *lexer->tmp_buffer = '\0';
 
     while(strchr(digits, lexer->c))
     {
@@ -293,23 +304,22 @@ static Token_T* lexer_get_int(Lexer_T* lexer, const char* digits, i32 base)
             lexer_advance(lexer);
             continue;
         }
-        strcat(buffer, (char[2]){lexer->c, '\0'});
+        strcat(lexer->tmp_buffer, (char[2]){lexer->c, '\0'});
 
         lexer_advance(lexer);
     }
 
-    u64 decimal = strtoll(buffer, NULL, base);
-    sprintf(buffer, "%lu", decimal);
+    u64 decimal = strtoll(lexer->tmp_buffer, NULL, base);
+    sprintf(lexer->tmp_buffer, "%lu", decimal);
 
-    Token_T* token = init_token(buffer, lexer->line, lexer->pos, TOKEN_INT, lexer->file);
+    Token_T* token = init_token(lexer->tmp_buffer, lexer->line, lexer->pos, TOKEN_INT, lexer->file);
     return token;
 }
 
 static Token_T* lexer_get_decimal(Lexer_T* lexer)
 {
-    char buffer[BUFSIZ] = {'\0'};
-
     TokenType_T type = TOKEN_INT;
+    *lexer->tmp_buffer = '\0';
 
     while(isdigit(lexer->c) || lexer->c == '.' || lexer->c == '_')
     {
@@ -319,13 +329,13 @@ static Token_T* lexer_get_decimal(Lexer_T* lexer)
             continue;
         }
 
-        strcat(buffer, (char[2]){lexer->c, '\0'});
+        strcat(lexer->tmp_buffer, (char[2]){lexer->c, '\0'});
 
         if(lexer->c == '.')
         {   
             if(lexer_peek(lexer, 1) == '.')
             {
-                Token_T* token = init_token(buffer, lexer->line, lexer->pos, type, lexer->file);
+                Token_T* token = init_token(lexer->tmp_buffer, lexer->line, lexer->pos, type, lexer->file);
                 return token;
             }
 
@@ -337,7 +347,7 @@ static Token_T* lexer_get_decimal(Lexer_T* lexer)
         lexer_advance(lexer);
     }
 
-    Token_T* token = init_token(buffer, lexer->line, lexer->pos - 1, type, lexer->file);
+    Token_T* token = init_token(lexer->tmp_buffer, lexer->line, lexer->pos - 1, type, lexer->file);
     return token;
 }
 
@@ -465,15 +475,15 @@ static inline bool is_operator_char(char c)
 
 static Token_T* lexer_get_operator(Lexer_T* lexer)
 {
-    char buffer[BUFSIZ] = {'\0'};
+    *lexer->tmp_buffer = '\0';
 
     while(is_operator_char(lexer->c))
     {
-        strcat(buffer, (char[]){lexer->c, '\0'});
+        strcat(lexer->tmp_buffer, (char[]){lexer->c, '\0'});
         lexer_advance(lexer);
     }
 
-    Token_T* operator = init_token(buffer, lexer->line, lexer->pos - 1, TOKEN_OPERATOR, lexer->file);
+    Token_T* operator = init_token(lexer->tmp_buffer, lexer->line, lexer->pos - 1, TOKEN_OPERATOR, lexer->file);
 
     for(size_t i = 0; operator_overrides[i].symbol; i++)
         if(strcmp(operator->value, operator_overrides[i].symbol) == 0)
