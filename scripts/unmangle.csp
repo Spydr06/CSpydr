@@ -1,0 +1,39 @@
+#!cspc run
+import "libc/stdio.csp";
+import "std.csp";
+
+fn main(argc: i32, argv: &&char): i32 {
+    const program_name = std::args::shift(&argc, &argv);
+    do {
+        std::io::eprintf("Usage: %s <identifier>\n", program_name);
+        <- 1;
+    } unless argc == 1;
+
+    with unmangled = unmangle(*argv)
+        std::io::puts(unmangled);
+
+    <- 0;
+}
+
+fn unmangle(ident: &const char): std::String {
+    let unmangled = str![];
+    ident += (*ident == '.'): u8;
+
+    do match *ident {
+        '$' => {
+            let chr = 0;
+            if libc::sscanf(ident, "$%02x", &chr) == EOF!
+                std::process::die("Incorrectly formend `$` escape in identifier.");
+            std::string::append(&unmangled, chr);
+            ident += 2;
+        }
+        '.' => {
+            concat!(unmangled, "::");
+        }
+        _ => {
+            std::string::append(&unmangled, *ident);    
+        }
+    } while *(ident += 1);
+
+    <- unmangled;
+}

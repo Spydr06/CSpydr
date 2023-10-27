@@ -49,8 +49,8 @@ extern "C" {
 
 extern "C" {
 
-    fn remove(filename: const &char): i32;
-    fn rename(old: const &char, new: const &char);
+    fn remove(filename: &const char): i32;
+    fn rename(old: &const char, new: &const char);
 
     fn tmpfile(): &libc::FILE;
     fn tmpnam(s: &char): &char;
@@ -58,38 +58,38 @@ extern "C" {
     [drop]
     fn fclose(stream: &libc::FILE): i32;
     fn fflush(stream: &libc::FILE): i32;
-    fn fopen(filename: const &char, mode: const &char): &libc::FILE;
-    fn freopen(filename: const &char, mode: const &char, stream: &libc::FILE): &libc::FILE;
+    fn fopen(filename: &const char, mode: &const char): &libc::FILE;
+    fn freopen(filename: &const char, mode: &const char, stream: &libc::FILE): &libc::FILE;
 
     fn setbuf(stream: &libc::FILE, buf: &char);
     fn setvbuf(stream: &libc::FILE, buf: &char, mode: i32, size: size_t): i32;
 
-    fn fprintf(stream: &libc::FILE, format: const &char, args: ...): i32;
-    fn fscanf(stream: &libc::FILE, format: const &char, args: ...): i32;
-    fn printf(format: const &char, args: ...): i32;
-    fn scanf(format: const &char, args: ...): i32;
-    fn snprintf(s: &char, n: size_t, format: const &char, args: ...): i32;
-    fn sprintf(s: &char, format: const &char, args: ...): i32;
-    fn sscanf(s: const &char, format: const &char, args: ...): i32;
+    fn fprintf(stream: &libc::FILE, format: &const char, args: ...): i32;
+    fn fscanf(stream: &libc::FILE, format: &const char, args: ...): i32;
+    fn printf(format: &const char, args: ...): i32;
+    fn scanf(format: &const char, args: ...): i32;
+    fn snprintf(s: &char, n: size_t, format: &const char, args: ...): i32;
+    fn sprintf(s: &char, format: &const char, args: ...): i32;
+    fn sscanf(s: &const char, format: &const char, args: ...): i32;
 
-    fn vfprintf(stream: &void, format: const &char, arg: &void): i32;
-    fn vfscanf(stream: &libc::FILE, format: const &char, arg: &void): i32;
-    fn vprintf(format: const &char, arg: &void): i32;
-    fn vscanf(format: const &char, arg: &void): i32;
-    fn vsnprintf(s: &char, n: size_t, format: const &char, arg: &void): i32;
-    fn vsprintf(s: &char, format: const &char, arg: &void): i32;
-    fn vsscanf(s: const &char, format: const &char, arg: &void): i32;
+    fn vfprintf(stream: &void, format: &const char, arg: &void): i32;
+    fn vfscanf(stream: &libc::FILE, format: &const char, arg: &void): i32;
+    fn vprintf(format: &const char, arg: &void): i32;
+    fn vscanf(format: &const char, arg: &void): i32;
+    fn vsnprintf(s: &char, n: size_t, format: &const char, arg: &void): i32;
+    fn vsprintf(s: &char, format: &const char, arg: &void): i32;
+    fn vsscanf(s: &const char, format: &const char, arg: &void): i32;
 
     fn fgetc(stream: &libc::FILE): i32;
     fn fgets(s: &char, n: i32, stream: &libc::FILE): &char;
     fn fputc(c: i32, stream: &libc::FILE): i32;
-    fn fputs(s: const &char, stream: &libc::FILE): i32;
+    fn fputs(s: &const char, stream: &libc::FILE): i32;
 
     fn getc(stream: &libc::FILE): i32;
     fn getchar(): i32;
     fn putc(c: i32, stream: &libc::FILE): i32;
     fn putchar(c: i32): i32;
-    fn puts(s: const &char): i32; 
+    fn puts(s: &const char): i32; 
 
     fn ungetc(c: i32, stream: &libc::FILE): i32;
 
@@ -105,7 +105,7 @@ extern "C" {
     fn clearerr(stream: &libc::FILE);
     fn feof(stream: &libc::FILE): i32;
     fn ferror(stream: &libc::FILE): i32;
-    fn perror(s: const &char): i32;
+    fn perror(s: &const char): i32;
 
 }
 }
