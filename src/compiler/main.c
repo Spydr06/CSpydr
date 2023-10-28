@@ -70,7 +70,8 @@ typedef enum ACTION_ENUM
     AC_BUILD,
     AC_RUN,
     AC_LIB,
-    AC_DEBUG
+    AC_DEBUG,
+    AC_SHELL,
 } Action_T;
 
 const char usage_text[] = COLOR_BOLD_WHITE "Usage:" COLOR_RESET " cspc [run, build, debug] [<input file> <flags>]\n"
@@ -149,6 +150,7 @@ const struct {
     {"run",   AC_RUN},
     {"debug", AC_DEBUG},
     {"lib",   AC_LIB},
+    {"shell", AC_SHELL},
     {NULL, -1}
 };
 
@@ -181,17 +183,30 @@ i32 main(i32 argc, char* argv[])
         evaluate_info_flags(&context, argv[1]);
 
     // get the action to perform
+
     Action_T action = AC_NULL;
     context.ct = DEFAULT_COMPILE_TYPE;
     for(i32 i = 0; action_table[i].as_str; i++)
         if(streq(argv[1], action_table[i].as_str))
             action = action_table[i].ac;
-    if(action == AC_NULL)
+    switch(action)
     {
+    case AC_NULL:
         LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " unknown action \"%s\", expect one of [build, run, debug, lib]\n", argv[1]);
         exit(1);
+    case AC_SHELL:
+        context.flags.silent = true;
+        // fall through
+    case AC_RUN: 
+        context.flags.run_after_compile = true;
+        context.flags.delete_executable = true;
+        break;
+    case AC_LIB:
+        context.flags.require_entrypoint = false;
+        break;
+    default:
+        break;
     }
-    context.flags.require_entrypoint = action != AC_LIB;
 
     // declare the input files
     char* input_file = argv[2];
@@ -203,6 +218,12 @@ i32 main(i32 argc, char* argv[])
     // remove the first three flags form argc/argv
     argc -= 3;
     argv += 3;
+
+    if(action == AC_SHELL)
+    {
+        store_exec_args(&context, argc, argv, action); 
+        argc = 0;
+    }
 
     // get default output file
     char* output_file = default_output_file(action, input_file);
@@ -301,14 +322,9 @@ i32 main(i32 argc, char* argv[])
         case AC_DEBUG:
             debug_repl(&context, input_file, output_file);
             break;
-        case AC_RUN:
-            if(context.ct != CT_INTERPRETER)
-            {
-                run(&context, output_file);
-                remove(output_file);
-            } break;
         default:
-            LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " unknown action `%d`\n", action);
+            if(context.flags.run_after_compile)
+                run(&context, output_file);
             break;
     }
 
@@ -397,24 +413,19 @@ static void run(Context_T* context, char* filename)
             LOG_OK_F(COLOR_RESET "`%s`%s", context->args.argv[i], context->args.argc - i > 1 ? ", " : "]\n" COLOR_RESET);
     }
 
-    size_t cmd_len = strlen(filename) + 3;
-    char cmd[cmd_len];
-    memset(cmd, 0, cmd_len);
-    sprintf(cmd, "." DIRECTORY_DELIMS "%s", filename);
-
     const char* argv[context->args.argc + 2];
-    argv[0] = cmd;
+    argv[0] = filename;
     if(context->args.argc && context->args.argv != NULL)
         memcpy(argv + 1, context->args.argv, context->args.argc * sizeof(const char*));
     argv[context->args.argc + 1] = NULL;
 
-    context->last_exit_code = subprocess(cmd, (char* const*) argv, !context->flags.silent);
+    context->last_exit_code = subprocess(filename, (char* const*) argv, !context->flags.silent);
     timer_stop(context);
 }
 
 static void store_exec_args(Context_T* context, i32 argc, char* argv[], Action_T action) 
 {
-    if(action != AC_RUN)
+    if(!context->flags.run_after_compile)
     {
         LOG_WARN(COLOR_BOLD_YELLOW "[Warn]" COLOR_RESET COLOR_YELLOW " ignoring parameters [");
         for(i32 i = 0; i < argc; i++)

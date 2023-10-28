@@ -73,8 +73,10 @@ typedef union CSPYDR_FLAGS_STRUCT {
         bool clear_cache_after : 1;
         bool read_main_file_on_init : 1;
         bool require_entrypoint : 1;
+        bool run_after_compile : 1;
+        bool delete_executable : 1;
 
-        uint8_t __unused__ : 4;
+        uint8_t __unused__ : 2;
     };
     uint16_t flags;
 } CSPYDR_TYPE(Flags);

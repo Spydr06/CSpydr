@@ -1804,6 +1804,8 @@ static ASTNode_T* parse_stmt(Parser_T* p, bool needs_semicolon)
         case TOKEN_USING:
             return parse_using(p, needs_semicolon);
         case TOKEN_SEMICOLON:   // skip random semicolons in the code
+            throw_error(p->context, ERR_SYNTAX_WARNING, p->tok, "stray `;` found. If this is intentional, use `noop;`.");
+            // fall through
         case TOKEN_NOOP:
             {
                 ASTNode_T* noop = init_ast_node(ND_NOOP, p->tok);

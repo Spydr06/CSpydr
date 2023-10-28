@@ -1,4 +1,4 @@
-#!cspc run
+#!cspc shell
 import "libc/stdio.csp";
 import "std.csp";
 

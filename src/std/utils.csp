@@ -40,11 +40,11 @@ macro xor_swap(a, b) {
 
 # swaps two variables with a third buffer variable
 macro swap(a, b) {
-    {
+    do {
         let __swap_tmp = (a);
         (a) = (b);
         (b) = __swap_tmp;
-    }
+    } while (false)
 }
 
 macro either(a, b) {

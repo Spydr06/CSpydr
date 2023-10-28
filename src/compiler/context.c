@@ -12,6 +12,7 @@ Flags_T default_flags(void)
     flags.embed_debug_info = true;
     flags.do_linking = true;
     flags.do_assembling = true;
+    flags.require_entrypoint = true;
     return flags;
 }
 
