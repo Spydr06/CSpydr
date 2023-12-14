@@ -12,6 +12,7 @@
 
 import "memory.csp";
 import "cfg.csp";
+import "process.csp";
 
 # cast a value to a pointer type
 macro ptr(x) {
