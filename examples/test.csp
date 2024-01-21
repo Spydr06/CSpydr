@@ -1,0 +1,10 @@
+const foo: u64 = 10;
+
+fn add(a: i32, b: i32): i32 {
+    <- a + b;
+}
+
+fn main(): i32 {
+let x = add(34, 35) + foo;
+    <- x;
+}

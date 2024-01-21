@@ -179,7 +179,6 @@ size_t interpreter_value_list_push(InterpreterValueList_T** list, InterpreterVal
 
 void free_interpreter_value_list(InterpreterValueList_T* list)
 {
-    // cannot free constant lists
-    assert(list->allocated);
-    free(list);
+    if(list->allocated != 0)
+        free(list);
 }

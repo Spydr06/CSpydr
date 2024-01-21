@@ -173,11 +173,16 @@ static InterpreterValue_T (*const type_cast_map[TY_KIND_LEN][TY_KIND_LEN])(Inter
     [TY_ENUM] = { PRIMITIVE_MAP_ENTRY(Enum) }
 };
 
-static void assign_lvar_offsets(InterpreterContext_T* ictx);
+static void populate_stack(InterpreterContext_T* ictx);
 
 static void eval_stmt(InterpreterContext_T* ictx, ASTNode_T* stmt);
 static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr);
-static InterpreterValue_T call_fn(InterpreterContext_T* ictx, ASTObj_T* fn, const InterpreterValueList_T* args);
+static InterpreterValue_T call_fn(InterpreterContext_T* ictx, const ASTObj_T* fn, const InterpreterValueList_T* args);
+
+static LValue_T lvalue_from_id(InterpreterContext_T* ictx, ASTObj_T* obj, ASTType_T* ty);
+static InterpreterValue_T load_value(LValue_T lvalue);
+static LValue_T eval_lvalue(InterpreterContext_T* ictx, ASTNode_T* node);
+static void assign_lvalue(LValue_T dest, InterpreterValue_T* value);
 
 static void init_interpreter_context(InterpreterContext_T* ictx, Context_T* context, ASTProg_T* ast)
 {
@@ -185,6 +190,7 @@ static void init_interpreter_context(InterpreterContext_T* ictx, Context_T* cont
     ictx->ast = ast;
     ictx->stack = init_interpreter_stack(BUFSIZ);
     ictx->string_literals = hashmap_init();
+    ictx->broken = false;
 
     // assure that address 0 is always occupied
     u8 null_byte = 0;
@@ -224,6 +230,8 @@ i32 interpreter_pass(Context_T* context, ASTProg_T* ast)
             LOG_OK_F(COLOR_RESET "`%s`%s", context->args.argv[i], context->args.argc - i > 1 ? ", " : "]\n" COLOR_RESET);
     }
 
+    context->flags.run_after_compile = false;
+    
     InterpreterContext_T ictx;
     init_interpreter_context(&ictx, context, ast);
 
@@ -233,7 +241,7 @@ i32 interpreter_pass(Context_T* context, ASTProg_T* ast)
         return 1;
     }
 
-    assign_lvar_offsets(&ictx);
+    populate_stack(&ictx);
 
     InterpreterValue_T return_value;
     switch(ast->mfk)
@@ -279,11 +287,27 @@ static void collect_string_literal(ASTNode_T* str_lit, va_list args)
     }
 }
 
-static void assign_lvar_offsets(InterpreterContext_T* ictx)
+static void collect_global(ASTObj_T* obj, va_list args) {
+    InterpreterContext_T* ictx = va_arg(args, InterpreterContext_T*);
+
+    obj->offset = ictx->stack->size;
+    if(obj->value) 
+    {
+        InterpreterValue_T value = eval_expr(ictx, obj->value);
+        interpreter_stack_push(&ictx->stack, &value.value, obj->data_type->size);
+    }
+    else
+        interpreter_stack_grow(&ictx->stack, obj->data_type->size);
+}
+
+static void populate_stack(InterpreterContext_T* ictx)
 {
     static const ASTIteratorList_T iterator = {
         .node_start_fns = {
             [ND_STR] = collect_string_literal
+        },
+        .obj_start_fns = {
+            [OBJ_GLOBAL] = collect_global
         },
     };
     ast_iterate(&iterator, ictx->ast, ictx);
@@ -291,6 +315,7 @@ static void assign_lvar_offsets(InterpreterContext_T* ictx)
 
 static void eval_stmt(InterpreterContext_T* ictx, ASTNode_T* stmt)
 {
+    printf(">> stmt %d\n", stmt->kind);
     switch(stmt->kind)
     {
         case ND_NOOP:
@@ -306,11 +331,21 @@ static void eval_stmt(InterpreterContext_T* ictx, ASTNode_T* stmt)
             if(stmt->body)
                 eval_stmt(ictx, stmt->body);
             break;
-        case ND_BLOCK:
-            // TODO: register local variables
+        case ND_BLOCK: {
+            size_t stack_before = ictx->stack->size;
+            size_t stack_grow = 0;
+            for(size_t i = 0; i < stmt->locals->size; i++)
+            {
+                ASTObj_T* local = stmt->locals->items[i];
+                local->offset = ictx->stack->size;
+                stack_grow += local->data_type->size;
+            }
+            interpreter_stack_grow(&ictx->stack, stack_grow);
             for(size_t i = 0; i < stmt->stmts->size && !ictx->returned && !ictx->broken && !ictx->continued; i++)
                 eval_stmt(ictx, stmt->stmts->items[i]);
-            break;
+
+            interpreter_stack_shrink_to(ictx->stack, stack_before);
+        } break;
         case ND_IF:
             if(interpreter_value_is_falsy(eval_expr(ictx, stmt->condition)))
                 eval_stmt(ictx, stmt->else_branch);
@@ -446,6 +481,7 @@ static inline InterpreterValue_T eval_sub(InterpreterContext_T* ictx, ASTNode_T*
 
 static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr)
 {
+    printf(">> expr %d\n", expr->kind);
     switch(expr->kind)
     {
         case ND_NOOP:
@@ -538,13 +574,26 @@ static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr)
             return left_value;
         }
         INTEGER_INFIX_OP_CASE(ND_MOD, %);
-        // TODO: ND_ID
+        case ND_ID:
+        {
+            ASTObj_T* obj = expr->referenced_obj;
+            assert(obj != NULL);
+
+            return load_value(lvalue_from_id(ictx, obj, expr->data_type));
+        } break;
         // TODO: ND_MEMBER
         // TODO: ND_ARRAY
         // TODO: ND_STRUCT
         // TODO: ND_REF
         // TODO: ND_DEREF
-        // TODO: ND_ASSIGN
+        case ND_ASSIGN:
+        {
+            LValue_T dest = eval_lvalue(ictx, expr->left);
+            InterpreterValue_T value = eval_expr(ictx, expr->right);
+            assign_lvalue(dest, &value);
+            return value;
+        }
+
         // TODO: ND_LAMBDA
         case ND_CAST:
         {
@@ -604,7 +653,19 @@ static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr)
         COMPARISON_OP_CASE(ND_LE, <=);
         COMPARISON_OP_CASE(ND_GT, >);
         COMPARISON_OP_CASE(ND_GE, >=);
-        // TODO: ND_CALL
+        case ND_CALL: {
+            InterpreterValue_T callee = eval_expr(ictx, expr->expr);
+            InterpreterValueList_T* args = init_interpreter_value_list(expr->args->size);
+            for(size_t i = 0; i < expr->args->size; i++)
+            {
+                InterpreterValue_T arg = eval_expr(ictx, expr->args->items[i]);
+                interpreter_value_list_push(&args, &arg);
+            }
+
+            InterpreterValue_T result = call_fn(ictx, callee.value.fn_obj, args);
+            free_interpreter_value_list(args);
+            return result;
+        }
         default:
             throw_error(ictx->context, ERR_INTERNAL, expr->tok, "interpreting this expr not implemented yet");
     }
@@ -613,14 +674,112 @@ static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr)
     return VOID_VALUE;
 }
 
-static InterpreterValue_T call_fn(InterpreterContext_T* ictx, ASTObj_T* fn, const InterpreterValueList_T* args)
+static InterpreterValue_T call_fn(InterpreterContext_T* ictx, const ASTObj_T* fn, const InterpreterValueList_T* args)
 {
     assert(args->size == fn->args->size);
+    printf(COLOR_BOLD_CYAN ">>> Entering %s(%zu)\n" COLOR_RESET, fn->id->callee, args->size);
+    
+    size_t stack_size = ictx->stack->size;
+    for(size_t i = 0; i < args->size; i++) {
+        const InterpreterValue_T* arg_value = &args->data[i];
+        ASTObj_T* arg = fn->args->items[i];
+        arg->offset = ictx->stack->size;
+        interpreter_stack_push(&ictx->stack, &arg_value->value, arg->data_type->size);
+    }
+
     dump_stack(ictx->stack);
     
-    ictx->returned = false;
     eval_stmt(ictx, fn->body);
-    if(ictx->returned)
+
+    interpreter_stack_shrink_to(ictx->stack, stack_size);
+    printf(COLOR_BOLD_CYAN "<<<\n" COLOR_RESET);
+
+    if(ictx->returned) {
+        ictx->returned = false;     
         return ictx->return_value;
+    }
     return VOID_VALUE;
 }
+
+static LValue_T eval_lvalue(InterpreterContext_T* ictx, ASTNode_T* node) 
+{
+    switch(node->kind) {
+        case ND_ID:
+            assert(node->referenced_obj != NULL);
+            return lvalue_from_id(ictx, node->referenced_obj, node->data_type);
+        default:
+            throw_error(ictx->context, ERR_INTERNAL, node->tok, "interpreting this lvalue not implemented yet");
+    }
+}
+
+static LValue_T lvalue_from_id(InterpreterContext_T* ictx, ASTObj_T* obj, ASTType_T* ty)
+{
+    switch(obj->kind) {
+        case OBJ_LOCAL: 
+        case OBJ_FN_ARG:
+        case OBJ_GLOBAL:
+        {
+            assert(obj->offset != 0);
+            return (LValue_T) {
+                .ptr = &ictx->stack->data[obj->offset],
+                .type = ty
+            };
+        } break;
+        case OBJ_FUNCTION: {
+            return (LValue_T) {
+                .ptr = obj,
+                .type = ty
+            };
+        } break;
+        default:
+            fprintf(stderr, "not implemented: load %s.\n", obj_kind_to_str(obj->kind));
+            unreachable();
+    }
+}
+
+static InterpreterValue_T load_value(LValue_T lvalue)
+{ 
+    switch(lvalue.type->kind) {
+        case TY_I8:
+            return INT_VALUE(TY_I8, i8, *(i8*) lvalue.ptr);
+        case TY_I16:
+            return INT_VALUE(TY_I16, i16, *(i16*) lvalue.ptr);
+        case TY_I32:
+            return INT_VALUE(TY_I32, i32, *(i32*) lvalue.ptr);
+        case TY_I64:
+            return INT_VALUE(TY_I64, i64, *(i64*) lvalue.ptr);
+        case TY_U8:
+            return UINT_VALUE(TY_U8, u8, *(u8*) lvalue.ptr);
+        case TY_U16:
+            return UINT_VALUE(TY_U16, u16, *(u16*) lvalue.ptr);
+        case TY_U32:
+            return UINT_VALUE(TY_U32, u32, *(u32*) lvalue.ptr);
+        case TY_U64:
+            return UINT_VALUE(TY_U64, u64, *(u64*) lvalue.ptr);
+        case TY_F32:
+            return FLOAT_VALUE(TY_F32, f32, *(f32*) lvalue.ptr);
+        case TY_F64:
+            return FLOAT_VALUE(TY_F64, f64, *(f64*) lvalue.ptr);
+        case TY_F80:
+            return FLOAT_VALUE(TY_F80, f80, *(f80*) lvalue.ptr);
+        case TY_BOOL:
+            return BOOL_VALUE(*(bool*) lvalue.ptr);
+        case TY_CHAR:
+            return CHAR_VALUE(*(char*) lvalue.ptr);
+        case TY_VOID:
+            return VOID_VALUE;
+        case TY_PTR:
+            return PTR_VALUE(*(void**) lvalue.ptr, lvalue.type->base);
+        case TY_FN:
+            return (InterpreterValue_T){.type = lvalue.type, .value = (InterpreterValueUnion_T){.fn_obj = lvalue.ptr} };
+        default:
+            fprintf(stderr, "not implemented: load type %s.\n", type_kind_to_str(lvalue.type->kind));
+            unreachable();
+    }
+}
+
+static void assign_lvalue(LValue_T dest, InterpreterValue_T* value) {
+    assert(dest.type->size == value->type->size);
+    memcpy(dest.ptr, &value->value, dest.type->size);
+}
+

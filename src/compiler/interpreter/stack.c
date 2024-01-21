@@ -1,5 +1,6 @@
 #include "stack.h"
 
+#include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -30,6 +31,23 @@ size_t interpreter_stack_push(InterpreterStack_T** stack, const void* data, size
     memcpy(&(*stack)->data[start_addr], data, size);
 
     return start_addr;
+}
+
+void interpreter_stack_grow(InterpreterStack_T** stack, size_t size)
+{
+    if(!STACK_HASSPACE(*stack, size))
+    {
+        (*stack)->allocated = ((*stack)->size + size) * 2;
+        *stack = realloc(*stack, (*stack)->allocated + sizeof(InterpreterStack_T)); // TODO: find better allocation curve
+    }
+
+    (*stack)->size += size;
+}
+
+void interpreter_stack_shrink_to(InterpreterStack_T* stack, size_t to) {
+    assert(stack->size >= to);
+
+    stack->size = to;
 }
 
 void free_interpreter_stack(InterpreterStack_T* stack)

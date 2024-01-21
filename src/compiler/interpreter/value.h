@@ -66,6 +66,7 @@ typedef union INTERPRETER_VALUE_UNION
     InterpreterIntValue_T integer;
     InterpreterUIntValue_T uinteger;
     InterpreterFloatValue_T flt;
+    const ASTObj_T* fn_obj;
 } InterpreterValueUnion_T;
 
 typedef struct INTERPRETER_VALUE_STRUCT
@@ -101,5 +102,11 @@ typedef struct INTERPRETER_VALUE_LIST_STRUCT
 InterpreterValueList_T* init_interpreter_value_list(size_t capacity);
 size_t interpreter_value_list_push(InterpreterValueList_T** list, InterpreterValue_T* value);
 void free_interpreter_value_list(InterpreterValueList_T* list);
+
+typedef struct LVALUE_STRUCT 
+{
+    const ASTType_T* type;
+    void* ptr;
+} LValue_T;
 
 #endif
