@@ -1,6 +1,44 @@
 #include "constexpr.h"
 #include "ast/ast.h"
 #include "error/error.h"
+#include "interpreter/interpreter.h"
+#include "interpreter/value.h"
+
+void init_constexpr_resolver(ConstexprResolver_T* resolver, Context_T* context, ASTProg_T* ast)
+{
+    init_interpreter_context(resolver, context, ast);
+    resolver->constexpr_only = true; // interpret only objects marked as `[constexpr]`
+}
+
+void free_constexpr_resolver(ConstexprResolver_T* resolver)
+{
+    free_interpreter_context(resolver);
+}
+
+static bool skip_eval_constexpr(ASTNodeKind_T kind) {
+    switch(kind) {
+        case ND_STR:
+        case ND_INT:
+        case ND_LONG:
+        case ND_ULONG:
+        case ND_FLOAT:
+        case ND_ARRAY: // FIXME
+        case ND_STRUCT: // FIXME
+        case ND_CHAR:
+        case ND_BOOL:
+            return true;
+        default:
+            return false;
+    }
+}
+
+ASTNode_T* eval_constexpr(ConstexprResolver_T* resolver, ASTNode_T* expr)
+{
+    if(skip_eval_constexpr(expr->kind))
+        return expr;
+    InterpreterValue_T value = interpreter_eval_expr(resolver, expr);
+    return ast_node_from_interpreter_value(resolver->context, &value, expr->tok);
+}
 
 static u64 const_u64_infix(Context_T* context, ASTNode_T* node)
 {

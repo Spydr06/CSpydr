@@ -26,6 +26,11 @@ typedef struct INTERPRETER_CONTEXT_STRUCT
     InterpreterValue_T return_value;
 } InterpreterContext_T;
 
+void init_interpreter_context(InterpreterContext_T* ictx, Context_T* context, ASTProg_T* ast);
+void free_interpreter_context(InterpreterContext_T* ictx);
+
 i32 interpreter_pass(Context_T* context, ASTProg_T* ast);
+
+InterpreterValue_T interpreter_eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr);
 
 #endif

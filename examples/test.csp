@@ -1,10 +1,12 @@
-const foo: u64 = 10;
+import "io.csp";
 
-fn add(a: i32, b: i32): i32 {
-    <- a + b;
-}
+[constexpr]
+fn add(a: i32, b: i32): i32 = a + b;
+
+const magic_number: i32 = add(34, 35);
 
 fn main(): i32 {
-let x = add(34, 35) + foo;
-    <- x;
+    let buf: u8[magic_number];
+    <- len buf;
 }
+

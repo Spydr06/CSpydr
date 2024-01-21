@@ -13,8 +13,6 @@
 #include "codegen/codegen_utils.h"
 #include "lexer/token.h"
 #include "mem/mem.h"
-#include "parser/parser.h"
-#include "parser/utils.h"
 #include "typechecker.h"
 #include "timer/timer.h"
 
@@ -29,10 +27,12 @@
 #define GET_VALIDATOR(va) Validator_T* v = va_arg(va, Validator_T*)
 
 // validator struct functions
-static void init_validator(Validator_T* v, Context_T* context)
+static void init_validator(Validator_T* v, Context_T* context, ASTProg_T* ast)
 {
     memset(v, 0, sizeof(struct VALIDATOR_STRUCT));
     v->context = context;
+    v->ast = ast;
+    init_constexpr_resolver(&v->constexpr_resolver, context, ast);
 }
 
 static void begin_obj_scope(Validator_T* v, ASTIdentifier_T* id, List_T* objs);
@@ -138,14 +138,12 @@ static const ASTIteratorList_T pre_iterator_list = {
     {
         [OBJ_NAMESPACE] = namespace_start,
         [OBJ_TYPEDEF]   = typedef_start,
-        [OBJ_GLOBAL]    = global_start,
     },
 
     .obj_end_fns = 
     {
         [OBJ_NAMESPACE] = namespace_end,
         [OBJ_TYPEDEF]   = typedef_end,
-        [OBJ_GLOBAL]    = global_end,
     },
 
     .id_use_fn = id_use,
@@ -296,8 +294,7 @@ i32 validator_pass(Context_T* context, ASTProg_T* ast)
 
     // initialize the validator
     Validator_T v;
-    init_validator(&v, context);
-    v.ast = ast;
+    init_validator(&v, context, ast);
     context->current_obj = &v.current_function;
     
     begin_obj_scope(&v, NULL, ast->objs);
@@ -320,6 +317,8 @@ i32 validator_pass(Context_T* context, ASTProg_T* ast)
         LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " missing entrypoint; no `main` function declared.\n");
         context->emitted_errors++;
     }
+
+    free_constexpr_resolver(&v.constexpr_resolver);
 
     timer_stop(context);
     
@@ -951,6 +950,9 @@ static void global_end(ASTObj_T* global, va_list args)
 {
     GET_VALIDATOR(args);
 
+    if(global->value)
+        global->value = eval_constexpr(&v->constexpr_resolver, global->value);
+
     if(!global->data_type)
     {
         if(!global->value->data_type)
@@ -998,6 +1000,9 @@ static void fn_arg_start(ASTObj_T* arg, va_list args)
     if(arg->data_type->kind == TY_C_ARRAY)
         arg->data_type->kind = TY_PTR;
 
+    if(v->current_function->constexpr)
+        arg->constexpr = true;
+
     scope_add_obj(v, arg);
 }
 
@@ -1042,6 +1047,12 @@ static void enum_member_end(ASTObj_T* e_member, va_list args)
 static void block_start(ASTNode_T* block, va_list args)
 {
     GET_VALIDATOR(args);
+
+    for(size_t i = 0; i < block->locals->size; i++)
+    {
+        ASTObj_T* var = block->locals->items[i];
+        var->constexpr = v->current_function->constexpr;
+    }
     begin_obj_scope(v, NULL, block->locals);
 }
 
@@ -1308,6 +1319,12 @@ static void identifier(ASTNode_T* id, va_list args)
     id->referenced_obj = referenced_obj;
 
     if(referenced_obj->id->outer) id->id->outer = referenced_obj->id->outer;
+
+    if(v->current_function && v->current_function->constexpr && !id->referenced_obj->constexpr)
+    {
+        char buf[BUFSIZ] = {'\0'};
+        throw_error(v->context, ERR_CONSTEXPR, id->tok, "%s `%s` is not marked as `[constexpr]`", obj_kind_to_str(id->referenced_obj->kind), ast_id_to_str(buf, id->referenced_obj->id, LEN(buf)));
+    }
 }
 
 static void closure(ASTNode_T* closure, va_list args)

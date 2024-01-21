@@ -1,7 +1,10 @@
 #include "value.h"
+#include "ast/ast.h"
 #include "ast/types.h"
+#include "codegen/codegen_utils.h"
 #include "error/error.h"
 #include "io/log.h"
+#include "lexer/token.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -149,6 +152,88 @@ f80 interpreter_value_f80(InterpreterValue_T* value)
             unreachable();
             return 0.0L;
     }
+}
+
+ASTNode_T* ast_node_from_interpreter_value(Context_T* context, InterpreterValue_T* value, Token_T* tok)
+{
+    ASTNode_T* node = init_ast_node(ND_INT, tok);
+    node->data_type = (ASTType_T*) value->type;
+
+    switch(value->type->kind)
+    {
+        case TY_I8:
+            node->int_val = value->value.integer.i8;
+            break;
+        case TY_I16:
+            node->int_val = value->value.integer.i16;
+            break;
+        case TY_I32:
+            node->int_val = value->value.integer.i32;
+            break;
+        case TY_I64:
+            node->kind = ND_LONG;
+            node->long_val = value->value.integer.i64;
+            break;
+        case TY_U8:
+            node->int_val = value->value.uinteger.u8;
+            break;
+        case TY_U16:
+            node->int_val = value->value.uinteger.u16;
+            break;
+        case TY_U32:
+            node->kind = ND_LONG;
+            node->long_val = value->value.uinteger.u32;
+            break;
+        case TY_U64:
+            node->kind = ND_ULONG;
+            node->ulong_val = value->value.uinteger.u64;
+            break;
+        case TY_F32:
+            node->kind = ND_FLOAT;
+            node->float_val = value->value.flt.f32;
+            break;
+        case TY_F64:
+            node->kind = ND_DOUBLE;
+            node->double_val = value->value.flt.f64;
+            break;
+        case TY_F80: // TODO: hande precision correctly
+            node->kind = ND_DOUBLE;
+            node->double_val = value->value.flt.f80;
+            break;
+        case TY_BOOL:
+            node->kind = ND_BOOL;
+            node->bool_val = value->value.boolean;
+            break;
+        case TY_CHAR:
+            node->kind = ND_CHAR;
+            node->int_val = value->value.character;
+            break;
+        case TY_FN:
+            node->kind = ND_ID;
+            node->id = value->value.fn_obj->id;
+            node->referenced_obj = (ASTObj_T*) value->value.fn_obj;
+            break;
+        case TY_PTR:
+            if(unpack(node->data_type->base)->kind == TY_CHAR)
+            {
+                node->kind = ND_CHAR;
+                node->str_val = strdup((const char*) value->value.ptr);
+                break;
+            }
+
+            node->kind = ND_ULONG;
+            node->ulong_val = (u64) value->value.ptr;
+            break;
+        default: 
+        {
+            char buf[BUFSIZ] = {'\0'};
+            throw_error(context, ERR_CONSTEXPR, tok, "invalid constexpr return type `%s`", 
+                ast_type_to_str(context, buf, value->type, BUFSIZ)
+            );
+        }
+    }
+
+    return node;
 }
 
 InterpreterValueList_T* init_interpreter_value_list(size_t capacity)

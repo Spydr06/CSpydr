@@ -5,6 +5,7 @@
 
 #include "ast/ast.h"
 #include "ast/types.h"
+#include "lexer/token.h"
 #include "util.h"
 
 #define VOID_VALUE ((InterpreterValue_T){.type=primitives[TY_VOID]})
@@ -79,6 +80,8 @@ void interpreter_value_to_str(InterpreterValue_T* value, char* dst, size_t len);
 bool interpreter_value_is_falsy(InterpreterValue_T value);
 i64 interpreter_value_i64(InterpreterValue_T* value);
 f80 interpreter_value_f80(InterpreterValue_T* value);
+
+ASTNode_T* ast_node_from_interpreter_value(Context_T* context, InterpreterValue_T* value, Token_T* tok);
 
 #define interpreter_value_is_truthy(value) (!interpreter_value_is_falsy((value)))
 

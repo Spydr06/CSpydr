@@ -87,8 +87,8 @@
     FP_INFIX_OP_CASES(left_value, right_value, op)
 
 #define COMPARISON_OP_CASE(node_kind, op) case node_kind: do {      \
-    InterpreterValue_T left_value = eval_expr(ictx, expr->left);    \
-    InterpreterValue_T right_value = eval_expr(ictx, expr->right);  \
+    InterpreterValue_T left_value = interpreter_eval_expr(ictx, expr->left);    \
+    InterpreterValue_T right_value = interpreter_eval_expr(ictx, expr->right);  \
     switch(left_value.type->kind) {                                 \
         case TY_F32: case TY_F64: case TY_F80:                      \
             return BOOL_VALUE(interpreter_value_f80(&left_value) op interpreter_value_f80(&right_value)); \
@@ -97,8 +97,8 @@
     }} while(0)
 
 #define INTEGER_INFIX_OP_CASE(node_kind, op) case node_kind: do {       \
-        InterpreterValue_T left_value = eval_expr(ictx, expr->left);    \
-        InterpreterValue_T right_value = eval_expr(ictx, expr->right);  \
+        InterpreterValue_T left_value = interpreter_eval_expr(ictx, expr->left);    \
+        InterpreterValue_T right_value = interpreter_eval_expr(ictx, expr->right);  \
         switch(left_value.type->kind) {                                 \
             INTLIKE_INFIX_OP_CASES(left_value, right_value, op);        \
             default: unreachable();                                     \
@@ -178,7 +178,6 @@ static InterpreterValue_T (*const type_cast_map[TY_KIND_LEN][TY_KIND_LEN])(Inter
 };
 
 static void eval_stmt(InterpreterContext_T* ictx, ASTNode_T* stmt);
-static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr);
 static InterpreterValue_T call_fn(InterpreterContext_T* ictx, const ASTObj_T* fn, const InterpreterValueList_T* args);
 
 static LValue_T lvalue_from_id(InterpreterContext_T* ictx, ASTObj_T* obj, ASTType_T* ty, Token_T* tok);
@@ -186,7 +185,7 @@ static InterpreterValue_T load_value(LValue_T lvalue);
 static LValue_T eval_lvalue(InterpreterContext_T* ictx, ASTNode_T* node);
 static void assign_lvalue(LValue_T dest, InterpreterValue_T* value);
 
-static void init_interpreter_context(InterpreterContext_T* ictx, Context_T* context, ASTProg_T* ast)
+void init_interpreter_context(InterpreterContext_T* ictx, Context_T* context, ASTProg_T* ast)
 {
     ictx->context = context;
     ictx->ast = ast;
@@ -195,14 +194,13 @@ static void init_interpreter_context(InterpreterContext_T* ictx, Context_T* cont
 
     ictx->string_literals = hashmap_init();
     ictx->broken = false;
-    ictx->constexpr_only= true;
 
     // assure that address 0 is always occupied
     u8 null_byte = 0;
     interpreter_stack_push(&ictx->stack, &null_byte, sizeof null_byte);
 }
 
-static void free_interpreter_context(InterpreterContext_T* ictx)
+void free_interpreter_context(InterpreterContext_T* ictx)
 {
     free_interpreter_stack(ictx->stack);
     free_interpreter_stack(ictx->global_storage);
@@ -286,17 +284,17 @@ i32 interpreter_pass(Context_T* context, ASTProg_T* ast)
 
 static void eval_stmt(InterpreterContext_T* ictx, ASTNode_T* stmt)
 {
-    printf(">> stmt %d\n", stmt->kind);
+//    printf(">> stmt %d\n", stmt->kind);
     switch(stmt->kind)
     {
         case ND_NOOP:
             break;
         case ND_RETURN:
             ictx->returned = true;
-            ictx->return_value = stmt->return_val ? eval_expr(ictx, stmt->return_val) : VOID_VALUE;
+            ictx->return_value = stmt->return_val ? interpreter_eval_expr(ictx, stmt->return_val) : VOID_VALUE;
             break;
         case ND_EXPR_STMT:
-            eval_expr(ictx, stmt->expr);
+            interpreter_eval_expr(ictx, stmt->expr);
             break;
         case ND_USING:
             if(stmt->body)
@@ -318,13 +316,13 @@ static void eval_stmt(InterpreterContext_T* ictx, ASTNode_T* stmt)
             interpreter_stack_shrink_to(ictx->stack, stack_before);
         } break;
         case ND_IF:
-            if(interpreter_value_is_falsy(eval_expr(ictx, stmt->condition)))
+            if(interpreter_value_is_falsy(interpreter_eval_expr(ictx, stmt->condition)))
                 eval_stmt(ictx, stmt->else_branch);
             else
                 eval_stmt(ictx, stmt->if_branch);
             break;
         case ND_DO_UNLESS:
-            if(interpreter_value_is_falsy(eval_expr(ictx, stmt->condition)))
+            if(interpreter_value_is_falsy(interpreter_eval_expr(ictx, stmt->condition)))
                 eval_stmt(ictx, stmt->body);
             break;
         case ND_LOOP:
@@ -337,7 +335,7 @@ static void eval_stmt(InterpreterContext_T* ictx, ASTNode_T* stmt)
             break;
         case ND_WHILE:
             ictx->broken = false;
-            while(!ictx->broken && !ictx->returned && interpreter_value_is_truthy(eval_expr(ictx, stmt->condition)))
+            while(!ictx->broken && !ictx->returned && interpreter_value_is_truthy(interpreter_eval_expr(ictx, stmt->condition)))
             {
                 ictx->continued = false;
                 eval_stmt(ictx, stmt->body);
@@ -348,19 +346,19 @@ static void eval_stmt(InterpreterContext_T* ictx, ASTNode_T* stmt)
             do {
                 ictx->continued = false;
                 eval_stmt(ictx, stmt->body);
-            } while(!ictx->broken && !ictx->returned && interpreter_value_is_truthy(eval_expr(ictx, stmt->condition)));
+            } while(!ictx->broken && !ictx->returned && interpreter_value_is_truthy(interpreter_eval_expr(ictx, stmt->condition)));
             break;
         case ND_FOR:
             ictx->broken = false;
             if(stmt->init_stmt)
                 eval_stmt(ictx, stmt->init_stmt);
-            while(interpreter_value_is_truthy(eval_expr(ictx, stmt->condition)))
+            while(interpreter_value_is_truthy(interpreter_eval_expr(ictx, stmt->condition)))
             {
                 ictx->continued = false;
                 eval_stmt(ictx, stmt->body);
                 if(ictx->broken || ictx->returned)
                     break;
-                eval_expr(ictx, stmt->expr);
+                interpreter_eval_expr(ictx, stmt->expr);
             }
             break;
         // TODO: ND_FOR_RANGE
@@ -372,12 +370,12 @@ static void eval_stmt(InterpreterContext_T* ictx, ASTNode_T* stmt)
             break;
         case ND_MATCH:
         {
-            InterpreterValue_T condition = eval_expr(ictx, stmt->condition);
+            InterpreterValue_T condition = interpreter_eval_expr(ictx, stmt->condition);
 
             for(size_t i = 0; i < stmt->cases->size; i++)
             {
                 ASTNode_T* case_stmt = stmt->cases->items[i];
-                InterpreterValue_T case_condition = eval_expr(ictx, case_stmt->condition);
+                InterpreterValue_T case_condition = interpreter_eval_expr(ictx, case_stmt->condition);
                 if(interpreter_values_equal(condition, case_condition))
                 {
                     eval_stmt(ictx, case_stmt->body);
@@ -403,8 +401,8 @@ static void eval_stmt(InterpreterContext_T* ictx, ASTNode_T* stmt)
 
 static inline InterpreterValue_T eval_add(InterpreterContext_T* ictx, ASTNode_T* expr)
 {
-    InterpreterValue_T left_value = eval_expr(ictx, expr->left);
-    InterpreterValue_T right_value = eval_expr(ictx, expr->right);
+    InterpreterValue_T left_value = interpreter_eval_expr(ictx, expr->left);
+    InterpreterValue_T right_value = interpreter_eval_expr(ictx, expr->right);
     
     ASTType_T* left_type = unpack(expr->left->data_type);
     if(PTR_TYPE(left_type)) {
@@ -424,8 +422,8 @@ static inline InterpreterValue_T eval_add(InterpreterContext_T* ictx, ASTNode_T*
 
 static inline InterpreterValue_T eval_sub(InterpreterContext_T* ictx, ASTNode_T* expr)
 {
-    InterpreterValue_T left_value = eval_expr(ictx, expr->left);
-    InterpreterValue_T right_value = eval_expr(ictx, expr->right);
+    InterpreterValue_T left_value = interpreter_eval_expr(ictx, expr->left);
+    InterpreterValue_T right_value = interpreter_eval_expr(ictx, expr->right);
     
     ASTType_T* left_type = unpack(expr->left->data_type);
     ASTType_T* right_type = unpack(expr->right->data_type);
@@ -450,9 +448,54 @@ static inline InterpreterValue_T eval_sub(InterpreterContext_T* ictx, ASTNode_T*
     return left_value;
 }
 
-static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr)
+static inline InterpreterValue_T cast_to_ptr(InterpreterContext_T* ictx, InterpreterValue_T* value, const ASTType_T* ptr_type, Token_T* tok)
 {
-    printf(">> expr %d\n", expr->kind);
+#define CAST_IMPL_CASE(ty, field)                                                           \
+    case ty:                                                                                \
+        return (InterpreterValue_T) {                                                       \
+            .type = ptr_type,                                                               \
+            .value = (InterpreterValueUnion_T) { .ptr = (uintptr_t) (value->value.field) }  \
+        }
+
+    switch(value->type->kind)
+    {
+        CAST_IMPL_CASE(TY_I8, integer.i8);
+        CAST_IMPL_CASE(TY_I16, integer.i16);
+        CAST_IMPL_CASE(TY_I32, integer.i32);
+        CAST_IMPL_CASE(TY_I64, integer.i64);
+        CAST_IMPL_CASE(TY_U8, uinteger.u8);
+        CAST_IMPL_CASE(TY_U16, uinteger.u16);
+        CAST_IMPL_CASE(TY_U32, uinteger.u32);
+        CAST_IMPL_CASE(TY_U64, uinteger.u64);
+        CAST_IMPL_CASE(TY_F32, flt.f32);
+        CAST_IMPL_CASE(TY_F64, flt.f64);
+        CAST_IMPL_CASE(TY_F80, flt.f80);
+        CAST_IMPL_CASE(TY_BOOL, boolean);
+        CAST_IMPL_CASE(TY_CHAR, character);
+        CAST_IMPL_CASE(TY_PTR, ptr);
+        
+        default:
+        {
+            char* buf1 = malloc(BUFSIZ);
+            char* buf2 = malloc(BUFSIZ);
+            *buf1 = *buf2 = '\0';
+
+            throw_error(ictx->context, ERR_INTERNAL, tok, "(interpreter) cannot cast from `%s` to pointer type `%s`", 
+                ast_type_to_str(ictx->context, buf1, value->type, BUFSIZ),
+                ast_type_to_str(ictx->context, buf2, ptr_type, BUFSIZ)
+            );
+                    
+            free(buf1);
+            free(buf2);
+            return VOID_VALUE; 
+        }
+    }
+#undef CAST_IMPL
+}
+
+InterpreterValue_T interpreter_eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr)
+{
+//    printf(">> expr %d\n", expr->kind);
     switch(expr->kind)
     {
         case ND_NOOP:
@@ -487,7 +530,7 @@ static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr)
         {
             InterpreterValue_T value;
             for(size_t i = 0; i < expr->exprs->size; i++)
-                value = eval_expr(ictx, expr->exprs->items[i]);
+                value = interpreter_eval_expr(ictx, expr->exprs->items[i]);
             return value;
         }
         case ND_SIZEOF:
@@ -495,28 +538,28 @@ static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr)
         case ND_ALIGNOF:
             return I64_VALUE(expr->the_type->align);
         case ND_PIPE:
-            ictx->pipe_value = eval_expr(ictx, expr->left);
-            return eval_expr(ictx, expr->right);
+            ictx->pipe_value = interpreter_eval_expr(ictx, expr->left);
+            return interpreter_eval_expr(ictx, expr->right);
         case ND_HOLE:
             return ictx->pipe_value;    
         case ND_TERNARY:
-            if(interpreter_value_is_falsy(eval_expr(ictx, expr->condition)))
-                return eval_expr(ictx, expr->else_branch);
-            return eval_expr(ictx, expr->if_branch);
+            if(interpreter_value_is_falsy(interpreter_eval_expr(ictx, expr->condition)))
+                return interpreter_eval_expr(ictx, expr->else_branch);
+            return interpreter_eval_expr(ictx, expr->if_branch);
         case ND_ELSE_EXPR:
         {
-            InterpreterValue_T left = eval_expr(ictx, expr->left);
+            InterpreterValue_T left = interpreter_eval_expr(ictx, expr->left);
             if(interpreter_value_is_falsy(left))
-                return eval_expr(ictx, expr->right);
+                return interpreter_eval_expr(ictx, expr->right);
             return left;
         }
         case ND_OR:
-            return BOOL_VALUE(interpreter_value_is_truthy(eval_expr(ictx, expr->left)) || interpreter_value_is_truthy(eval_expr(ictx, expr->right)));
+            return BOOL_VALUE(interpreter_value_is_truthy(interpreter_eval_expr(ictx, expr->left)) || interpreter_value_is_truthy(interpreter_eval_expr(ictx, expr->right)));
         case ND_AND:
-            return BOOL_VALUE(interpreter_value_is_truthy(eval_expr(ictx, expr->left)) && interpreter_value_is_truthy(eval_expr(ictx, expr->right)));
+            return BOOL_VALUE(interpreter_value_is_truthy(interpreter_eval_expr(ictx, expr->left)) && interpreter_value_is_truthy(interpreter_eval_expr(ictx, expr->right)));
         case ND_NEG:
         {
-            InterpreterValue_T value = eval_expr(ictx, expr->right);
+            InterpreterValue_T value = interpreter_eval_expr(ictx, expr->right);
             switch(value.type->kind)
             {
                 NUMERIC_PREFIX_OP_CASES(value, -);
@@ -533,8 +576,8 @@ static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr)
             return eval_sub(ictx, expr);
         case ND_MUL:
         {
-            InterpreterValue_T left_value = eval_expr(ictx, expr->left);
-            InterpreterValue_T right_value = eval_expr(ictx, expr->right);
+            InterpreterValue_T left_value = interpreter_eval_expr(ictx, expr->left);
+            InterpreterValue_T right_value = interpreter_eval_expr(ictx, expr->right);
             switch(left_value.type->kind)
             {
                 NUMERIC_INFIX_OP_CASES(left_value, right_value, *);
@@ -544,8 +587,8 @@ static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr)
         }
         case ND_DIV:
         {
-            InterpreterValue_T left_value = eval_expr(ictx, expr->left);
-            InterpreterValue_T right_value = eval_expr(ictx, expr->right);
+            InterpreterValue_T left_value = interpreter_eval_expr(ictx, expr->left);
+            InterpreterValue_T right_value = interpreter_eval_expr(ictx, expr->right);
             switch(left_value.type->kind)
             {
                 NUMERIC_INFIX_OP_CASES(left_value, right_value, /);
@@ -571,7 +614,7 @@ static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr)
         } 
         case ND_DEREF:
         {
-            InterpreterValue_T value = eval_expr(ictx, expr->right);
+            InterpreterValue_T value = interpreter_eval_expr(ictx, expr->right);
             return load_value((LValue_T) {
                 .type = expr->data_type,
                 .ptr = (void*) value.value.ptr
@@ -580,7 +623,7 @@ static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr)
         case ND_ASSIGN:
         {
             LValue_T dest = eval_lvalue(ictx, expr->left);
-            InterpreterValue_T value = eval_expr(ictx, expr->right);
+            InterpreterValue_T value = interpreter_eval_expr(ictx, expr->right);
             assign_lvalue(dest, &value);
             return value;
         }
@@ -588,8 +631,11 @@ static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr)
         // TODO: ND_LAMBDA
         case ND_CAST:
         {
-            InterpreterValue_T value = eval_expr(ictx, expr->left);
+            InterpreterValue_T value = interpreter_eval_expr(ictx, expr->left);
             const ASTType_T* to = unpack(expr->data_type), *from = value.type;
+
+            if(to->kind == TY_PTR)
+                return cast_to_ptr(ictx, &value, to, expr->tok);
 
             InterpreterValue_T (*const cast_fn)(InterpreterContext_T*, InterpreterValue_T*) = type_cast_map[from->kind][to->kind];
             switch((uintptr_t) cast_fn) {
@@ -597,6 +643,7 @@ static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr)
                 {
                     char* buf1 = malloc(BUFSIZ);
                     char* buf2 = malloc(BUFSIZ);
+                    *buf1 = *buf2 = '\0';
 
                     throw_error(ictx->context, ERR_INTERNAL, expr->tok, "(interpreter) cannot cast from `%s` to `%s`", 
                         ast_type_to_str(ictx->context, buf1, from, BUFSIZ),
@@ -614,10 +661,10 @@ static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr)
             }
         }
         case ND_NOT:
-            return BOOL_VALUE(interpreter_value_is_falsy(eval_expr(ictx, expr->right)));
+            return BOOL_VALUE(interpreter_value_is_falsy(interpreter_eval_expr(ictx, expr->right)));
         case ND_BIT_NEG:
         {
-            InterpreterValue_T value = eval_expr(ictx, expr->right);
+            InterpreterValue_T value = interpreter_eval_expr(ictx, expr->right);
             switch(value.type->kind)
             {
                 INTLIKE_PREFIX_OP_CASES(value, ~);
@@ -632,14 +679,14 @@ static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr)
         INTEGER_INFIX_OP_CASE(ND_XOR, ^);
         case ND_EQ:
         {
-            InterpreterValue_T left_value = eval_expr(ictx, expr->left);
-            InterpreterValue_T right_value = eval_expr(ictx, expr->right);
+            InterpreterValue_T left_value = interpreter_eval_expr(ictx, expr->left);
+            InterpreterValue_T right_value = interpreter_eval_expr(ictx, expr->right);
             return BOOL_VALUE(interpreter_values_equal(left_value, right_value));
         }
         case ND_NE:
         {
-            InterpreterValue_T left_value = eval_expr(ictx, expr->left);
-            InterpreterValue_T right_value = eval_expr(ictx, expr->right);
+            InterpreterValue_T left_value = interpreter_eval_expr(ictx, expr->left);
+            InterpreterValue_T right_value = interpreter_eval_expr(ictx, expr->right);
             return BOOL_VALUE(!interpreter_values_equal(left_value, right_value));
         }
         COMPARISON_OP_CASE(ND_LT, <);
@@ -647,11 +694,11 @@ static InterpreterValue_T eval_expr(InterpreterContext_T* ictx, ASTNode_T* expr)
         COMPARISON_OP_CASE(ND_GT, >);
         COMPARISON_OP_CASE(ND_GE, >=);
         case ND_CALL: {
-            InterpreterValue_T callee = eval_expr(ictx, expr->expr);
+            InterpreterValue_T callee = interpreter_eval_expr(ictx, expr->expr);
             InterpreterValueList_T* args = init_interpreter_value_list(expr->args->size);
             for(size_t i = 0; i < expr->args->size; i++)
             {
-                InterpreterValue_T arg = eval_expr(ictx, expr->args->items[i]);
+                InterpreterValue_T arg = interpreter_eval_expr(ictx, expr->args->items[i]);
                 interpreter_value_list_push(&args, &arg);
             }
 
@@ -703,7 +750,7 @@ static LValue_T eval_lvalue(InterpreterContext_T* ictx, ASTNode_T* node)
         case ND_DEREF:
             return (LValue_T) {
                 .type = node->data_type,
-                .ptr = (void*) eval_expr(ictx, node->right).value.ptr
+                .ptr = (void*) interpreter_eval_expr(ictx, node->right).value.ptr
             };
         default:
             throw_error(ictx->context, ERR_INTERNAL, node->tok, "interpreting this lvalue not implemented yet");
@@ -715,7 +762,7 @@ static void push_global(InterpreterContext_T* ictx, ASTObj_T* global)
     global->offset = interpreter_stack_align_to(&ictx->global_storage, global->data_type->align);
     if(global->value) 
     {
-        InterpreterValue_T value = eval_expr(ictx, global->value);
+        InterpreterValue_T value = interpreter_eval_expr(ictx, global->value);
         interpreter_stack_push(&ictx->global_storage, &value.value, MIN(global->data_type->size, value.type->size));
     }
     else

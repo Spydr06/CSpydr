@@ -618,7 +618,7 @@ static ASTType_T* parse_enum_type(Parser_T* p)
     enum_type->members = init_list();
     mem_add_list(enum_type->members);
 
-    for(i32 i = 0; !tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF); i++)
+    while(!tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF))
     {
         ASTObj_T* member = init_ast_obj(OBJ_ENUM_MEMBER, p->tok);
         member->data_type = (ASTType_T*) primitives[TY_I32];

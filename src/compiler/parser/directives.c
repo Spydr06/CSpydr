@@ -35,7 +35,7 @@ EVAL_FN(after_main);
 EVAL_FN(before_main);
 EVAL_FN(cc);
 EVAL_FN(cfg);
-EVAL_FN(constexpr);
+EVAL_FN(constexpr_directive);
 EVAL_FN(copy);
 EVAL_FN(deprecated);
 EVAL_FN(drop);
@@ -80,7 +80,7 @@ static const Directive_T DIRECTIVES[] = {
         "constexpr",
         0,
         OBJ_FUNCTION | OBJ_GLOBAL,
-        eval_constexpr
+        eval_constexpr_directive
     },
     {
         "copy",
@@ -363,7 +363,7 @@ EVAL_FN(cfg)
     return false;
 }
 
-EVAL_FN(constexpr)
+EVAL_FN(constexpr_directive)
 {
     if(obj->constexpr) 
     {

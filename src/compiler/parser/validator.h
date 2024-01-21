@@ -4,6 +4,7 @@
 #include "ast/ast.h"
 #include "config.h"
 #include "hashmap.h"
+#include "optimizer/constexpr.h"
 
 // validator structs
 typedef struct SCOPE_STRUCT Scope_T;
@@ -24,6 +25,8 @@ typedef struct VALIDATOR_STRUCT
     ASTObj_T* current_function;
     ASTNode_T* current_pipe;
     bool main_function_found;
+
+    ConstexprResolver_T constexpr_resolver;
 
     u32 scope_depth;  // depth of the current scope
 } Validator_T;
