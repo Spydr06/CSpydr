@@ -1,4 +1,3 @@
-#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,7 +5,6 @@
 #include <assert.h>
 
 #include "ast/ast.h"
-#include "ast/ast_iterator.h"
 #include "ast/types.h"
 #include "codegen/codegen_utils.h"
 #include "config.h"
@@ -19,6 +17,8 @@
 #include "list.h"
 #include "value.h"
 #include "context.h"
+
+#define MAX_RECURSION_DEPTH 1024
 
 #define PTR_TYPE(ty) ((ty)->kind == TY_PTR || (ty)->kind == TY_VLA)
 
@@ -717,7 +717,15 @@ InterpreterValue_T interpreter_eval_expr(InterpreterContext_T* ictx, ASTNode_T* 
 static InterpreterValue_T call_fn(InterpreterContext_T* ictx, const ASTObj_T* fn, const InterpreterValueList_T* args)
 {
     assert(args->size == fn->args->size);
-    printf(COLOR_BOLD_CYAN ">>> Entering %s(%zu)\n" COLOR_RESET, fn->id->callee, args->size);
+    ictx->recursion_depth++;
+    if(ictx->recursion_depth > MAX_RECURSION_DEPTH)
+    {
+        char* buf = malloc(BUFSIZ);
+        *buf = '\0';
+        throw_error(ictx->context, ERR_RECURSION_DEPTH, fn->tok, "attempt to call function `%s`, but recursion limit (%u) was reached", ast_id_to_str(buf, fn->id, BUFSIZ), MAX_RECURSION_DEPTH);
+    }
+
+    //    printf(COLOR_BOLD_CYAN ">>> Entering %s(%zu)\n" COLOR_RESET, fn->id->callee, args->size);
     
     size_t stack_size = ictx->stack->size;
     for(size_t i = 0; i < args->size; i++) {
@@ -727,12 +735,13 @@ static InterpreterValue_T call_fn(InterpreterContext_T* ictx, const ASTObj_T* fn
         interpreter_stack_push(&ictx->stack, &arg_value->value, arg->data_type->size);
     }
 
-    dump_stack(ictx->stack);
+//    dump_stack(ictx->stack);
     
     eval_stmt(ictx, fn->body);
 
     interpreter_stack_shrink_to(ictx->stack, stack_size);
-    printf(COLOR_BOLD_CYAN "<<<\n" COLOR_RESET);
+//    printf(COLOR_BOLD_CYAN "<<<\n" COLOR_RESET);
+    ictx->recursion_depth--;
 
     if(ictx->returned) {
         ictx->returned = false;     

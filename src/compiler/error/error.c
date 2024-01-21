@@ -1,10 +1,7 @@
 #include "error.h"
-#include "io/log.h"
-#include "ast/ast.h"
 #include "context.h"
 
 #include <stdarg.h>
-#include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -35,6 +32,7 @@ static struct { const char* as_str; bool force_exit; bool is_error; } error_type
     [ERR_UNDEFINED]         = { "undef",        true , true  },
     [ERR_UNREACHABLE]       = { "unreachable",  false, false },
     [ERR_DEPRECATED]        = { "deprecated",   false, false },
+    [ERR_RECURSION_DEPTH]   = { "recursion depth", true, true}, 
     [ERR_UNUSED]            = { "unused",       false, false },
 };
 

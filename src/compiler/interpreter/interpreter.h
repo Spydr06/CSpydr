@@ -16,6 +16,7 @@ typedef struct INTERPRETER_CONTEXT_STRUCT
 
     InterpreterStack_T* global_storage;
     InterpreterStack_T* stack;
+    size_t recursion_depth;
     
     InterpreterValue_T pipe_value;
     HashMap_T* string_literals;

@@ -35,6 +35,7 @@ typedef enum ERROR_TYPE
     ERR_PKG_CONFIG_WARN, // library resolving warning
     ERR_OVERFLOW_UNCR,   // integer overflow detected
     ERR_DEPRECATED,      // object marked as deprecated encountered
+    ERR_RECURSION_DEPTH, // too deep recursion
 
     ERR_ILLEGAL_TYPE_CAST, // illegal cast from/to a type
     ERR_TYPE_CAST_WARN,    // warning when casting (implicit casts, etc.)
