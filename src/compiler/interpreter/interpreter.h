@@ -10,10 +10,13 @@
 
 typedef struct INTERPRETER_CONTEXT_STRUCT
 {
-    InterpreterStack_T* stack;
     Context_T* context;
     ASTProg_T* ast;
+    bool constexpr_only;
 
+    InterpreterStack_T* global_storage;
+    InterpreterStack_T* stack;
+    
     InterpreterValue_T pipe_value;
     HashMap_T* string_literals;
 

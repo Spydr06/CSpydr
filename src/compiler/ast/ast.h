@@ -235,7 +235,8 @@ struct AST_OBJ_STRUCT
             bool deprecated     : 1;
             bool after_main     : 1;
             bool before_main    : 1;
-            u8 __unused__       : 5;
+            bool constexpr      : 1;
+            u8 __unused__       : 4;
         };
         u16 flags;
     };

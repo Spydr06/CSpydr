@@ -966,7 +966,10 @@ static void global_end(ASTObj_T* global, va_list args)
     
     if(expanded->is_constant)
         global->is_constant = true;
-    
+
+    if(global->is_constant)
+        global->constexpr = true;
+
     switch(expanded->kind)
     {
     case TY_VOID:

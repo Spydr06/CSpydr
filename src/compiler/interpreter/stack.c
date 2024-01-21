@@ -4,17 +4,17 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <math.h>
 
 #include "io/log.h"
+#include "util.h"
 
 #define STACK_HASSPACE(stack, additional) (((stack)->size + (additional) < (stack)->allocated))
 
 InterpreterStack_T* init_interpreter_stack(size_t capacity)
 {
     InterpreterStack_T* stack = malloc(capacity + sizeof(InterpreterStack_T));
-    stack->size = 0;
-    stack->allocated = capacity;
+    stack->size = 1;
+    stack->allocated = MAX(capacity, 1);
     return stack;
 }
 
@@ -33,7 +33,12 @@ size_t interpreter_stack_push(InterpreterStack_T** stack, const void* data, size
     return start_addr;
 }
 
-void interpreter_stack_grow(InterpreterStack_T** stack, size_t size)
+size_t interpreter_stack_align_to(InterpreterStack_T** stack, size_t align)
+{
+    return interpreter_stack_grow(stack, align_to((*stack)->size, align) - ((*stack)->size));
+}
+
+size_t interpreter_stack_grow(InterpreterStack_T** stack, size_t size)
 {
     if(!STACK_HASSPACE(*stack, size))
     {
@@ -41,7 +46,7 @@ void interpreter_stack_grow(InterpreterStack_T** stack, size_t size)
         *stack = realloc(*stack, (*stack)->allocated + sizeof(InterpreterStack_T)); // TODO: find better allocation curve
     }
 
-    (*stack)->size += size;
+    return (*stack)->size += size;
 }
 
 void interpreter_stack_shrink_to(InterpreterStack_T* stack, size_t to) {

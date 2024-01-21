@@ -18,7 +18,8 @@ void free_interpreter_stack(InterpreterStack_T* stack);
 
 size_t interpreter_stack_push(InterpreterStack_T** stack, const void* data, size_t size);
 
-void interpreter_stack_grow(InterpreterStack_T** stack, size_t size);
+size_t interpreter_stack_align_to(InterpreterStack_T** stack, size_t align);
+size_t interpreter_stack_grow(InterpreterStack_T** stack, size_t size);
 void interpreter_stack_shrink_to(InterpreterStack_T* stack, size_t to);
 
 #define STACK_TOP(stack) ((stack)->size)

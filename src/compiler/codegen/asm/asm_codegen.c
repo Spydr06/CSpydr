@@ -1,8 +1,6 @@
 #include "asm_codegen.h"
 #include "io/log.h"
 #include "io/io.h"
-#include "ast/ast_iterator.h"
-#include "optimizer/constexpr.h"
 #include "platform/linux/linux_platform.h"
 #include "platform/platform_bindings.h"
 #include "../codegen_utils.h"

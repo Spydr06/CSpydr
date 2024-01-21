@@ -8,30 +8,19 @@
 #include "error/error.h"
 #include "lexer/token.h"
 #include "list.h"
-#include "validator.h"
 #include "io/log.h"
-#include "io/io.h"
 #include "ast/types.h"
 #include "mem/mem.h"
-#include "platform/platform_bindings.h"
-#include "lexer/lexer.h"
-#include "preprocessor/preprocessor.h"
 #include "toolchain.h"
-#include "codegen/codegen_utils.h"
 #include "utils.h"
-#include "optimizer/constexpr.h"
 #include "timer/timer.h"
-#include "codegen/transpiler/c_codegen.h"
-#include "platform/pkg_config.h"
 #include "directives.h"
 
-#include <errno.h>
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
 #include <float.h>
 #include<unistd.h> 
-#include <errno.h>
 
 #define STATIC_MEMBER "::"
 
@@ -636,6 +625,7 @@ static ASTType_T* parse_enum_type(Parser_T* p)
         member->id = parse_simple_identifier(p);
         list_push(enum_type->members, member);
         member->is_constant = true;
+        member->constexpr = true;
 
         if(tok_is_operator(p, "="))
         {

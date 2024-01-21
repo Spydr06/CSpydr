@@ -35,6 +35,7 @@ EVAL_FN(after_main);
 EVAL_FN(before_main);
 EVAL_FN(cc);
 EVAL_FN(cfg);
+EVAL_FN(constexpr);
 EVAL_FN(copy);
 EVAL_FN(deprecated);
 EVAL_FN(drop);
@@ -74,6 +75,12 @@ static const Directive_T DIRECTIVES[] = {
         1,
         OBJ_ANY,
         eval_cfg,
+    },
+    {
+        "constexpr",
+        0,
+        OBJ_FUNCTION | OBJ_GLOBAL,
+        eval_constexpr
     },
     {
         "copy",
@@ -353,6 +360,18 @@ EVAL_FN(cfg)
     }
 
     throw_error(context, ERR_UNDEFINED_UNCR, data->name_token, "undefined `cfg` directive `%s`", cfg_name);
+    return false;
+}
+
+EVAL_FN(constexpr)
+{
+    if(obj->constexpr) 
+    {
+        char buf[BUFSIZ];
+        throw_error(context, ERR_REDEFINITION_UNCR, data->name_token, "redundant `constexpr` directive; `%s` is already marked as `constexpr`", ast_id_to_str(buf, obj->id, BUFSIZ));
+    }
+
+    obj->constexpr = true;
     return false;
 }
 
