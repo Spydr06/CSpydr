@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # A small script to delete the CMake cache and regenerate the project
 
