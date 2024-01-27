@@ -1,6 +1,7 @@
 #include "directives.h"
 #include "ast/ast.h"
 #include "ast/types.h"
+#include "c_parser/c_parser.h"
 #include "config.h"
 #include "error/error.h"
 #include "list.h"
@@ -44,6 +45,7 @@ EVAL_FN(env_ne);
 EVAL_FN(export);
 EVAL_FN(flag);
 EVAL_FN(immutable);
+EVAL_FN(include_c);
 EVAL_FN(link_dir);
 EVAL_FN(link_obj);
 EVAL_FN(link);
@@ -136,6 +138,12 @@ static const Directive_T DIRECTIVES[] = {
         eval_immutable
     },
     {
+        "include_c",
+        ANY,
+        0,
+        eval_include_c
+    },
+    {
         "link_dir",
         ANY,
         0,
@@ -173,14 +181,18 @@ typedef struct DIRECTIVE_DATA_STRUCT {
     const Directive_T* directive;
     Token_T* name_token;
     List_T* arguments;
+    CParser_T* c_header_parser;
+    ASTObj_T* surrounding_obj;
 } DirectiveData_T;
 
-DirectiveData_T* directive_data(const Directive_T* directive, Token_T* name_token, List_T* arguments) 
+DirectiveData_T* directive_data(const Directive_T* directive, Token_T* name_token, List_T* arguments, CParser_T* c_header_parser, ASTObj_T* surrounding_obj) 
 {
     DirectiveData_T* dd = malloc(sizeof(DirectiveData_T));
     dd->directive = directive;
     dd->name_token = name_token;
     dd->arguments = arguments;
+    dd->c_header_parser = c_header_parser;
+    dd->surrounding_obj = surrounding_obj;
     return dd;
 }
 
@@ -282,7 +294,7 @@ DirectiveData_T* parse_directive(Parser_T* p)
     if(directive->num_args != ANY && (size_t) directive->num_args != args->size) 
         throw_error(parser_context(p), ERR_UNDEFINED, name_tok, "directive `%s` expects %d arguments, got %lu", name, directive->num_args, args->size);
 
-    return directive_data(directive, name_tok, args);
+    return directive_data(directive, name_tok, args, parser_get_c_header_parser(p), parser_get_current_obj(p));
 }
 
 EVAL_FN(after_main)
@@ -611,6 +623,15 @@ EVAL_FN(immutable)
             member->data_type->is_constant = true;
     }
 
+    return false;
+}
+
+EVAL_FN(include_c)
+{
+    for(size_t i = 0; i < data->arguments->size; i++)
+    {
+        parse_c_header(data->c_header_parser, data->surrounding_obj, data->name_token, data->arguments->items[i]);
+    }
     return false;
 }
 

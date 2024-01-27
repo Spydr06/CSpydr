@@ -1,12 +1,7 @@
-import "io.csp";
 
-[constexpr]
-fn add(a: i32, b: i32): i32 = a + b;
-
-const magic_number: i32 = add(34, 35);
-
+[include_c("stdio.h")]
 fn main(): i32 {
-    let buf: u8[magic_number];
-    <- len buf;
+    printf("Hello\n");
+    <- 0;
 }
 

@@ -224,7 +224,7 @@ static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
     init_lexer(&import_lexer, pp->context, import_file);
     
     if(!pp->is_silent) {
-        LOG_OK_F("\33[2K\r" COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s", imp->tok->value);
+        LOG_OK_F("\33[2k\r" COLOR_BOLD_GREEN "  Compiling " COLOR_RESET " %s", imp->tok->value);
         fflush(OUTPUT_STREAM);
     }
 

@@ -1,6 +1,7 @@
 #include "parser.h"
 
 #include "ast/ast.h"
+#include "c_parser/c_parser.h"
 #include "hashmap.h"
 #include "io/file.h"
 #include "util.h"
@@ -28,7 +29,7 @@ typedef struct PARSER_STRUCT
     Context_T* context;
     List_T* tokens;
     size_t token_i;
-    ASTProg_T* root_ref;
+    ASTProg_T* ast;
     Token_T* tok;
     ASTNode_T* cur_block;
     ASTObj_T* cur_obj;
@@ -37,6 +38,8 @@ typedef struct PARSER_STRUCT
     size_t cur_tuple_id;
 
     const HashMap_T* operator_context;
+
+    CParser_T c_header_parser;
 
     bool holes_enabled;
 } Parser_T;
@@ -330,15 +333,27 @@ static void init_parser(Parser_T* parser, Context_T* context, ASTProg_T* ast)
 {
     memset(parser, 0, sizeof(struct PARSER_STRUCT));
     parser->context = context;
-    parser->root_ref = ast;
+    parser->ast = ast;
     parser->tokens = ast->tokens;
     parser->tok = ast->tokens->items[0];
     parser->operator_context = build_operator_context();
+    c_parser_init(&parser->c_header_parser, context, ast);
 }
 
 static void free_parser(Parser_T* p)
 {
     hashmap_free((HashMap_T*) p->operator_context);
+    c_parser_free(&p->c_header_parser);
+}
+
+CParser_T* parser_get_c_header_parser(Parser_T* p)
+{
+    return &p->c_header_parser;
+}
+
+ASTObj_T* parser_get_current_obj(Parser_T* p)
+{
+    return p->cur_obj;
 }
 
 static inline bool streq(char* s1, char* s2)
@@ -361,7 +376,7 @@ Context_T* parser_context(Parser_T* p)
 
 ASTProg_T* parser_ast(Parser_T* p)
 {
-    return p->root_ref;
+    return p->ast;
 }
 
 inline Token_T* parser_peek(Parser_T* p, i32 level)
@@ -455,9 +470,9 @@ static bool check_type(ASTType_T* a, ASTType_T* b)
 
 static ASTObj_T* get_compatible_tuple(Parser_T* p, ASTType_T* tuple)
 {
-    for(size_t i = 0; i < p->root_ref->objs->size; i++)
+    for(size_t i = 0; i < p->ast->objs->size; i++)
     {
-        ASTObj_T* obj = p->root_ref->objs->items[i];
+        ASTObj_T* obj = p->ast->objs->items[i];
         if(obj->kind == OBJ_TYPEDEF && str_starts_with(obj->id->callee, "__csp_tuple_") && obj->data_type->members->size == tuple->members->size)
         {
             for(size_t j = 0; j < obj->data_type->members->size; j++)
@@ -733,7 +748,7 @@ static ASTObj_T* parser_generate_tuple_type(Parser_T* p, ASTType_T* tuple)
 
         tydef->id = init_ast_identifier(&p->context->raw_allocator, tuple->tok, id);
 
-        list_push(p->root_ref->objs, tydef);
+        list_push(p->ast->objs, tydef);
         tuple->kind = TY_UNDEF;
         tuple->id = tydef->id;
 
@@ -2162,7 +2177,7 @@ static ASTNode_T* parse_const_lambda(Parser_T* p)
     collect_locals(lambda_fn->body, lambda_fn->objs);
     if(p->context->ct == CT_ASM)
         lambda_fn->alloca_bottom = &alloca_bottom;
-    list_push(p->root_ref->objs, lambda_fn);
+    list_push(p->ast->objs, lambda_fn);
 
     ASTNode_T* lambda_id = init_ast_node(&p->context->raw_allocator, ND_ID, lambda_fn->tok);
     lambda_id->data_type = lambda_fn->data_type;

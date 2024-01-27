@@ -2,6 +2,7 @@
 #define CSPYDR_PARSER_H
 
 #include "ast/ast.h"
+#include "c_parser/c_parser.h"
 
 typedef struct PARSER_STRUCT Parser_T;
 
@@ -15,5 +16,8 @@ Token_T* parser_peek(Parser_T* p, i32 level);
 bool tok_is(Parser_T* p, TokenType_T type);
 
 void parse_obj(Parser_T* p, List_T* obj_list);
+
+CParser_T* parser_get_c_header_parser(Parser_T* p);
+ASTObj_T* parser_get_current_obj(Parser_T* p);
 
 #endif
