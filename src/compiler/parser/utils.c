@@ -3,10 +3,7 @@
 #include "ast/ast.h"
 #include "ast/ast_iterator.h"
 #include "ast/types.h"
-#include "lexer/token.h"
 #include "list.h"
-#include "mem/mem.h"
-#include "toolchain.h"
 
 #include <stdarg.h>
 #include <string.h>

@@ -59,6 +59,8 @@ typedef struct CSPYDR_CONTEXT_STRUCT CSPYDR_TYPE(Context);
 
 extern CSPYDR_TYPE(Context)* csp_init_context(void);
 
+typedef struct CSPYDR_ALLOCATOR_STRUCT CSpydrAllocator_T;
+
 typedef union CSPYDR_FLAGS_STRUCT {
     struct {
         bool silent : 1;
@@ -173,7 +175,7 @@ enum CSPYDR_TOKEN_TYPE {
 typedef enum CSPYDR_TOKEN_TYPE CSpydrTokenType_T;
 typedef struct CSPYDR_TOKEN_STRUCT CSpydrToken_T;
 
-CSpydrToken_T* csp_new_token(CSpydrTokenType_T type, uint32_t line, uint32_t pos, char value[]);
+CSpydrToken_T* csp_new_token(CSpydrAllocator_T* alloc, CSpydrTokenType_T type, uint32_t line, uint32_t pos, char value[]);
 CSpydrTokenType_T csp_token_get_type(CSpydrToken_T* tok);
 uint32_t csp_token_get_line(CSpydrToken_T* tok);
 uint32_t csp_token_get_position(CSpydrToken_T* tok);

@@ -1,18 +1,20 @@
 #include "ast.h"
 #include "error/error.h"
-#include "io/log.h"
 
 #include "codegen/codegen_utils.h"
 #include "config.h"
+#include "memory/allocator.h"
 #include "optimizer/constexpr.h"
 #include "types.h"
-#include "mem/mem.h"
+#include "context.h"
+#include "io/log.h"
 
 #include <string.h>
+#include <stdio.h>
 
-ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok)
+ASTNode_T* init_ast_node(Allocator_T* alloc, ASTNodeKind_T kind, Token_T* tok)
 {
-    ASTNode_T* node = mem_malloc(sizeof(struct AST_NODE_STRUCT));
+    ASTNode_T* node = allocator_malloc(alloc, sizeof(struct AST_NODE_STRUCT));
     memset(node, 0, sizeof(struct AST_NODE_STRUCT));
     node->kind = kind;
     node->tok = tok;
@@ -20,9 +22,9 @@ ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok)
     return node;
 }
 
-ASTIdentifier_T* init_ast_identifier(Token_T* tok, char* callee)
+ASTIdentifier_T* init_ast_identifier(Allocator_T* alloc, Token_T* tok, char* callee)
 {
-    ASTIdentifier_T* id = mem_malloc(sizeof(struct AST_IDENTIFIER_STRUCT));
+    ASTIdentifier_T* id = allocator_malloc(alloc, sizeof(struct AST_IDENTIFIER_STRUCT));
     memset(id, 0, sizeof(struct AST_IDENTIFIER_STRUCT));
 
     id->tok = tok;
@@ -32,9 +34,9 @@ ASTIdentifier_T* init_ast_identifier(Token_T* tok, char* callee)
     return id;
 }
 
-ASTType_T* init_ast_type(ASTTypeKind_T kind, Token_T* tok)
+ASTType_T* init_ast_type(Allocator_T* alloc, ASTTypeKind_T kind, Token_T* tok)
 {
-    ASTType_T* type = mem_malloc(sizeof(struct AST_TYPE_STRUCT));
+    ASTType_T* type = allocator_malloc(alloc, sizeof(struct AST_TYPE_STRUCT));
     memset(type, 0, sizeof(struct AST_TYPE_STRUCT));
     
     type->tok = tok;
@@ -44,16 +46,16 @@ ASTType_T* init_ast_type(ASTTypeKind_T kind, Token_T* tok)
     return type;
 }
 
-ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok)
+ASTObj_T* init_ast_obj(Allocator_T* alloc, ASTObjKind_T kind, Token_T* tok)
 {
-    ASTObj_T* obj = mem_malloc(sizeof(struct AST_OBJ_STRUCT));
+    ASTObj_T* obj = allocator_malloc(alloc, sizeof(struct AST_OBJ_STRUCT));
     memset(obj, 0, sizeof(struct AST_OBJ_STRUCT));
     obj->kind = kind;
     obj->tok = tok;
     return obj;
 }
 
-void init_ast_prog(ASTProg_T* prog, const char* main_file_path, const char* target_binary)
+void init_ast_prog(Context_T* context, ASTProg_T* prog, const char* main_file_path, const char* target_binary)
 {
     prog->main_file_path = main_file_path;
     prog->target_binary = target_binary;
@@ -61,8 +63,8 @@ void init_ast_prog(ASTProg_T* prog, const char* main_file_path, const char* targ
     prog->objs = init_list();
     prog->tuple_structs = init_list();
 
-    mem_add_list(prog->objs);
-    mem_add_list(prog->tuple_structs);
+    CONTEXT_ALLOC_REGISTER(context, prog->objs);
+    CONTEXT_ALLOC_REGISTER(context, prog->tuple_structs);
 }
 
 void merge_ast_progs(ASTProg_T* dest, ASTProg_T* src)

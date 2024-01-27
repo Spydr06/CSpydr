@@ -1,8 +1,8 @@
 #include "toolchain.h"
 
-#include <string.h>
 #include <assert.h>
 
+#include "error/panic.h"
 #include "io/file.h"
 #include "passes.h"
 #include "lexer/lexer.h"
@@ -102,7 +102,7 @@ void compile(Context_T* context, char* input_file, char* output_file)
 
 i32 initialization_pass(Context_T* context, ASTProg_T* ast)
 {
-    init_ast_prog(ast, context->paths.main_src_file, context->paths.target);
+    init_ast_prog(context, ast, context->paths.main_src_file, context->paths.target);
     ast->files = init_list();
 
     if(context->flags.read_main_file_on_init)

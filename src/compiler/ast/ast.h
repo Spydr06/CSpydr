@@ -1,17 +1,17 @@
 #ifndef CSPYDR_AST_H
 #define CSPYDR_AST_H
 
+#include "config.h"
+#include "memory/allocator.h"
 #include "stdbool.h"
 
 #include "list.h"
-#include "hashmap.h"
 #include "lexer/token.h"
 
 #define __CSPYDR_INTERNAL_USE
 #include "../../api/include/cspydr.h"
 
-#include <stdint.h>
-#include <stdio.h>
+typedef struct CSPYDR_CONTEXT_STRUCT Context_T;
 
 typedef enum MAIN_FUNCTION_KIND {
     MFK_NO_ARGS,
@@ -285,14 +285,12 @@ typedef struct AST_PROG_STRUCT
     MainFunctionKind_T mfk;
 } ASTProg_T;
 
-ASTNode_T* init_ast_node(ASTNodeKind_T kind, Token_T* tok);
-ASTType_T* init_ast_type(ASTTypeKind_T kind, Token_T* tok);
+ASTNode_T* init_ast_node(Allocator_T* alloc, ASTNodeKind_T kind, Token_T* tok);
+ASTType_T* init_ast_type(Allocator_T* alloc, ASTTypeKind_T kind, Token_T* tok);
+ASTIdentifier_T* init_ast_identifier(Allocator_T* alloc, Token_T* tok, char* callee);
+ASTObj_T* init_ast_obj(Allocator_T* alloc, ASTObjKind_T kind, Token_T* tok);
 
-ASTIdentifier_T* init_ast_identifier(Token_T* tok, char* callee);
-
-ASTObj_T* init_ast_obj(ASTObjKind_T kind, Token_T* tok);
-
-void init_ast_prog(ASTProg_T* prog, const char* main_file_path, const char* target_binary);
+void init_ast_prog(Context_T* context, ASTProg_T* prog, const char* main_file_path, const char* target_binary);
 
 const char* obj_kind_to_str(ASTObjKind_T kind);
 const char* type_kind_to_str(ASTTypeKind_T kind);

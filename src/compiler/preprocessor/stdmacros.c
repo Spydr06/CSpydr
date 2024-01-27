@@ -65,26 +65,26 @@ void define_std_macros(Context_T* context, List_T *macro_list)
 {
     for(i32 i = 0; macros[i].id; i++)
     {
-        Token_T* main_token = init_token((char*) macros[i].id, 0, 0, TOKEN_ID, NULL);
+        Token_T* main_token = init_token(&context->raw_allocator, (char*) macros[i].id, 0, 0, TOKEN_ID, NULL);
         Macro_T* macro = init_macro(main_token);
 
         Token_T* replacement_token;
         switch(macros[i].value_type)
         {
             case INTEGER:
-                replacement_token = init_token((char*) macros[i].value, 0, 0, TOKEN_INT, NULL);
+                replacement_token = init_token(&context->raw_allocator, (char*) macros[i].value, 0, 0, TOKEN_INT, NULL);
                 break;
             case ID:
-                replacement_token = init_token((char*) macros[i].value, 0, 0, TOKEN_ID, NULL);
+                replacement_token = init_token(&context->raw_allocator, (char*) macros[i].value, 0, 0, TOKEN_ID, NULL);
                 break;
             case STRING:
-                replacement_token = init_token((char*) macros[i].value, 0, 0, TOKEN_STRING, NULL);
+                replacement_token = init_token(&context->raw_allocator, (char*) macros[i].value, 0, 0, TOKEN_STRING, NULL);
                 break;
             case STRING_FN:
-                replacement_token = init_token((char*) macros[i].fn(context), 0, 0, TOKEN_STRING, NULL);
+                replacement_token = init_token(&context->raw_allocator, (char*) macros[i].fn(context), 0, 0, TOKEN_STRING, NULL);
                 break;
             case CURRENT_FN:
-                replacement_token = init_token("__func__", 0, 0, TOKEN_CURRENT_FN, NULL);
+                replacement_token = init_token(&context->raw_allocator, "__func__", 0, 0, TOKEN_CURRENT_FN, NULL);
                 break;
         }
 

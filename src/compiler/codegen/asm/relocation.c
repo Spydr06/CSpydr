@@ -5,8 +5,6 @@
 #include "ast/types.h"
 #include "optimizer/constexpr.h"
 #include "error/error.h"
-#include "io/log.h"
-#include "context.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -188,7 +186,7 @@ size_t gen_relocation(ASMCodegenData_T* cg, ASTNode_T* node, size_t target_size)
             if(target_size <= 8)
             {
                 size_generated = asm_gen_const_data(cg, target_size);
-                asm_println(cg, "%s", asm_gen_identifier(node->id));
+                asm_println(cg, "%s", asm_gen_identifier(cg->context, node->id));
                 break;
             }
             throw_error(cg->context, ERR_CODEGEN, node->tok, "cannot generate relocation for identifiers with types > 8 bytes");

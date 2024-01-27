@@ -1,7 +1,7 @@
 #include "types.h"
 #include "ast.h"
+#include "memory/allocator.h"
 
-#include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
 
@@ -114,13 +114,13 @@ ASTTypeKind_T get_datatype_from_str(char* str)
     return TY_UNDEF;
 }
 
-ASTType_T* get_primitive_type(char* type)
+ASTType_T* get_primitive_type(Allocator_T* allocator, char* type)
 {
     const ASTType_T* prim = primitives[get_datatype_from_str(type)];
 
     if(prim) 
     {
-        ASTType_T* dupl = init_ast_type(prim->kind, prim->tok);
+        ASTType_T* dupl = init_ast_type(allocator, prim->kind, prim->tok);
         dupl->is_primitive = prim->is_primitive;
         dupl->size = prim->size;
         return dupl;
@@ -129,9 +129,9 @@ ASTType_T* get_primitive_type(char* type)
     return NULL;
 }
 
-ASTType_T* ptr_to(Token_T* tok, ASTType_T* base)
+ASTType_T* ptr_to(Allocator_T* allocator, Token_T* tok, ASTType_T* base)
 {
-    ASTType_T* ptr = init_ast_type(TY_PTR, tok);
+    ASTType_T* ptr = init_ast_type(allocator, TY_PTR, tok);
 
     ptr->base = base;
     ptr->size = PTR_S;

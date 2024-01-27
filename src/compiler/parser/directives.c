@@ -8,7 +8,6 @@
 #include "parser/parser.h"
 #include "platform/pkg_config.h"
 #include "platform/platform_bindings.h"
-#include "mem/mem.h"
 #include "context.h"
 #include "io/log.h"
 
@@ -500,13 +499,13 @@ EVAL_FN(drop)
         return false;
     }
 
-    ASTExitFnHandle_T* handle = mem_malloc(sizeof(ASTExitFnHandle_T));
+    ASTExitFnHandle_T* handle = allocator_malloc(&context->raw_allocator, sizeof(ASTExitFnHandle_T));
     handle->fn = obj;
     handle->type = ((ASTObj_T*) obj->args->items[0])->data_type;
     handle->tok = data->name_token;
 
     if(!ast->type_exit_fns)
-        mem_add_list(ast->type_exit_fns = init_list());
+        CONTEXT_ALLOC_REGISTER(context, ast->type_exit_fns = init_list());
     list_push(ast->type_exit_fns, handle);
 
     return false;   
@@ -581,7 +580,7 @@ EVAL_FN(flag)
             errored = false;
         }
 
-        ASTNode_T* new_value = init_ast_node(ND_INT, member->value->tok);
+        ASTNode_T* new_value = init_ast_node(&context->raw_allocator, ND_INT, member->value->tok);
         new_value->data_type = (ASTType_T*) primitives[TY_U32];
         new_value->long_val = 1 << offset;
 
@@ -621,7 +620,7 @@ EVAL_FN(link_dir)
     {
         char* link_flag = calloc(strlen(data->arguments->items[i]) + 3, sizeof(char));
         sprintf(link_flag, "-L%s", (const char*) data->arguments->items[i]);
-        mem_add_ptr(link_flag);
+        CONTEXT_ALLOC_REGISTER(context, (void*) link_flag);
 
         list_push(context->linker_flags, link_flag);
     }
@@ -635,7 +634,7 @@ EVAL_FN(link_obj)
         char* abs_path = get_absolute_path(data->name_token->source->path);
         char* working_dir = get_path_from_file(abs_path);
 
-        char* full_fp = mem_malloc((strlen(working_dir) + strlen(DIRECTORY_DELIMS) + strlen(data->arguments->items[i]) + 2) * sizeof(char));
+        char* full_fp = allocator_malloc(&context->raw_allocator, (strlen(working_dir) + strlen(DIRECTORY_DELIMS) + strlen(data->arguments->items[i]) + 2) * sizeof(char));
         sprintf(full_fp, "%s" DIRECTORY_DELIMS "%s", working_dir, (const char*) data->arguments->items[i]);
         list_push(context->linker_flags, full_fp);
 

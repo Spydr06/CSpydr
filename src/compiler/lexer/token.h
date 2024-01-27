@@ -2,7 +2,7 @@
 #define CSPYDR_TOKEN_H
 
 #include "io/file.h"
-#include "config.h"
+#include "memory/allocator.h"
 
 #define __CSPYDR_INTERNAL_USE
 #include "../../api/include/cspydr.h"
@@ -22,8 +22,8 @@ typedef struct CSPYDR_TOKEN_STRUCT {
     char value[];
 } __attribute__((packed)) Token_T;
 
-Token_T* init_token(char* value, u32 line, u32 position, TokenType_T type, File_T* source);
-Token_T* duplicate_token(const Token_T* tok);
+Token_T* init_token(Allocator_T* alloc, char* value, u32 line, u32 position, TokenType_T type, File_T* source);
+Token_T* duplicate_token(Allocator_T* alloc, const Token_T* tok);
 char* token_to_str(Token_T* token);
 
 #endif

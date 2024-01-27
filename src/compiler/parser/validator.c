@@ -12,7 +12,6 @@
 #include "ast/ast.h"
 #include "codegen/codegen_utils.h"
 #include "lexer/token.h"
-#include "mem/mem.h"
 #include "typechecker.h"
 #include "timer/timer.h"
 
@@ -735,7 +734,7 @@ static void before_main_fn(Validator_T* v, ASTObj_T* fn)
     if(!v->ast->before_main)
     {
         v->ast->before_main = init_list();
-        mem_add_list(v->ast->before_main);
+        CONTEXT_ALLOC_REGISTER(v->context, v->ast->before_main);
     }
 
     list_push(v->ast->before_main, fn);
@@ -766,7 +765,7 @@ static void after_main_fn(Validator_T* v, ASTObj_T* fn)
     if(!v->ast->after_main)
     {
         v->ast->after_main = init_list();
-        mem_add_list(v->ast->after_main);
+        CONTEXT_ALLOC_REGISTER(v->context, v->ast->after_main);
     }
 
     list_push(v->ast->after_main, fn);
@@ -878,8 +877,8 @@ static void fn_end(ASTObj_T* fn, va_list args)
         case TY_STRUCT:
             if(v->context->ct == CT_ASM && return_type->size > 16)
             {
-                fn->return_ptr = init_ast_obj(OBJ_LOCAL, fn->return_type->tok);
-                fn->return_ptr->data_type = init_ast_type(TY_PTR, fn->return_type->tok);
+                fn->return_ptr = init_ast_obj(&v->context->raw_allocator, OBJ_LOCAL, fn->return_type->tok);
+                fn->return_ptr->data_type = init_ast_type(&v->context->raw_allocator, TY_PTR, fn->return_type->tok);
                 fn->return_ptr->data_type->base = fn->return_type;
                 fn->return_ptr->data_type->size = get_type_size(v, fn->return_ptr->data_type);
                 fn->return_ptr->data_type->align = 8;
@@ -1270,7 +1269,7 @@ static void call(ASTNode_T* call, va_list args)
     // if we compile using the assembly compiler, a buffer for the return value is needed when handling big structs
     if(v->context->ct == CT_ASM && call->data_type && expand_typedef(v, call->data_type)->kind == TY_STRUCT)
     {
-        ASTObj_T* ret_buf = init_ast_obj(OBJ_LOCAL, call->tok);
+        ASTObj_T* ret_buf = init_ast_obj(&v->context->raw_allocator, OBJ_LOCAL, call->tok);
         ret_buf->data_type = call->data_type;
         
         list_push(v->current_function->objs, ret_buf);
@@ -1334,9 +1333,10 @@ static void closure(ASTNode_T* closure, va_list args)
 
 static void reference(ASTNode_T* ref, va_list args)
 {
+    GET_VALIDATOR(args);
     if(!ref->data_type)
     {
-        ref->data_type = init_ast_type(TY_PTR, ref->tok);
+        ref->data_type = init_ast_type(&v->context->raw_allocator, TY_PTR, ref->tok);
         ref->data_type->base = ref->right->data_type;
     }
 }
@@ -1377,7 +1377,7 @@ static void member(ASTNode_T* member, va_list args)
     if(is_ptr(v, member->left->data_type))
     {
         // convert x->y to (*x).y
-        ASTNode_T* new_left = init_ast_node(ND_DEREF, member->left->tok);
+        ASTNode_T* new_left = init_ast_node(&v->context->raw_allocator, ND_DEREF, member->left->tok);
         new_left->data_type = member->left->data_type->base;
         new_left->right = member->left;
         member->left = new_left;
@@ -1640,20 +1640,20 @@ static void anonymous_struct_lit(Validator_T* v, ASTNode_T* s_lit)
         throw_error(v->context, ERR_TYPE_ERROR, s_lit->tok, "cannot resolve data type of empty anonymous struct literal `{}`");
         return;
     }
-    ASTType_T* type = init_ast_type(TY_STRUCT, s_lit->tok);
-    mem_add_list(type->members = init_list());
+    ASTType_T* type = init_ast_type(&v->context->raw_allocator, TY_STRUCT, s_lit->tok);
+    CONTEXT_ALLOC_REGISTER(v->context, type->members = init_list());
     
     for(size_t i = 0; i < s_lit->args->size; i++)
     {
         ASTNode_T* arg = s_lit->args->items[i];
         if(arg->data_type)
         {
-            ASTNode_T* member = init_ast_node(ND_STRUCT_MEMBER, arg->tok);
+            ASTNode_T* member = init_ast_node(&v->context->raw_allocator, ND_STRUCT_MEMBER, arg->tok);
             char buffer[100] = {0};
             sprintf(buffer, "_%ld", i);
             char* buf_ptr = strdup(buffer);
-            mem_add_ptr(buf_ptr);
-            member->id = init_ast_identifier(arg->tok, buf_ptr);
+            CONTEXT_ALLOC_REGISTER(v->context, (void*) buf_ptr);
+            member->id = init_ast_identifier(&v->context->raw_allocator, arg->tok, buf_ptr);
             member->data_type = arg->data_type;
 
             list_push(type->members, member);
@@ -1673,7 +1673,7 @@ static void struct_lit(ASTNode_T* s_lit, va_list args)
 
     if(v->context->ct == CT_ASM && !s_lit->is_assigning)
     {
-        s_lit->buffer = init_ast_obj(OBJ_LOCAL, s_lit->tok);
+        s_lit->buffer = init_ast_obj(&v->context->raw_allocator, OBJ_LOCAL, s_lit->tok);
         s_lit->buffer->data_type = s_lit->data_type;
         s_lit->buffer->data_type->size = get_type_size(v, s_lit->buffer->data_type);
         
@@ -1685,7 +1685,7 @@ static void array_lit(ASTNode_T* a_lit, va_list args)
 {
     GET_VALIDATOR(args);
 
-    a_lit->data_type = init_ast_type(TY_ARRAY, a_lit->tok);
+    a_lit->data_type = init_ast_type(&v->context->raw_allocator, TY_ARRAY, a_lit->tok);
     
     if(a_lit->args->size == 0)
         throw_error(v->context, ERR_UNDEFINED, a_lit->tok, "empty array literals are not allowed");
@@ -1719,7 +1719,7 @@ static void array_lit(ASTNode_T* a_lit, va_list args)
 
     if(v->context->ct == CT_ASM && !a_lit->is_assigning && v->current_function)
     {
-        a_lit->buffer = init_ast_obj(OBJ_LOCAL, a_lit->tok);
+        a_lit->buffer = init_ast_obj(&v->context->raw_allocator, OBJ_LOCAL, a_lit->tok);
         a_lit->buffer->data_type = a_lit->data_type;
         a_lit->buffer->data_type->num_indices = a_lit->data_type->num_indices;
         a_lit->buffer->data_type->size = get_type_size(v, a_lit->buffer->data_type);
@@ -1814,14 +1814,14 @@ static void lambda_end(ASTNode_T* lambda, va_list args)
 
     if(v->context->ct == CT_ASM)
     {
-        ASTObj_T* lambda_stack_ptr = init_ast_obj(OBJ_GLOBAL, lambda->tok);
+        ASTObj_T* lambda_stack_ptr = init_ast_obj(&v->context->raw_allocator, OBJ_GLOBAL, lambda->tok);
         lambda_stack_ptr->data_type = (ASTType_T*) void_ptr_type;
 
         char* id = calloc(64, sizeof(char));
-        mem_add_ptr(id);
+        CONTEXT_ALLOC_REGISTER(v->context, (void*) id);
         sprintf(id, "lambda.stackptr.%ld", lambda->long_val);
 
-        lambda_stack_ptr->id = init_ast_identifier(lambda->tok, id);
+        lambda_stack_ptr->id = init_ast_identifier(&v->context->raw_allocator, lambda->tok, id);
 
         list_push(v->ast->objs, lambda_stack_ptr);
         lambda->stack_ptr = lambda_stack_ptr;
@@ -1831,8 +1831,8 @@ static void lambda_end(ASTNode_T* lambda, va_list args)
             throw_error(v->context, ERR_TYPE_ERROR_UNCR, return_type->tok ? return_type->tok : lambda->tok, "cannot return an array type from a function");
         else if(return_type->kind == TY_STRUCT && return_type->size > 16)
         {
-            lambda->return_ptr = init_ast_obj(OBJ_LOCAL, lambda->data_type->base->tok);
-            lambda->return_ptr->data_type = init_ast_type(TY_PTR, lambda->data_type->base->tok);
+            lambda->return_ptr = init_ast_obj(&v->context->raw_allocator, OBJ_LOCAL, lambda->data_type->base->tok);
+            lambda->return_ptr->data_type = init_ast_type(&v->context->raw_allocator, TY_PTR, lambda->data_type->base->tok);
             lambda->return_ptr->data_type->base = lambda->data_type->base;
             lambda->return_ptr->data_type->size = get_type_size(v, lambda->return_ptr->data_type);
             lambda->return_ptr->data_type->align = 8;
@@ -2041,7 +2041,7 @@ static void resolve_struct_embeds(Validator_T* v, ASTType_T* s_type)
         return;
 
     List_T* resolved_fields = init_list_sized(s_type->members->size);
-    mem_add_list(resolved_fields);
+    CONTEXT_ALLOC_REGISTER(v->context, resolved_fields);
 
     for(size_t i = 0; i < s_type->members->size; i++)
     {
@@ -2158,7 +2158,7 @@ static void array_type(ASTType_T* a_type, va_list args)
 {
     GET_VALIDATOR(args);
     if(a_type->num_indices_node)
-        a_type->num_indices = const_u64(v->context, a_type->num_indices_node);
+        a_type->num_indices = const_u64(v->context, eval_constexpr(&v->constexpr_resolver, a_type->num_indices_node));
 }
 
 static void c_array_type(ASTType_T* ca_type, va_list args)

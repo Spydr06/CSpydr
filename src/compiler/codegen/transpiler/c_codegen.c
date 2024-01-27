@@ -9,6 +9,7 @@
 #include <libgen.h>
 
 #include "config.h"
+#include "context.h"
 #include "platform/platform_bindings.h"
 #include "io/log.h"
 #include "io/io.h"
@@ -18,10 +19,8 @@
 #include "ast/types.h"
 #include "error/error.h"
 #include "hashmap.h"
-#include "keywords.h"
 #include "list.h"
 #include "util.h"
-#include "mem/mem.h"
 #include "debugger/register.h"
 #include "timer/timer.h"
 
@@ -428,10 +427,10 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
     timer_stop(cg->context);
 }
 
-static char* c_gen_identifier(ASTIdentifier_T* id)
+static char* c_gen_identifier(Context_T* context, ASTIdentifier_T* id)
 {
     char* str = gen_identifier(id, "_", ID_PREFIX);
-    mem_add_ptr(str);
+    CONTEXT_ALLOC_REGISTER(context, (void*) str);
     return str;
 }
 
@@ -446,7 +445,7 @@ static void c_gen_entry_point(CCodegenData_T* cg)
     {
         for(size_t i = 0; i < cg->ast->before_main->size; i++)
         {
-            char* const id = c_gen_identifier(((ASTObj_T*) cg->ast->before_main->items[i])->id);
+            char* const id = c_gen_identifier(cg->context, ((ASTObj_T*) cg->ast->before_main->items[i])->id);
             c_println(cg, "  %s();", id);
         }
     }
@@ -458,7 +457,7 @@ static void c_gen_entry_point(CCodegenData_T* cg)
         for(size_t i = 0; i < cg->ast->after_main->size; i++)
         {
             const ASTObj_T* fn = cg->ast->after_main->items[i];
-            const char* id = c_gen_identifier(fn->id);
+            const char* id = c_gen_identifier(cg->context, fn->id);
 
             c_println(cg, fn->args->size ? "  %s(exit_code);" : "  %s();", id);
         }
@@ -485,7 +484,7 @@ static void c_gen_typedef(CCodegenData_T* cg, ASTObj_T* obj)
     if(obj->data_type->kind == TY_ARRAY || obj->data_type->kind == TY_VLA)
         c_predefine_array(obj->data_type, cg);
 
-    char* callee = c_gen_identifier(obj->id);
+    char* callee = c_gen_identifier(cg->context, obj->id);
     obj->generated = true;
     c_predefine_dependant_types(cg, obj->data_type);
     c_print(cg, "typedef ");
@@ -566,7 +565,7 @@ static void c_predefine_struct(CCodegenData_T* cg, ASTType_T* type)
         if(type->referenced_obj && type->referenced_obj->generated && type->base->kind == TY_STRUCT)
         {
             type->referenced_obj->generated = false;
-            c_gen_struct(cg, type->base, c_gen_identifier(type->id));
+            c_gen_struct(cg, type->base, c_gen_identifier(cg->context, type->id));
             c_println(cg, ";");
         }
         break;
@@ -601,7 +600,7 @@ static void c_gen_structs(CCodegenData_T* cg, List_T* objs)
             {
                 obj->generated = false;
                 c_predefine_dependant_structs(cg, obj);
-                c_gen_struct(cg, obj->data_type, c_gen_identifier(obj->id));
+                c_gen_struct(cg, obj->data_type, c_gen_identifier(cg->context, obj->id));
                 c_println(cg, ";");
             }
             break;
@@ -739,7 +738,7 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* type, bool c_arr_as_ptr)
             c_print(cg, "struct _lambda*");
         break;
     case TY_UNDEF:
-        c_print(cg, "%s", c_gen_identifier(type->id));
+        c_print(cg, "%s", c_gen_identifier(cg->context, type->id));
         break;
     case TY_STRUCT:
         c_gen_struct(cg, type, NULL);
@@ -788,7 +787,7 @@ static void c_gen_typed_name_str(CCodegenData_T* cg, const char* id, ASTType_T* 
 
 static inline void c_gen_typed_name(CCodegenData_T* cg, ASTIdentifier_T* id, ASTType_T* type)
 {
-    c_gen_typed_name_str(cg, c_gen_identifier(id), type);
+    c_gen_typed_name_str(cg, c_gen_identifier(cg->context, id), type);
 }
 
 static void c_gen_globals(CCodegenData_T* cg, List_T* objs)
@@ -813,7 +812,7 @@ static void c_gen_globals(CCodegenData_T* cg, List_T* objs)
                         ASTObj_T* member = ty->members->items[i];
                         if(!should_emit(cg->context, member))
                             continue;
-                        char* id = c_gen_identifier(member->id);
+                        char* id = c_gen_identifier(cg->context, member->id);
                         c_print(cg, "int %s = ", id);
                         c_gen_expr(cg, member->value, false);
                         c_println(cg, ";");
@@ -826,7 +825,7 @@ static void c_gen_globals(CCodegenData_T* cg, List_T* objs)
             {
                 if(obj->is_extern)
                     c_print(cg, "extern ");
-                c_gen_typed_name_str(cg, obj->is_extern ? EITHER(obj->exported, obj->id->callee) : c_gen_identifier(obj->id), obj->data_type);
+                c_gen_typed_name_str(cg, obj->is_extern ? EITHER(obj->exported, obj->id->callee) : c_gen_identifier(cg->context, obj->id), obj->data_type);
                 if(obj->value)
                 {
                     c_print(cg, " = ");
@@ -866,7 +865,7 @@ static void c_gen_function_declaration(CCodegenData_T* cg, ASTObj_T* obj)
     }
     else
         c_gen_type(cg, obj->return_type, false);
-    c_print(cg, " %s(", obj->is_extern ? EITHER(obj->exported, obj->id->callee) : c_gen_identifier(obj->id));
+    c_print(cg, " %s(", obj->is_extern ? EITHER(obj->exported, obj->id->callee) : c_gen_identifier(cg->context, obj->id));
     
     for(size_t i = 0; i < obj->args->size; i++)
     {
@@ -954,7 +953,7 @@ static void c_gen_lambda(ASTNode_T* node, va_list custom_args)
             ASTObj_T* local = block->locals->items[j];
             c_print(cg, "(*((");
             c_gen_type(cg, local->data_type, true);
-            c_println(cg, "*)__args[%lu]))=%s;", index++, c_gen_identifier(local->id));
+            c_println(cg, "*)__args[%lu]))=%s;", index++, c_gen_identifier(cg->context, local->id));
         }
     }
 
@@ -995,13 +994,13 @@ static void c_gen_function(CCodegenData_T* cg, ASTObj_T* fn)
 
     if(fn->va_area)
     {
-        char* ap_id = c_gen_identifier(fn->va_area->id);
+        char* ap_id = c_gen_identifier(cg->context, fn->va_area->id);
 
         if(fn->args->size == 0)
             throw_error(cg->context, ERR_CODEGEN, fn->va_area->tok, "cannot have variadic function without at least one argument");
         
         ASTObj_T* last_arg = fn->args->items[fn->args->size - 1];
-        char* param_id = c_gen_identifier(last_arg->id);
+        char* param_id = c_gen_identifier(cg->context, last_arg->id);
 
         c_println(cg, "va_list %s;\nva_start(%s, %s);", ap_id, ap_id, param_id);
 
@@ -1137,7 +1136,7 @@ static void c_gen_inline_asm(CCodegenData_T* cg, ASTNode_T* node)
         ASTNode_T* arg = node->args->items[i];
         if(arg->kind != ND_ID || !arg->output)
             continue;
-        c_print(cg, "\"=r\"(%s)%c", c_gen_identifier(arg->id), --num_output_vars ? ',' : '\n');
+        c_print(cg, "\"=r\"(%s)%c", c_gen_identifier(cg->context, arg->id), --num_output_vars ? ',' : '\n');
     }
 
     c_putc(cg, ':');
@@ -1146,7 +1145,7 @@ static void c_gen_inline_asm(CCodegenData_T* cg, ASTNode_T* node)
         ASTNode_T* arg = node->args->items[i];
         if(arg->kind != ND_ID || arg->output)
             continue;
-        c_print(cg, "\"r\"((uint64_t)%s)%c", c_gen_identifier(arg->id), --num_input_vars ? ',' : '\n');
+        c_print(cg, "\"r\"((uint64_t)%s)%c", c_gen_identifier(cg->context, arg->id), --num_input_vars ? ',' : '\n');
     }
 
     c_print(cg, "  :");
@@ -1372,7 +1371,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node, bool with_casts)
            // if(with_casts)
            // {
                 if(node->data_type->kind == TY_UNDEF)
-                    c_print(cg, "(%s)", c_gen_identifier(node->data_type->id));
+                    c_print(cg, "(%s)", c_gen_identifier(cg->context, node->data_type->id));
                 else  if(node->referenced_obj) {
                     
                 }
@@ -1413,7 +1412,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node, bool with_casts)
             c_putc(cg, ')');
             break;
         case ND_ID:
-            c_print(cg, "%s", node->referenced_obj && node->referenced_obj->is_extern ? EITHER(node->referenced_obj->exported, node->id->callee) : c_gen_identifier(node->id));
+            c_print(cg, "%s", node->referenced_obj && node->referenced_obj->is_extern ? EITHER(node->referenced_obj->exported, node->id->callee) : c_gen_identifier(cg->context, node->id));
             break;
         case ND_CALL:
         {
@@ -1506,7 +1505,7 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node, bool with_casts)
                 for(size_t j = 0; j < block->locals->size; j++)
                 {
                     ASTObj_T* local = block->locals->items[j];
-                    c_print(cg, "&%s,", c_gen_identifier(local->id));
+                    c_print(cg, "&%s,", c_gen_identifier(cg->context, local->id));
                 }
             }
 

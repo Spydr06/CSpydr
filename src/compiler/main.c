@@ -41,7 +41,6 @@
 #include <string.h>
 
 // compiler includes
-#include "mem/mem.h"
 #include "platform/linux/linux_platform.h"
 #include "timer/timer.h"
 #include "toolchain.h"
@@ -157,7 +156,7 @@ const struct {
 static void run(Context_T* context, char* file);
 static void evaluate_info_flags(Context_T* context, char* argv);
 static void store_exec_args(Context_T* context, i32 argc, char* argv[], Action_T action);
-static char* default_output_file(Action_T action, const char* input_file);
+static char* default_output_file(Context_T* context, Action_T action, const char* input_file);
 static CompileType_T backend_opt(const char* arg);
 
 // entry point
@@ -169,7 +168,6 @@ i32 main(i32 argc, char* argv[])
 #ifdef CSPYDR_USE_LLVM
     atexit(llvm_exit_hook);
 #endif
-    atexit(mem_free);
 
     context.paths.exec_name = argv[0]; // save the execution name for later use
     if(argc == 1)
@@ -226,7 +224,7 @@ i32 main(i32 argc, char* argv[])
     }
 
     // get default output file
-    char* output_file = default_output_file(action, input_file);
+    char* output_file = default_output_file(&context, action, input_file);
 
     // get all the other flags
     for(i32 i = 0; i < argc; i++)
@@ -436,7 +434,7 @@ static void store_exec_args(Context_T* context, i32 argc, char* argv[], Action_T
     context->args.argc = argc;
 }
 
-static char* default_output_file(Action_T action, const char* input_file)
+static char* default_output_file(Context_T* context, Action_T action, const char* input_file)
 {
     const char* fileext = EXEC_FILEEXT;
     if(action == AC_LIB)
@@ -448,7 +446,7 @@ static char* default_output_file(Action_T action, const char* input_file)
     uintptr_t base_length = extptr - (uintptr_t) input_file;
 
     char* filename = calloc(base_length + strlen(fileext) + 1, sizeof(char));
-    mem_add_ptr(filename);
+    CONTEXT_ALLOC_REGISTER(context, (void*) filename);
     
     strncpy(filename, input_file, base_length);
     strcat(filename, fileext);

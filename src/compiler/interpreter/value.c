@@ -1,10 +1,9 @@
 #include "value.h"
 #include "ast/ast.h"
-#include "ast/types.h"
 #include "codegen/codegen_utils.h"
 #include "error/error.h"
-#include "io/log.h"
 #include "lexer/token.h"
+#include "context.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -156,7 +155,7 @@ f80 interpreter_value_f80(InterpreterValue_T* value)
 
 ASTNode_T* ast_node_from_interpreter_value(Context_T* context, InterpreterValue_T* value, Token_T* tok)
 {
-    ASTNode_T* node = init_ast_node(ND_INT, tok);
+    ASTNode_T* node = init_ast_node(&context->raw_allocator, ND_INT, tok);
     node->data_type = (ASTType_T*) value->type;
 
     switch(value->type->kind)

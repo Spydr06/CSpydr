@@ -5,6 +5,8 @@
 #include "config.h"
 #include "hashmap.h"
 
+#include <stdio.h>
+
 extern char* cc;
 extern char* cc_flags;
 

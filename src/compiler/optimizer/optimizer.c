@@ -3,7 +3,6 @@
 #include "ast/ast_iterator.h"
 #include "config.h"
 #include "constexpr.h"
-#include "error/error.h"
 #include "io/log.h"
 #include "list.h"
 #include "timer/timer.h"

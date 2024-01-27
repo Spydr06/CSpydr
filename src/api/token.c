@@ -1,9 +1,10 @@
 #include "api.h"
+#include "include/cspydr.h"
 #include "lexer/token.h"
 
-CSpydrToken_T* csp_new_token(CSpydrTokenType_T type, uint32_t line, uint32_t pos, char value[])
+CSpydrToken_T* csp_new_token(CSpydrAllocator_T* alloc, CSpydrTokenType_T type, uint32_t line, uint32_t pos, char value[])
 {
-    return init_token(value, line, pos, type, NULL);
+    return init_token(alloc, value, line, pos, type, NULL);
 }
 
 CSpydrTokenType_T csp_token_get_type(CSpydrToken_T* tok)

@@ -2,7 +2,6 @@
 #include "ast/ast.h"
 #include "config.h"
 #include "list.h"
-#include "mem/mem.h"
 #include "stdmacros.h"
 #include "lexer/lexer.h"
 #include "lexer/token.h"
@@ -219,7 +218,7 @@ static void parse_import_def(Preprocessor_T* pp, List_T* token_list, size_t* i)
     import_file->short_path = strdup(imp->tok->value);
     import_file->file_no = ++file_no;
     import_file->path = strdup(imp->import_path);
-    mem_add_ptr(import_file->path);
+    CONTEXT_ALLOC_REGISTER(pp->context, (void*) import_file->path);
 
     Lexer_T import_lexer;
     init_lexer(&import_lexer, pp->context, import_file);
@@ -449,12 +448,12 @@ static void expand_macro_call(Preprocessor_T* pp, MacroCall_T call, List_T* src_
                 {
                     char linestr[BUFSIZ] = { '\0' };
                     sprintf(linestr, "%u", call.tok->line + 1);
-                    list_push(dest_list, init_token(linestr, tok->line, tok->pos, TOKEN_INT, tok->source));
+                    list_push(dest_list, init_token(&pp->context->raw_allocator, linestr, tok->line, tok->pos, TOKEN_INT, tok->source));
                 }
                 else if(strcmp(tok->value, "__file__") == 0)
-                    list_push(dest_list, init_token((char*) call.tok->source->path, tok->line, tok->pos, TOKEN_STRING, tok->source));
+                    list_push(dest_list, init_token(&pp->context->raw_allocator, (char*) call.tok->source->path, tok->line, tok->pos, TOKEN_STRING, tok->source));
                 else if(strcmp(tok->value, "__func__") == 0)
-                    list_push(dest_list, init_token("", tok->line, tok->pos, TOKEN_CURRENT_FN, tok->source));
+                    list_push(dest_list, init_token(&pp->context->raw_allocator, "", tok->line, tok->pos, TOKEN_CURRENT_FN, tok->source));
                 else
                     list_push(dest_list, tok);
             } break;
@@ -488,7 +487,7 @@ static void expand_macro_call(Preprocessor_T* pp, MacroCall_T call, List_T* src_
             list_pop(dest_list);
 
             u64 prev_size = sizeof(Token_T) + strlen(id->value) * sizeof(char);
-            dest_list->items[dest_list->size - 1] = id = mem_realloc(id, prev_size + (strlen(current->value) + 1) * sizeof(char));
+            dest_list->items[dest_list->size - 1] = id = allocator_realloc(&pp->context->raw_allocator, id, prev_size + (strlen(current->value) + 1) * sizeof(char));
             strcat(id->value, current->value);
         }
     }

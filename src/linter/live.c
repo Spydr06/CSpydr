@@ -7,7 +7,6 @@
 #include <list.h>
 #include <io/io.h>
 #include <io/log.h>
-#include <mem/mem.h>
 #include <passes.h>
 
 #include <memory.h>
@@ -27,7 +26,7 @@ static bool prompt_on_quit = true;
 static inline void cleanup(Context_T* context)
 {
     cleanup_pass(context, &AST);
-    mem_free();
+    context_free_allocators(context);
 }
 
 static void free_ast(Context_T* context, int fd) 

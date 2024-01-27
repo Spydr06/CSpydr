@@ -5,20 +5,17 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "io/log.h"
 #include "ast/ast.h"
 #include "config.h"
 #include "error/error.h"
 #include "lexer/token.h"
 #include "list.h"
 #include "optimizer/constexpr.h"
-#include "parser/validator.h"
 #include "utils.h"
 #include "codegen/codegen_utils.h"
 #include "ast/ast_iterator.h"
 #include "ast/types.h"
 #include "timer/timer.h"
-#include "toolchain.h"
 
 #define GET_TYPECHECKER(va) TypeChecker_T* t = va_arg(va, TypeChecker_T*)
 
@@ -152,8 +149,9 @@ static void typecheck_call(ASTNode_T* call, va_list args)
 
 static void typecheck_for_range(ASTNode_T* loop, va_list args)
 {
-    loop->left = implicit_cast(loop->left->tok, loop->left, (ASTType_T*) primitives[TY_I64]);
-    loop->right = implicit_cast(loop->right->tok, loop->right, (ASTType_T*) primitives[TY_I64]);
+    GET_TYPECHECKER(args);
+    loop->left = implicit_cast(t->context, loop->left->tok, loop->left, (ASTType_T*) primitives[TY_I64]);
+    loop->right = implicit_cast(t->context, loop->right->tok, loop->right, (ASTType_T*) primitives[TY_I64]);
 }
 
 static void typecheck_assignment(ASTNode_T* assignment, va_list args)
@@ -175,7 +173,7 @@ static void typecheck_assignment(ASTNode_T* assignment, va_list args)
 
     if(implicitly_castable(t->context, assignment->tok, assignment->right->data_type, assignment->left->data_type) != CAST_ERR)
     {
-        assignment->right = implicit_cast(assignment->tok, assignment->right, assignment->left->data_type);
+        assignment->right = implicit_cast(t->context, assignment->tok, assignment->right, assignment->left->data_type);
         return;
     }
 
@@ -206,7 +204,7 @@ static ASTNode_T* typecheck_arg_pass(TypeChecker_T* t, ASTType_T* expected, ASTN
         return received;
     
     if(implicitly_castable(t->context, received->tok, received->data_type, expected) == CAST_OK)
-        return implicit_cast(received->tok, received, expected);
+        return implicit_cast(t->context, received->tok, received, expected);
     
     char buf2[BUFSIZ] = {'\0'};
     throw_error(t->context, ERR_TYPE_ERROR_UNCR, received->tok, "cannot implicitly cast from `%s` to `%s`", 
@@ -278,7 +276,7 @@ static void typecheck_array_lit(ASTNode_T* a_lit, va_list args)
             continue;
 
         if(implicitly_castable(t->context, arg->tok, arg_type, base_ty) == CAST_OK)
-            a_lit->args->items[i] = implicit_cast(arg->tok, arg, base_ty);
+            a_lit->args->items[i] = implicit_cast(t->context, arg->tok, arg, base_ty);
         else {
             memset(buf1, 0, LEN(buf1));
             memset(buf2, 0, LEN(buf2));
@@ -314,7 +312,7 @@ static void typecheck_struct_lit(ASTNode_T* s_lit, va_list args)
             continue;
 
         if(implicitly_castable(t->context, arg->tok, arg->data_type, expected_ty) == CAST_OK)
-            s_lit->args->items[i] = implicit_cast(arg->tok, arg, expected_ty);
+            s_lit->args->items[i] = implicit_cast(t->context, arg->tok, arg, expected_ty);
         else {
             memset(buf1, 0, LEN(buf1));
             memset(buf2, 0, LEN(buf2));
@@ -379,7 +377,7 @@ static void typecheck_return(ASTNode_T* ret, va_list args)
     
     if(implicitly_castable(t->context,ret_tok, ret->return_val->data_type, expected) == CAST_OK)
     {
-        ret->return_val = implicit_cast(ret_tok, ret->return_val, expected);
+        ret->return_val = implicit_cast(t->context, ret_tok, ret->return_val, expected);
         goto patch_anon_struct;
     }
 
@@ -437,7 +435,7 @@ static void typecheck_binop(ASTNode_T* op, va_list args)
 
     if(implicitly_castable(t->context, op->tok, from, to) == CAST_OK)
     {
-        ASTNode_T* cast = implicit_cast(op->tok, from_node, to);
+        ASTNode_T* cast = implicit_cast(t->context, op->tok, from_node, to);
         if(from_node == op->left)
             op->left = cast;
         else if(from_node == op->right)
@@ -590,17 +588,17 @@ enum IMPLICIT_CAST_RESULT implicitly_castable(Context_T* context, Token_T* tok, 
     return CAST_ERR;
 }
 
-ASTNode_T* implicit_cast(Token_T* tok, ASTNode_T* expr, ASTType_T* to)
+ASTNode_T* implicit_cast(Context_T* context, Token_T* tok, ASTNode_T* expr, ASTType_T* to)
 {
     if(unpack(expr->data_type)->kind == TY_ARRAY && to->kind == TY_VLA)
     {
-        ASTNode_T* ref = init_ast_node(ND_REF, tok);
+        ASTNode_T* ref = init_ast_node(&context->raw_allocator, ND_REF, tok);
         ref->data_type = to;
         ref->right = expr;
         return ref;
     }
 
-    ASTNode_T* cast = init_ast_node(ND_CAST, tok);
+    ASTNode_T* cast = init_ast_node(&context->raw_allocator, ND_CAST, tok);
     cast->data_type = to;
     cast->left = expr;
     return cast;

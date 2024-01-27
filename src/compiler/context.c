@@ -2,6 +2,7 @@
 #include "config.h"
 #include "hashmap.h"
 #include "list.h"
+#include "memory/allocator.h"
 
 #include <string.h>
 
@@ -32,9 +33,24 @@ void init_context(Context_T* context)
 
     context->cc = DEFAULT_CC;
     context->cc_flags = DEFAULT_CC_FLAGS;
+
+    init_allocator(&context->raw_allocator, free);
+    init_allocator(&context->list_allocator, (void (*)(void*)) free_list);
+    init_allocator(&context->hashmap_allocator, (void (*)(void*)) hashmap_free);
 }
 
 void free_context(Context_T *context)
 {
     hashmap_free(context->included_libs);
+    free_allocator(&context->raw_allocator);
+    free_allocator(&context->list_allocator);
+    free_allocator(&context->raw_allocator);
 }
+
+void context_free_allocators(Context_T* context)
+{
+    free_allocator(&context->raw_allocator);
+    free_allocator(&context->list_allocator);
+    free_allocator(&context->raw_allocator);
+}
+

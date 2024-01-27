@@ -781,8 +781,10 @@ static void push_global(InterpreterContext_T* ictx, ASTObj_T* global)
 static LValue_T lvalue_from_id(InterpreterContext_T* ictx, ASTObj_T* obj, ASTType_T* ty, Token_T* tok)
 {
     if(ictx->constexpr_only && !obj->constexpr && (obj->kind == OBJ_GLOBAL || obj->kind == OBJ_FUNCTION || obj->kind == OBJ_ENUM_MEMBER)) {
-        char buf[BUFSIZ];
-        throw_error(ictx->context, ERR_CONSTEXPR, tok, "%s %s is not marked as `constexpr`", obj_kind_to_str(obj->kind), ast_id_to_str(buf, obj->id, BUFSIZ));
+        char* buf = malloc(BUFSIZ);
+        *buf = '\0';
+        throw_error(ictx->context, ERR_CONSTEXPR, tok, "%s `%s` is not marked as `constexpr`", obj_kind_to_str(obj->kind), ast_id_to_str(buf, obj->id, BUFSIZ));
+        free(buf);
     }
     
     switch(obj->kind) {

@@ -4,9 +4,8 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
-#include "list.h"
-#include "panic.h"
 #include "lexer/token.h"
+#include "io/log.h"
 
 #define unreachable() \
     LOG_ERROR_F("internal error at %s:%d\n", __FILE__, __LINE__)

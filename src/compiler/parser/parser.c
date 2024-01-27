@@ -10,7 +10,6 @@
 #include "list.h"
 #include "io/log.h"
 #include "ast/types.h"
-#include "mem/mem.h"
 #include "toolchain.h"
 #include "utils.h"
 #include "timer/timer.h"
@@ -539,7 +538,7 @@ static ASTIdentifier_T* __parse_identifier(Parser_T* p, ASTIdentifier_T* outer, 
         global_scope = true;
     }
 
-    ASTIdentifier_T* id = init_ast_identifier(p->tok, p->tok->value);
+    ASTIdentifier_T* id = init_ast_identifier(&p->context->raw_allocator, p->tok, p->tok->value);
     id->outer = outer;
     id->global_scope = global_scope;
     parser_consume(p, TOKEN_ID, "expect identifier");
@@ -566,7 +565,7 @@ static ASTNode_T* parse_expr(Parser_T* p, Precedence_T prec, TokenType_T end_tok
 
 static ASTType_T* parse_struct_type(Parser_T* p)
 {
-    ASTType_T* struct_type = init_ast_type(TY_STRUCT, p->tok);
+    ASTType_T* struct_type = init_ast_type(&p->context->raw_allocator, TY_STRUCT, p->tok);
     if(tok_is(p, TOKEN_STRUCT))
         parser_consume(p, TOKEN_STRUCT, "expect `struct` keyword for struct type");
     else
@@ -577,7 +576,7 @@ static ASTType_T* parse_struct_type(Parser_T* p)
 
     parser_consume(p, TOKEN_LBRACE, "expect `{` or identifier after struct keyword");
     struct_type->members = init_list();
-    mem_add_list(struct_type->members);
+    CONTEXT_ALLOC_REGISTER(p->context, struct_type->members);
 
     while(!tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF))
     {
@@ -585,14 +584,14 @@ static ASTType_T* parse_struct_type(Parser_T* p)
         {
             parser_advance(p);
 
-            ASTNode_T* member = init_ast_node(ND_EMBED_STRUCT, p->tok);
+            ASTNode_T* member = init_ast_node(&p->context->raw_allocator, ND_EMBED_STRUCT, p->tok);
             member->data_type = parse_type(p);
 
             list_push(struct_type->members, member);
         }
         else
         {
-            ASTNode_T* member = init_ast_node(ND_STRUCT_MEMBER, p->tok);
+            ASTNode_T* member = init_ast_node(&p->context->raw_allocator, ND_STRUCT_MEMBER, p->tok);
             member->id = parse_simple_identifier(p);
             parser_consume_operator(p, ":", "expect `:` after struct member name");
             member->data_type = parse_type(p);
@@ -610,17 +609,17 @@ static ASTType_T* parse_struct_type(Parser_T* p)
 
 static ASTType_T* parse_enum_type(Parser_T* p)
 {
-    ASTType_T* enum_type = init_ast_type(TY_ENUM, p->tok);
+    ASTType_T* enum_type = init_ast_type(&p->context->raw_allocator, TY_ENUM, p->tok);
 
     parser_consume(p, TOKEN_ENUM, "expect `enum` keyword for enum type");
     parser_consume(p, TOKEN_LBRACE, "expect `{` after enum keyword");
 
     enum_type->members = init_list();
-    mem_add_list(enum_type->members);
+    CONTEXT_ALLOC_REGISTER(p->context, enum_type->members);
 
     while(!tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF))
     {
-        ASTObj_T* member = init_ast_obj(OBJ_ENUM_MEMBER, p->tok);
+        ASTObj_T* member = init_ast_obj(&p->context->raw_allocator, OBJ_ENUM_MEMBER, p->tok);
         member->data_type = (ASTType_T*) primitives[TY_I32];
         member->id = parse_simple_identifier(p);
         list_push(enum_type->members, member);
@@ -634,7 +633,7 @@ static ASTType_T* parse_enum_type(Parser_T* p)
             member->value = parse_expr(p, PREC_LOWEST, TOKEN_COMMA);
         }
         else {
-            member->value = init_ast_node(ND_NOOP, member->tok);
+            member->value = init_ast_node(&p->context->raw_allocator, ND_NOOP, member->tok);
         }
 
         if(!tok_is(p, TOKEN_RBRACE))
@@ -647,7 +646,7 @@ static ASTType_T* parse_enum_type(Parser_T* p)
 
 static ASTType_T* parse_lambda_type(Parser_T* p)
 {
-    ASTType_T* lambda = init_ast_type(TY_FN, p->tok);
+    ASTType_T* lambda = init_ast_type(&p->context->raw_allocator, TY_FN, p->tok);
 
     parser_consume(p, TOKEN_FN, "expect `fn` keyword for lambda type");
 
@@ -669,7 +668,7 @@ static ASTType_T* parse_lambda_type(Parser_T* p)
     }
 
     lambda->arg_types = init_list();
-    mem_add_list(lambda->arg_types);
+    CONTEXT_ALLOC_REGISTER(p->context, lambda->arg_types);
 
     if(tok_is(p, TOKEN_LPAREN))
     {
@@ -692,12 +691,12 @@ static ASTType_T* parse_lambda_type(Parser_T* p)
 
 static ASTType_T* parse_interface_type(Parser_T* p)
 {
-    ASTType_T* interface = init_ast_type(TY_INTERFACE, p->tok);
+    ASTType_T* interface = init_ast_type(&p->context->raw_allocator, TY_INTERFACE, p->tok);
     parser_consume(p, TOKEN_INTERFACE, "expect `interface` keyword for interface type");
     parser_consume(p, TOKEN_LBRACE, "expect `{` after `interface`");
 
     interface->func_decls = init_list();
-    mem_add_list(interface->func_decls);
+    CONTEXT_ALLOC_REGISTER(p->context, interface->func_decls);
 
     while(!tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF))
     {
@@ -724,15 +723,15 @@ static ASTObj_T* parser_generate_tuple_type(Parser_T* p, ASTType_T* tuple)
     }
     else
     {
-        ASTObj_T* tydef = init_ast_obj(OBJ_TYPEDEF, tuple->tok);
-        tydef->data_type = mem_malloc(sizeof(struct AST_TYPE_STRUCT));
+        ASTObj_T* tydef = init_ast_obj(&p->context->raw_allocator, OBJ_TYPEDEF, tuple->tok);
+        tydef->data_type = allocator_malloc(&p->context->raw_allocator, sizeof(struct AST_TYPE_STRUCT));
         *tydef->data_type = *tuple;
 
         char* id = calloc(35, sizeof(char));
         sprintf(id, "__csp_tuple_%lu__", p->cur_tuple_id++);
-        mem_add_ptr(id);
+        CONTEXT_ALLOC_REGISTER(p->context, (void*) id);
 
-        tydef->id = init_ast_identifier(tuple->tok, id);
+        tydef->id = init_ast_identifier(&p->context->raw_allocator, tuple->tok, id);
 
         list_push(p->root_ref->objs, tydef);
         tuple->kind = TY_UNDEF;
@@ -744,7 +743,7 @@ static ASTObj_T* parser_generate_tuple_type(Parser_T* p, ASTType_T* tuple)
 
 static ASTType_T* parse_type(Parser_T* p)
 {
-    ASTType_T* type = get_primitive_type(p->tok->value);
+    ASTType_T* type = get_primitive_type(&p->context->raw_allocator, p->tok->value);
     if(type)
         parser_advance(p);
     else
@@ -778,7 +777,7 @@ static ASTType_T* parse_type(Parser_T* p)
             case TOKEN_OPERATOR: {
                 if(tok_is_operator(p, STATIC_MEMBER))
                 {
-                    type = init_ast_type(TY_UNDEF, p->tok);
+                    type = init_ast_type(&p->context->raw_allocator, TY_UNDEF, p->tok);
                     type->id = parse_identifier(p);
                     break;
                 }
@@ -790,26 +789,26 @@ static ASTType_T* parse_type(Parser_T* p)
                 type = parse_type(p);
                 do {
                     ASTType_T* base = type;
-                    type = init_ast_type(TY_PTR, p->tok);
+                    type = init_ast_type(&p->context->raw_allocator, TY_PTR, p->tok);
                     type->base = base;
                 } while(--num_ptrs);
             } break;
             case TOKEN_LBRACE:
-                type = init_ast_type(TY_STRUCT, p->tok);
+                type = init_ast_type(&p->context->raw_allocator, TY_STRUCT, p->tok);
                 type->members = init_list();
-                mem_add_list(type->members);
+                CONTEXT_ALLOC_REGISTER(p->context, type->members);
                 parser_advance(p);
 
                 for(size_t i = 0; !tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF); i++)
                 {
-                    ASTNode_T* member = init_ast_node(ND_STRUCT_MEMBER, p->tok);
+                    ASTNode_T* member = init_ast_node(&p->context->raw_allocator, ND_STRUCT_MEMBER, p->tok);
                     member->data_type = parse_type(p);
 
                     char* id = calloc(22, sizeof(char));
-                    mem_add_ptr(id);
+                    CONTEXT_ALLOC_REGISTER(p->context, (void*) id);
                     sprintf(id, "_%lu", i);
 
-                    member->id = init_ast_identifier(p->tok, id);
+                    member->id = init_ast_identifier(&p->context->raw_allocator, p->tok, id);
 
                     list_push(type->members, member);
                     if(!tok_is(p, TOKEN_RBRACE))
@@ -819,12 +818,12 @@ static ASTType_T* parse_type(Parser_T* p)
                 parser_generate_tuple_type(p, type);
                 break;
             case TOKEN_TYPEOF:
-                type = init_ast_type(TY_TYPEOF, p->tok);
+                type = init_ast_type(&p->context->raw_allocator, TY_TYPEOF, p->tok);
                 parser_advance(p);
                 type->num_indices_node = parse_expr(p, PREC_X_OF, TOKEN_SEMICOLON);
                 break;
             default:
-                type = init_ast_type(TY_UNDEF, p->tok);
+                type = init_ast_type(&p->context->raw_allocator, TY_UNDEF, p->tok);
                 type->id = parse_identifier(p);
                 break;
         }
@@ -835,7 +834,7 @@ parse_array_ty:
     {
     case TOKEN_LBRACKET: // normal arrays and variable length arrays (VLAs)
         {
-            ASTType_T* arr_type = init_ast_type(TY_VLA, p->tok);
+            ASTType_T* arr_type = init_ast_type(&p->context->raw_allocator, TY_VLA, p->tok);
             parser_advance(p);
             if(!tok_is(p, TOKEN_RBRACKET))
             {
@@ -851,7 +850,7 @@ parse_array_ty:
 
     case TOKEN_C_ARRAY: // legacy C-like arrays for compatibility
         {   
-            ASTType_T* arr_type = init_ast_type(TY_C_ARRAY, p->tok);
+            ASTType_T* arr_type = init_ast_type(&p->context->raw_allocator, TY_C_ARRAY, p->tok);
             parser_advance(p);
             parser_consume(p, TOKEN_LBRACKET, "expect `[` after `'c`");
             arr_type->num_indices_node = parse_expr(p, PREC_LOWEST, TOKEN_RBRACKET);
@@ -875,7 +874,7 @@ static ASTObj_T* parse_global(Parser_T* p);
 
 static ASTObj_T* parse_typedef(Parser_T* p)
 {
-    ASTObj_T* tydef = init_ast_obj(OBJ_TYPEDEF, p->tok);
+    ASTObj_T* tydef = init_ast_obj(&p->context->raw_allocator, OBJ_TYPEDEF, p->tok);
     parser_consume(p, TOKEN_TYPE, "expect `type` keyword for typedef");
 
     ASTObj_T* last_obj = p->cur_obj;
@@ -988,7 +987,7 @@ List_T* parse_argument_list(Parser_T* p, TokenType_T end_tok, ASTIdentifier_T** 
         }
         else 
         {
-            ASTObj_T* arg = init_ast_obj(OBJ_FN_ARG, p->tok);
+            ASTObj_T* arg = init_ast_obj(&p->context->raw_allocator, OBJ_FN_ARG, p->tok);
             arg->id = parse_simple_identifier(p);
             parser_consume_operator(p, ":", "expect `:` after argument name");
 
@@ -1007,13 +1006,13 @@ static ASTNode_T* parse_stmt(Parser_T* p, bool needs_semicolon);
 
 static ASTObj_T* parse_fn_def(Parser_T* p)
 {
-    ASTObj_T* fn = init_ast_obj(OBJ_FUNCTION, p->tok);
+    ASTObj_T* fn = init_ast_obj(&p->context->raw_allocator, OBJ_FUNCTION, p->tok);
     bool is_operator_define = false;
 
     if(tok_is(p, TOKEN_OPERATOR_KW))
     {  
         parser_advance(p);
-        fn->id = init_ast_identifier(p->tok, p->tok->value);
+        fn->id = init_ast_identifier(&p->context->raw_allocator, p->tok, p->tok->value);
         if(p->tok->type != TOKEN_OPERATOR)
             throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "expect operator after `operator`");
         if(hashmap_get(p->operator_context, p->tok->value))
@@ -1031,16 +1030,16 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
     
     ASTIdentifier_T* va_id = NULL;
     fn->args = parse_argument_list(p, TOKEN_RPAREN, &va_id);
-    mem_add_list(fn->args);
+    CONTEXT_ALLOC_REGISTER(p->context, fn->args);
 
     if(is_operator_define && fn->args->size != 1 && fn->args->size != 2)
         throw_error(p->context, ERR_SYNTAX_ERROR_UNCR, fn->tok, "`operator` functions can only take one or two arguments, got `%zu`", fn->args->size);
 
     if(va_id)
     {
-        fn->va_area = init_ast_obj(OBJ_LOCAL, fn->tok);
+        fn->va_area = init_ast_obj(&p->context->raw_allocator, OBJ_LOCAL, fn->tok);
         fn->va_area->id = va_id;
-        fn->va_area->data_type = init_ast_type(TY_C_ARRAY, fn->tok);
+        fn->va_area->data_type = init_ast_type(&p->context->raw_allocator, TY_C_ARRAY, fn->tok);
         fn->va_area->data_type->num_indices = 136;
         fn->va_area->data_type->base = (ASTType_T*) primitives[TY_U8];
     }
@@ -1054,14 +1053,14 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
     } else
         fn->return_type = (ASTType_T*) primitives[TY_VOID];
 
-    fn->data_type = init_ast_type(TY_FN, fn->tok);
+    fn->data_type = init_ast_type(&p->context->raw_allocator, TY_FN, fn->tok);
     fn->data_type->base = fn->return_type;
     fn->data_type->is_constant = true;
     fn->data_type->arg_types = init_list();
     fn->data_type->size = PTR_S;
     for(size_t i = 0; i < fn->args->size; i++)
         list_push(fn->data_type->arg_types, ((ASTObj_T*) fn->args->items[i])->data_type);
-    mem_add_list(fn->data_type->arg_types);
+    CONTEXT_ALLOC_REGISTER(p->context, fn->data_type->arg_types);
     fn->data_type->is_variadic = fn->va_area != NULL;
 
     if(p->context->ct == CT_ASM)
@@ -1079,7 +1078,7 @@ static ASTObj_T* parse_fn(Parser_T* p)
     
     if(tok_is_operator(p, "="))
     {
-        fn->body = init_ast_node(ND_RETURN, p->tok);
+        fn->body = init_ast_node(&p->context->raw_allocator, ND_RETURN, p->tok);
         parser_advance(p);
 
         fn->body->return_val = parse_expr(p, PREC_LOWEST, TOKEN_SEMICOLON);
@@ -1091,7 +1090,7 @@ static ASTObj_T* parse_fn(Parser_T* p)
     if(p->context->ct == CT_ASM)
     {
         fn->objs = init_list();
-        mem_add_list(fn->objs);
+        CONTEXT_ALLOC_REGISTER(p->context, fn->objs);
         collect_locals(fn->body, fn->objs);
     }
 
@@ -1102,12 +1101,13 @@ static ASTObj_T* parse_fn(Parser_T* p)
 
 static ASTObj_T* parse_global(Parser_T* p)
 {
-    ASTObj_T* global = init_ast_obj(OBJ_GLOBAL, p->tok);
+    ASTObj_T* global = init_ast_obj(&p->context->raw_allocator, OBJ_GLOBAL, p->tok);
     if(p->tok->type == TOKEN_LET)
         parser_advance(p);
     else if(p->tok->type == TOKEN_CONST)
     {
         global->is_constant = true;
+        global->constexpr = true;
         parser_advance(p);
     }
     else
@@ -1149,13 +1149,13 @@ static void parse_namespace(Parser_T* p, List_T* objs)
     ASTObj_T* namespace = find_namespace(objs, id->callee);
     if(!namespace)
     {
-        namespace = init_ast_obj(OBJ_NAMESPACE, tok);
+        namespace = init_ast_obj(&p->context->raw_allocator, OBJ_NAMESPACE, tok);
         namespace->id = id;
         list_push(objs, namespace);
 
         // initialize the namespace's object list
         namespace->objs = init_list();
-        mem_add_list(namespace->objs);
+        CONTEXT_ALLOC_REGISTER(p->context, namespace->objs);
     }
 
     ASTObj_T* last_obj = p->cur_obj;
@@ -1217,7 +1217,7 @@ void parse_obj(Parser_T* p, List_T* obj_list)
 
 static ASTNode_T* parse_block(Parser_T* p)
 {
-    ASTNode_T* block = init_ast_node(ND_BLOCK, p->tok);
+    ASTNode_T* block = init_ast_node(&p->context->raw_allocator, ND_BLOCK, p->tok);
     block->locals = init_list();
     block->stmts = init_list();
 
@@ -1233,15 +1233,15 @@ static ASTNode_T* parse_block(Parser_T* p)
 
     parser_consume(p, TOKEN_RBRACE, "expect `}` at the end of a block statement");
 
-    mem_add_list(block->locals);
-    mem_add_list(block->stmts);
+    CONTEXT_ALLOC_REGISTER(p->context, block->locals);
+    CONTEXT_ALLOC_REGISTER(p->context, block->stmts);
 
     return block;
 }
 
 static ASTNode_T* parse_return(Parser_T* p, bool needs_semicolon)
 {
-    ASTNode_T* ret = init_ast_node(ND_RETURN, p->tok);
+    ASTNode_T* ret = init_ast_node(&p->context->raw_allocator, ND_RETURN, p->tok);
 
     parser_consume(p, TOKEN_RETURN, "expect `ret` or `<-` to return from function");
 
@@ -1259,7 +1259,7 @@ static ASTNode_T* parse_return(Parser_T* p, bool needs_semicolon)
 
 static ASTNode_T* parse_if(Parser_T* p, bool needs_semicolon)
 {
-    ASTNode_T* if_stmt = init_ast_node(ND_IF, p->tok);
+    ASTNode_T* if_stmt = init_ast_node(&p->context->raw_allocator, ND_IF, p->tok);
 
     parser_consume(p, TOKEN_IF, "expect `if` keyword for an if statement");
 
@@ -1277,7 +1277,7 @@ static ASTNode_T* parse_if(Parser_T* p, bool needs_semicolon)
 
 static ASTNode_T* parse_loop(Parser_T* p, bool needs_semicolon)
 {
-    ASTNode_T* loop = init_ast_node(ND_LOOP, p->tok);
+    ASTNode_T* loop = init_ast_node(&p->context->raw_allocator, ND_LOOP, p->tok);
 
     parser_consume(p, TOKEN_LOOP, "expect `loop` keyword for a endless loop");
 
@@ -1288,7 +1288,7 @@ static ASTNode_T* parse_loop(Parser_T* p, bool needs_semicolon)
 
 static ASTNode_T* parse_while(Parser_T* p, bool needs_semicolon)
 {
-    ASTNode_T* loop = init_ast_node(ND_WHILE, p->tok);
+    ASTNode_T* loop = init_ast_node(&p->context->raw_allocator, ND_WHILE, p->tok);
 
     parser_consume(p, TOKEN_WHILE, "expect `while` for a while loop statement");
 
@@ -1313,12 +1313,12 @@ static ASTNode_T* parse_for_range(Parser_T* p, ASTNode_T* stmt, bool needs_semic
 
 static ASTNode_T* parse_for(Parser_T* p, bool needs_semicolon)
 {
-    ASTNode_T* loop = init_ast_node(ND_FOR, p->tok);
+    ASTNode_T* loop = init_ast_node(&p->context->raw_allocator, ND_FOR, p->tok);
 
     parser_consume(p, TOKEN_FOR, "expect `for` for a for loop statement");
 
     loop->locals = init_list();
-    mem_add_list(loop->locals);
+    CONTEXT_ALLOC_REGISTER(p->context, loop->locals);
 
     ASTNode_T* prev_block = p->cur_block;
     p->cur_block = loop;
@@ -1333,7 +1333,7 @@ static ASTNode_T* parse_for(Parser_T* p, bool needs_semicolon)
             loop->init_stmt = init_stmt;
         }
         else {
-            ASTNode_T* init_stmt = init_ast_node(ND_EXPR_STMT, p->tok);
+            ASTNode_T* init_stmt = init_ast_node(&p->context->raw_allocator, ND_EXPR_STMT, p->tok);
             init_stmt->expr = parse_expr(p, PREC_LOWEST, TOKEN_SEMICOLON);
             loop->init_stmt = init_stmt;
 
@@ -1362,7 +1362,7 @@ static ASTNode_T* parse_for(Parser_T* p, bool needs_semicolon)
 
 static ASTNode_T* parse_case(Parser_T* p)
 {
-    ASTNode_T* case_stmt = init_ast_node(ND_CASE, p->tok);
+    ASTNode_T* case_stmt = init_ast_node(&p->context->raw_allocator, ND_CASE, p->tok);
 
     switch(p->tok->type) {
     case TOKEN_UNDERSCORE:
@@ -1406,7 +1406,7 @@ static ASTNode_T* parse_case(Parser_T* p)
 
 static ASTNode_T* parse_type_case(Parser_T* p)
 {
-    ASTNode_T* case_stmt = init_ast_node(ND_CASE_TYPE, p->tok);
+    ASTNode_T* case_stmt = init_ast_node(&p->context->raw_allocator, ND_CASE_TYPE, p->tok);
 
     if(tok_is(p, TOKEN_UNDERSCORE))
     {
@@ -1455,10 +1455,10 @@ static ASTNode_T* parse_type_match(Parser_T* p, ASTNode_T* match)
 
 static ASTNode_T* parse_match(Parser_T* p)
 {
-    ASTNode_T* match = init_ast_node(ND_MATCH, p->tok);
+    ASTNode_T* match = init_ast_node(&p->context->raw_allocator, ND_MATCH, p->tok);
     match->cases = init_list();
     match->default_case = NULL;
-    mem_add_list(match->cases);
+    CONTEXT_ALLOC_REGISTER(p->context, match->cases);
 
     parser_consume(p, TOKEN_MATCH, "expect `match` keyword to match an expression");
 
@@ -1491,7 +1491,7 @@ static ASTNode_T* parse_match(Parser_T* p)
 
 static ASTNode_T* parse_expr_stmt(Parser_T* p, bool needs_semicolon)
 {
-    ASTNode_T* stmt = init_ast_node(ND_EXPR_STMT, p->tok);
+    ASTNode_T* stmt = init_ast_node(&p->context->raw_allocator, ND_EXPR_STMT, p->tok);
     stmt->expr = parse_expr(p, PREC_LOWEST, TOKEN_SEMICOLON);
 
     if(!is_executable(stmt->expr))
@@ -1503,7 +1503,7 @@ static ASTNode_T* parse_expr_stmt(Parser_T* p, bool needs_semicolon)
 
 static ASTNode_T* parse_local(Parser_T* p)
 {
-    ASTObj_T* local = init_ast_obj(OBJ_LOCAL, p->tok);
+    ASTObj_T* local = init_ast_obj(&p->context->raw_allocator, OBJ_LOCAL, p->tok);
     if(p->tok->type == TOKEN_LET)
         parser_advance(p);
     else if(p->tok->type == TOKEN_CONST)
@@ -1514,7 +1514,7 @@ static ASTNode_T* parse_local(Parser_T* p)
     else
         throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "expect `let` keyword for variable definition");
     
-    ASTNode_T* id = init_ast_node(ND_ID, p->tok);
+    ASTNode_T* id = init_ast_node(&p->context->raw_allocator, ND_ID, p->tok);
     local->id = parse_simple_identifier(p);
     id->id = local->id;
     
@@ -1528,7 +1528,7 @@ static ASTNode_T* parse_local(Parser_T* p)
 
         if(tok_is_operator(p, "="))
         {
-            value = init_ast_node(ND_ASSIGN, p->tok);
+            value = init_ast_node(&p->context->raw_allocator, ND_ASSIGN, p->tok);
             parser_advance(p);
             value->left = id; 
             value->right = parse_expr(p, PREC_LOWEST, TOKEN_SEMICOLON);
@@ -1536,14 +1536,14 @@ static ASTNode_T* parse_local(Parser_T* p)
     }
     else
     {
-        value = init_ast_node(ND_ASSIGN, p->tok);
+        value = init_ast_node(&p->context->raw_allocator, ND_ASSIGN, p->tok);
         parser_consume_operator(p, "=", "expect assignment `=` after typeless variable declaration");
         value->left = id;
         value->right = parse_expr(p, PREC_LOWEST, TOKEN_SEMICOLON);
     }
 
     if(!value)
-        value = init_ast_node(ND_NOOP, p->tok);
+        value = init_ast_node(&p->context->raw_allocator, ND_NOOP, p->tok);
     else
     {
         value->referenced_obj = local;
@@ -1564,7 +1564,7 @@ static ASTNode_T* parse_local(Parser_T* p)
 
 static ASTNode_T* parse_break(Parser_T* p, bool needs_semicolon)
 {
-    ASTNode_T* break_stmt = init_ast_node(ND_BREAK, p->tok);
+    ASTNode_T* break_stmt = init_ast_node(&p->context->raw_allocator, ND_BREAK, p->tok);
     parser_consume(p, TOKEN_BREAK, "expect `break` keyword");
    
     if(needs_semicolon) 
@@ -1575,7 +1575,7 @@ static ASTNode_T* parse_break(Parser_T* p, bool needs_semicolon)
 
 static ASTNode_T* parse_continue(Parser_T* p, bool needs_semicolon)
 {
-    ASTNode_T* continue_stmt = init_ast_node(ND_CONTINUE, p->tok);
+    ASTNode_T* continue_stmt = init_ast_node(&p->context->raw_allocator, ND_CONTINUE, p->tok);
     parser_consume(p, TOKEN_CONTINUE, "expect `continue` keyword");
 
     if(needs_semicolon)
@@ -1586,10 +1586,10 @@ static ASTNode_T* parse_continue(Parser_T* p, bool needs_semicolon)
 
 static ASTNode_T* parse_with(Parser_T* p, bool needs_semicolon)
 {
-    ASTNode_T* with_stmt = init_ast_node(ND_WITH, p->tok);
+    ASTNode_T* with_stmt = init_ast_node(&p->context->raw_allocator, ND_WITH, p->tok);
     parser_consume(p, TOKEN_WITH, "expect `with` keyword");
 
-    ASTObj_T* var = with_stmt->obj = init_ast_obj(OBJ_LOCAL, p->tok);
+    ASTObj_T* var = with_stmt->obj = init_ast_obj(&p->context->raw_allocator, OBJ_LOCAL, p->tok);
     var->id = parse_simple_identifier(p);
     if(tok_is_operator(p, ":"))
     {
@@ -1597,8 +1597,8 @@ static ASTNode_T* parse_with(Parser_T* p, bool needs_semicolon)
         var->data_type = parse_type(p);
     }
     
-    ASTNode_T* assignment = var->value = init_ast_node(ND_ASSIGN, p->tok);
-    assignment->left = init_ast_node(ND_ID, var->id->tok);
+    ASTNode_T* assignment = var->value = init_ast_node(&p->context->raw_allocator, ND_ASSIGN, p->tok);
+    assignment->left = init_ast_node(&p->context->raw_allocator, ND_ID, var->id->tok);
     assignment->left->id = var->id;
     assignment->left->referenced_obj = var;
     assignment->is_initializing = true;
@@ -1628,10 +1628,10 @@ static ASTNode_T* parse_do(Parser_T* p, bool needs_semicolon)
     switch(p->tok->type) 
     {
         case TOKEN_UNLESS:
-            do_stmt = init_ast_node(ND_DO_UNLESS, p->tok);
+            do_stmt = init_ast_node(&p->context->raw_allocator, ND_DO_UNLESS, p->tok);
             break;
         case TOKEN_WHILE:
-            do_stmt = init_ast_node(ND_DO_WHILE, p->tok);
+            do_stmt = init_ast_node(&p->context->raw_allocator, ND_DO_WHILE, p->tok);
             break;
         default:
             throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "expect either `while` or `unless` after `do`-stmt body");
@@ -1650,7 +1650,7 @@ static ASTNode_T* parse_do(Parser_T* p, bool needs_semicolon)
 
 static ASTNode_T* parse_defer(Parser_T* p, bool needs_semicolon)
 {
-    ASTNode_T* defer = init_ast_node(ND_DEFER, p->tok);
+    ASTNode_T* defer = init_ast_node(&p->context->raw_allocator, ND_DEFER, p->tok);
     parser_consume(p, TOKEN_DEFER, "expect `defer` for defer statement");
 
     defer->body = parse_stmt(p, needs_semicolon);
@@ -1660,11 +1660,11 @@ static ASTNode_T* parse_defer(Parser_T* p, bool needs_semicolon)
 
 static ASTNode_T* parse_using(Parser_T* p, bool needs_semicolon)
 {
-    ASTNode_T* using = init_ast_node(ND_USING, p->tok);
+    ASTNode_T* using = init_ast_node(&p->context->raw_allocator, ND_USING, p->tok);
     parser_consume(p, TOKEN_USING, "expect `using`");
 
     using->ids = init_list();
-    mem_add_list(using->ids);
+    CONTEXT_ALLOC_REGISTER(p->context, using->ids);
 
     if(tok_is(p, TOKEN_COMMA))
         throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "expect identifier after `using`");
@@ -1688,7 +1688,7 @@ static ASTNode_T* parse_using(Parser_T* p, bool needs_semicolon)
 
 static ASTNode_T* parse_extern_c_block(Parser_T* p, bool needs_semicolon)
 {
-    ASTNode_T* extern_block = init_ast_node(ND_EXTERN_C_BLOCK, p->tok);
+    ASTNode_T* extern_block = init_ast_node(&p->context->raw_allocator, ND_EXTERN_C_BLOCK, p->tok);
     parser_advance(p);
 
     if(!tok_is(p, TOKEN_STRING))
@@ -1708,9 +1708,9 @@ static ASTNode_T* parse_extern_c_block(Parser_T* p, bool needs_semicolon)
 
 static ASTNode_T* parse_inline_asm(Parser_T* p, bool needs_semicolon)
 {
-    ASTNode_T* asm_stmt = init_ast_node(ND_ASM, p->tok);
+    ASTNode_T* asm_stmt = init_ast_node(&p->context->raw_allocator, ND_ASM, p->tok);
     asm_stmt->args = init_list();
-    mem_add_list(asm_stmt->args);
+    CONTEXT_ALLOC_REGISTER(p->context, asm_stmt->args);
     parser_advance(p);
 
     while(!tok_is(p, TOKEN_SEMICOLON))
@@ -1781,7 +1781,7 @@ static ASTNode_T* parse_stmt(Parser_T* p, bool needs_semicolon)
                 ASTNode_T* assignment = parse_local(p);
                 if(assignment->kind == ND_NOOP)
                     return assignment;
-                ASTNode_T* stmt = init_ast_node(ND_EXPR_STMT, assignment->tok);
+                ASTNode_T* stmt = init_ast_node(&p->context->raw_allocator, ND_EXPR_STMT, assignment->tok);
                 stmt->expr = assignment;
                 return stmt;
             }
@@ -1798,7 +1798,7 @@ static ASTNode_T* parse_stmt(Parser_T* p, bool needs_semicolon)
             // fall through
         case TOKEN_NOOP:
             {
-                ASTNode_T* noop = init_ast_node(ND_NOOP, p->tok);
+                ASTNode_T* noop = init_ast_node(&p->context->raw_allocator, ND_NOOP, p->tok);
                 
                 if(tok_is(p, TOKEN_NOOP))
                 {
@@ -1850,7 +1850,7 @@ static ASTNode_T* parse_expr(Parser_T* p, Precedence_T prec, TokenType_T end_tok
 static List_T* parse_expr_list(Parser_T* p, TokenType_T end_tok, bool allow_unpacking_operators)
 {
     List_T* list = init_list();
-    mem_add_list(list);
+    CONTEXT_ALLOC_REGISTER(p->context, list);
 
     while (!tok_is(p, end_tok) && !tok_is(p, TOKEN_EOF)) 
     {
@@ -1881,7 +1881,7 @@ static List_T* parse_expr_list(Parser_T* p, TokenType_T end_tok, bool allow_unpa
 
 static ASTNode_T* parse_id(Parser_T* p)
 {
-    ASTNode_T* id = init_ast_node(ND_ID, p->tok);
+    ASTNode_T* id = init_ast_node(&p->context->raw_allocator, ND_ID, p->tok);
     id->id = parse_identifier(p);
 
     if(tok_is_operator(p, STATIC_MEMBER) && parser_peek(p, 1)->type == TOKEN_LBRACE)
@@ -1892,26 +1892,26 @@ static ASTNode_T* parse_id(Parser_T* p)
 
 static ASTNode_T* parse_int_lit(Parser_T* p)
 {
-    ASTNode_T* lit = init_ast_node(ND_INT, p->tok);
+    ASTNode_T* lit = init_ast_node(&p->context->raw_allocator, ND_INT, p->tok);
     parser_consume(p, TOKEN_INT, "expect integer literal (0, 1, 2, ...)");
     i64 num = atoll(lit->tok->value);
     if(num <= INT_MAX)
     {
         lit->kind = ND_INT;
         lit->int_val = (i32) num;
-        lit->data_type = get_primitive_type("i32");
+        lit->data_type = get_primitive_type(&p->context->raw_allocator, "i32");
     }
     else if(num <= LONG_MAX)
     {
         lit->kind = ND_LONG;
         lit->long_val = (i64) num;
-        lit->data_type = get_primitive_type("i64");
+        lit->data_type = get_primitive_type(&p->context->raw_allocator, "i64");
     }
     else
     {
         lit->kind = ND_ULONG;
         lit->ulong_val = num;
-        lit->data_type = get_primitive_type("u64");
+        lit->data_type = get_primitive_type(&p->context->raw_allocator, "u64");
     }
 
     lit->is_constant = true;
@@ -1920,7 +1920,7 @@ static ASTNode_T* parse_int_lit(Parser_T* p)
 
 static ASTNode_T* parse_float_lit(Parser_T* p)
 {
-    ASTNode_T* lit = init_ast_node(ND_FLOAT, p->tok);
+    ASTNode_T* lit = init_ast_node(&p->context->raw_allocator, ND_FLOAT, p->tok);
     parser_consume(p, TOKEN_FLOAT, "expect float literal (0, 1, 2.3, ...)");
     f64 num; 
     sscanf(lit->tok->value, "%lf", &num); 
@@ -1929,13 +1929,13 @@ static ASTNode_T* parse_float_lit(Parser_T* p)
     {
         lit->kind = ND_FLOAT;
         lit->float_val = (float) num;
-        lit->data_type = get_primitive_type("f32");
+        lit->data_type = get_primitive_type(&p->context->raw_allocator, "f32");
     }
     else
     {
         lit->kind = ND_DOUBLE;
         lit->double_val = num;
-        lit->data_type = get_primitive_type("f64");
+        lit->data_type = get_primitive_type(&p->context->raw_allocator, "f64");
     }
 
     return lit;
@@ -1968,7 +1968,7 @@ static ASTNode_T* parse_nil_lit(Parser_T* p)
 
 static ASTNode_T* parse_char_lit(Parser_T* p)
 {
-    ASTNode_T* char_lit = init_ast_node(ND_CHAR, p->tok);
+    ASTNode_T* char_lit = init_ast_node(&p->context->raw_allocator, ND_CHAR, p->tok);
 
     if(strlen(p->tok->value) > 1)
         char_lit->str_val = strdup((char[]){'\\', p->tok->value[1], '\0'});
@@ -1985,7 +1985,7 @@ static ASTNode_T* parse_char_lit(Parser_T* p)
 
 static ASTNode_T* parse_str_lit(Parser_T* p)
 {
-    ASTNode_T* node = init_ast_node(ND_STR, p->tok);
+    ASTNode_T* node = init_ast_node(&p->context->raw_allocator, ND_STR, p->tok);
     node->str_val =  strdup(p->tok->value);
     node->data_type = (ASTType_T*) char_ptr_type;
 
@@ -2003,7 +2003,7 @@ static ASTNode_T* parse_str_lit(Parser_T* p)
 
 static ASTNode_T* parse_array_lit(Parser_T* p)
 {
-    ASTNode_T* a_lit = init_ast_node(ND_ARRAY, p->tok);
+    ASTNode_T* a_lit = init_ast_node(&p->context->raw_allocator, ND_ARRAY, p->tok);
     parser_consume(p, TOKEN_LBRACKET, "expect `[` for array literal");
     a_lit->args = parse_expr_list(p, TOKEN_RBRACKET, p->cur_obj);
     parser_consume(p, TOKEN_RBRACKET, "expect `]` after array literal");
@@ -2014,12 +2014,12 @@ static ASTNode_T* parse_array_lit(Parser_T* p)
 static ASTNode_T* parse_struct_lit(Parser_T* p, ASTNode_T* id)
 {
     parser_consume_operator(p, STATIC_MEMBER, "expect `::` before `{`");
-    ASTNode_T* struct_lit = init_ast_node(ND_STRUCT, p->tok);
+    ASTNode_T* struct_lit = init_ast_node(&p->context->raw_allocator, ND_STRUCT, p->tok);
     parser_consume(p, TOKEN_LBRACE, "expect `{` for struct literal");
     struct_lit->args = parse_expr_list(p, TOKEN_RBRACE, false);
     parser_consume(p, TOKEN_RBRACE, "expect `}` after struct literal");
 
-    struct_lit->data_type = init_ast_type(TY_UNDEF, id->tok);
+    struct_lit->data_type = init_ast_type(&p->context->raw_allocator, TY_UNDEF, id->tok);
     struct_lit->data_type->id = id->id;
 
     return struct_lit;
@@ -2027,7 +2027,7 @@ static ASTNode_T* parse_struct_lit(Parser_T* p, ASTNode_T* id)
 
 static ASTNode_T* parse_anonymous_struct_lit(Parser_T* p)
 {
-    ASTNode_T* struct_lit = init_ast_node(ND_STRUCT, p->tok);
+    ASTNode_T* struct_lit = init_ast_node(&p->context->raw_allocator, ND_STRUCT, p->tok);
     parser_consume(p, TOKEN_LBRACE, "expect `{` for struct literal");
     struct_lit->args = parse_expr_list(p, TOKEN_RBRACE, false);
     parser_consume(p, TOKEN_RBRACE, "expect `}` after struct literal");
@@ -2037,13 +2037,13 @@ static ASTNode_T* parse_anonymous_struct_lit(Parser_T* p)
 
 static ASTNode_T* parse_lambda_lit(Parser_T* p)
 {
-    ASTNode_T* lambda = init_ast_node(ND_LAMBDA, p->tok);
+    ASTNode_T* lambda = init_ast_node(&p->context->raw_allocator, ND_LAMBDA, p->tok);
     lambda->args = init_list();
-    lambda->data_type = init_ast_type(TY_FN, p->tok);
+    lambda->data_type = init_ast_type(&p->context->raw_allocator, TY_FN, p->tok);
     lambda->data_type->arg_types = init_list();
     
-    mem_add_list(lambda->args);
-    mem_add_list(lambda->data_type->arg_types);
+    CONTEXT_ALLOC_REGISTER(p->context, lambda->args);
+    CONTEXT_ALLOC_REGISTER(p->context, lambda->data_type->arg_types);
 
     if(tok_is_operator(p, "||"))
         parser_advance(p);
@@ -2053,7 +2053,7 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p)
 
         while(!tok_is_operator(p, "|"))
         {
-            ASTObj_T* arg = init_ast_obj(OBJ_FN_ARG, p->tok);
+            ASTObj_T* arg = init_ast_obj(&p->context->raw_allocator, OBJ_FN_ARG, p->tok);
             arg->id = parse_simple_identifier(p);
         
             parser_consume_operator(p, ":", "expect `:` between argument name and data type");
@@ -2073,7 +2073,7 @@ static ASTNode_T* parse_lambda_lit(Parser_T* p)
         lambda->data_type->base = parse_type(p);
     if(tok_is_operator(p, "="))
     {
-        lambda->body = init_ast_node(ND_RETURN, p->tok);
+        lambda->body = init_ast_node(&p->context->raw_allocator, ND_RETURN, p->tok);
         parser_advance(p);
 
         lambda->body->return_val = parse_expr(p, PREC_LOWEST, TOKEN_SEMICOLON);
@@ -2092,16 +2092,16 @@ static ASTNode_T* parse_const_lambda(Parser_T* p)
 {
     static u64 count = 0;
 
-    ASTObj_T* lambda_fn = init_ast_obj(OBJ_FUNCTION, p->tok);
+    ASTObj_T* lambda_fn = init_ast_obj(&p->context->raw_allocator, OBJ_FUNCTION, p->tok);
     lambda_fn->args = init_list();
-    lambda_fn->data_type = init_ast_type(TY_FN, p->tok);
+    lambda_fn->data_type = init_ast_type(&p->context->raw_allocator, TY_FN, p->tok);
     lambda_fn->data_type->arg_types = init_list();
     lambda_fn->data_type->is_constant = true;
     lambda_fn->objs = init_list();
 
-    mem_add_list(lambda_fn->args);
-    mem_add_list(lambda_fn->data_type->arg_types);
-    mem_add_list(lambda_fn->objs);
+    CONTEXT_ALLOC_REGISTER(p->context, lambda_fn->args);
+    CONTEXT_ALLOC_REGISTER(p->context, lambda_fn->data_type->arg_types);
+    CONTEXT_ALLOC_REGISTER(p->context, lambda_fn->objs);
 
     char* id;
 
@@ -2116,8 +2116,8 @@ static ASTNode_T* parse_const_lambda(Parser_T* p)
         sprintf(id, "__csp_const_lambda_%ld__", count++);
     }
 
-    mem_add_ptr(id);
-    lambda_fn->id = init_ast_identifier(p->tok, id);
+    CONTEXT_ALLOC_REGISTER(p->context, (void*) id);
+    lambda_fn->id = init_ast_identifier(&p->context->raw_allocator, p->tok, id);
 
     if(tok_is_operator(p, "||"))
         parser_advance(p);
@@ -2127,7 +2127,7 @@ static ASTNode_T* parse_const_lambda(Parser_T* p)
 
         while(!tok_is_operator(p, "|"))
         {
-            ASTObj_T* arg = init_ast_obj(OBJ_FN_ARG, p->tok);
+            ASTObj_T* arg = init_ast_obj(&p->context->raw_allocator, OBJ_FN_ARG, p->tok);
             arg->id = parse_simple_identifier(p);
         
             parser_consume_operator(p, ":", "expect `:` between argument name and data type");
@@ -2148,7 +2148,7 @@ static ASTNode_T* parse_const_lambda(Parser_T* p)
 
     if(tok_is_operator(p, "="))
     {
-        lambda_fn->body = init_ast_node(ND_RETURN, p->tok);
+        lambda_fn->body = init_ast_node(&p->context->raw_allocator, ND_RETURN, p->tok);
         parser_advance(p);
 
         lambda_fn->body->return_val = parse_expr(p, PREC_LOWEST, TOKEN_SEMICOLON);
@@ -2164,7 +2164,7 @@ static ASTNode_T* parse_const_lambda(Parser_T* p)
         lambda_fn->alloca_bottom = &alloca_bottom;
     list_push(p->root_ref->objs, lambda_fn);
 
-    ASTNode_T* lambda_id = init_ast_node(ND_ID, lambda_fn->tok);
+    ASTNode_T* lambda_id = init_ast_node(&p->context->raw_allocator, ND_ID, lambda_fn->tok);
     lambda_id->data_type = lambda_fn->data_type;
     lambda_id->referenced_obj = lambda_fn;
     lambda_id->id = lambda_fn->id;
@@ -2174,7 +2174,7 @@ static ASTNode_T* parse_const_lambda(Parser_T* p)
 
 static ASTNode_T* parse_ternary(Parser_T* p)
 {
-    ASTNode_T* ternary = init_ast_node(ND_TERNARY, p->tok);
+    ASTNode_T* ternary = init_ast_node(&p->context->raw_allocator, ND_TERNARY, p->tok);
     parser_consume(p, TOKEN_IF, "expect `if` keyword");
 
     ternary->condition = parse_expr(p, PREC_LOWEST, TOKEN_ARROW);
@@ -2190,7 +2190,7 @@ static ASTNode_T* parse_ternary(Parser_T* p)
 
 static ASTNode_T* parse_else_expr(Parser_T* p, ASTNode_T* left)
 {
-    ASTNode_T* else_expr = init_ast_node(ND_ELSE_EXPR, p->tok);
+    ASTNode_T* else_expr = init_ast_node(&p->context->raw_allocator, ND_ELSE_EXPR, p->tok);
     parser_consume(p, TOKEN_ELSE, "expect `else`");
 
     else_expr->left = left;
@@ -2207,7 +2207,7 @@ static ASTNode_T* parse_unary(Parser_T* p)
         throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "custom unary ops not implemented yet.");
     }
 
-    ASTNode_T* unary = init_ast_node(unary_ops[(int) *p->tok->value], p->tok);
+    ASTNode_T* unary = init_ast_node(&p->context->raw_allocator, unary_ops[(int) *p->tok->value], p->tok);
     parser_advance(p);
 
     unary->right = parse_expr(p, PREC_UNARY, TOKEN_EOF);
@@ -2216,7 +2216,7 @@ static ASTNode_T* parse_unary(Parser_T* p)
 
 static ASTNode_T* parse_num_op(Parser_T* p, ASTNode_T* left)
 {
-    ASTNode_T* infix = init_ast_node(get_infix_op(p->tok->value), p->tok);
+    ASTNode_T* infix = init_ast_node(&p->context->raw_allocator, get_infix_op(p->tok->value), p->tok);
     parser_advance(p);
 
     infix->left = left;
@@ -2232,7 +2232,7 @@ static ASTNode_T* parse_bit_op(Parser_T* p, ASTNode_T* left)
 
 static ASTNode_T* parse_bool_op(Parser_T* p, ASTNode_T* left)
 {
-    ASTNode_T* infix = init_ast_node(get_infix_op(p->tok->value), p->tok);
+    ASTNode_T* infix = init_ast_node(&p->context->raw_allocator, get_infix_op(p->tok->value), p->tok);
     parser_advance(p);
 
     infix->left = left;
@@ -2245,7 +2245,7 @@ static ASTNode_T* parse_bool_op(Parser_T* p, ASTNode_T* left)
 
 static ASTNode_T* parse_assignment(Parser_T* p, ASTNode_T* left)
 {
-    ASTNode_T* assign = init_ast_node(ND_ASSIGN, p->tok);
+    ASTNode_T* assign = init_ast_node(&p->context->raw_allocator, ND_ASSIGN, p->tok);
     assign->left = left;
     
     Token_T* op = p->tok;
@@ -2259,9 +2259,9 @@ static ASTNode_T* parse_assignment(Parser_T* p, ASTNode_T* left)
     }
     else
     {
-        Token_T* assign_op_tok = duplicate_token(op);
+        Token_T* assign_op_tok = duplicate_token(&p->context->raw_allocator, op);
         assign_op_tok->value[strlen(op->value) - 1] = '\0'; // cut the `=` from the operator
-        ASTNode_T* assign_op = init_ast_node(get_infix_op(assign_op_tok->value), assign_op_tok);
+        ASTNode_T* assign_op = init_ast_node(&p->context->raw_allocator, get_infix_op(assign_op_tok->value), assign_op_tok);
         assign_op->left = left;
         assign_op->right = right;
 
@@ -2273,7 +2273,7 @@ static ASTNode_T* parse_assignment(Parser_T* p, ASTNode_T* left)
 
 static ASTNode_T* parse_postfix(Parser_T* p, ASTNode_T* left)
 {
-    ASTNode_T* postfix = init_ast_node(get_infix_op(p->tok->value), p->tok);
+    ASTNode_T* postfix = init_ast_node(&p->context->raw_allocator, get_infix_op(p->tok->value), p->tok);
     postfix->left = left;
 
     parser_advance(p);
@@ -2283,7 +2283,7 @@ static ASTNode_T* parse_postfix(Parser_T* p, ASTNode_T* left)
 
 static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left)
 {
-    ASTNode_T* call = init_ast_node(ND_CALL, p->tok);
+    ASTNode_T* call = init_ast_node(&p->context->raw_allocator, ND_CALL, p->tok);
 
     call->expr = left;  // the expression to call
 
@@ -2297,9 +2297,9 @@ static ASTNode_T* parse_call(Parser_T* p, ASTNode_T* left)
 
 static ASTNode_T* parse_custom_prefix_operator(Parser_T* p)
 {
-    ASTNode_T* call = init_ast_node(ND_CALL, p->tok);
-    call->expr = init_ast_node(ND_ID, p->tok);
-    call->expr->id = init_ast_identifier(p->tok, p->tok->value);
+    ASTNode_T* call = init_ast_node(&p->context->raw_allocator, ND_CALL, p->tok);
+    call->expr = init_ast_node(&p->context->raw_allocator, ND_ID, p->tok);
+    call->expr->id = init_ast_identifier(&p->context->raw_allocator, p->tok, p->tok->value);
 
     parser_consume(p, TOKEN_OPERATOR, "expect operator");
 
@@ -2313,9 +2313,9 @@ static ASTNode_T* parse_custom_prefix_operator(Parser_T* p)
 
 static ASTNode_T* parse_custom_infix_operator(Parser_T* p, ASTNode_T* left)
 {
-    ASTNode_T* call = init_ast_node(ND_CALL, p->tok);
-    call->expr = init_ast_node(ND_ID, p->tok);
-    call->expr->id = init_ast_identifier(p->tok, p->tok->value);
+    ASTNode_T* call = init_ast_node(&p->context->raw_allocator, ND_CALL, p->tok);
+    call->expr = init_ast_node(&p->context->raw_allocator, ND_ID, p->tok);
+    call->expr->id = init_ast_identifier(&p->context->raw_allocator, p->tok, p->tok->value);
 
     parser_consume(p, TOKEN_OPERATOR, "expect operator");
 
@@ -2330,7 +2330,7 @@ static ASTNode_T* parse_custom_infix_operator(Parser_T* p, ASTNode_T* left)
 
 static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left)
 {
-    ASTNode_T* index = init_ast_node(ND_INDEX, p->tok);
+    ASTNode_T* index = init_ast_node(&p->context->raw_allocator, ND_INDEX, p->tok);
     index->left = left;
 
     parser_consume(p, TOKEN_LBRACKET, "expect `[` after array name for an index expression");
@@ -2348,7 +2348,7 @@ static ASTNode_T* parse_index(Parser_T* p, ASTNode_T* left)
 
 static ASTNode_T* parse_pipe(Parser_T* p, ASTNode_T* left)
 {
-    ASTNode_T* pipe = init_ast_node(ND_PIPE, p->tok);
+    ASTNode_T* pipe = init_ast_node(&p->context->raw_allocator, ND_PIPE, p->tok);
     pipe->left = left;
 
     parser_consume_operator(p, "|>", "expect `|>` for pipe expression");
@@ -2366,7 +2366,7 @@ static ASTNode_T* parse_hole(Parser_T* p)
     if(!parser_holes_enabled(p))
         throw_error(p->context, ERR_SYNTAX_ERROR, tok, "cannot have `$` here, only use `$` in pipe expressions");
     parser_consume(p, TOKEN_DOLLAR, "expect `$`");
-    return init_ast_node(ND_HOLE, tok);
+    return init_ast_node(&p->context->raw_allocator, ND_HOLE, tok);
 }
 
 static ASTNode_T* parse_const_expr(Parser_T* p)
@@ -2442,7 +2442,7 @@ static ASTNode_T* parse_builtin_type_exprs(Parser_T* p, ASTNode_T* expr)
 
 static ASTNode_T* parse_type_expr(Parser_T* p)
 {
-    ASTNode_T* expr = init_ast_node(ND_TYPE_EXPR, p->tok);
+    ASTNode_T* expr = init_ast_node(&p->context->raw_allocator, ND_TYPE_EXPR, p->tok);
     parser_consume(p, TOKEN_TYPE, "expect `type` keyword");
     parser_consume_operator(p, STATIC_MEMBER, "expect `::` after `type`");
 
@@ -2474,11 +2474,11 @@ static ASTNode_T* parse_type_expr(Parser_T* p)
 
 static ASTNode_T* parse_closure(Parser_T* p)
 {
-    ASTNode_T* closure = init_ast_node(ND_CLOSURE, p->tok);
+    ASTNode_T* closure = init_ast_node(&p->context->raw_allocator, ND_CLOSURE, p->tok);
     parser_consume(p, TOKEN_LPAREN, "expect `(` to begin closure");
 
     closure->exprs = init_list();
-    mem_add_list(closure->exprs);
+    CONTEXT_ALLOC_REGISTER(p->context, closure->exprs);
     do {
         list_push(closure->exprs, parse_expr(p, PREC_LOWEST, TOKEN_RPAREN));
         if(!tok_is(p, TOKEN_RPAREN))
@@ -2492,7 +2492,7 @@ static ASTNode_T* parse_closure(Parser_T* p)
 
 static ASTNode_T* parse_cast(Parser_T* p, ASTNode_T* left)
 {   
-    ASTNode_T* cast = init_ast_node(ND_CAST, p->tok);
+    ASTNode_T* cast = init_ast_node(&p->context->raw_allocator, ND_CAST, p->tok);
     parser_consume_operator(p, ":", "expect `:` after expression for type cast");
     cast->left = left;
     cast->data_type = parse_type(p);
@@ -2503,7 +2503,7 @@ static ASTNode_T* parse_cast(Parser_T* p, ASTNode_T* left)
 
 static ASTNode_T* parse_sizeof(Parser_T* p)
 {
-    ASTNode_T* size_of = init_ast_node(ND_SIZEOF, p->tok);
+    ASTNode_T* size_of = init_ast_node(&p->context->raw_allocator, ND_SIZEOF, p->tok);
     parser_consume(p, TOKEN_SIZEOF, "expect `sizeof` keyword");
 
     size_of->the_type = parse_type(p);
@@ -2514,7 +2514,7 @@ static ASTNode_T* parse_sizeof(Parser_T* p)
 
 static ASTNode_T* parse_alignof(Parser_T* p)
 {
-    ASTNode_T* align_of = init_ast_node(ND_ALIGNOF, p->tok);
+    ASTNode_T* align_of = init_ast_node(&p->context->raw_allocator, ND_ALIGNOF, p->tok);
     parser_consume(p, TOKEN_ALIGNOF, "expect `alignof` keyword");
 
     align_of->the_type = parse_type(p);
@@ -2525,7 +2525,7 @@ static ASTNode_T* parse_alignof(Parser_T* p)
 
 static ASTNode_T* parse_len(Parser_T* p)
 {
-    ASTNode_T* len = init_ast_node(ND_LEN, p->tok);
+    ASTNode_T* len = init_ast_node(&p->context->raw_allocator, ND_LEN, p->tok);
     parser_consume(p, TOKEN_LEN, "expect `len` keyword");
 
     len->expr = parse_expr(p, PREC_LOWEST, TOKEN_SEMICOLON);
@@ -2536,7 +2536,7 @@ static ASTNode_T* parse_len(Parser_T* p)
 
 static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left)
 {
-    ASTNode_T* member = init_ast_node(ND_MEMBER, p->tok);
+    ASTNode_T* member = init_ast_node(&p->context->raw_allocator, ND_MEMBER, p->tok);
     parser_consume_operator(p, ".", "expect `.` for member expression");
 
     member->left = left;
@@ -2550,7 +2550,7 @@ static ASTNode_T* parse_member(Parser_T* p, ASTNode_T* left)
 
 static ASTNode_T* parse_infix_call_expr(Parser_T* p)
 {
-    ASTNode_T* infix_id = init_ast_node(ND_ID, p->tok);
+    ASTNode_T* infix_id = init_ast_node(&p->context->raw_allocator, ND_ID, p->tok);
 
     parser_consume(p, TOKEN_INFIX_CALL, "expect infix call name before infix function call");
     infix_id->id = parse_identifier(p);
@@ -2561,20 +2561,20 @@ static ASTNode_T* parse_infix_call_expr(Parser_T* p)
 
 static ASTNode_T* parse_infix_call(Parser_T* p, ASTNode_T* left)
 {
-    ASTNode_T* call = init_ast_node(ND_CALL, p->tok);
+    ASTNode_T* call = init_ast_node(&p->context->raw_allocator, ND_CALL, p->tok);
     call->expr = parse_infix_call_expr(p);
     call->args = init_list();
     list_push(call->args, left);
     list_push(call->args, parse_expr(p, PREC_INFIX_CALL, TOKEN_SEMICOLON));
 
-    mem_add_list(call->args);
+    CONTEXT_ALLOC_REGISTER(p->context, call->args);
     return call;
 }
 
 static ASTNode_T* parse_pow_2(Parser_T* p, ASTNode_T* left)
 {
     // x² = (x * x)
-    ASTNode_T* mult = init_ast_node(ND_MUL, p->tok);
+    ASTNode_T* mult = init_ast_node(&p->context->raw_allocator, ND_MUL, p->tok);
     parser_consume(p, TOKEN_POW_2, "expect `²`");
 
     mult->left = left;
@@ -2582,9 +2582,9 @@ static ASTNode_T* parse_pow_2(Parser_T* p, ASTNode_T* left)
 
     if(p->context->ct == CT_TRANSPILE)
     {
-        ASTNode_T* closure = init_ast_node(ND_CLOSURE, p->tok);
+        ASTNode_T* closure = init_ast_node(&p->context->raw_allocator, ND_CLOSURE, p->tok);
         closure->exprs = init_list();
-        mem_add_list(closure->exprs); 
+        CONTEXT_ALLOC_REGISTER(p->context, closure->exprs); 
         list_push(closure->exprs, mult);
         return closure;
     }
@@ -2595,8 +2595,8 @@ static ASTNode_T* parse_pow_2(Parser_T* p, ASTNode_T* left)
 static ASTNode_T* parse_pow_3(Parser_T* p, ASTNode_T* left)
 {
     // x³ = (x * x * x)
-    ASTNode_T* mult_a = init_ast_node(ND_MUL, p->tok);
-    ASTNode_T* mult_b = init_ast_node(ND_MUL, p->tok);
+    ASTNode_T* mult_a = init_ast_node(&p->context->raw_allocator, ND_MUL, p->tok);
+    ASTNode_T* mult_b = init_ast_node(&p->context->raw_allocator, ND_MUL, p->tok);
     parser_consume(p, TOKEN_POW_3, "expect `³`");
 
     mult_a->left = left;
@@ -2606,9 +2606,9 @@ static ASTNode_T* parse_pow_3(Parser_T* p, ASTNode_T* left)
 
     if(p->context->ct == CT_TRANSPILE)
     {
-        ASTNode_T* closure = init_ast_node(ND_CLOSURE, p->tok);
+        ASTNode_T* closure = init_ast_node(&p->context->raw_allocator, ND_CLOSURE, p->tok);
         closure->exprs = init_list();
-        mem_add_list(closure->exprs); 
+        CONTEXT_ALLOC_REGISTER(p->context, closure->exprs); 
         list_push(closure->exprs, mult_a);
         return closure;
     }
@@ -2619,7 +2619,7 @@ static ASTNode_T* parse_pow_3(Parser_T* p, ASTNode_T* left)
 static ASTNode_T* parse_current_fn_token(Parser_T* p)
 {
     p->tok->type = TOKEN_STRING;
-    p->tok = mem_realloc(p->tok, sizeof(Token_T) + strlen(p->cur_obj->id->callee) + 1);
+    p->tok = allocator_realloc(&p->context->raw_allocator, p->tok, sizeof(Token_T) + strlen(p->cur_obj->id->callee) + 1);
     strcpy(p->tok->value, p->cur_obj->id->callee);
 
     return parse_str_lit(p);

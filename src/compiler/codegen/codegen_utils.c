@@ -2,11 +2,8 @@
 
 #include "ast/ast.h"
 #include "list.h"
-#include "mem/mem.h"
 #include "io/log.h"
 #include "io/io.h"
-#include "platform/platform_bindings.h"
-#include "timer/timer.h"
 
 #include <libgen.h>
 #include <ctype.h>

@@ -1,11 +1,11 @@
 #include "asm_codegen.h"
+#include "context.h"
 #include "io/log.h"
 #include "io/io.h"
 #include "platform/linux/linux_platform.h"
 #include "platform/platform_bindings.h"
 #include "../codegen_utils.h"
 #include "error/error.h"
-#include "mem/mem.h"
 #include "ast/types.h"
 #include "ast/ast.h"
 #include "config.h"
@@ -328,10 +328,10 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         link_obj(cg->context, target, obj_file, cg->silent, cg->link_exec);
 }
 
-char* asm_gen_identifier(ASTIdentifier_T* id)
+char* asm_gen_identifier(Context_T* context, ASTIdentifier_T* id)
 {
     char* str = gen_identifier(id, ".", ".");
-    mem_add_ptr(str);
+    CONTEXT_ALLOC_REGISTER(context, (void*) str);
     return str;
 }
 
@@ -369,7 +369,7 @@ static void asm_gen_entry_point(ASMCodegenData_T* cg)
     {
         for(size_t i = 0; i < cg->ast->before_main->size; i++)
         {
-            char* const id = asm_gen_identifier(((ASTObj_T*) cg->ast->before_main->items[i])->id);
+            char* const id = asm_gen_identifier(cg->context, ((ASTObj_T*) cg->ast->before_main->items[i])->id);
             asm_println(cg, "  call %s", id);
         }
     }
@@ -382,7 +382,7 @@ static void asm_gen_entry_point(ASMCodegenData_T* cg)
         for(size_t i = 0; i < cg->ast->after_main->size; i++)
         {
             const ASTObj_T* fn = cg->ast->after_main->items[i];
-            const char* id = asm_gen_identifier(fn->id);
+            const char* id = asm_gen_identifier(cg->context, fn->id);
 
             if(fn->args->size)
                 asm_println(cg, "  movq (%%rsp), %s", argreg64[0]);
@@ -543,7 +543,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
                         ASTObj_T* member = ty->members->items[i];
                         if(!should_emit(cg->context, member))
                             continue;
-                        char* id = asm_gen_identifier(member->id);
+                        char* id = asm_gen_identifier(cg->context, member->id);
                         asm_println(cg, "  .globl %s", id);
                         asm_println(cg, "  .section .rodata");
                         asm_println(cg, "  .type %s, @object", id);
@@ -559,7 +559,7 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
                 if(obj->is_extern || !should_emit(cg->context, obj))
                     continue;
                 {
-                    char* id = asm_gen_identifier(obj->id);
+                    char* id = asm_gen_identifier(cg->context, obj->id);
                     asm_println(cg, "  .globl %s", id);
 
                     i32 align = (obj->data_type->kind == TY_C_ARRAY || obj->data_type->kind == TY_ARRAY) && obj->data_type->size >= 16 ? MAX(16, obj->data_type->align) : obj->data_type->align;
@@ -629,7 +629,7 @@ static void asm_gen_function_signature(ASMCodegenData_T* cg, const char* fn_name
 
 static void asm_gen_function(ASMCodegenData_T* cg, ASTObj_T* obj)
 {
-    char* fn_name = asm_gen_identifier(obj->id);
+    char* fn_name = asm_gen_identifier(cg->context, obj->id);
     asm_gen_function_signature(cg, fn_name);
     if(obj->exported)
         asm_gen_function_signature(cg, obj->exported);
@@ -901,7 +901,7 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
 
                 case OBJ_GLOBAL:
                 case OBJ_ENUM_MEMBER:
-                    asm_println(cg, "  %s %s(%%rip), %%rax", node->call ? "movq" : "lea", node->referenced_obj->is_extern_c ? node->id->callee : asm_gen_identifier(node->id));
+                    asm_println(cg, "  %s %s(%%rip), %%rax", node->call ? "movq" : "lea", node->referenced_obj->is_extern_c ? node->id->callee : asm_gen_identifier(cg->context, node->id));
                     return;
                 
                 case OBJ_FUNCTION:
@@ -911,21 +911,21 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
                         if(obj->is_extern_c)
                             asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", EITHER(obj->exported, node->id->callee));
                         else if(obj->is_extern)
-                            asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", EITHER(obj->exported, asm_gen_identifier(node->id)));
+                            asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", EITHER(obj->exported, asm_gen_identifier(cg->context, node->id)));
                         else if(obj->kind != OBJ_FUNCTION)
                         {
                             asm_println(cg, "  lea %d(%%rbp), %%rax", node->referenced_obj->offset);
                             asm_println(cg, "  mov (%%rax), %%rax");
                         }
                         else
-                            asm_println(cg, "  lea %s(%%rip), %%rax", asm_gen_identifier(node->id));
+                            asm_println(cg, "  lea %s(%%rip), %%rax", asm_gen_identifier(cg->context, node->id));
                     }
                     else if(node->referenced_obj->is_extern_c)
                         asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", EITHER(node->referenced_obj->exported, node->id->callee));
                     else if(node->referenced_obj->is_extern)
-                        asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", EITHER(node->referenced_obj->exported, asm_gen_identifier(node->id)));
+                        asm_println(cg, "  mov %s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip), %%rax", EITHER(node->referenced_obj->exported, asm_gen_identifier(cg->context, node->id)));
                     else
-                        asm_println(cg, "  lea %s(%%rip), %%rax", asm_gen_identifier(node->id));
+                        asm_println(cg, "  lea %s(%%rip), %%rax", asm_gen_identifier(cg->context, node->id));
                     return;
                 
                 default:
@@ -1255,13 +1255,13 @@ static void asm_load(ASMCodegenData_T* cg, ASTType_T *ty) {
         asm_println(cg, "  mov (%%rax), %%rax");
 }
 
-static ASTNode_T* make_index_expr(ASTNode_T* left, size_t index)
+static ASTNode_T* make_index_expr(ASMCodegenData_T* cg, ASTNode_T* left, size_t index)
 {
-    ASTNode_T* index_expr = init_ast_node(ND_LONG, left->tok);
+    ASTNode_T* index_expr = init_ast_node(&cg->context->raw_allocator, ND_LONG, left->tok);
     index_expr->data_type = (ASTType_T*) primitives[TY_U64];
     index_expr->long_val = index;
 
-    ASTNode_T* expr = init_ast_node(ND_INDEX, left->tok);
+    ASTNode_T* expr = init_ast_node(&cg->context->raw_allocator, ND_INDEX, left->tok);
     expr->data_type = unpack(left->data_type)->base;
     expr->left = left;
     expr->expr = index_expr;
@@ -1269,12 +1269,12 @@ static ASTNode_T* make_index_expr(ASTNode_T* left, size_t index)
     return expr;
 }
 
-static ASTNode_T* make_member_expr(ASTNode_T* left, ASTNode_T* struct_member)
+static ASTNode_T* make_member_expr(ASMCodegenData_T* cg, ASTNode_T* left, ASTNode_T* struct_member)
 {
-    ASTNode_T* right = init_ast_node(ND_ID, left->tok);
+    ASTNode_T* right = init_ast_node(&cg->context->raw_allocator, ND_ID, left->tok);
     right->data_type = struct_member->data_type;
 
-    ASTNode_T* expr = init_ast_node(ND_MEMBER, left->tok);
+    ASTNode_T* expr = init_ast_node(&cg->context->raw_allocator, ND_MEMBER, left->tok);
     expr->data_type = struct_member->data_type;
     expr->left = left;
     expr->right = right;
@@ -1283,27 +1283,27 @@ static ASTNode_T* make_member_expr(ASTNode_T* left, ASTNode_T* struct_member)
     return expr;
 }
 
-static void unpack_array(List_T* unpacked_args, ASTNode_T* arg, ASTType_T* type)
+static void unpack_array(ASMCodegenData_T* cg, List_T* unpacked_args, ASTNode_T* arg, ASTType_T* type)
 {
     size_t num_indices = type->num_indices;
     for(size_t j = 0; j < num_indices; j++)
     {
         size_t index = arg->unpack_mode == UMODE_FTOB ? j : num_indices - j - 1;
-        list_push(unpacked_args, make_index_expr(arg, index));
+        list_push(unpacked_args, make_index_expr(cg, arg, index));
     }
 }
 
-static void unpack_struct(List_T* unpacked_args, ASTNode_T* arg, ASTType_T* type)
+static void unpack_struct(ASMCodegenData_T* cg, List_T* unpacked_args, ASTNode_T* arg, ASTType_T* type)
 {
     size_t num_members = type->members->size;
     for(size_t j = 0; j < num_members; j++)
     {
         ASTNode_T* member = type->members->items[arg->unpack_mode == UMODE_FTOB ? j : num_members - j - 1];
-        list_push(unpacked_args, make_member_expr(arg, member));
+        list_push(unpacked_args, make_member_expr(cg, arg, member));
     }
 }
 
-static List_T* unpack_call_args(ASTNode_T* node)
+static List_T* unpack_call_args(ASMCodegenData_T* cg, ASTNode_T* node)
 {
     if((node->called_obj && node->called_obj->data_type && !unpack(node->called_obj->data_type)->is_variadic))
         return node->args;
@@ -1336,10 +1336,10 @@ static List_T* unpack_call_args(ASTNode_T* node)
         switch (arg_type->kind) {
             case TY_ARRAY:
             case TY_C_ARRAY:
-                unpack_array(unpacked_args, arg, arg_type);
+                unpack_array(cg, unpacked_args, arg, arg_type);
                 break;
             case TY_STRUCT:
-                unpack_struct(unpacked_args, arg, arg_type);
+                unpack_struct(cg, unpacked_args, arg, arg_type);
                 break;
             default:
                 unreachable();
@@ -1545,15 +1545,15 @@ static void asm_gen_id_ptr(ASMCodegenData_T* cg, ASTNode_T* id)
             break;
         case OBJ_GLOBAL:
         case OBJ_ENUM_MEMBER:
-            asm_print(cg, "%s(%%rip)", asm_gen_identifier(id->id));
+            asm_print(cg, "%s(%%rip)", asm_gen_identifier(cg->context, id->id));
             break;
         case OBJ_FUNCTION:
             if(id->referenced_obj->is_extern_c)
                 asm_print(cg, "%s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip)", EITHER(id->referenced_obj->exported, id->id->callee));
             else if(id->referenced_obj->is_extern)
-                asm_print(cg, "%s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip)", EITHER(id->referenced_obj->exported, asm_gen_identifier(id->id)));
+                asm_print(cg, "%s" CSPC_ASM_EXTERN_FN_POSTFIX "(%%rip)", EITHER(id->referenced_obj->exported, asm_gen_identifier(cg->context, id->id)));
             else
-                asm_print(cg, "%s(%%rip)", asm_gen_identifier(id->id));
+                asm_print(cg, "%s(%%rip)", asm_gen_identifier(cg->context, id->id));
             break;
         default:
             unreachable();
@@ -1950,7 +1950,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                 asm_println(cg, "  mov %%rbp, " LAMBDA_STACKPTR_FMT, node->long_val);
                 asm_println(cg, "  lea lambda.%ld(%%rip), %%rax", node->long_val);
 
-                ASTObj_T* impl = init_ast_obj(OBJ_LAMBDA, node->tok);
+                ASTObj_T* impl = init_ast_obj(&cg->context->raw_allocator, OBJ_LAMBDA, node->tok);
                 impl->body = node;
                 list_push(cg->ast->objs, impl);
             } return;
@@ -2044,7 +2044,7 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_CALL:
         {
             List_T* packed_args = node->args;
-            node->args = unpack_call_args(node);
+            node->args = unpack_call_args(cg, node);
             i32 stack_args = asm_push_args(cg, node);
             asm_gen_addr(cg, node->expr);
 
@@ -2685,7 +2685,7 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_DEFER:
             if(!cg->current_fn->deferred) {
                 cg->current_fn->deferred = init_list(); 
-                mem_add_list(cg->current_fn->deferred);
+                CONTEXT_ALLOC_REGISTER(cg->context, cg->current_fn->deferred);
             }
             list_push(cg->current_fn->deferred, node->body);
             return;

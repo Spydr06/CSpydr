@@ -1,11 +1,9 @@
 #include "api.h"
 #include "context.h"
 #include "include/cspydr.h"
-#include <mem/mem.h>
 #include <io/io.h>
 #include <parser/parser.h>
 
-#include <stddef.h>
 #include <stdlib.h>
 #include <memory.h>
 

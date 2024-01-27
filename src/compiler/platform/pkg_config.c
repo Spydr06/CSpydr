@@ -7,10 +7,8 @@
 
 #include "error/error.h"
 #include "hashmap.h"
-#include "io/log.h"
 #include "lexer/token.h"
 #include "list.h"
-#include "mem/mem.h"
 #include "context.h"
 
 // list of libraries known to not work with pkgconf which should be present on all systems
@@ -149,7 +147,7 @@ void pkg_config(Context_T* context, const char* name, Token_T* token)
         size_t len = strlen(quoted) + 3;
 
         char* buf = calloc(len, sizeof(char));
-        mem_add_ptr(buf);
+        CONTEXT_ALLOC_REGISTER(context, (void*) buf);
 
         snprintf(buf, len, "-%c%s", fragment->type, quoted);
         list_push(context->linker_flags, buf);
