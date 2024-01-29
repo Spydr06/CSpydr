@@ -46,6 +46,7 @@ EVAL_FN(export);
 EVAL_FN(flag);
 EVAL_FN(immutable);
 EVAL_FN(include_c);
+EVAL_FN(include_c_dir);
 EVAL_FN(link_dir);
 EVAL_FN(link_obj);
 EVAL_FN(link);
@@ -142,6 +143,12 @@ static const Directive_T DIRECTIVES[] = {
         ANY,
         0,
         eval_include_c
+    },
+    {
+        "include_c_dir",
+        ANY,
+        0,
+        eval_include_c_dir
     },
     {
         "link_dir",
@@ -632,6 +639,13 @@ EVAL_FN(include_c)
     {
         parse_c_header(data->c_header_parser, data->surrounding_obj, data->name_token, data->arguments->items[i]);
     }
+    return false;
+}
+
+EVAL_FN(include_c_dir)
+{
+    for(size_t i = 0; i < data->arguments->size; i++)
+        c_parser_add_include_dir(data->c_header_parser, data->arguments->items[i]);
     return false;
 }
 

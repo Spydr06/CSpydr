@@ -28,7 +28,7 @@
 #define MAIN_FN_ID ID_PREFIX "main"
 #define UNIQUE_ID_FMT "_unique_id_%04" PRIx64
 
-#define C_NUM_REGISTERS REG_RFLAGS
+#define C_NUM_REGISTERS DEBUGGER_REG_RFLAGS
 
 #define GET_CG(args) CCodegenData_T* cg = va_arg(args, CCodegenData_T*)
 
@@ -1049,7 +1049,7 @@ static char* c_detect_registers(CCodegenData_T* cg, const char* str, bool used_r
         u64 reg_len = 1;
         for(; isalnum(str[i]); i++, reg_len++);
 
-        Register_T reg = REG_NUM;
+        Register_T reg = DEBUGGER_REG_NUM;
         for(i32 j = 0; j < C_NUM_REGISTERS; j++)
         {
             if(strncmp(reg_names[j], &str[i - reg_len], reg_len) == 0)
@@ -1058,7 +1058,7 @@ static char* c_detect_registers(CCodegenData_T* cg, const char* str, bool used_r
                 reg = j;
             }
         }
-        if(reg == REG_NUM)
+        if(reg == DEBUGGER_REG_NUM)
         {
             LOG_ERROR_F("Unknown register `%s`", strndup(&str[i - reg_len], reg_len));
             unreachable();

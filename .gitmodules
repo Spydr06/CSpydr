@@ -1,6 +1,6 @@
 [submodule "doc"]
 	path = doc
 	url = https://github.com/Spydr06/CSpydr.wiki.git
-[submodule "lib/dirent"]
-	path = lib/dirent
-	url = https://github.com/tronkko/dirent
+[submodule "tests/lib/acutest"]
+	path = tests/lib/acutest
+	url = https://github.com/mity/acutest

@@ -6,7 +6,6 @@
 
 #include "list.h"
 #include "error/error.h"
-#include "mem/mem.h"
 #include "../codegen_utils.h"
 #include "ast/ast.h"
 #include "ast/ast_iterator.h"
@@ -155,7 +154,7 @@ static void llvm_link_bc(LLVMCodegenData_T* cg, char* bc_file, char* output_file
 static char* llvm_gen_identifier(LLVMCodegenData_T* cg, ASTIdentifier_T* id)
 {
     char* str = gen_identifier(id, ".", false);
-    mem_add_ptr(str);
+    CONTEXT_ALLOC_REGISTER(cg->context, (void*) str);
     return str;
 }
 
@@ -200,7 +199,7 @@ static LLVMTypeRef llvm_gen_type(LLVMCodegenData_T* cg, ASTType_T* type)
                     ASTType_T* ty = type->arg_types->items[i];
                     params[i] = llvm_gen_type(cg, ty);
                 }
-                mem_add_ptr(params);
+                CONTEXT_ALLOC_REGISTER(cg->context, (void*) params);
 
                 return LLVMPointerType(
                     LLVMFunctionType(
@@ -219,7 +218,7 @@ static LLVMTypeRef llvm_gen_type(LLVMCodegenData_T* cg, ASTType_T* type)
                     ASTNode_T* member = type->members->items[i];
                     elements[i] = llvm_gen_type(cg, member->data_type);
                 }
-                mem_add_ptr(elements);
+                CONTEXT_ALLOC_REGISTER(cg->context, (void*) elements);
 
                 return LLVMStructType(elements, type->members->size, false);    // todo: union support
             }
@@ -227,7 +226,7 @@ static LLVMTypeRef llvm_gen_type(LLVMCodegenData_T* cg, ASTType_T* type)
         case TY_ARRAY:
             {
                 LLVMTypeRef* elements = calloc(2, sizeof(LLVMTypeRef));
-                mem_add_ptr(elements);
+                CONTEXT_ALLOC_REGISTER(cg->context, (void*) elements);
                 elements[0] = LLVMInt64Type();
                 elements[1] = LLVMArrayType(llvm_gen_type(cg, type->base), type->num_indices);
 

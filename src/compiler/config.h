@@ -42,7 +42,9 @@
 
 #if defined(__linux) || defined(__linux__)
     #define CSPYDR_LINUX 1
-    #define DEFAULT_STD_PATH "/usr/share/cspydr/std"
+    #ifndef DEFAULT_STD_PATH
+        #define DEFAULT_STD_PATH "/usr/share/cspydr/std"
+    #endif
 #elif defined(_WIN32) || defined(_WIN64)
     #define CSPYDR_WINDOWS 1
     #define DEFAULT_STD_PATH "C:\\Program Files\\cspydr\\std"

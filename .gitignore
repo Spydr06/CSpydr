@@ -76,16 +76,6 @@ test.s
 *.kdev4
 .kdev4/
 
-# CMake Files
-*.cmake
-CMakeCache.txt
-Makefile*
-install_manifest.txt
-CMakeFiles/
-compile_commands.json
-cmake_install.cmake
-CMakeDoxyfile.in
-
 # Output directory
 bin/
 
@@ -106,6 +96,8 @@ src/std/std.csp
 # Ninja files
 .ninja_*
 build.ninja
+config.mk
+compile_commands.json
 
 # version files
 src/compiler/version.h

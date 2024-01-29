@@ -1,11 +1,11 @@
 #ifndef CSPYDR_VERSION_H
 #define CSPYDR_VERSION_H
 
-#define CSPYDR_BUILD_HASH "@VERSION@"
+#define CSPYDR_BUILD_HASH "@git-hash@"
 
-#define CSPYDR_VERSION_X "0"
-#define CSPYDR_VERSION_Y "0"
-#define CSPYDR_VERSION_Z "8"
+#define CSPYDR_VERSION_X "@version-x@"
+#define CSPYDR_VERSION_Y "@version-y@"
+#define CSPYDR_VERSION_Z "@version-z@"
 
 #ifdef DEBUG
     #define CSPYDR_VERSION_W "d"
@@ -17,3 +17,4 @@ void get_cspydr_build(char* dest);
 const char* get_cspydr_version();
 
 #endif
+

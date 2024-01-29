@@ -7,7 +7,6 @@
 #include <llvm-c/TargetMachine.h>
 #include <llvm-c/ErrorHandling.h>
 #include <llvm-c/Types.h>
-#include <llvm-c/Transforms/Scalar.h>
 #include <llvm-c/Target.h>
 #include <llvm-c/ExecutionEngine.h>
 #include <llvm-c/BitWriter.h>

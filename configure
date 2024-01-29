@@ -1,0 +1,350 @@
+#!/usr/bin/env bash
+
+set -e
+
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+
+CONFIG_MK="$SCRIPT_DIR/config.mk"
+
+PREFIX='/usr/local'
+EXEC_PREFIX="$PREFIX"
+
+BUILD_PREFIX="$SCRIPT_DIR/build"
+SRC_DIR="$SCRIPT_DIR/src"
+PKG_CONFIG_DIR=""
+
+function error() {
+    echo "$0: error: $1"
+    exit 1
+}
+
+function show_help() {
+    echo "\`configure\` configures this package to your system."
+    echo
+    echo "Usage: $0 [OPTION]... [VAR=VALUE]..."
+    echo 
+    echo "To assign environment variables (e.g., CC, CFLAGS...), specify them as"
+    echo "VAR=VALUE.  See below for descriptions of some of the useful variables."
+    echo
+    echo "Defaults for the options are specified in brackets."
+    echo
+    echo "Options:"
+    echo "  -h, --help                  display this help text and exit"
+    echo "      --prefix=PREFIX         install files in PREFIX [$PREFIX]"
+    echo "      --exec-prefix=EPREFIX   install executables in PREFIX [$EXEC_PREFIX]"
+    echo "      --build-prefix=BPREFIX  put build files in BPREFIX [$BUILD_PREFIX]"
+    echo
+}
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --prefix=*)
+            PREFIX=$(realpath ${1#*=})
+            ;;
+        --build-prefix=*)
+            BUILD_PREFIX=$(realpath ${1#*=})
+            ;;
+        --exec-prefix=*)
+            EXEC_PREFIX=$(realpath ${1#*=})
+            ;;
+        --src-dir=*)
+            SRC_DIR=$(realpath ${1#*=})
+            ;;
+        --prefix | --build-prefix | --src-dir | --exec-prefix)
+            error "missing argument to $1"
+            ;;
+        -h | --help)
+            show_help
+            exit
+            ;;
+        *=*)
+            export $1
+            ;;
+        *)
+            error "unknown option -- '$1'"
+            ;;
+    esac
+    shift
+done
+
+mkdir -p $BUILD_PREFIX
+
+BIN_PREFIX="$BUILD_PREFIX/bin"
+mkdir -p $BIN_PREFIX
+
+function check_os() {
+    os=$OSTYPE
+    echo "checking host system type... $os"
+
+    if [[ $os != "linux-gnu"* ]]; then
+        error "host system does not match \`linux-gnu\`"
+    fi
+}
+
+check_os
+
+#
+# C Compiler checks ($CC)
+#
+
+function check_tool() {
+    return $(command -v "$1" > /dev/null 2>&1)
+}
+
+function verify_tool_found() {
+    echo -n "checking for $1... "
+    if check_tool $1; then
+        echo "found."
+    else
+        echo "not found."
+        error "\`$1\` could not be found. Be sure \`$1\` is in your PATH."
+    fi
+}
+
+echo -n "checking for C compiler... "
+if [ -z "$CC" ]; then
+    compilers=("gcc" "clang" "cc")
+
+    for compiler in "${compilers[@]}"; do
+        if check_tool "$compiler"; then
+            export CC=$(which $compiler)
+            break
+        fi
+    done
+
+    if [ -z "$CC" ]; then 
+        echo "not found"
+        error "no suitable C compiler found."
+    fi
+fi
+echo "$CC"
+
+function test_compiler() {
+    echo -n "checking whether the C compiler works... "
+
+    test_file="$BUILD_PREFIX/test.c"
+    test_exec="$BUILD_PREFIX/test.out"
+    
+    echo "int main() { return 0; }" > $test_file
+    if $CC -o $test_exec $test_file; then
+        echo "yes"
+    else
+        echo "no"
+        error "\`$CC\` was unable to compile a simple test file."
+    fi
+}
+
+test_compiler
+
+#
+# LD compiler checks ($LD)
+#
+
+echo -n "checking for linker... "
+LD="$CC"
+echo "$LD"
+
+#
+# Default compiler/linker flags
+#
+
+CSPC_DEFAULT_STD_PATH="${PREFIX}/share/cspydr/std"
+
+CFLAGS="${CFLAGS} -fPIC -flto -Wall -DDEFAULT_STD_PATH=\"\\\"${CSPC_DEFAULT_STD_PATH}\\\"\""
+LDFLAGS="${LDFLAGS} -lm"
+
+#
+# LLVM checks
+#
+
+echo -n "checking for llvm... "
+if [ -z "$LLVM_CONFIG" ]; then
+    if check_tool "llvm-config"; then
+        export LLVM_CONFIG=$(which llvm-config)
+    else
+        echo "not found."
+        error "llvm library not found. Make sure \`llvm-config\` is in the PATH."
+    fi
+fi
+LLVM_VERSION=$($LLVM_CONFIG --version)
+echo "$LLVM_VERSION"
+
+LLVM_CFLAGS="$($LLVM_CONFIG --cflags)"
+LLVM_LDFLAGS="$($LLVM_CONFIG --ldflags)"
+
+CFLAGS="${CFLAGS} ${LLVM_CFLAGS}"
+LDFLAGS="${LDFLAGS} ${LLVM_LDFLAGS}"
+
+#
+# Check for pkg-config
+#
+
+echo -n "checking for pkg-config... "
+if [ -z $PKG_CONFIG ]; then
+    if check_tool "pkg-config"; then
+        export PKG_CONFIG=$(which pkg-config)
+    else
+        echo "not found."
+        error "pkg-config not found. Makre sure \`pkg-config\` is in the PATH."
+    fi
+fi
+echo "$PKG_CONFIG"
+
+echo -n "checking pkg-config directory... "
+if test -z "$PKG_CONFIG_DIR"; then
+    PKG_CONFIG_PATHS=$($PKG_CONFIG --variable pc_path pkg-config)
+    PKG_CONFIG_DIR="${PKG_CONFIG_PATHS##*:}"
+fi
+echo "$PKG_CONFIG_DIR"
+
+#
+# bear (for compile_commands.json)
+#
+
+echo -n "checking for bear... "
+if check_tool "bear"; then
+    echo "found."
+    BEAR=$(which bear)
+else
+    echo "not found."
+fi
+
+#
+# Git
+#
+
+echo -n "checking for git... "
+if check_tool "git"; then
+    echo "found".
+    GIT=$(which git)
+else
+    echo "not found".
+fi
+
+#
+# Other tools
+#
+
+verify_tool_found "install"
+INSTALL=$(which install)
+
+verify_tool_found "find"
+FIND=$(which find)
+
+verify_tool_found "mkdir"
+MKDIR=$(which mkdir)
+
+verify_tool_found "rm"
+RM=$(which rm)
+
+verify_tool_found "sed"
+SED=$(which sed)
+
+#
+# Other libraries
+#
+
+function check_library() {
+    echo -n "checking for $1... "
+    if pkg-config --exists "$1"; then
+        echo "found."
+        CFLAGS="${CFLAGS} $(pkg-config --cflags "$1")"
+        LDFLAGS="${LDFLAGS} $(pkg-config --libs "$1")"
+    else
+        echo "not found."
+        error "library $1 not found."
+    fi
+}
+
+check_library "libpkgconf"
+check_library "json-c"
+
+#
+# Acutest
+#
+
+echo -n "checking for acutest... "
+if [ ! -d "$SCRIPT_DIR/tests/lib/acutest" ]; then
+    echo "not found."
+    if [ ! -z "$GIT" ] && "$GIT" -C "$SCRIPT_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
+        echo "downloading acutest as submodule..."
+        $(which git) submodule update --init --recursive
+    else
+        error "library acutest not found and couldn't be downloaded using git submodules."
+    fi
+else
+    echo "found."
+fi
+
+#
+# Generate verion numbers
+#
+
+CSPC_VERSION=$(<"$SCRIPT_DIR/version")
+IFS='.' read -ra CSPC_VERSION_DIGITS <<< "$CSPC_VERSION"
+
+CSPC_VERSION_X=${CSPC_VERSION_DIGITS[0]}
+CSPC_VERSION_Y=${CSPC_VERSION_DIGITS[1]}
+CSPC_VERSION_Z=${CSPC_VERSION_DIGITS[2]}
+
+CSPC_GIT_HASH="nogit"
+
+if [ ! -z "$GIT" ] && "$GIT" -C "$SCRIPT_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
+    CSPC_GIT_HASH=$("$GIT" -C "$SCRIPT_DIR" rev-parse --short HEAD)
+fi
+
+#
+# Write config file
+#
+
+if [ -e "$CONFIG_MK" ]; then
+    echo -n "removing existing $CONFIG_MK file... "
+    rm $CONFIG_MK
+    echo "done."
+fi
+
+touch $CONFIG_MK
+
+echo -n "generating $CONFIG_MK file... "
+cat > "$CONFIG_MK" <<EOF
+# Auto-generated by \`configure\`
+
+CC := $CC
+LD := $LD
+CFLAGS := $CFLAGS
+LDFLAGS := $LDFLAGS
+
+INSTALL := $INSTALL
+FIND := $FIND
+MKDIR := $MKDIR
+RM := $RM
+SED := $SED
+BEAR := $BEAR
+
+PREFIX := $PREFIX
+EXEC_PREFIX := $EXEC_PREFIX
+BUILD_PREFIX := $BUILD_PREFIX
+BIN_PREFIX := $BIN_PREFIX
+
+PKG_CONFIG_DIR := $PKG_CONFIG_DIR
+SRC_DIR := $SRC_DIR
+
+CSPC_DEFAULT_STD_PATH := $CSPC_DEFAULT_STD_PATH
+
+VERSION := $CSPC_VERSION
+VERSION_X := $CSPC_VERSION_X
+VERSION_Y := $CSPC_VERSION_Y
+VERSION_Z := $CSPC_VERSION_Z
+
+GIT_HASH := $CSPC_GIT_HASH
+EOF
+
+echo "done."
+
+echo
+echo "generated configuration:"
+cat $CONFIG_MK
+
+echo
+echo "done."
+

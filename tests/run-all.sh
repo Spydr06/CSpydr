@@ -2,9 +2,11 @@
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
+set -e
+
 # compiler tests directly testing the compiler from C
 
-COMPILER_TEST_EXEC="$SCRIPT_DIR/../bin/cspc-tests"
+COMPILER_TEST_EXEC="$2"
 
 if [ -f "$COMPILER_TEST_EXEC" ];
 then
@@ -32,7 +34,7 @@ then
     exit 1
 fi
 
-COMPILER_EXEC="$SCRIPT_DIR/../bin/cspc"
+COMPILER_EXEC="$1"
  
 if [ -f "$COMPILER_EXEC" ];
 then
@@ -45,7 +47,7 @@ then
 
         echo "Compiling $TEST_NAME..."
 
-        if $COMPILER_EXEC build $TEST_FILE -p $STD_DIRECTORY -o $TEST_EXEC --show-timings;
+        if $COMPILER_EXEC build $TEST_FILE -p $STD_DIRECTORY -o $TEST_EXEC --show-timings --silent;
         then
             # compilation was successful, we can continue testing
             echo "Successfully compiled \`$TEST_EXEC\` from \`$TEST_FILE\`"
@@ -78,3 +80,4 @@ else
     echo "Please consider recompiling CSpydr."
     exit 1
 fi
+

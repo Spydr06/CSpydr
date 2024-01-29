@@ -2,32 +2,31 @@
 #define CSPYDR_REGISTER_H
 
 #include <util.h>
-#include <stdlib.h>
 
 #include "debugger.h"
 
 typedef enum REGISTER_ENUM
 {
-    REG_RAX, REG_RBX, REG_RCX, REG_RDX,
-    REG_RDI, REG_RSI, REG_RBP, REG_RSP,
-    REG_R8,  REG_R9,  REG_R10, REG_R11,
-    REG_R12, REG_R13, REG_R14, REG_R15,
-    REG_RIP, 
-    REG_RFLAGS,       REG_CS,
-    REG_ORIG_RAX, 
-    REG_FS_BASE, REG_GS_BASE,
-    REG_FS, REG_GS, REG_SS, REG_DS, REG_ES,
-    REG_NUM
+    DEBUGGER_REG_RAX, DEBUGGER_REG_RBX, DEBUGGER_REG_RCX, DEBUGGER_REG_RDX,
+    DEBUGGER_REG_RDI, DEBUGGER_REG_RSI, DEBUGGER_REG_RBP, DEBUGGER_REG_RSP,
+    DEBUGGER_REG_R8,  DEBUGGER_REG_R9,  DEBUGGER_REG_R10, DEBUGGER_REG_R11,
+    DEBUGGER_REG_R12, DEBUGGER_REG_R13, DEBUGGER_REG_R14, DEBUGGER_REG_R15,
+    DEBUGGER_REG_RIP, 
+    DEBUGGER_REG_RFLAGS,       DEBUGGER_REG_CS,
+    DEBUGGER_REG_ORIG_RAX, 
+    DEBUGGER_REG_FS_BASE, DEBUGGER_REG_GS_BASE,
+    DEBUGGER_REG_FS, DEBUGGER_REG_GS, DEBUGGER_REG_SS, DEBUGGER_REG_DS, DEBUGGER_REG_ES,
+    DEBUGGER_REG_NUM
 } Register_T;
 
-typedef struct REG_DESCRIPTOR_STRUCT
+typedef struct DEBUGGER_REG_DESCRIPTOR_STRUCT
 {
     Register_T r;
     i32 dwarf_r;
     const char* name;
 } RegDescriptor_T;
 
-extern const RegDescriptor_T REG_DESCRIPTORS[REG_NUM];
+extern const RegDescriptor_T DEBUGGER_REG_DESCRIPTORS[DEBUGGER_REG_NUM];
 
 const RegDescriptor_T* find_reg_desc(Register_T r);
 u64 get_reg_val_from_dwarf(pid_t pid, u32 regnum);
