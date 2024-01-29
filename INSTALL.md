@@ -1,6 +1,6 @@
 # Installation
 
-Building and installation is done via CMake from source.
+Building and installation is done from source.
 
 ## Overview
 - [Installation](#installation)
@@ -32,7 +32,6 @@ Building and installation is done via CMake from source.
 **Supported Assemblers and Linkers:**
 - [x] GNU `as` and `ld`
 
-
 ## Obtaining CSpydr
 
 CSpydr can be obtained by simply cloning this repository or dowloading the `.zip` file on [GitHub](https://github.com/spydr06/cspydr.git)
@@ -51,33 +50,25 @@ CSpydr depends on the following libraries. They need to be installed on your com
 - `libpkgconf`
 
 **Programs:**
-- `cmake`
+- `make`
 - `gcc` or `clang`
 - `as` (GNU assembler (part of the `binutils` package))
 - `ld` (GNU linker (part of the `binutils` package))
 - `llvm-config` **(optional)**
 
 ## Building
-Building CSpydr is done via CMake using the following commands (after cloning this repository):
+Building CSpydr is done via a configure script and Makefiles using the following commands (after cloning this repository):
 
 ```console
 $ cd ./cspydr
-$ cmake .
+$ ./configure
 $ make
 ```
 
-> If you don't want llvm in your build, you can disable it with:
-> ```console
-> $ cmake . -DNO_LLVM=1
-> $ make
-> ```
-> (to reenable, set `NO_LLVM=0`.)
-> 
-> Builds without llvm will not rely on `llvm` and `llvm-config`
-
 ## Installation
 
-Global installation is necessary, because of the compiler needing the standard library to be present at `/usr/share/cspydr/std`.
+Global installation is necessary, because of the compiler needing the standard library to be present at `/usr/local/share/cspydr/std`.
+The install paths can be changed using the `--prefix` and `--exec-prefix` flags on the `./configure` script.
 To install CSpydr with all of its components (cspc - The CSpydr Compiler and the CSpydr Standard Library), enter this command (needs root privileges):
 ```console
 # make install
