@@ -305,14 +305,19 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
             asm_source_file,
             "-o",
             obj_file,
-            NULL,
-            NULL
         };
+        List_T* arg_list = init_list_with((void**) args, LEN(args));
 
         if(cg->embed_file_locations)
-            args[LEN(args) - 2] = "-g";
+            list_push(arg_list, "-g");
 
-        i32 exit_code = subprocess(args[0], (char* const*) args, false);
+        for(size_t i = 0; i < cg->context->compiler_flags->size; i++)
+            list_push(arg_list, cg->context->compiler_flags->items[i]);
+
+        list_push(arg_list, NULL);
+
+        i32 exit_code = subprocess(arg_list->items[0], (char *const *) arg_list->items, false);
+        free_list(arg_list);
 
         if(exit_code != 0)
         {

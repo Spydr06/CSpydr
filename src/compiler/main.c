@@ -121,6 +121,7 @@ const char help_text[] = "%s"
                        "      --print-code          | Prints the generated code (C | Assembly | LLVM IR)\n"
                        "      --silent              | Disables all command line output except error messages\n"
                        "      --cc [compiler]       | Sets the C compiler being used after transpiling (default: " DEFAULT_CC ")\n"
+                       "      --cc-flags [flags]    | Adds flags passed to the C compiler when transpiling\n"
                        "  -S                        | Comple only; do not assemble or link\n"
                        "  -c                        | Compile and assemble, but do not link\n"
                        "  -g -g0                    | Include/Exclude debug symbols in binary\n"
@@ -288,13 +289,28 @@ i32 main(i32 argc, char* argv[])
         {
             if(!argv[++i])
             {
-                LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " expect STD path after %s.", arg);
+                LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " expect STD path after %s.\n", arg);
                 exit(1);
             }
             context.paths.std_path = get_absolute_path(argv[i]);
         }
         else if(streq(arg, "--clear-cache"))
             context.flags.clear_cache_after = true;
+        else if(streq(arg, "--cc-flags"))
+        {
+            char* flags = argv[++i];
+            if(!flags) 
+            {
+                LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " expect compiler flags after `--cc-flags`\n");
+                exit(1);
+            }
+
+            char* state;
+            char* flag = strtok_r(flags, " \t", &state);
+            do
+                list_push(context.compiler_flags, flag);
+            while((flag = strtok_r(NULL, " \t", &state)) != NULL);
+        }
         else if(streq(arg, "--"))
         {
             store_exec_args(&context, argc - i - 1, &argv[i + 1], action);

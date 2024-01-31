@@ -33,6 +33,7 @@ static struct { const char* as_str; bool force_exit; bool is_error; } error_type
     [ERR_UNREACHABLE]       = { "unreachable",  false, false },
     [ERR_DEPRECATED]        = { "deprecated",   false, false },
     [ERR_RECURSION_DEPTH]   = { "recursion depth", true, true}, 
+    [ERR_C_PARSER]          = { "c parser",     false,  true },
     [ERR_UNUSED]            = { "unused",       false, false },
 };
 

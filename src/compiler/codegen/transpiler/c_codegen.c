@@ -381,7 +381,10 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
 
         if(cg->context->flags.optimize)
             list_push(arg_list, "-O2");
-        
+
+        for(size_t i = 0; i < cg->context->compiler_flags->size; i++)
+            list_push(arg_list, cg->context->compiler_flags->items[i]);
+
         for(size_t i = 0; i < cg->context->linker_flags->size; i++)
             list_push(arg_list, cg->context->linker_flags->items[i]);
         
@@ -408,14 +411,19 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
             "-std=c99",
             "-o",
             obj_file,
-            NULL,
-            NULL
         };
+        List_T* arg_list = init_list_with((void**) args, LEN(args));
 
         if(cg->context->flags.embed_debug_info)
-            args[LEN(args) - 2] = "-g";
-        
-        i32 exit_code = subprocess(args[0], (char* const*) args, false);
+            list_push(arg_list, "-g");
+         
+        for(size_t i = 0; i < cg->context->compiler_flags->size; i++)
+            list_push(arg_list, cg->context->compiler_flags->items[i]);
+
+        list_push(arg_list, NULL);
+
+        i32 exit_code = subprocess(arg_list->items[0], (char* const*) arg_list->items, false);
+        free_list(arg_list);
 
         if(exit_code != 0)
         {
