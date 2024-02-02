@@ -1,5 +1,6 @@
 
 [include_c("stdio.h")]
+
 fn main(): i32 {
     printf("Hello\n");
     <- 0;
