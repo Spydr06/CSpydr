@@ -22,7 +22,7 @@ hi def link cspydrLoopKeyword Repeat
 syn keyword cspydrLabelKeyword break continue
 hi def link cspydrLabelKeyword Label
 
-syn match cspydrEmptyOption "_[^a-zA-Z0-9?'_]"
+syn match cspydrEmptyOption "_\ze[^a-zA-Z0-9?'_]"
 hi def link cspydrEmptyOption Label
 
 syn keyword cspydrOperatorKeyword alignof sizeof typeof len
@@ -47,10 +47,6 @@ hi def link cspydrMacroIdent Macro
 
 syn keyword cspydrPreprocessorKeyword macro import
 hi def link cspydrPreprocessorKeyword PreProc
-
-" constants
-syn match cspydrConstIdent "[A-Z_][A-Z0-9?'_]*"
-hi def link cspydrConstIdent Constant
 
 " default types
 syn keyword cspydrPrimitiveType void bool char i8 u8 i16 u16 i32 u32 i64 u64 f32 f64 f80
