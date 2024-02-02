@@ -172,8 +172,10 @@ echo "$LLVM_VERSION"
 LLVM_CFLAGS="$($LLVM_CONFIG --cflags)"
 LLVM_LDFLAGS="$($LLVM_CONFIG --ldflags)"
 
+CLANG_LIBS="-lclang"
+
 CFLAGS="${CFLAGS} ${LLVM_CFLAGS}"
-LDFLAGS="${LDFLAGS} ${LLVM_LDFLAGS}"
+LDFLAGS="${LDFLAGS} ${LLVM_LDFLAGS} ${CLANG_LIBS}"
 
 #
 # Check for pkg-config
