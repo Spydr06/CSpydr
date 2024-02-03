@@ -10,10 +10,9 @@
 typedef struct SCOPE_STRUCT Scope_T;
 struct SCOPE_STRUCT
 {
-    Scope_T* prev;
+    Scope_T* outer;
     HashMap_T* objs;
-    ASTIdentifier_T* id;
-} __attribute__((packed));
+};
 
 typedef struct VALIDATOR_STRUCT 
 {
@@ -22,9 +21,9 @@ typedef struct VALIDATOR_STRUCT
 
     Scope_T* current_scope;
     Scope_T* global_scope;
-    ASTObj_T* current_function;
-    ASTNode_T* current_pipe;
-    bool main_function_found;
+
+    ASTObj_T* current_obj;
+    List_T* obj_stack;
 
     ConstexprResolver_T constexpr_resolver;
 
@@ -32,6 +31,5 @@ typedef struct VALIDATOR_STRUCT
 } Validator_T;
 
 i32 validator_pass(Context_T* context, ASTProg_T* ast);
-ASTType_T* expand_typedef(Validator_T* v, ASTType_T* type);
 
 #endif

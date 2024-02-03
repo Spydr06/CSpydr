@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <errno.h>
 #include <assert.h>
-#include <math.h>
 
 #ifndef HASHMAP_INIT_SIZE
     #define HASHMAP_INIT_SIZE 128
@@ -30,9 +29,9 @@ struct HASHMAP_STRUCT
 
 static inline size_t hashmap_calc_size(HashMap_T* map);
 static inline void hashmap_rehash(HashMap_T* map, size_t size);
-static inline HashPair_T* hashmap_find_pair(const HashMap_T* map, char* key, bool find_empty);
+static inline HashPair_T* hashmap_find_pair(const HashMap_T* map, const char* key, bool find_empty);
 
-static size_t (*HASHMAP_HASH_FUNCTION)(char*) = hashmap_default_hash;
+static size_t (*HASHMAP_HASH_FUNCTION)(const char*) = hashmap_default_hash;
 
 HashMap_T* hashmap_init()
 {
@@ -82,12 +81,12 @@ int hashmap_put(HashMap_T* map, char* key, void* value)
     return 0;
 }
 
-void hashmap_set_hash_function(size_t (*function)(char*))
+void hashmap_set_hash_function(size_t (*function)(const char*))
 {
     HASHMAP_HASH_FUNCTION = function;
 }
 
-void* hashmap_get(const HashMap_T* map, char* key)
+void* hashmap_get(const HashMap_T* map, const char* key)
 {
     HashPair_T* pair = hashmap_find_pair(map, key, false);
     return pair ? pair->value : NULL;
@@ -154,7 +153,7 @@ static inline void hashmap_rehash(HashMap_T* map, size_t size)
  * This is an implementation of the well-documented Jenkins one-at-a-time
  * hash function. See https://en.wikipedia.org/wiki/Jenkins_hash_function
  */
-size_t hashmap_default_hash(char* data)
+size_t hashmap_default_hash(const char* data)
 {
     size_t len = strlen(data);
     const u8* byte = (const u8*) data;
@@ -175,13 +174,13 @@ size_t hashmap_default_hash(char* data)
     return hash;
 }
 
-static inline size_t hashmap_calc_index(const HashMap_T* map, char* key)
+static inline size_t hashmap_calc_index(const HashMap_T* map, const char* key)
 {
     size_t index = HASHMAP_HASH_FUNCTION(key);
     return HASHMAP_SIZE_MOD(map, index);
 }
 
-static inline HashPair_T* hashmap_find_pair(const HashMap_T* map, char* key, bool find_empty)
+static inline HashPair_T* hashmap_find_pair(const HashMap_T* map, const char* key, bool find_empty)
 {
     size_t index = hashmap_calc_index(map, key);
 
