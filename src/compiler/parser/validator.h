@@ -31,5 +31,7 @@ typedef struct VALIDATOR_STRUCT
 } Validator_T;
 
 i32 validator_pass(Context_T* context, ASTProg_T* ast);
+void validator_push_obj(Validator_T* v, ASTObj_T* obj);
+void validator_pop_obj(Validator_T* v);
 
 #endif

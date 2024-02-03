@@ -31,5 +31,8 @@ typedef struct AST_ITERATOR_LIST_STRUCT
 
 void ast_iterate(const ASTIteratorList_T* list, ASTProg_T* ast, ...);
 void ast_iterate_stmt(const ASTIteratorList_T* list, ASTNode_T* stmt, ...);
+void ast_iterate_expr(const ASTIteratorList_T* list, ASTNode_T* expr, ...);
+void ast_iterate_obj(const ASTIteratorList_T* list, ASTObj_T* obj, ...);
+void ast_iterate_type(const ASTIteratorList_T* list, ASTType_T* type, ...);
 
 #endif

@@ -7,6 +7,7 @@
 #include "list.h"
 #include "optimizer/constexpr.h"
 #include "ast/ast.h"
+#include "parser/queue.h"
 #include "timer/timer.h"
 #include "util.h"
 
@@ -38,6 +39,8 @@ static IdentResolveResult_T scope_resolve_ident(Validator_T* v, Scope_T* scope, 
 
 static void validate_idents(Validator_T* v);
 
+static void resolve_types(Validator_T* v, ResolveQueue_T* queue);
+
 // validator struct functions
 static void init_validator(Validator_T* v, Context_T* context, ASTProg_T* ast)
 {
@@ -55,13 +58,13 @@ static void free_validator(Validator_T* v)
 }
 
 
-static void validator_push_obj(Validator_T* v, ASTObj_T* obj)
+void validator_push_obj(Validator_T* v, ASTObj_T* obj)
 {
     list_push(v->obj_stack, v->current_obj);
     v->current_obj = obj;
 }
 
-static void validator_pop_obj(Validator_T* v)
+void validator_pop_obj(Validator_T* v)
 {
     if(v->obj_stack->size == 0)
     {
@@ -70,6 +73,9 @@ static void validator_pop_obj(Validator_T* v)
     }
     v->current_obj = list_pop(v->obj_stack);
 }
+
+#define RETURN_IF_ERRORED(context) \
+    if((context)->emitted_errors) goto finish;
 
 i32 validator_pass(Context_T* context, ASTProg_T* ast)
 {
@@ -84,20 +90,31 @@ i32 validator_pass(Context_T* context, ASTProg_T* ast)
     v.global_scope = v.current_scope;
 
     validate_idents(&v); 
+    RETURN_IF_ERRORED(context);
+
+    ResolveQueue_T queue;
+    resolve_queue_init(&queue);
+    build_resolve_queue(&v, &queue);
+    RETURN_IF_ERRORED(context);
+
+    resolve_types(&v, &queue);
+
+    ResolveQueueNode_T* node = queue.head;
+    char* buf = malloc(BUFSIZ * sizeof(char));
+    size_t i = 1;
+    printf("queued objs:\n");
+    while(node) {
+        *buf = '\0';
+        ast_id_to_str(buf, node->obj->id, BUFSIZ);
+        printf("[%02zu] %s %d\n", i++, buf, node->method);
+        node = node->next;
+    }
+
+    resolve_queue_free(&queue);
 
     end_scope(&v);
     assert(v.scope_depth == 0);
-    /*begin_obj_scope(&v, NULL, ast->objs);
-    
-
-      v.global_scope = v.current_scope;
-
-    // iterate over the AST, resolve types and check semantics
-    ast_iterate(&pre_iterator_list, ast, &v); // iterate over some objs twice to assure correct dispatching of types
-    ast_iterate(&main_iterator_list, ast, &v);
-    
-    end_scope(&v);
-
+/*
     // end the validator
     v.global_scope = NULL;
     v.current_function = NULL;
@@ -111,13 +128,13 @@ i32 validator_pass(Context_T* context, ASTProg_T* ast)
     }*/
 
 
-    
-    timer_stop(context);
-    free_validator(&v);
-
-
     printf("validator not implemented.\n");
+ 
     exit(1);
+    
+finish:
+    free_validator(&v);
+    timer_stop(context);
 
     return context->emitted_errors;
 }
@@ -185,15 +202,6 @@ static void end_scope(Validator_T* v)
     hashmap_free(scope->objs);
     free(scope);
 }
-
-#ifndef NDEBUG
-static void dbg_print_scope(Scope_T* scope)
-{
-    List_T* keys = hashmap_keys(scope->objs);
-    for(size_t i = 0; i < keys->size; i++)
-        printf("> %s\n", (char*) keys->items[i]);
-}
-#endif
 
 static void scope_register_obj(Validator_T* v, ASTObj_T* obj)
 {
@@ -494,7 +502,7 @@ static void validate_undef_type_ident(ASTType_T* type, va_list args)
 
 static void validate_idents(Validator_T* v)
 {
-    static ASTIteratorList_T iter = {
+    static const ASTIteratorList_T iter = {
         .obj_start_fns = {
             [OBJ_NAMESPACE] = enter_namespace_scope,
             [OBJ_FUNCTION] = enter_function_scope,
@@ -527,3 +535,7 @@ static void validate_idents(Validator_T* v)
     ast_iterate(&iter, v->ast, v);
 }
 
+static void resolve_types(Validator_T* v, ResolveQueue_T* queue)
+{
+
+}

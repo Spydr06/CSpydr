@@ -39,6 +39,30 @@ void ast_iterate_stmt(const ASTIteratorList_T* list, ASTNode_T* stmt, ...)
     va_end(custom_args);
 }
 
+void ast_iterate_expr(const ASTIteratorList_T* list, ASTNode_T* expr, ...)
+{
+    va_list custom_args;
+    va_start(custom_args, expr);
+    ast_node(list, expr, custom_args);
+    va_end(custom_args);
+}
+
+void ast_iterate_obj(const ASTIteratorList_T* list, ASTObj_T* obj, ...)
+{
+    va_list custom_args;
+    va_start(custom_args, obj);
+    ast_obj(list, obj, custom_args);
+    va_end(custom_args);
+}
+
+void ast_iterate_type(const ASTIteratorList_T* list, ASTType_T* type, ...)
+{
+    va_list custom_args;
+    va_start(custom_args, type);
+    ast_type(list, type, custom_args);
+    va_end(custom_args);
+}
+
 static void ast_obj(const ASTIteratorList_T* list, ASTObj_T* obj, va_list custom_args)
 {
     if(!obj)

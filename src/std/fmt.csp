@@ -107,8 +107,8 @@ namespace std {
                     '\r' => concat(str, "\\r");
                     '\f' => concat(str, "\\f");
                     '\'' => concat(str, "\\'");
-                    '\"' => concat(str, "\\");
-                    '\\' => concat(str, "\\\\");
+#                    '\"' => concat(str, "\\");
+#                    '\\' => concat(str, "\\\\");
                     '\0' => concat(str, "\\0");
                     _ => append(str, c);
                 }
