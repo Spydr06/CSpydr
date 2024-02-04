@@ -2,7 +2,6 @@
 #define CSPYDR_LIST_H
 
 #include <stddef.h>
-#include <stdlib.h>
 #include <stdbool.h>
 
 typedef struct LIST_STRUCT

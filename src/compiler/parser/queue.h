@@ -34,5 +34,9 @@ bool resolve_queue_contains(ResolveQueue_T* queue, ASTObj_T* obj, ResolveMethod_
 
 void build_resolve_queue(Validator_T* v, ResolveQueue_T* queue);
 
+#ifndef NDEBUG
+void dbg_print_resolve_queue(ResolveQueue_T* queue);
+#endif
+
 #endif
 

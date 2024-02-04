@@ -36,6 +36,7 @@ typedef enum ERROR_TYPE
     ERR_DEPRECATED,      // object marked as deprecated encountered
     ERR_RECURSION_DEPTH, // too deep recursion
     ERR_C_PARSER,        // c parser (libclang) error
+    ERR_CIRC_DEP,        // circular dependency
 
     ERR_ILLEGAL_TYPE_CAST, // illegal cast from/to a type
     ERR_TYPE_CAST_WARN,    // warning when casting (implicit casts, etc.)

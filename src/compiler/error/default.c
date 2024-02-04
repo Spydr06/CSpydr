@@ -38,7 +38,7 @@ void default_error_handler(Context_T* context, ErrorType_T ty, Token_T* tok, con
     }
 
     const char err_tmp1[] = COLOR_BOLD_WHITE "%s:%ld:%ld"    // file, line and character
-                            COLOR_RESET " => %s[%s]"         // type of the error
+                            COLOR_RESET " => %s[%s]" // type of the error
                             COLOR_RESET ": ";                // before the error message
     const char err_tmp2[] = COLOR_RESET "\n"                 // after the error message
                             " %*d | %s %s"                   // the line number and source code line

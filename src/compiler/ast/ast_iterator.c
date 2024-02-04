@@ -110,6 +110,11 @@ static void ast_obj(const ASTIteratorList_T* list, ASTObj_T* obj, va_list custom
             ast_type(list, obj->data_type, custom_args);
             break;
 
+        case OBJ_ENUM_MEMBER:
+            ast_id(list, true, obj->id, custom_args);
+            ast_type(list, obj->data_type, custom_args);
+            ast_node(list, obj->value, custom_args);
+            break;
         default:
             // ignore
             break;
@@ -457,7 +462,7 @@ static void ast_type(const ASTIteratorList_T* list, ASTType_T* type, va_list cus
 
         case TY_ENUM:
             for(size_t i = 0; i < type->members->size; i++)
-                ast_node(list, type->members->items[i], custom_args);
+                ast_obj(list, type->members->items[i], custom_args);
             list_fn(list->type_fns[TY_ENUM], type, custom_args);
             break;
 

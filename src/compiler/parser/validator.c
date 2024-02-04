@@ -1,6 +1,8 @@
 #include "validator.h"
 #include "ast/ast_iterator.h"
+#include "codegen/codegen_utils.h"
 #include "config.h"
+#include "context.h"
 #include "error/error.h"
 #include "hashmap.h"
 #include "lexer/token.h"
@@ -13,6 +15,7 @@
 
 #include <asm-generic/errno-base.h>
 #include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -39,7 +42,10 @@ static IdentResolveResult_T scope_resolve_ident(Validator_T* v, Scope_T* scope, 
 
 static void validate_idents(Validator_T* v);
 
-static void resolve_types(Validator_T* v, ResolveQueue_T* queue);
+static i32 get_type_size(Validator_T* v, ASTType_T* type);
+static i32 get_type_align(Validator_T* v, ASTType_T* type);
+
+static void validate_semantics(Validator_T* v, ResolveQueue_T* queue);
 
 // validator struct functions
 static void init_validator(Validator_T* v, Context_T* context, ASTProg_T* ast)
@@ -48,6 +54,7 @@ static void init_validator(Validator_T* v, Context_T* context, ASTProg_T* ast)
     v->context = context;
     v->ast = ast;
     v->obj_stack = init_list();
+    v->exact_type_info_stack = init_list();
     init_constexpr_resolver(&v->constexpr_resolver, context, ast);
 }
 
@@ -55,8 +62,8 @@ static void free_validator(Validator_T* v)
 {
     free_constexpr_resolver(&v->constexpr_resolver);
     free_list(v->obj_stack);
+    free_list(v->exact_type_info_stack);
 }
-
 
 void validator_push_obj(Validator_T* v, ASTObj_T* obj)
 {
@@ -72,6 +79,22 @@ void validator_pop_obj(Validator_T* v)
         return;
     }
     v->current_obj = list_pop(v->obj_stack);
+}
+
+void validator_push_type_info(Validator_T* v, bool need_exact)
+{
+    list_push(v->exact_type_info_stack, (void*) v->need_exact_type_infos);
+    v->need_exact_type_infos = need_exact;
+}
+
+void validator_pop_type_info(Validator_T* v)
+{
+    if(v->exact_type_info_stack->size == 0)
+    {
+        v->need_exact_type_infos = true;
+        return;
+    }
+    v->need_exact_type_infos = (bool) list_pop(v->exact_type_info_stack);
 }
 
 #define RETURN_IF_ERRORED(context) \
@@ -97,18 +120,9 @@ i32 validator_pass(Context_T* context, ASTProg_T* ast)
     build_resolve_queue(&v, &queue);
     RETURN_IF_ERRORED(context);
 
-    resolve_types(&v, &queue);
+//    validate_semantics(&v, &queue);
 
-    ResolveQueueNode_T* node = queue.head;
-    char* buf = malloc(BUFSIZ * sizeof(char));
-    size_t i = 1;
-    printf("queued objs:\n");
-    while(node) {
-        *buf = '\0';
-        ast_id_to_str(buf, node->obj->id, BUFSIZ);
-        printf("[%02zu] %s %d\n", i++, buf, node->method);
-        node = node->next;
-    }
+    dbg_print_resolve_queue(&queue);
 
     resolve_queue_free(&queue);
 
@@ -434,6 +448,20 @@ static void leave_using_scope(ASTNode_T* using, va_list args)
         end_scope(v);
 }
 
+static void enter_typedef_scope(ASTObj_T* type_def, va_list args)
+{
+/*    if(type_def->data_type->kind == TY_ENUM)
+        for(size_t i = 0; i < type_def->data_type->members->size; i++)
+        {
+            ASTObj_T* member = type_def->data_type->members->items[i];
+            member->id->outer = type_def->id->outer;
+        }*/
+}
+
+static void leave_typedef_scope(ASTObj_T* type_def, va_list args)
+{
+}
+
 static void register_local_var(ASTObj_T* local, va_list args)
 {
     GET_VALIDATOR(args);
@@ -506,6 +534,7 @@ static void validate_idents(Validator_T* v)
         .obj_start_fns = {
             [OBJ_NAMESPACE] = enter_namespace_scope,
             [OBJ_FUNCTION] = enter_function_scope,
+            [OBJ_TYPEDEF] = enter_typedef_scope,
             [OBJ_GLOBAL] = push_global_var,
             [OBJ_LOCAL] = register_local_var,
         },
@@ -513,6 +542,7 @@ static void validate_idents(Validator_T* v)
             [OBJ_NAMESPACE] = leave_namespace_scope,
             [OBJ_FUNCTION] = leave_function_scope,
             [OBJ_GLOBAL] = pop_global_var,
+            [OBJ_TYPEDEF] = leave_typedef_scope
         },
         .node_start_fns = {
             [ND_ID] = validate_ident_expr,
@@ -535,7 +565,312 @@ static void validate_idents(Validator_T* v)
     ast_iterate(&iter, v->ast, v);
 }
 
-static void resolve_types(Validator_T* v, ResolveQueue_T* queue)
+static void validate_before_main_fn(Validator_T* v, ASTObj_T* fn)
 {
+    if(!v->ast->before_main)
+    {
+        v->ast->before_main = init_list();
+        CONTEXT_ALLOC_REGISTER(v->context, v->ast->before_main);
+    }
 
+    list_push(v->ast->before_main, fn);
+    fn->referenced = true;
+
+    switch(fn->args->size)
+    {
+    case 0:
+        break;
+    case 2:
+        {
+            // TODO: implement this (argc/argv to [before_main])
+            throw_error(v->context, ERR_INTERNAL, fn->tok, "`[before_main]` directive functions with 2 arguments are not supported yet");
+        } break;
+    default:
+        {
+            char* buf = calloc(BUFSIZ, sizeof(char));
+            throw_error(v->context, ERR_TYPE_ERROR_UNCR, fn->tok, "`[before_main]` directive expects function `%s` to have 0 or 2 arguments, got %d", ast_id_to_str(buf, fn->id, BUFSIZ), fn->args->size);
+            free(buf);
+        } break;
+    }
 }
+
+static void validate_after_main_fn(Validator_T* v, ASTObj_T* fn)
+{
+    if(!v->ast->after_main)
+    {
+        v->ast->after_main = init_list();
+        CONTEXT_ALLOC_REGISTER(v->context, v->ast->before_main);
+    }
+
+    list_push(v->ast->after_main, fn);
+    fn->referenced = true;
+
+    switch(fn->args->size)
+    {
+    case 0:
+        break;
+    case 1:
+        {
+            ASTObj_T* arg = fn->args->items[0];
+            if(unpack(arg->data_type)->kind != TY_I32)
+                throw_error(v->context, ERR_TYPE_ERROR_UNCR, arg->tok, "`[after_main]` directive requires argument `%s` to be of type `i32`", arg->id->callee);
+        } break;
+    default:
+        {
+            char* buf = calloc(BUFSIZ, sizeof(char));
+            throw_error(v->context, ERR_TYPE_ERROR_UNCR, fn->tok, "`[after_main]` directive expects function `%s` to have 0..1 arguments, got %d", ast_id_to_str(buf, fn->id, BUFSIZ), fn->args->size);
+            free(buf);
+        } break;
+    }
+}
+
+static void validate_main_fn(Validator_T* v, ASTObj_T* fn)
+{
+    fn->is_entry_point = true;
+    fn->referenced = true;
+    v->ast->entry_point = fn;
+
+    ASTType_T* return_type = unpack(fn->return_type);
+    if(return_type->kind != TY_I32)
+        throw_error(v->context, ERR_TYPE_ERROR_UNCR, fn->return_type->tok ? fn->return_type->tok : fn->tok, "expect type `i32` as return type for function `main`");
+
+    switch(fn->args->size)
+    {
+    case 0:
+        v->ast->mfk = MFK_NO_ARGS;
+        break;
+    case 1:
+        v->ast->mfk = MFK_ARGV_PTR;
+        break;
+    case 2:
+        v->ast->mfk = MFK_ARGC_ARGV_PTR;
+        break;
+    default:
+        throw_error(v->context, ERR_UNDEFINED_UNCR, fn->tok, "expect 0 or 2 arguments for function `main`, got %ld", fn->args->size);
+        return;
+    }
+}
+
+static bool stmt_returns_value(Validator_T* v, ASTNode_T* node)
+{
+    switch(node->kind)
+    {
+        case ND_RETURN:
+            return true;
+        case ND_CALL:
+            return node->expr->data_type->no_return;
+        case ND_BLOCK:
+            for(size_t i = 0; i < node->stmts->size; i++)
+            {
+                if(stmt_returns_value(v, node->stmts->items[i]))
+                {
+                    if(node->stmts->size - i > 1)
+                        throw_error(v->context, ERR_UNREACHABLE, ((ASTNode_T*) node->stmts->items[i + 1])->tok, "unreachable code after return statement");
+                    return true;
+                }
+            }
+            return false;
+        case ND_IF:
+            return stmt_returns_value(v, node->if_branch) && node->else_branch ? stmt_returns_value(v, node->else_branch) : false;
+        case ND_LOOP:
+        case ND_FOR:
+        case ND_WHILE:
+        case ND_DO_WHILE:
+            return stmt_returns_value(v, node->body);
+        case ND_MATCH:
+            if(!node->default_case)
+                return false;
+            
+            {
+                u64 cases_return = 0;
+                for(size_t i = 0; i < node->cases->size; i++)
+                    if(stmt_returns_value(v, ((ASTNode_T*) node->cases->items[i])->body))
+                        cases_return++;
+                
+                return cases_return == node->cases->size && stmt_returns_value(v, node->default_case->body);
+            }
+        case ND_FOR_RANGE:
+            return stmt_returns_value(v, node->body);
+        case ND_EXPR_STMT:
+            return stmt_returns_value(v, node->expr);
+        default: 
+            return false;
+    }
+}
+
+static void validate_function(Validator_T* v, ASTObj_T* fn)
+{
+    if(fn->after_main)
+        validate_after_main_fn(v, fn);
+
+    if(fn->before_main)
+        validate_before_main_fn(v, fn);
+
+    if(strcmp(fn->id->callee, "main") == 0 && fn->id->outer == NULL)
+    {
+        v->main_function_found = true;
+        validate_main_fn(v, fn);
+    }
+
+    validator_pop_obj(v);
+}
+
+static void validate_data_type(ASTType_T* type, va_list args)
+{
+    GET_VALIDATOR(args);
+    
+    ASTType_T* unpacked = unpack(type);
+
+    type->size = unpacked->size = get_type_size(v, unpacked);
+    type->align = unpacked->align = get_type_align(v, unpacked);
+}
+
+static void validate_semantics(Validator_T* v, ResolveQueue_T* queue)
+{
+    ResolveQueueNode_T* node = queue->head;
+    while(node)
+    {
+        if(node->obj->data_type)
+        {
+            static const ASTIteratorList_T iter = {
+                .type_end = validate_data_type
+            };
+            ast_iterate_type(&iter, node->obj->data_type);
+        }
+        
+        if(node->method & RESOLVE_DEEP)
+        {
+            switch(node->obj->kind)
+            {
+                
+            }
+        }
+        node = node->next;
+    }
+}
+
+static i32 get_type_size_impl(Validator_T* v, ASTType_T* type, List_T** struct_types);
+
+static i32 get_union_size(ASTType_T* u_type)
+{
+    i32 biggest = 0;
+    for(size_t i = 0; i < u_type->members->size; i++)
+    {
+        ASTNode_T* member = u_type->members->items[i];
+        if(member->data_type->size > biggest)
+            biggest = member->data_type->size;
+    }
+    return biggest;
+}
+
+static i32 get_struct_size(Validator_T* v, ASTType_T* s_type, List_T** struct_types)
+{
+    if(!*struct_types)
+        *struct_types = init_list();
+
+    if(list_contains(*struct_types, s_type)) {
+        char buf[BUFSIZ] = {};
+        throw_error(v->context, ERR_TYPE_ERROR, s_type->tok, "detected recursive structs, encountered `%s` twice.", ast_type_to_str(v->context, buf, s_type, LEN(buf)));
+        return 0;
+    }
+
+    list_push(*struct_types, s_type);
+
+    i64 bits = 0;
+    for(size_t i = 0; i < s_type->members->size; i++)
+    {
+        ASTNode_T* member = s_type->members->items[i];
+        member->data_type->size = get_type_size_impl(v, member->data_type, struct_types);
+        bits = align_to(bits, get_type_align(v, member->data_type) * 8);
+        member->offset = bits / 8;
+        bits += member->data_type->size * 8;
+    }
+
+    list_pop(*struct_types);
+
+    return align_to(bits, get_type_align(v, s_type) * 8) / 8;
+};
+
+static i32 get_type_size_impl(Validator_T* v, ASTType_T* type, List_T** struct_types)
+{
+    switch(type->kind)
+    {
+        case TY_I8:
+            return I8_S;
+        case TY_U8:
+            return U8_S;
+        case TY_CHAR:
+            return CHAR_S;
+        case TY_BOOL:
+            return BOOL_S;
+        case TY_I16:
+            return I16_S;
+        case TY_U16:
+            return U16_S;
+        case TY_I32:
+            return I32_S;
+        case TY_U32:
+            return U32_S;
+        case TY_ENUM:
+            return ENUM_S;
+        case TY_I64:
+            return I64_S;
+        case TY_U64:
+            return U64_S;
+        case TY_F32:
+            return F32_S;
+        case TY_F64:
+            return F64_S;
+        case TY_F80:
+            return F80_S;
+        case TY_VOID:
+            return VOID_S;
+        case TY_PTR:
+        case TY_FN:
+            return PTR_S;
+        case TY_TYPEOF:
+            return get_type_size_impl(v, expand_typedef(v, type->num_indices_node->data_type), struct_types);
+        case TY_UNDEF:
+            return get_type_size_impl(v, expand_typedef(v, type), struct_types);
+        case TY_C_ARRAY:
+            if(type->num_indices == 0)
+                return 0;
+            return get_type_size_impl(v, type->base, struct_types) * type->num_indices;
+        case TY_VLA:
+            return PTR_S;
+        case TY_ARRAY:
+                return get_type_size_impl(v, type->base, struct_types) * type->num_indices + PTR_S;
+        case TY_STRUCT:
+            if(type->is_union)
+                return get_union_size(type);
+            else
+                return get_struct_size(v, type, struct_types);
+        default:
+            return 0;
+    }
+    
+    throw_error(v->context, ERR_TYPE_ERROR, type->tok, "could not resolve data type size");
+    return 0;
+}
+
+static i32 get_type_size(Validator_T* v, ASTType_T* type)
+{
+    List_T* struct_types = NULL;
+    i32 size = get_type_size_impl(v, type, &struct_types);
+    if(struct_types)
+        free_list(struct_types);
+    return size;
+}
+
+static i32 get_type_align(Validator_T* v, ASTType_T* type)
+{
+    switch(type->kind)
+    {
+        case TY_C_ARRAY:
+        case TY_PTR:
+            return MAX(pow(2, floor(log(type->base->size)/log(2))), 8);
+        default:
+            return MAX(pow(2, floor(log(type->size)/log(2))), 1);
+    }
+}
+
