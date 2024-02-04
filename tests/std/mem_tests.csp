@@ -85,8 +85,8 @@ fn mem_test_eq(t: &std::Testing) {
     let y = [1, 2, 3, 4, 5];
     let z = [3, 1, 4];
 
-    assert(t, eq(&x, &y, sizeof x), "eq(&x, &y, sizeof x) != true");
-    assert_false(t, eq(&x, &z, sizeof z), "eq() != false");
+    assert(t, eq(&x, &y, sizeof typeof x), "eq(&x, &y, sizeof x) != true");
+    assert_false(t, eq(&x, &z, sizeof typeof z), "eq() != false");
 }
 
 fn mem_test_set(t: &std::Testing) {

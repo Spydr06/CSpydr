@@ -1,7 +1,6 @@
 #include "queue.h"
 #include "ast/ast.h"
 #include "ast/ast_iterator.h"
-#include "config.h"
 #include "error/error.h"
 #include "list.h"
 #include "parser/validator.h"
@@ -143,31 +142,37 @@ static void resolve_obj_enqueue(Validator_T* v, ResolveQueue_T* queue, ASTObj_T*
     if(resolve_queue_contains(queue, obj, method == RESOLVE_SHALLOW ? RESOLVE_ANYHOW : method))
         goto finish;
 
-    if(list_contains(v->obj_stack, obj) && method != RESOLVE_SHALLOW)
-    {
-        report_recursive_dependency(v, obj);
-        goto finish;
-    }
+    static ASTIteratorList_T iter = {
+        .node_end_fns = {
+            [ND_ID] = resolve_id_enqueue
+        },
+        .type_begin = enter_type,
+        .type_end = leave_type,
+        .type_fns = {
+            [TY_UNDEF] = resolve_type_alias_enqueue
+        }
+    };
 
     if(method == RESOLVE_DEEP)
     {
-        static const ASTIteratorList_T iter = {
-            .node_end_fns = {
-                [ND_ID] = resolve_id_enqueue
-            },
-            .type_begin = enter_type,
-            .type_end = leave_type,
-            .type_fns = {
-                [TY_UNDEF] = resolve_type_alias_enqueue
-            }
-        };
+        if(list_contains(v->obj_stack, obj))
+        {
+            report_recursive_dependency(v, obj);
+            goto finish;
+        }
 
-        ast_iterate_obj(&iter, obj, v, queue);
-        if(obj->kind == OBJ_LOCAL && obj->value)
-            ast_iterate_expr(&iter, obj->value, v, queue);
+        iter.iterate_only_objs = false;
+
     }
+    else
+    {
+        iter.iterate_only_objs = obj->kind == OBJ_FUNCTION;
+    }
+
+    ast_iterate_obj(&iter, obj, v, queue);
+
     if(resolve_queue_contains(queue, obj, method == RESOLVE_SHALLOW ? RESOLVE_ANYHOW : method))
-        goto finish;
+            goto finish;
 
     enqueue_obj(queue, obj, method);
 
@@ -179,11 +184,14 @@ static void resolve_id_enqueue(ASTNode_T* ident, va_list args)
 {
     GET_ARGS(args);
     assert(ident->referenced_obj != NULL);
-    ResolveMethod_T method = v->current_obj->constexpr ? RESOLVE_DEEP : RESOLVE_SHALLOW;
+    ResolveMethod_T method = v->current_obj->constexpr && v->current_obj != ident->referenced_obj ? RESOLVE_DEEP : RESOLVE_SHALLOW;
     switch(ident->referenced_obj->kind)
     {
     case OBJ_GLOBAL:
-        resolve_obj_enqueue(v, queue, ident->referenced_obj, method);
+        resolve_obj_enqueue(v, queue, ident->referenced_obj, ident->referenced_obj->constexpr ? RESOLVE_DEEP : RESOLVE_SHALLOW);
+        break;
+    case OBJ_ENUM_MEMBER:
+        resolve_obj_enqueue(v, queue, ident->referenced_obj, RESOLVE_DEEP);
         break;
     case OBJ_FUNCTION: 
         resolve_obj_enqueue(v, queue, ident->referenced_obj, method);

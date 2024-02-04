@@ -107,5 +107,5 @@ fn test_regex(t: &std::Testing)
             using std::io::color;
             log(t, "[%i/%l] passed\t[ %s%sOK%s ]", i + 1, len tests, &BOLD[0], &GREEN[0], &RESET[0]);
         }
-    };
+    }
 }
