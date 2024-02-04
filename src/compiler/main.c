@@ -46,7 +46,7 @@
 #include "toolchain.h"
 #include "io/io.h"
 #include "io/log.h"
-#include "codegen/transpiler/c_codegen.h"
+#include "codegen/llvm/llvm_codegen.h"
 #include "platform/platform_bindings.h"
 #include "util.h"
 #include "version.h"

@@ -140,11 +140,10 @@ i32 validator_pass(Context_T* context, ASTProg_T* ast)
     resolve_queue_init(&queue);
     build_resolve_queue(&v, &queue);
     RETURN_IF_ERRORED(context);
+    
+    // dbg_print_resolve_queue(&queue); 
 
     validate_semantics(&v, &queue);
-
-    // dbg_print_resolve_queue(&queue);
-
     resolve_queue_free(&queue);
 
     end_scope(&v);
@@ -168,6 +167,8 @@ finish:
 
     return context->emitted_errors;
 }
+
+#undef RETURN_IF_ERRORED
 
 static ASTExitFnHandle_T* find_drop_function(Validator_T* v, ASTType_T* type)
 {
@@ -574,7 +575,7 @@ static void validate_ident_expr(ASTNode_T* node, va_list args)
         node->id->outer->outer = result.obj->id->outer;
     }
 
-    if(v->current_obj && v->current_obj->constexpr && !node->referenced_obj->constexpr)
+    if(v->current_obj && v->current_obj->constexpr && !node->referenced_obj->constexpr && node->referenced_obj->kind != OBJ_FN_ARG)
     {
         char buf[BUFSIZ] = {'\0'};
         throw_error(v->context, ERR_CONSTEXPR, node->tok, "%s `%s` is not marked as `[constexpr]`", obj_kind_to_str(node->referenced_obj->kind), ast_id_to_str(buf, node->referenced_obj->id, LEN(buf)));

@@ -184,7 +184,6 @@ static void resolve_id_enqueue(ASTNode_T* ident, va_list args)
 {
     GET_ARGS(args);
     assert(ident->referenced_obj != NULL);
-    ResolveMethod_T method = v->current_obj->constexpr && v->current_obj != ident->referenced_obj ? RESOLVE_DEEP : RESOLVE_SHALLOW;
     switch(ident->referenced_obj->kind)
     {
     case OBJ_GLOBAL:
@@ -193,9 +192,13 @@ static void resolve_id_enqueue(ASTNode_T* ident, va_list args)
     case OBJ_ENUM_MEMBER:
         resolve_obj_enqueue(v, queue, ident->referenced_obj, RESOLVE_DEEP);
         break;
-    case OBJ_FUNCTION: 
-        resolve_obj_enqueue(v, queue, ident->referenced_obj, method);
-        break;
+    case OBJ_FUNCTION:
+        {
+            ResolveMethod_T method = 
+                (v->current_obj->constexpr || v->current_obj->kind == OBJ_TYPEDEF) && v->current_obj != ident->referenced_obj 
+                ? RESOLVE_DEEP : RESOLVE_SHALLOW;
+            resolve_obj_enqueue(v, queue, ident->referenced_obj, method);
+        } break;
     default:
         break;
     }

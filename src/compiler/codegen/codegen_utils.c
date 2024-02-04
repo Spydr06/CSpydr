@@ -7,7 +7,6 @@
 
 #include <libgen.h>
 #include <ctype.h>
-#include <limits.h>
 #include <string.h>
 #include <glob.h>
 #include <libgen.h>
@@ -62,7 +61,7 @@ char* gen_identifier(ASTIdentifier_T* id, const char* combiner, const char* pref
     }
     else
     {
-        new_c = calloc(strlen(id->callee) + strlen(prefix) + 1, sizeof(char));
+        new_c = calloc(strlen(id->callee) + strlen(prefix) + 16, sizeof(char));
         strcat(new_c, prefix);
         escape_callee(new_c, id);
     }
