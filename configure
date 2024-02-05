@@ -288,7 +288,7 @@ fi
 
 if [ $USE_SYSTEM_DYNAMIC_LINKER -eq 1 ]; then
     check_tool "patchelf"
-    CFLAGS="${CFLAGS} -DCSPYDR_DYNAMIC_LINKER_PATH=\"$($(which patchelf) --print-interpreter $(which $CC))\""
+    CFLAGS="${CFLAGS} -DCSPYDR_DYNAMIC_LINKER_PATH=\"$($(which patchelf) --print-interpreter $(which cp))\""
 fi
 
 
