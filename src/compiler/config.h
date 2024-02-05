@@ -88,6 +88,15 @@
 #define ASM_GP_MAX 6
 #define ASM_FP_MAX 8
 
+// linkers
+#ifndef CSPYDR_DEFAULT_DYNAMIC_LINKER_PATH
+    #if (defined CSPYDR_ARCH_X86_64 && defined CSPYDR_LINUX)
+        #define CSPYDR_DEFAULT_DYNAMIC_LINKER_PATH "/lib64/ld-linux-x86-64.so.2"
+    #else
+        #error "no default dynamic linker path for current architecture or platform"
+    #endif
+#endif
+
 // use __attribute__((packed))
 //#define CSPYDR_PACKED_STRUCTS
 #if !defined(CSPYDR_PACKED_STRUCTS) || !defined(CSPYDR_LIBC_GLIBC)

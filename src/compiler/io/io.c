@@ -74,7 +74,7 @@ void write_file(const char* path, char* buffer)
     fclose(fp);
 }
 
-bool file_exists(char* file)
+bool file_exists(const char* file)
 {
     return access(file, F_OK) != -1;
 }

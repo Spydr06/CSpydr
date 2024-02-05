@@ -377,17 +377,46 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
             list_push(arg_list, "-g");
         
         if(!cg->context->flags.require_entrypoint)
+        {
             list_push(arg_list, "-shared");
+            list_push(arg_list, "-fPIC");
+        }
 
         if(cg->context->flags.optimize)
             list_push(arg_list, "-O2");
+        
+        switch(cg->context->link_mode.mode)
+        {
+            case LINK_STATIC:
+                list_push(arg_list, "-static");
+                break;
+            case LINK_DYNAMIC:
+            {
+                const char* dynamic_linker = cg->context->link_mode.ldynamic.dynamic_linker;
+                if(!file_exists(dynamic_linker))
+                {
+                    cg->context->emitted_warnings++;
+                    LOG_WARN_F(COLOR_BOLD_YELLOW "[Warning]" COLOR_RESET COLOR_YELLOW " dynamic linker `%s` does not exist.\n", dynamic_linker);
+                }
+
+                size_t len = strlen(dynamic_linker) + 32;
+                char* dynamic_linker_buf = calloc(len + 1, sizeof(char));
+                CONTEXT_ALLOC_REGISTER(cg->context, (void*) dynamic_linker_buf);
+
+                snprintf(dynamic_linker_buf, len, "-Wl,-dynamic-linker,%s", dynamic_linker);
+                list_push(arg_list, dynamic_linker_buf);
+            } break;
+        }
 
         for(size_t i = 0; i < cg->context->compiler_flags->size; i++)
             list_push(arg_list, cg->context->compiler_flags->items[i]);
 
-        for(size_t i = 0; i < cg->context->linker_flags->size; i++)
-            list_push(arg_list, cg->context->linker_flags->items[i]);
-        
+        for(size_t i = 0; i < cg->context->link_mode.extra->size; i++)
+            list_push(arg_list, cg->context->link_mode.extra->items[i]);
+
+        for(size_t i = 0; i < cg->context->link_mode.libs->size; i++)
+            list_push(arg_list, cg->context->link_mode.libs->items[i]);
+
         list_push(arg_list, NULL);
         
         i32 exit_code = subprocess(arg_list->items[0], (char* const*) arg_list->items, false);

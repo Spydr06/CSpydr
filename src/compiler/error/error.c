@@ -37,6 +37,8 @@ static struct { const char* as_str; bool force_exit; bool is_error; } error_type
     [ERR_RECURSION_DEPTH]   = { "recursion depth", true, true}, 
     [ERR_C_PARSER]          = { "c parser",     false,  true },
     [ERR_CIRC_DEP]          = { "circular dependency", false, true },
+    [ERR_LINKER]            = { "linker",       true,  true  },
+    [ERR_LINKER_WARN]       = { "linker warn",  false, false },
     [ERR_UNUSED]            = { "unused",       false, false },
 };
 

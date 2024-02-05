@@ -209,14 +209,14 @@ void parse_directives(Parser_T* p, List_T* objects)
 {
     parser_consume(p, TOKEN_LBRACKET, "expect `[` for compiler directive");
     List_T* directives = init_list();
-    const char* objs_following = NULL;
+    const char* libs_following = NULL;
 
     do {
         DirectiveData_T* data = parse_directive(p);
         list_push(directives, data);
 
-        if(data->directive->following_obj && !objs_following)
-            objs_following = data->directive->name;
+        if(data->directive->following_obj && !libs_following)
+            libs_following = data->directive->name;
 
         if(!tok_is(p, TOKEN_RBRACKET))
             parser_consume(p, TOKEN_COMMA, "expect `,` between compiler directives");
@@ -225,7 +225,7 @@ void parse_directives(Parser_T* p, List_T* objects)
     parser_consume(p, TOKEN_RBRACKET, "expect `]` after compiler directive");
 
     ASTObj_T* obj = NULL;
-    if(!objs_following)
+    if(!libs_following)
         goto eval;
 
     size_t old_obj_list_size = objects->size;
@@ -657,7 +657,7 @@ EVAL_FN(link_dir)
         sprintf(link_flag, "-L%s", (const char*) data->arguments->items[i]);
         CONTEXT_ALLOC_REGISTER(context, (void*) link_flag);
 
-        list_push(context->linker_flags, link_flag);
+        list_push(context->link_mode.extra, link_flag);
     }
     return false;
 }
@@ -671,7 +671,7 @@ EVAL_FN(link_obj)
 
         char* full_fp = allocator_malloc(&context->raw_allocator, (strlen(working_dir) + strlen(DIRECTORY_DELIMS) + strlen(data->arguments->items[i]) + 2) * sizeof(char));
         sprintf(full_fp, "%s" DIRECTORY_DELIMS "%s", working_dir, (const char*) data->arguments->items[i]);
-        list_push(context->linker_flags, full_fp);
+        list_push(context->link_mode.libs, full_fp);
 
         free(abs_path);
     }

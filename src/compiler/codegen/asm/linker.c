@@ -1,6 +1,8 @@
 #include "linker.h"
 
 #include "config.h"
+#include "error/error.h"
+#include "io/io.h"
 #include "io/log.h"
 #include "list.h"
 #include "timer/timer.h"
@@ -27,16 +29,20 @@ void link_obj(Context_T* context, const char* target, char* obj_file, bool silen
 }
 
 static void dynamic_linker_flags(Context_T* context, List_T* args) {
-    list_push(args, "-L/usr/lib64");
-    list_push(args, "-L/lib64");
-    list_push(args, "-L/usr/lib");
-    list_push(args, "-L/lib");
-
-    for(size_t i = 0; i < context->linker_flags->size; i++)
-        list_push(args, context->linker_flags->items[i]);
+    const char* dynamic_linker = context->link_mode.ldynamic.dynamic_linker;
+    if(!file_exists(dynamic_linker))
+    {
+        context->emitted_warnings++;
+        LOG_WARN_F(COLOR_BOLD_YELLOW "[Warning]" COLOR_RESET COLOR_YELLOW " dynamic linker `%s` does not exist.\n", dynamic_linker);
+    }
 
     list_push(args, "-dynamic-linker");
-    list_push(args, "/lib64/ld-linux-x86-64.so.2");
+    list_push(args, (void*) dynamic_linker);
+}
+
+static void static_linker_flags(Context_T* context, List_T* args)
+{
+    list_push(args, "-static");
 }
 
 static int link_exec(Context_T* context, const char* target, char* obj_file) {
@@ -47,9 +53,29 @@ static int link_exec(Context_T* context, const char* target, char* obj_file) {
     list_push(args, (void*) target);
     list_push(args, "-m");
     list_push(args, "elf_x86_64");
+    list_push(args, "-L/usr/lib64");
+    list_push(args, "-L/lib64");
+    list_push(args, "-L/usr/lib");
+    list_push(args, "-L/lib");
+ 
+    switch(context->link_mode.mode)
+    {
+        case LINK_DYNAMIC:
+            dynamic_linker_flags(context, args);
+            break;
+        case LINK_STATIC:
+            static_linker_flags(context, args);
+            break;
+        default:
+            unreachable();
+            break;
+    }
 
-    if(context->linker_flags->size)
-        dynamic_linker_flags(context, args);
+    for(size_t i = 0; i < context->link_mode.extra->size; i++)
+        list_push(args, context->link_mode.extra->items[i]);
+
+    for(size_t i = 0; i < context->link_mode.libs->size; i++)
+        list_push(args, context->link_mode.libs->items[i]);
 
     list_push(args, NULL);
 
@@ -72,8 +98,14 @@ static int link_lib(Context_T* context, const char* target, char* obj_file)
     list_push(args, "-L/lib");
     list_push(args, "-shared");
 
-    for(size_t i = 0; i < context->linker_flags->size; i++)
-        list_push(args, context->linker_flags->items[i]);
+    if(context->link_mode.mode == LINK_STATIC)
+        list_push(args, "-static");
+
+    for(size_t i = 0; i < context->link_mode.extra->size; i++)
+        list_push(args, context->link_mode.extra->items[i]);
+
+    for(size_t i = 0; i < context->link_mode.libs->size; i++)
+        list_push(args, context->link_mode.libs->items[i]);
 
     list_push(args, obj_file);
     list_push(args, NULL);

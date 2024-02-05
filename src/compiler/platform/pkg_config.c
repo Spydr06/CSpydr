@@ -111,7 +111,7 @@ static void pkg_try_alternative(Context_T* context, const char* name, Token_T* t
     size_t len = strlen(name) + 3;
     char* buf = calloc(len, sizeof(char));
     snprintf(buf, len, "-l%s", name);
-    list_push(context->linker_flags, buf);
+    list_push(context->link_mode.libs, buf);
 } 
 
 void pkg_config(Context_T* context, const char* name, Token_T* token)
@@ -120,8 +120,15 @@ void pkg_config(Context_T* context, const char* name, Token_T* token)
         return;
     hashmap_put(context->included_libs, (char*) name, (void*) 1);
 
+    pkgconf_cross_personality_t* personality = pkgconf_cross_personality_default(); 
+    personality->want_default_static = context->link_mode.mode == LINK_STATIC;
+
     // resolve package
-    pkgconf_client_t* client = pkgconf_client_new(pkg_error_handler, &(PkgErrorHandlerData_T){.token = token, .context = context}, pkgconf_cross_personality_default());
+    pkgconf_client_t* client = pkgconf_client_new(
+        pkg_error_handler,
+        &(PkgErrorHandlerData_T){.token = token, .context = context},
+        personality
+    );
     pkgconf_client_dir_list_build(client, pkgconf_cross_personality_default());
 
     pkgconf_pkg_t* package = pkgconf_pkg_find(client, name);
@@ -150,7 +157,7 @@ void pkg_config(Context_T* context, const char* name, Token_T* token)
         CONTEXT_ALLOC_REGISTER(context, (void*) buf);
 
         snprintf(buf, len, "-%c%s", fragment->type, quoted);
-        list_push(context->linker_flags, buf);
+        list_push(context->link_mode.libs, buf);
         free(quoted);
     }
 

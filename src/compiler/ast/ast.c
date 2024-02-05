@@ -7,7 +7,6 @@
 #include "optimizer/constexpr.h"
 #include "types.h"
 #include "context.h"
-#include "io/log.h"
 
 #include <string.h>
 #include <stdio.h>

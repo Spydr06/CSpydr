@@ -16,10 +16,30 @@
             ),                                              \
             (value)                                         \
         );                                                  \
-    } while(0)
-    
+    } while(0) 
 
 Flags_T default_flags(void);
+
+typedef struct CSPYDR_LINKMODE_STRUCT {
+    enum {
+        LINK_STATIC,
+        LINK_DYNAMIC
+    } mode;
+    union {
+        struct {
+
+        } lstatic;
+        struct {
+            const char* dynamic_linker;
+        } ldynamic;
+    };
+
+    List_T* libs;
+    List_T* extra;
+} LinkMode_T;
+
+void link_mode_init_default(LinkMode_T* link_mode);
+void link_mode_free(LinkMode_T* link_mode);
 
 typedef struct CSPYDR_CONTEXT_STRUCT {
     i32 ct;
@@ -52,8 +72,9 @@ typedef struct CSPYDR_CONTEXT_STRUCT {
     ASTObj_T** current_obj;
 
     List_T* compiler_flags;
-    List_T* linker_flags;
     u64 total_source_lines;
+
+    LinkMode_T link_mode;
 
     Exception_T main_error_exception;
 

@@ -45,6 +45,9 @@ typedef enum ERROR_TYPE
     ERR_TYPE_ERROR_UNCR, // same as ERR_TYPE_ERROR, but no exit(1) call
     ERR_CONST_ASSIGN,    // error when assigning a value to a constant variable
 
+    ERR_LINKER,      // linker error
+    ERR_LINKER_WARN, // linker warning
+
     ERR_INTERNAL, // internal error, user should never see this...
 } ErrorType_T;
 

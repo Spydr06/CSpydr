@@ -124,6 +124,8 @@ const char help_text[] = "%s"
                        "      --cc-flags [flags]    | Adds flags passed to the C compiler when transpiling\n"
                        "  -S                        | Comple only; do not assemble or link\n"
                        "  -c                        | Compile and assemble, but do not link\n"
+                       "      --static              | Link statically\n"
+                       "      --dynamic-linker [ld] | Set the dynamic linker path (default: " CSPYDR_DEFAULT_DYNAMIC_LINKER_PATH ")\n"
                        "  -g -g0                    | Include/Exclude debug symbols in binary\n"
                        "  -0, --no-opt              | Disables all code optimization\n"
                        "      --set-mmcd [int]      | Sets the maximum macro call depth (default: %d) (unsafe: could cause stack overflow)\n"
@@ -264,6 +266,25 @@ i32 main(i32 argc, char* argv[])
             context.flags.embed_debug_info = true;
         else if(streq(arg, "-g0"))
             context.flags.embed_debug_info = false;
+        else if(streq(arg, "--static"))
+        {
+            context.link_mode.mode = LINK_STATIC;
+        }
+        else if(streq(arg, "--dynamic-linker"))
+        {
+            if(!argv[++i])
+            {
+                LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " Expect dynamic linker path after --dynamic-linker.\n");
+                exit(1);
+            }
+            if(context.link_mode.mode != LINK_DYNAMIC)
+            {
+                LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " --dynamic-linker is only allowed when linking dynamically.\n");
+                exit(1);
+            }
+
+            context.link_mode.ldynamic.dynamic_linker = argv[i];
+        }
         else if(streq(arg, "--cc"))
         {
             if(!argv[++i])
