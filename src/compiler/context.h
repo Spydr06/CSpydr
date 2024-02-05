@@ -65,17 +65,17 @@ typedef struct CSPYDR_CONTEXT_STRUCT {
         i32 argc;
     } args;
 
-    // c compiler configuration
-    const char* cc;
-    const char* cc_flags;
-
-    ASTObj_T** current_obj;
-
+    char* cc;
     List_T* compiler_flags;
-    u64 total_source_lines;
 
+    char* as;
+
+    char* ld;
     LinkMode_T link_mode;
-
+    
+    u64 total_source_lines;
+    
+    ASTObj_T** current_obj;
     Exception_T main_error_exception;
 
     // list of libraries used in the [link()] directive

@@ -35,7 +35,8 @@ void init_context(Context_T* context)
     context->paths.std_path = DEFAULT_STD_PATH;
 
     context->cc = DEFAULT_CC;
-    context->cc_flags = DEFAULT_CC_FLAGS;
+    context->as = DEFAULT_ASSEMBLER;
+    context->ld = DEFAULT_LINKER;
 }
 
 void free_context(Context_T *context)

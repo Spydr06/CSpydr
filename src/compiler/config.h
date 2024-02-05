@@ -79,7 +79,6 @@
 
 // C code generation
 #define DEFAULT_CC "gcc"
-#define DEFAULT_CC_FLAGS "-m64 -O3 -Wall -fPIC"
 
 // ASM code generation
 #define DEFAULT_ASSEMBLER "as"

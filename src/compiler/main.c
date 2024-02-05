@@ -122,10 +122,12 @@ const char help_text[] = "%s"
                        "      --silent              | Disables all command line output except error messages\n"
                        "      --cc [compiler]       | Sets the C compiler being used after transpiling (default: " DEFAULT_CC ")\n"
                        "      --cc-flags [flags]    | Adds flags passed to the C compiler when transpiling\n"
+                       "      --as [assembler]      | Sets the assembler being used after code generation (default: " DEFAULT_ASSEMBLER ")\n"
                        "  -S                        | Comple only; do not assemble or link\n"
                        "  -c                        | Compile and assemble, but do not link\n"
+                       "      --ld [linker]         | Sets the linker being used after compilation (default: " DEFAULT_LINKER ")\n"
                        "      --static              | Link statically\n"
-                       "      --dynamic-linker [ld] | Set the dynamic linker path (default: " CSPYDR_DEFAULT_DYNAMIC_LINKER_PATH ")\n"
+                       "      --dynamic-linker [ld] | Sets the dynamic linker path (default: " CSPYDR_DEFAULT_DYNAMIC_LINKER_PATH ")\n"
                        "  -g -g0                    | Include/Exclude debug symbols in binary\n"
                        "  -0, --no-opt              | Disables all code optimization\n"
                        "      --set-mmcd [int]      | Sets the maximum macro call depth (default: %d) (unsafe: could cause stack overflow)\n"
@@ -285,6 +287,24 @@ i32 main(i32 argc, char* argv[])
 
             context.link_mode.ldynamic.dynamic_linker = argv[i];
         }
+        else if(streq(arg, "--as"))
+        {
+            if(!argv[++i])
+            {
+                LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " Expect assembler name after --as.\n");
+                exit(1);
+            }
+            context.as = argv[i];
+        }
+        else if(streq(arg, "--ld"))
+        {
+            if(!argv[++i])
+            {
+                LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " Expect linker name after --ld.\n");
+                exit(1);
+            }
+            context.ld = argv[i];
+        }
         else if(streq(arg, "--cc"))
         {
             if(!argv[++i])
@@ -366,9 +386,6 @@ i32 main(i32 argc, char* argv[])
     if(context.flags.timer_enabled)
         timer_print_summary(&context);
 
-    if(!streq(context.cc_flags, DEFAULT_CC_FLAGS))
-        free((void*) context.cc_flags);
-    
     free_context(&context);
 
     return 0;

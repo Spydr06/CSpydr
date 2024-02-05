@@ -47,7 +47,7 @@ static void static_linker_flags(Context_T* context, List_T* args)
 
 static int link_exec(Context_T* context, const char* target, char* obj_file) {
     List_T* args = init_list();
-    list_push(args, DEFAULT_LINKER);
+    list_push(args, context->ld);
     list_push(args, obj_file);
     list_push(args, "-o");
     list_push(args, (void*) target);
@@ -87,7 +87,7 @@ static int link_exec(Context_T* context, const char* target, char* obj_file) {
 static int link_lib(Context_T* context, const char* target, char* obj_file)
 {
     List_T* args = init_list();
-    list_push(args, DEFAULT_LINKER);
+    list_push(args, context->ld);
     list_push(args, "-o");
     list_push(args, (void*) target);
     list_push(args, "-m");

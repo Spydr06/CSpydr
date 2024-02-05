@@ -300,7 +300,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
     // run the assembler
     {
         const char* args[] = {
-            DEFAULT_ASSEMBLER,
+            cg->context->as,
             "-c",
             asm_source_file,
             "-o",
