@@ -12,6 +12,7 @@ EXEC_PREFIX="$PREFIX"
 BUILD_PREFIX="$SCRIPT_DIR/build"
 SRC_DIR="$SCRIPT_DIR/src"
 PKG_CONFIG_DIR=""
+USE_SYSTEM_DYNAMIC_LINKER=0
 
 function error() {
     echo "$0: error: $1"
@@ -52,6 +53,9 @@ while [[ $# -gt 0 ]]; do
             ;;
         --prefix | --build-prefix | --src-dir | --exec-prefix)
             error "missing argument to $1"
+            ;;
+        --system-dynamic-linker)
+            USE_SYSTEM_DYNAMIC_LINKER=1
             ;;
         -h | --help)
             show_help
@@ -277,6 +281,17 @@ if [ ! -d "$SCRIPT_DIR/tests/lib/acutest" ]; then
 else
     echo "found."
 fi
+
+#
+# Dynamic linker for the compiler
+#
+
+if [ $USE_SYSTEM_DYNAMIC_LINKER -eq 1 ]; then
+    check_tool "patchelf"
+    CFLAGS="${CFLAGS} -DCSPYDR_DYNAMIC_LINKER_PATH=\"$($(which patchelf) --print-interpreter $(which $CC))\""
+fi
+
+
 
 #
 # Generate verion numbers
