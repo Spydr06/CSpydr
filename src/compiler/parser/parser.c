@@ -42,6 +42,7 @@ typedef struct PARSER_STRUCT
     CParser_T c_header_parser;
 
     bool holes_enabled;
+    bool holes_used;
 } Parser_T;
 
 typedef enum 
@@ -1102,12 +1103,9 @@ static ASTObj_T* parse_fn(Parser_T* p)
     else
         fn->body = parse_stmt(p, true);
 
-    if(p->context->ct == CT_ASM)
-    {
-        fn->objs = init_list();
-        CONTEXT_ALLOC_REGISTER(p->context, fn->objs);
-        collect_locals(fn->body, fn->objs);
-    }
+    fn->objs = init_list();
+    CONTEXT_ALLOC_REGISTER(p->context, fn->objs);
+    collect_locals(fn->body, fn->objs);
 
     p->cur_obj = last_obj;
     
@@ -2368,9 +2366,17 @@ static ASTNode_T* parse_pipe(Parser_T* p, ASTNode_T* left)
 
     parser_consume_operator(p, "|>", "expect `|>` for pipe expression");
 
+    bool outer_holes_used = p->holes_used;
+    p->holes_used = false;
+
     parser_enable_holes(p);
     pipe->right = parse_expr(p, PREC_PIPE, TOKEN_SEMICOLON);
     parser_disable_holes(p);
+
+    if(!p->holes_used && pipe->right->kind == ND_CALL)
+        list_insert(pipe->right->args, init_ast_node(&p->context->raw_allocator, ND_HOLE, pipe->tok), 0);
+
+    p->holes_used = outer_holes_used;
 
     return pipe;
 }
@@ -2381,6 +2387,7 @@ static ASTNode_T* parse_hole(Parser_T* p)
     if(!parser_holes_enabled(p))
         throw_error(p->context, ERR_SYNTAX_ERROR, tok, "cannot have `$` here, only use `$` in pipe expressions");
     parser_consume(p, TOKEN_DOLLAR, "expect `$`");
+    p->holes_used = true;
     return init_ast_node(&p->context->raw_allocator, ND_HOLE, tok);
 }
 
