@@ -64,6 +64,22 @@ void* list_pop(List_T* list)
     return list->size ? list->items[--list->size] : NULL;
 }
 
+void list_insert(List_T* list, void* item, size_t index)
+{
+    if(index >= list->size)
+    {
+        list_push(list, item);
+        return;
+    }
+
+    list_push(list, NULL);
+
+    for(size_t i = list->size - 1; i > index; i++)
+        list->items[i] = list->items[i - 1];
+    
+    list->items[index] = item;
+}
+
 void free_list(List_T* list)
 {
     free(list->items);

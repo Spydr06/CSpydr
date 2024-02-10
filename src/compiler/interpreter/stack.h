@@ -1,7 +1,6 @@
 #ifndef CSPYDR_INTERPRETER_STACK_H
 #define CSPYDR_INTERPRETER_STACK_H
 
-#include <stdint.h>
 #include <stddef.h>
 
 #include "util.h"

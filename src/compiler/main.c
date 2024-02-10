@@ -46,7 +46,6 @@
 #include "toolchain.h"
 #include "io/io.h"
 #include "io/log.h"
-#include "codegen/llvm/llvm_codegen.h"
 #include "platform/platform_bindings.h"
 #include "util.h"
 #include "version.h"
@@ -435,11 +434,7 @@ static CompileType_T backend_opt(const char* arg)
     else
     {
         LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED 
-            " unknown `--backend` option `%s`, expect one of [C, "
-#ifdef CSPYDR_USE_LLVM
-"llvm, "
-#endif
-            "assembly, json, interpreter]\n",
+            " unknown `--backend` option `%s`, expect one of [C, assembly, interpreter]\n",
             arg
         );
         exit(1);

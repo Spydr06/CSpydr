@@ -191,6 +191,8 @@ void init_interpreter_context(InterpreterContext_T* ictx, Context_T* context, AS
     ictx->ast = ast;
     ictx->stack = init_interpreter_stack(BUFSIZ);
     ictx->global_storage = init_interpreter_stack(BUFSIZ / 2); // a little smaller is usually enough
+    ictx->recursion_depth = 0;
+    ictx->constexpr_only = false;
 
     ictx->string_literals = hashmap_init();
     ictx->broken = false;
@@ -300,21 +302,10 @@ static void eval_stmt(InterpreterContext_T* ictx, ASTNode_T* stmt)
             if(stmt->body)
                 eval_stmt(ictx, stmt->body);
             break;
-        case ND_BLOCK: {
-            size_t stack_before = ictx->stack->size, stack_size = stack_before;
-            for(size_t i = 0; i < stmt->locals->size; i++)
-            {
-                ASTObj_T* local = stmt->locals->items[i];
-                stack_size = align_to(stack_size, local->data_type->align);
-                local->offset = stack_size;
-                stack_size += local->data_type->size;
-            }
-            interpreter_stack_grow(&ictx->stack, stack_size - stack_before);
+        case ND_BLOCK:
             for(size_t i = 0; i < stmt->stmts->size && !ictx->returned && !ictx->broken && !ictx->continued; i++)
                 eval_stmt(ictx, stmt->stmts->items[i]);
-
-            interpreter_stack_shrink_to(ictx->stack, stack_before);
-        } break;
+        break;
         case ND_IF:
             if(interpreter_value_is_falsy(interpreter_eval_expr(ictx, stmt->condition)))
                 eval_stmt(ictx, stmt->else_branch);
@@ -605,7 +596,10 @@ InterpreterValue_T interpreter_eval_expr(InterpreterContext_T* ictx, ASTNode_T* 
             return load_value(lvalue_from_id(ictx, obj, expr->data_type, expr->tok));
         }
         // TODO: ND_MEMBER
-        // TODO: ND_ARRAY
+        case ND_ARRAY:
+        {
+            
+        }
         // TODO: ND_STRUCT
         case ND_REF:
         {
@@ -727,7 +721,7 @@ static InterpreterValue_T call_fn(InterpreterContext_T* ictx, const ASTObj_T* fn
 
     //    printf(COLOR_BOLD_CYAN ">>> Entering %s(%zu)\n" COLOR_RESET, fn->id->callee, args->size);
     
-    size_t stack_size = ictx->stack->size;
+    const size_t stack_size_before = ictx->stack->size;
     for(size_t i = 0; i < args->size; i++) {
         const InterpreterValue_T* arg_value = &args->data[i];
         ASTObj_T* arg = fn->args->items[i];
@@ -735,11 +729,21 @@ static InterpreterValue_T call_fn(InterpreterContext_T* ictx, const ASTObj_T* fn
         interpreter_stack_push(&ictx->stack, &arg_value->value, arg->data_type->size);
     }
 
+    size_t stack_size = ictx->stack->size;
+    for(size_t i = 0; i < fn->objs->size; i++)
+    {
+        ASTObj_T* local = fn->objs->items[i];
+        stack_size = align_to(stack_size, local->data_type->align);
+        local->offset = stack_size;
+        stack_size += local->data_type->size;
+    }
+    interpreter_stack_grow(&ictx->stack, stack_size - stack_size_before);
+
 //    dump_stack(ictx->stack);
     
     eval_stmt(ictx, fn->body);
 
-    interpreter_stack_shrink_to(ictx->stack, stack_size);
+    interpreter_stack_shrink_to(ictx->stack, stack_size_before);
 //    printf(COLOR_BOLD_CYAN "<<<\n" COLOR_RESET);
     ictx->recursion_depth--;
 

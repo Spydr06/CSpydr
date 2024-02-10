@@ -154,32 +154,8 @@ echo "$LD"
 
 CSPC_DEFAULT_STD_PATH="${PREFIX}/share/cspydr/std"
 
-CFLAGS="${CFLAGS} -fPIC -flto -Wall -DDEFAULT_STD_PATH=\"\\\"${CSPC_DEFAULT_STD_PATH}\\\"\""
+CFLAGS="${CFLAGS} -fPIC -flto -Wall -Wextra -Wno-unused-parameter -DDEFAULT_STD_PATH=\"\\\"${CSPC_DEFAULT_STD_PATH}\\\"\""
 LDFLAGS="${LDFLAGS} -lm"
-
-#
-# LLVM checks
-#
-
-echo -n "checking for llvm... "
-if [ -z "$LLVM_CONFIG" ]; then
-    if check_tool "llvm-config"; then
-        export LLVM_CONFIG=$(which llvm-config)
-    else
-        echo "not found."
-        error "llvm library not found. Make sure \`llvm-config\` is in the PATH."
-    fi
-fi
-LLVM_VERSION=$($LLVM_CONFIG --version)
-echo "$LLVM_VERSION"
-
-LLVM_CFLAGS="$($LLVM_CONFIG --cflags)"
-LLVM_LDFLAGS="$($LLVM_CONFIG --ldflags)"
-
-CLANG_LIBS="-lclang"
-
-CFLAGS="${CFLAGS} ${LLVM_CFLAGS}"
-LDFLAGS="${LDFLAGS} ${LLVM_LDFLAGS} ${CLANG_LIBS}"
 
 #
 # Check for pkg-config

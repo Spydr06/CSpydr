@@ -393,12 +393,12 @@ static void handle_unload(Debugger_T* dbg, const char* input)
 
 static inline u64 debugger_get_pc(Debugger_T* dbg) 
 {
-    return get_register_value(dbg->loaded, REG_RIP);
+    return get_register_value(dbg->loaded, DEBUGGER_REG_RIP);
 }
 
 static inline void debugger_set_pc(Debugger_T* dbg, u64 pc)
 {
-    set_register_value(dbg->loaded, REG_RIP, pc);
+    set_register_value(dbg->loaded, DEBUGGER_REG_RIP, pc);
 }
 
 static void wait_for_signal(Debugger_T* dbg)

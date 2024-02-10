@@ -9,9 +9,6 @@ typedef enum COMPILE_TYPE_ENUM
 {
     CT_TRANSPILE,
     CT_ASM,
-#ifdef CSPYDR_USE_LLVM
-    CT_LLVM,
-#endif
     CT_TO_JSON,
     CT_INTERPRETER
 } CompileType_T;

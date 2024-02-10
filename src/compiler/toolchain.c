@@ -18,10 +18,6 @@
 #include "io/log.h"
 #include "io/io.h"
 
-#ifdef CSPYDR_USE_LLVM
-    #include "codegen/llvm/llvm_codegen.h"
-#endif
-
 static i32 construct_passes(Context_T* context, Pass_T passes[])
 {
     i32 index = 0;
@@ -48,11 +44,6 @@ static i32 construct_passes(Context_T* context, Pass_T passes[])
         case CT_ASM:
             push_pass(asm_codegen_pass);
             break;
-#ifdef CSPYDR_USE_LLVM
-        case CT_LLVM:
-            push_pass(llvm_codegen_pass);
-            break;
-#endif
         case CT_TO_JSON:
             push_pass(serializer_pass);
             break;

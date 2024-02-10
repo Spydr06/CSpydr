@@ -9,6 +9,7 @@
 #include "list.h"
 #include "optimizer/constexpr.h"
 #include "ast/ast.h"
+#include "ast/types.h"
 #include "parser/queue.h"
 #include "parser/typechecker.h"
 #include "timer/timer.h"

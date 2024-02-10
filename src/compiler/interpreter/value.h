@@ -4,7 +4,6 @@
 #include <stdint.h>
 
 #include "ast/ast.h"
-#include "ast/types.h"
 #include "lexer/token.h"
 #include "util.h"
 
@@ -36,6 +35,8 @@
 
 #define PTR_VALUE(v, ptr_type) ((InterpreterValue_T){.type=(ptr_type), .value={.ptr=(uintptr_t)(v)}})
 
+#define ARRAY_VALUE(stack_ptr, arr_type) ((Interpretervalue_T){.type=(arr_type), .value={.array=(stack_ptr)}})
+
 typedef union INTERPRETER_INT_VALUE_UNION
 {
     i8 i8;
@@ -59,6 +60,12 @@ typedef union INTERPRETER_FLOAT_VALUE_UNION
     f80 f80;
 } InterpreterFloatValue_T;
 
+typedef struct INTERPRETER_ARRAY_VALUE_STRUCT __attribute__((packed))
+{
+    u64 len;
+    uint8_t data[];
+} InterpreterArrayValue_T;
+
 typedef union INTERPRETER_VALUE_UNION
 {
     bool boolean;
@@ -67,6 +74,8 @@ typedef union INTERPRETER_VALUE_UNION
     InterpreterIntValue_T integer;
     InterpreterUIntValue_T uinteger;
     InterpreterFloatValue_T flt;
+    InterpreterArrayValue_T* array;
+    u8* c_array;
     const ASTObj_T* fn_obj;
 } InterpreterValueUnion_T;
 

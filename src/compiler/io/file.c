@@ -1,6 +1,7 @@
 #include "file.h"
 
 #include <string.h>
+#include <stdlib.h>
 
 File_T* init_file(List_T* lines, const char* path)
 {

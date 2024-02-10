@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include "ast/ast.h"
+#include "interpreter/value.h"
 #include "io/log.h"
 #include "util.h"
 

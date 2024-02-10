@@ -4,12 +4,12 @@
 #include "error/error.h"
 #include "list.h"
 #include "parser/validator.h"
-#include <assert.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <assert.h>
 
-#define GET_ARGS(va)                                    \
+#define GET_ARGS(va)                                                            \
     Validator_T* v = va_arg(va, Validator_T*);          \
     ResolveQueue_T* queue = va_arg(va, ResolveQueue_T*)
 
