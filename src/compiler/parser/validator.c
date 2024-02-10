@@ -60,12 +60,14 @@ static void init_validator(Validator_T* v, Context_T* context, ASTProg_T* ast)
     v->ast = ast;
     v->obj_stack = init_list();
     v->exact_type_info_stack = init_list();
+    typechecker_init(&v->typechecker, context);
     init_constexpr_resolver(&v->constexpr_resolver, context, ast);
 }
 
 static void free_validator(Validator_T* v)
 {
     free_constexpr_resolver(&v->constexpr_resolver);
+    typechecker_free(&v->typechecker);
     free_list(v->obj_stack);
     free_list(v->exact_type_info_stack);
 }
@@ -921,6 +923,8 @@ static void iter_leave_function(ASTObj_T* fn, va_list args)
     GET_VALIDATOR(args);
     validate_function(v, fn);
     validator_pop_obj(v);
+
+    typecheck_obj(&v->typechecker, fn);
 }
 
 static void iter_enter_typedef(ASTObj_T* type_def, va_list args)
@@ -939,6 +943,8 @@ static void iter_leave_typedef(ASTObj_T* type_def, va_list args)
 {
     GET_VALIDATOR(args);
     validator_pop_obj(v);
+
+    typecheck_obj(&v->typechecker, type_def);
 }
 
 static void iter_enter_fn_arg(ASTObj_T* arg, va_list args)
@@ -1027,6 +1033,8 @@ static void iter_leave_global(ASTObj_T* global, va_list args)
     default:
         break;
     }
+
+    typecheck_obj(&v->typechecker, global);
 }
 
 static void iter_enter_enum_member(ASTObj_T* member, va_list args)
@@ -1042,6 +1050,8 @@ static void iter_leave_enum_member(ASTObj_T* member, va_list args)
 // FIXME:    member->value = eval_constexpr(&v->constexpr_resolver, member->value);
 
     validator_pop_obj(v);
+
+    typecheck_obj(&v->typechecker, member);
 }
 
 static void iter_enter_block(ASTNode_T* block, va_list args)

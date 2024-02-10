@@ -6,6 +6,7 @@
 #include "hashmap.h"
 #include "list.h"
 #include "optimizer/constexpr.h"
+#include "parser/typechecker.h"
 
 // validator structs
 typedef struct SCOPE_STRUCT Scope_T;
@@ -19,6 +20,8 @@ typedef struct VALIDATOR_STRUCT
 {
     Context_T* context;
     ASTProg_T* ast;
+
+    TypeChecker_T typechecker;
 
     Scope_T* current_scope;
     Scope_T* global_scope;

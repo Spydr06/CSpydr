@@ -11,7 +11,16 @@ enum IMPLICIT_CAST_RESULT {
     CAST_DELETING_CONST
 };
 
-i32 typechecker_pass(Context_T* context, ASTProg_T* ast);
+typedef struct TYPECHECKER_STRUCT {
+    Context_T* context;
+    ASTObj_T* current_fn;
+    List_T* return_type_stack;
+} TypeChecker_T;
+
+void typechecker_init(TypeChecker_T* t, Context_T* context);
+void typechecker_free(TypeChecker_T* t);
+
+void typecheck_obj(TypeChecker_T* t, ASTObj_T* obj);
 
 bool types_equal(Context_T* context, ASTType_T* a, ASTType_T* b);
 

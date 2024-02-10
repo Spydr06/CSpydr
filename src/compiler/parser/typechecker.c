@@ -15,15 +15,9 @@
 #include "codegen/codegen_utils.h"
 #include "ast/ast_iterator.h"
 #include "ast/types.h"
-#include "timer/timer.h"
+#include "context.h"
 
 #define GET_TYPECHECKER(va) TypeChecker_T* t = va_arg(va, TypeChecker_T*)
-
-typedef struct TYPECHECKER_STRUCT {
-    Context_T* context;
-    ASTObj_T* current_fn;
-    List_T* return_type_stack;
-} TypeChecker_T;
 
 static void set_fn(ASTObj_T* fn, va_list args);
 static void unset_fn(ASTObj_T* fn, va_list args);
@@ -71,22 +65,26 @@ static const ASTIteratorList_T iterator = {
     }
 };
 
-i32 typechecker_pass(Context_T* context, ASTProg_T* ast)
+void typechecker_init(TypeChecker_T* t, Context_T* context)
 {
-    timer_start(context, "type checking");
+    t->context = context;
+    t->current_fn = NULL;
+    t->return_type_stack = init_list();
+}
 
-    TypeChecker_T typechecker = {
-        context,
-        NULL,
-        init_list()
-    };
-    context->current_obj = &typechecker.current_fn;
+void typechecker_free(TypeChecker_T* t)
+{
+    free_list(t->return_type_stack);
+}
 
-    ast_iterate(&iterator, ast, &typechecker);
-    free_list(typechecker.return_type_stack);
-    timer_stop(context);
+void typecheck_obj(TypeChecker_T* t, ASTObj_T* obj)
+{
+    ASTObj_T** old = t->context->current_obj;
+    t->context->current_obj = &t->current_fn;
 
-    return context->emitted_errors;
+    ast_iterate_obj(&iterator, obj, t);
+    
+    t->context->current_obj = old;
 }
 
 static inline ASTType_T* current_return_type(TypeChecker_T* t)

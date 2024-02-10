@@ -15,7 +15,6 @@ i32 lint(Context_T* context, char* src_file, char* std_path)
     preprocessor_pass(context, &ast);
     parser_pass(context, &ast);
     validator_pass(context, &ast);
-    typechecker_pass(context, &ast);
     cleanup_pass(context, &ast);
 
     return context->emitted_errors != 0 || context->emitted_warnings != 0;

@@ -13,7 +13,6 @@ PASS_FN_DECL(lexer);
 PASS_FN_DECL(preprocessor);
 PASS_FN_DECL(parser);
 PASS_FN_DECL(validator);
-PASS_FN_DECL(typechecker);
 PASS_FN_DECL(optimizer);
 PASS_FN_DECL(transpiler);
 PASS_FN_DECL(asm_codegen);

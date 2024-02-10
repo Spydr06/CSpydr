@@ -72,7 +72,6 @@ void lint_watched(Context_T* context, const char* filepath, const char* std_path
         preprocessor_pass(context, &AST);
         parser_pass(context, &AST);
         validator_pass(context, &AST);
-        typechecker_pass(context, &AST);
         if(context->emitted_errors)
             panic(context);
     }

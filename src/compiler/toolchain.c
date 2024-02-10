@@ -31,7 +31,6 @@ static i32 construct_passes(Context_T* context, Pass_T passes[])
     push_pass(preprocessor_pass);
     push_pass(parser_pass);
     push_pass(validator_pass);
-    push_pass(typechecker_pass);
 
     if(context->flags.optimize)
         push_pass(optimizer_pass);
