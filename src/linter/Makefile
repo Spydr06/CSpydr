@@ -5,7 +5,7 @@ OBJECTS := $(patsubst %, $(BUILD_PREFIX)/linter/%.o, $(SOURCES))
 
 $(CSP_LINT): $(OBJECTS)
 	@$(MKDIR) -p $(@D)
-	$(LD) $(LDFLAGS) $(LIBCSPC) $^ -o $@
+	$(LD) $(LIBCSPC) $^ -o $@ $(LDFLAGS)
 
 $(BUILD_PREFIX)/linter/%.c.o: %.c
 	@$(MKDIR) -p $(@D)

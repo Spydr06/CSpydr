@@ -7,7 +7,7 @@ VERSION_HEADER := version.h
 
 $(CSPC): $(OBJECTS)
 	@$(MKDIR) -p $(@D)
-	$(LD) $(LDFLAGS) $^ -o $@
+	$(LD) $^ -o $@ $(LDFLAGS)
 	
 $(LIBCSPC): $(OBJECTS)
 	@$(MKDIR) -p $(@D)
