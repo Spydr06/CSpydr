@@ -45,7 +45,6 @@ CSpydr depends on the following libraries. They need to be installed on your com
 
 **Libraries:**
 - `glibc` (GNU C standard library, should be bundled with every major distribution)
-- `llvm` with `llvm-c` bindings **(optional)**
 - `json-c`
 - `libpkgconf`
 
@@ -54,7 +53,6 @@ CSpydr depends on the following libraries. They need to be installed on your com
 - `gcc` or `clang`
 - `as` (GNU assembler (part of the `binutils` package))
 - `ld` (GNU linker (part of the `binutils` package))
-- `llvm-config` **(optional)**
 
 ## Building
 Building CSpydr is done via a configure script and Makefiles using the following commands (after cloning this repository):
