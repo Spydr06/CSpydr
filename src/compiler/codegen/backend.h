@@ -4,19 +4,36 @@
 #include "context.h"
 #include <stdbool.h>
 
-typedef struct TARGET_STRUCT Target_T;
+#define BACKEND_CALLBACK(backend, callback) backend##_##callback
+#define BACKEND_CALLBACKS_IMPL(backend)                                      \
+    const BackendCallbacks_T backend##_CALLBACKS = ((BackendCallbacks_T) {   \
+        .begin_file = backend##_begin_file,                                  \
+        .finish_file = backend##_finish_file,                                \
+    })
 
-#define HEADER_DEFS_ONLY
-#include "backends/handlers.h"
+typedef struct TARGET_STRUCT Target_T;
+typedef struct CODEGEN_DATA_STRUCT CodegenData_T;
+
+typedef struct BACKEND_CALLBACKS_STRUCT {
+    void (*begin_file)(CodegenData_T* c);
+    void (*finish_file)(CodegenData_T* c);
+} BackendCallbacks_T;
 
 typedef struct BACKEND_STRUCT {
     const char* name;
 
     Arch_T supported_architectures;
     Platform_T supported_platforms;
+    bool supports_debug_info;
+
+    const BackendCallbacks_T* callbacks;
 } Backend_T;
 
 extern const Backend_T COMPILER_BACKENDS[];
+
+#define HEADER_DEFS_ONLY
+    #include "backends/handlers.h"
+#undef HEADER_DEFS_ONLY
 
 const Backend_T* find_backend(const char* name);
 

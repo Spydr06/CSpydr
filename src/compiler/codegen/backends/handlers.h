@@ -5,6 +5,9 @@
 
 // Normal header stuff
 
+extern const BackendCallbacks_T C99_CALLBACKS;
+extern const BackendCallbacks_T X86_64_GAS_CALLBACKS;
+
 #endif
 
 #else
@@ -14,12 +17,16 @@
 {
     "c99",
     ARCH_ANY,
-    PLATFORM_ANY
+    PLATFORM_ANY,
+    true,
+    &C99_CALLBACKS,
 },
 {
     "x86_64-gas",
     ARCH_X86_64,
-    PLATFORM_LINUX
+    PLATFORM_LINUX,
+    true,
+    &X86_64_GAS_CALLBACKS,
 },
 
 #endif
