@@ -2,23 +2,21 @@
 
 #include <assert.h>
 
+#include "codegen/codegen.h"
 #include "error/panic.h"
 #include "io/file.h"
+#include "ir/debug.h"
+#include "ir/ir.h"
+#include "ir/normalizer.h"
 #include "passes.h"
 #include "lexer/lexer.h"
 #include "preprocessor/preprocessor.h"
 #include "parser/parser.h"
 #include "parser/validator.h"
-#include "parser/typechecker.h"
 #include "optimizer/optimizer.h"
-#include "codegen/transpiler/c_codegen.h"
-#include "interpreter/interpreter.h"
-#include "codegen/asm/asm_codegen.h"
-#include "ast/ast_json.h"
-#include "io/log.h"
 #include "io/io.h"
 
-static i32 construct_passes(Context_T* context, Pass_T passes[])
+static i32 construct_ast_passes(Context_T* context, Pass_T passes[])
 {
     i32 index = 0;
 #define push_pass(fn) do {                        \
@@ -34,27 +32,6 @@ static i32 construct_passes(Context_T* context, Pass_T passes[])
 
     if(context->flags.optimize)
         push_pass(optimizer_pass);
-    
-    switch(context->ct)
-    {
-        case CT_TRANSPILE:
-            push_pass(transpiler_pass);
-            break;
-        case CT_ASM:
-            push_pass(asm_codegen_pass);
-            break;
-        case CT_TO_JSON:
-            push_pass(serializer_pass);
-            break;
-        case CT_INTERPRETER:
-            push_pass(interpreter_pass);
-            break;
-        default:
-            LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " Unknown compile type %d!\n", context->ct);
-            panic(context);
-    }
-
-    push_pass(cleanup_pass);
 
 #undef push_pass
 
@@ -75,7 +52,7 @@ void compile(Context_T* context, char* input_file, char* output_file)
         Pass_T passes[__CSP_MAX_PASSES] = {0};
 
         // construct passes
-        i32 num_passes = construct_passes(context, passes);
+        i32 num_passes = construct_ast_passes(context, passes);
 
         for(i32 i = 0; i < num_passes; i++)
         {
@@ -84,6 +61,18 @@ void compile(Context_T* context, char* input_file, char* output_file)
             if(error || context->emitted_errors)
                 panic(context);
         }
+        IR_T ir = {};
+        i32 error = normalization_pass(context, &ast, &ir);
+        if(error || context->emitted_errors)
+            panic(context);
+
+        dbg_print_ir(&ir, IR_PRINT_FUNC);
+
+        error = codegen_pass(context, &ir);
+        if(error || context->emitted_errors)
+            panic(context);
+
+        cleanup_pass(context, &ast);
     }
     catch {
         get_panic_handler()(context);

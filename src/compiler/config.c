@@ -1,5 +1,6 @@
 #include "config.h"
-#include "toolchain.h"
+#include "context.h"
+#include "codegen/backend.h"
 
 #include <string.h>
 
@@ -82,23 +83,11 @@ void get_build(char* dest)
 #endif
 
 static bool transpiling(Context_T* context) {
-    return context->ct == CT_TRANSPILE;
+    return strcmp(context->backend->name, "c99") == 0;
 }
 
 static bool assembly(Context_T* context) {
-    return context->ct == CT_ASM;
-}
-
-static bool llvm(Context_T* context) {
-#ifdef CSPYDR_USE_LLVM
-    return context->ct == CT_LLVM;
-#else
-    return false;
-#endif
-}
-
-static bool interpreted(Context_T* context) {
-    return context->ct == CT_INTERPRETER;
+    return strcmp(context->backend->name, "c99") != 0;
 }
 
 const Config_T configurations[] = {
@@ -107,8 +96,6 @@ const Config_T configurations[] = {
     {"macos", macos_set},
     {"codegen_c", transpiling},
     {"codegen_asm", assembly},
-    {"codegen_llvm", llvm},
-    {"interpreted", interpreted},
     {NULL, NULL}
 };
 

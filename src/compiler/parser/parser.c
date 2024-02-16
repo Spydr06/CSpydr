@@ -11,7 +11,6 @@
 #include "list.h"
 #include "io/log.h"
 #include "ast/types.h"
-#include "toolchain.h"
 #include "utils.h"
 #include "timer/timer.h"
 #include "directives.h"
@@ -1079,8 +1078,7 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
     CONTEXT_ALLOC_REGISTER(p->context, fn->data_type->arg_types);
     fn->data_type->is_variadic = fn->va_area != NULL;
 
-    if(p->context->ct == CT_ASM)
-        fn->alloca_bottom = &alloca_bottom;
+    fn->alloca_bottom = &alloca_bottom;
 
     return fn;
 }
@@ -2116,18 +2114,8 @@ static ASTNode_T* parse_const_lambda(Parser_T* p)
     CONTEXT_ALLOC_REGISTER(p->context, lambda_fn->data_type->arg_types);
     CONTEXT_ALLOC_REGISTER(p->context, lambda_fn->objs);
 
-    char* id;
-
-    if(p->context->ct == CT_ASM)
-    {
-        id = calloc(34, sizeof(char));
-        sprintf(id, "const.lambda.%ld", count++);
-    }
-    else
-    {
-        id = calloc(42, sizeof(char));
-        sprintf(id, "__csp_const_lambda_%ld__", count++);
-    }
+    char* id = calloc(42, sizeof(char));
+    sprintf(id, "__csp_const_lambda_%ld__", count++);
 
     CONTEXT_ALLOC_REGISTER(p->context, (void*) id);
     lambda_fn->id = init_ast_identifier(&p->context->raw_allocator, p->tok, id);
@@ -2173,8 +2161,7 @@ static ASTNode_T* parse_const_lambda(Parser_T* p)
     }
 
     collect_locals(lambda_fn->body, lambda_fn->objs);
-    if(p->context->ct == CT_ASM)
-        lambda_fn->alloca_bottom = &alloca_bottom;
+    lambda_fn->alloca_bottom = &alloca_bottom;
     list_push(p->ast->objs, lambda_fn);
 
     ASTNode_T* lambda_id = init_ast_node(&p->context->raw_allocator, ND_ID, lambda_fn->tok);
@@ -2600,17 +2587,7 @@ static ASTNode_T* parse_pow_2(Parser_T* p, ASTNode_T* left)
     parser_consume(p, TOKEN_POW_2, "expect `²`");
 
     mult->left = left;
-    mult->right = left;
-
-    if(p->context->ct == CT_TRANSPILE)
-    {
-        ASTNode_T* closure = init_ast_node(&p->context->raw_allocator, ND_CLOSURE, p->tok);
-        closure->exprs = init_list();
-        CONTEXT_ALLOC_REGISTER(p->context, closure->exprs); 
-        list_push(closure->exprs, mult);
-        return closure;
-    }
-
+    mult->right = left; 
     return mult;
 }
 
@@ -2625,15 +2602,6 @@ static ASTNode_T* parse_pow_3(Parser_T* p, ASTNode_T* left)
     mult_a->right = mult_b;
     mult_b->left = left;
     mult_b->right = left;
-
-    if(p->context->ct == CT_TRANSPILE)
-    {
-        ASTNode_T* closure = init_ast_node(&p->context->raw_allocator, ND_CLOSURE, p->tok);
-        closure->exprs = init_list();
-        CONTEXT_ALLOC_REGISTER(p->context, closure->exprs); 
-        list_push(closure->exprs, mult_a);
-        return closure;
-    }
 
     return mult_a;
 }

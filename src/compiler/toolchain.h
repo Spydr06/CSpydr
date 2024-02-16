@@ -5,14 +5,6 @@
 #include "config.h"
 #include "context.h"
 
-typedef enum COMPILE_TYPE_ENUM
-{
-    CT_TRANSPILE,
-    CT_ASM,
-    CT_TO_JSON,
-    CT_INTERPRETER
-} CompileType_T;
-
 typedef struct PASS_STRUCT {
     const char* desc;
     i32 (*func)(Context_T* context, ASTProg_T* ast);

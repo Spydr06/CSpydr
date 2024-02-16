@@ -2,9 +2,9 @@
 #include "debugger/breakpoint.h"
 #include "io/log.h"
 #include "io/io.h"
-#include "toolchain.h"
 #include "platform/platform_bindings.h"
 #include "register.h"
+#include "codegen/backend.h"
 
 #include <stdarg.h>
 #include <sys/ptrace.h>
@@ -235,7 +235,8 @@ static void handle_comp(Debugger_T* dbg, const char* input)
         dbg->context->paths.exec_name,
         "build",
         dbg->src_file,
-        dbg->context->ct == CT_ASM ? "--asm" : "--transpile",
+        "-b",
+        dbg->context->backend->name,
         NULL
     };
 

@@ -2,8 +2,7 @@
 #include "preprocessor.h"
 #include "../version.h"
 #include "../lexer/token.h"
-#include "../toolchain.h"
-#include "../ast/types.h"
+#include "codegen/backend.h"
 
 #include <time.h>
 #include <string.h>
@@ -127,15 +126,7 @@ static const char* get_date_str(Context_T* context)
 
 static const char* get_compile_type(Context_T* context)
 {
-    switch(context->ct)
-    {
-        case CT_ASM:
-            return "asm";
-        case CT_TRANSPILE:
-            return "transpile";
-        default:
-            return "unknown";
-    }
+    return context->backend->name;
 }
 
 static const char* get_main_file(Context_T* context)

@@ -1,9 +1,12 @@
 #include "context.h"
+#include "codegen/backend.h"
 #include "config.h"
+#include "error/error.h"
 #include "hashmap.h"
 #include "list.h"
 #include "memory/allocator.h"
 
+#include <errno.h>
 #include <string.h>
 
 Flags_T default_flags(void)
@@ -15,6 +18,101 @@ Flags_T default_flags(void)
     flags.do_assembling = true;
     flags.require_entrypoint = true;
     return flags;
+}
+
+static Arch_T parse_arch(const char** str)
+{
+    typedef struct { Arch_T a; const char* s; } ArchPair_T;
+    static const ArchPair_T PAIRS[] = {
+        {ARCH_X86_64, "x86_64"}, {ARCH_AARCH64, "aarch64"}, {ARCH_RISCV64, "riscv64"},
+        {0, NULL}
+    };
+
+    for(const ArchPair_T* pair = PAIRS; pair->s; pair++)
+        if(strncmp(pair->s, *str, strlen(pair->s)) == 0)
+        {
+            *str += strlen(pair->s);
+            return pair->a;
+        }
+    return ARCH_ANY;
+}
+
+static Platform_T parse_platform(const char** str)
+{
+    typedef struct { Platform_T p; const char* s; } PlatformPair_T;
+    static const PlatformPair_T PAIRS[] = {
+        {PLATFORM_UNKNOWN, "unknown"}, {PLATFORM_FREESTANDING, "freestanding"}, {PLATFORM_LINUX, "linux"},
+        {PLATFORM_WINDOWS, "windows"}, {PLATFORM_DARWIN, "darwin"}, {PLATFORM_BSD, "bsd"},
+        {0, NULL}
+    };
+
+    for(const PlatformPair_T* pair = PAIRS; pair->s; pair++)
+        if(strncmp(pair->s, *str, strlen(pair->s)) == 0)
+        {
+            *str += strlen(pair->s);
+            return pair->p;
+        }
+    return PLATFORM_ANY;
+}
+
+int parse_target(Target_T* dest, const char* str)
+{
+    dest->arch = parse_arch(&str);
+    if(dest->arch == ARCH_ANY)
+        return EINVAL;
+
+    if(*str++ != '-')
+        return EINVAL;
+
+    dest->platform = parse_platform(&str);
+    if(dest->platform == PLATFORM_ANY)
+        return EINVAL;
+
+    if(!*str)
+    {
+        dest->libc = NULL;
+        return 0;
+    }
+
+    if(*str++ != '-')
+        return EINVAL;
+
+    dest->libc = str;
+    return 0;
+}
+
+Target_T get_host_target()
+{
+    return (Target_T){
+        .arch = ARCH_X86_64, // FIXME: once cspc can run on more arches, figure this out (configure script)!
+#ifdef CSPYDR_LINUX
+        .platform = PLATFORM_LINUX,
+#elif defined(CSPYDR_WINDOWS)
+        .platform = PLATFORM_WINDOWS,
+#elif defined(CSPYDR_MACOS)
+        .platform = PLATFORM_DARWIN,
+#elif defined(CSPYDR_BSD)
+        .plaform = PLATFORM_BSD,
+#else
+        .platform = PLATFORM_UNKNOWN,
+#endif
+        .libc = NULL,
+    };
+}
+
+u32 arch_ptr_size(Arch_T arch)
+{
+    switch(arch)
+    {
+    case ARCH_X86_64:
+    case ARCH_AARCH64:
+    case ARCH_RISCV64:
+        return 8;
+
+    default:
+        unreachable();
+        return sizeof(void*);
+    }
 }
 
 void init_context(Context_T* context)
@@ -37,6 +135,9 @@ void init_context(Context_T* context)
     context->cc = DEFAULT_CC;
     context->as = DEFAULT_ASSEMBLER;
     context->ld = DEFAULT_LINKER;
+
+    context->backend = NULL;
+    context->target = get_host_target();
 }
 
 void free_context(Context_T *context)

@@ -227,18 +227,4 @@ namespace std {
             (*dest) = *src;
         }
     }
-
-    namespace va {
-        [cfg("codegen_llvm")]
-        type Element: struct {
-
-        };
-
-        [cfg("codegen_llvm")]
-        fn get(ap: &Element, size: i32, _align: i32, reg_class: i32): &void
-        {
-            not_implemented!();
-            <- nil;
-        }
-    }
 }

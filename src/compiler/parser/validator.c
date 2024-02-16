@@ -13,8 +13,8 @@
 #include "parser/queue.h"
 #include "parser/typechecker.h"
 #include "timer/timer.h"
-#include "toolchain.h"
 #include "util.h"
+#include "codegen/backend.h"
 
 #include <asm-generic/errno-base.h>
 #include <assert.h>
@@ -889,14 +889,14 @@ static void validate_function(Validator_T* v, ASTObj_T* fn)
         validate_main_fn(v, fn);
     }
 
-    if(v->context->ct == CT_ASM && fn->return_type->size > 16)
+/* FIXME:    if(v->context->ct == CT_ASM && fn->return_type->size > 16)
     {
         fn->return_ptr = init_ast_obj(&v->context->raw_allocator, OBJ_LOCAL, fn->return_type->tok);
         fn->return_ptr->data_type = init_ast_type(&v->context->raw_allocator, TY_PTR, fn->return_type->tok);
         fn->return_ptr->data_type->base = fn->return_type;
         fn->return_ptr->data_type->size = get_type_size(v, fn->return_ptr->data_type);
         fn->return_ptr->data_type->align = 8;
-    }
+    }*/
 
     if(unpack(fn->return_type)->kind != TY_VOID && !fn->is_extern && !stmt_returns_value(v, fn->body))
         throw_error(v->context, ERR_NORETURN, fn->tok, "function `%s` does not return a value", fn->id->callee);
@@ -1169,8 +1169,8 @@ static void iter_validate_expr_stmt(ASTNode_T* expr_stmt, va_list args)
 static void iter_validate_extern_c_block(ASTNode_T* block, va_list args)
 {
     GET_VALIDATOR(args);
-    if(v->context->ct != CT_TRANSPILE)
-        throw_error(v->context, ERR_SYNTAX_ERROR_UNCR, block->tok, "`extern \"C\"` statements are only supported with the C backend.\nUse `--backend C` to use this backend.");
+    if(strcmp(v->context->backend->name, "c99") != 0)
+        throw_error(v->context, ERR_SYNTAX_ERROR_UNCR, block->tok, "`extern \"C\"` statements are only supported with the C99 backend.\nUse `--backend c99` to use this backend.");
 }
 
 static void iter_validate_call(ASTNode_T* call, va_list args)
@@ -1218,7 +1218,7 @@ static void iter_validate_call(ASTNode_T* call, va_list args)
     }
 
     // if we compile using the assembly compiler, a buffer for the return value is needed when handling big structs
-    if(v->context->ct == CT_ASM && call->data_type && unpack(call->data_type)->kind == TY_STRUCT)
+    /* FIXME: if(v->context->ct == CT_ASM && call->data_type && unpack(call->data_type)->kind == TY_STRUCT)
     {
         ASTObj_T* ret_buf = init_ast_obj(&v->context->raw_allocator, OBJ_LOCAL, call->tok);
         ret_buf->data_type = call->data_type;
@@ -1231,7 +1231,7 @@ static void iter_validate_call(ASTNode_T* call, va_list args)
         else {
             // TODO
         }
-    }
+    }*/
 }
 
 static void iter_validate_identifier(ASTNode_T* id, va_list args)
@@ -1648,15 +1648,6 @@ static void iter_validate_struct_lit(ASTNode_T* struct_lit, va_list args)
 
     if(!struct_lit->data_type)
         validate_anon_struct_lit(v, struct_lit);
-
-    if(v->context->ct == CT_ASM && !struct_lit->is_assigning && in_function(v))
-    {
-        struct_lit->buffer = init_ast_obj(&v->context->raw_allocator, OBJ_LOCAL, struct_lit->tok);
-        struct_lit->buffer->data_type = struct_lit->data_type;
-        struct_lit->buffer->data_type->size = get_type_size(v, struct_lit->buffer->data_type); 
-
-        list_push(in_function(v)->objs, struct_lit->buffer);
-    }
 }
 
 static void iter_validate_array_lit(ASTNode_T* array_lit, va_list args)
@@ -1694,16 +1685,6 @@ static void iter_validate_array_lit(ASTNode_T* array_lit, va_list args)
     }
 
     array_lit->data_type->size = get_type_size(v, array_lit->data_type);
-
-    if(v->context->ct == CT_ASM && !array_lit->is_assigning && in_function(v))
-    {
-        array_lit->buffer = init_ast_obj(&v->context->raw_allocator, OBJ_LOCAL, array_lit->tok);
-        array_lit->buffer->data_type = array_lit->data_type;
-        array_lit->buffer->data_type->num_indices = array_lit->data_type->num_indices;
-        array_lit->buffer->data_type->size = get_type_size(v, array_lit->buffer->data_type);
-    
-        list_push(in_function(v)->objs, array_lit->buffer);
-    }
 }
 
 static void iter_validate_ternary(ASTNode_T* ternary, va_list args)
@@ -1788,7 +1769,7 @@ static void iter_leave_lambda(ASTNode_T* lambda, va_list args)
 {
     GET_VALIDATOR(args);
 
-    if(v->context->ct != CT_ASM)
+/*    if(v->context->ct != CT_ASM)
         return;
     ASTObj_T* lambda_stack_ptr = init_ast_obj(&v->context->raw_allocator, OBJ_GLOBAL, lambda->tok);
     lambda_stack_ptr->data_type = (ASTType_T*) void_ptr_type;
@@ -1812,7 +1793,8 @@ static void iter_leave_lambda(ASTNode_T* lambda, va_list args)
         lambda->return_ptr->data_type->base = lambda->data_type->base;
         lambda->return_ptr->data_type->size = get_type_size(v, lambda->return_ptr->data_type);
         lambda->return_ptr->data_type->align = 8;
-    }
+    } */
+    // FIXME
 }
 
 static void iter_validate_string_lit(ASTNode_T* str, va_list args)

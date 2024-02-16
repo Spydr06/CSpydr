@@ -41,6 +41,7 @@
 #include <string.h>
 
 // compiler includes
+#include "codegen/backend.h"
 #include "platform/linux/linux_platform.h"
 #include "timer/timer.h"
 #include "toolchain.h"
@@ -110,14 +111,9 @@ const char help_text[] = "%s"
                        "  -v, --version             | Displays the version of CSpydr and quits\n"
                        "  -i, --info                | Displays information text and quits\n"
                        "  -o, --output [file]       | Sets the target output file\n"
+                       "  -t, --target [target]     | Sets the target platform and architecture\n"
                        "  -b, --backend [backend]   | Instructs the compiler to use a certain backend\n"
-                       "                            | Options: [C, assembly, "
-#ifdef CSPYDR_USE_LLVM
-    "llvm, "
-#endif          
-                                                    "interpreter, json]\n"
-                       "                            | Default: `assembly`\n"
-                       "      --print-code          | Prints the generated code (C | Assembly | LLVM IR)\n"
+                       "      --print-code          | Prints the generated code\n"
                        "      --silent              | Disables all command line output except error messages\n"
                        "      --cc [compiler]       | Sets the C compiler being used after transpiling (default: " DEFAULT_CC ")\n"
                        "      --cc-flags [flags]    | Adds flags passed to the C compiler when transpiling\n"
@@ -161,7 +157,6 @@ static void run(Context_T* context, char* file);
 static void evaluate_info_flags(Context_T* context, char* argv);
 static void store_exec_args(Context_T* context, i32 argc, char* argv[], Action_T action);
 static char* default_output_file(Context_T* context, Action_T action, const char* input_file);
-static CompileType_T backend_opt(const char* arg);
 
 // entry point
 i32 main(i32 argc, char* argv[])
@@ -187,7 +182,6 @@ i32 main(i32 argc, char* argv[])
     // get the action to perform
 
     Action_T action = AC_NULL;
-    context.ct = DEFAULT_COMPILE_TYPE;
     for(i32 i = 0; action_table[i].as_str; i++)
         if(streq(argv[1], action_table[i].as_str))
             action = action_table[i].ac;
@@ -239,7 +233,7 @@ i32 main(i32 argc, char* argv[])
         {
             if(!argv[++i])
             {
-                LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " expect target file path after -o/--output.\n");
+                LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " Expect target file path after -o/--output.\n");
                 exit(1);
             }
             output_file = argv[i];
@@ -253,7 +247,34 @@ i32 main(i32 argc, char* argv[])
                 LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " Expect backend name after `--backend`.\n");
                 exit(1);
             }
-            context.ct = backend_opt(argv[i]);
+            context.backend = find_backend(argv[i]);
+            if(!context.backend)
+            {
+                LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " Unknown backend `%s`, the following backends exist:\n", argv[i]);
+                for(const Backend_T* backend = COMPILER_BACKENDS; backend->name; backend++)
+                    LOG_ERROR_F(COLOR_RED "    %s\n", backend->name);
+                exit(1);
+            }
+        }
+        else if(streq(arg, "-t") || streq(arg, "--target"))
+        {
+            if(!argv[++i])
+            {
+                LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " Expect target triplet after `--target`.\n");
+                exit(1);
+            }
+            
+            int err = parse_target(&context.target, argv[i]);
+            if(err)
+            {
+                LOG_ERROR_F(
+                    COLOR_BOLD_RED "[Error]" COLOR_RESET 
+                    COLOR_RED " Error parsing target triplet `%s`: %s.\nExpect target triplet to be of format `<arch>-<platform>[-<libc>]`.",
+                    argv[i],
+                    strerror(err)
+                );
+                exit(1);
+            }
         }
         else if(streq(arg, "--from-json"))
             context.flags.from_json = true;
@@ -360,10 +381,16 @@ i32 main(i32 argc, char* argv[])
             evaluate_info_flags(&context, argv[i]);
     }
 
-    if(context.ct == CT_INTERPRETER && action != AC_RUN)
+    if(context.backend)
     {
-        LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " using interpreter without code execution; aborting.\n");
-        exit(1);
+        if(!backend_supports_target(context.backend, &context.target))
+        {
+            LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " The backend `%s` does not support the current platform.\n", context.backend->name);
+            exit(1);
+        }
+    }
+    else {
+        context.backend = target_default_backend(&context.target);
     }
 
     compile(&context, input_file, output_file);
@@ -410,38 +437,6 @@ static void evaluate_info_flags(Context_T* context, char* argv)
     }
 
     exit(0);
-}
-
-static CompileType_T backend_opt(const char* arg)
-{
-    char* uppercase = malloc(strlen(arg) * sizeof(char));
-    for(size_t i = 0; i < strlen(arg) + 1; i++)
-        uppercase[i] = toupper(arg[i]);
-
-    CompileType_T ct;
-    if(streq(uppercase, "ASSEMBLY"))
-        ct = CT_ASM;
-#ifdef CSPYDR_USE_LLVM
-    else if(streq(uppercase, "LLVM"))
-        ct = CT_LLVM;
-#endif
-    else if(streq(uppercase, "C") || streq(uppercase, "TRANSPILE"))
-        ct = CT_TRANSPILE;
-    else if(streq(uppercase, "JSON"))
-        ct = CT_TO_JSON;
-    else if(streq(uppercase, "INTERPRETER"))
-        ct = CT_INTERPRETER;
-    else
-    {
-        LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED 
-            " unknown `--backend` option `%s`, expect one of [C, assembly, interpreter]\n",
-            arg
-        );
-        exit(1);
-    }
-
-    free(uppercase);
-    return ct;
 }
 
 static void run(Context_T* context, char* filename)
