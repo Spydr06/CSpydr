@@ -8,6 +8,8 @@
 #include "platform/linux/linux_platform.h"
 #include "timer/timer.h"
 
+#include <stdio.h>
+#include <errno.h>
 #include <string.h>
 #include <libgen.h>
 
@@ -98,14 +100,57 @@ static void static_linker_args(Context_T* context, List_T* args)
     list_push(args, "-static");
 }
 
+static void gcc_library_path(Context_T* context, List_T* args)
+{
+    char command[strlen(context->cc) + 32];
+    strcpy(command, context->cc);
+    strcat(command, " -print-libgcc-file-name");
+
+    FILE* fp = popen(command, "r");
+    if(!fp) 
+    {
+        LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " could not get `libgcc` path: %s.\n" COLOR_RESET, strerror(errno)); 
+        throw(context->main_error_exception);
+    }
+
+    char* path = malloc(BUFSIZ * sizeof(char));
+    CONTEXT_ALLOC_REGISTER(context, (void*) path);
+    
+    strcpy(path, "-L");
+
+    if(fgets(path + 2, BUFSIZ - 3, fp) == NULL)
+    {
+        LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " could not get `libgcc` path: %s.\n" COLOR_RESET, strerror(errno));
+        throw(context->main_error_exception);
+    }
+
+    pclose(fp);
+    
+    dirname(path + 2);
+    list_push(args, path);
+}
+
 static i32 link_executable(Context_T* context, const char* target_filepath, const char* object_filepath)
 {
     List_T* args = common_linker_args(context, target_filepath, object_filepath);
     
+    switch(context->link_mode.mode)
+    {
+    case LINK_DYNAMIC:
+        dynamic_linker_args(context, args);
+        break;
+    case LINK_STATIC:
+        static_linker_args(context, args);
+        break;
+    default:
+        unreachable();
+        break;
+    }
+
     bool use_libc = 
         context->target.platform != PLATFORM_FREESTANDING && 
-        context->target.platform != PLATFORM_WINDOWS;
-    
+        context->target.platform != PLATFORM_WINDOWS; 
+
     if(use_libc)
     {
         if(context->target.arch == ARCH_X86_64)
@@ -121,20 +166,19 @@ static i32 link_executable(Context_T* context, const char* target_filepath, cons
             list_push(args, "/usr/lib/crtn.o");
         }
 
-        list_push(args, "-lc");
-    }
+        gcc_library_path(context, args);
 
-    switch(context->link_mode.mode)
-    {
-    case LINK_DYNAMIC:
-        dynamic_linker_args(context, args);
-        break;
-    case LINK_STATIC:
-        static_linker_args(context, args);
-        break;
-    default:
-        unreachable();
-        break;
+        list_push(args, "-lc");
+
+        if(strcmp(context->target.libc, "gnu") == 0)
+        {
+            list_push(args, "-lgcc");
+
+            if(context->link_mode.mode == LINK_STATIC)
+                list_push(args, "-lgcc_eh");
+            else
+                list_push(args, "-lgcc_s");
+        }
     }
 
     for(size_t i = 0; i < context->link_mode.extra->size; i++)

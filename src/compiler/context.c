@@ -96,7 +96,13 @@ Target_T get_host_target()
 #else
         .platform = PLATFORM_UNKNOWN,
 #endif
-        .libc = NULL,
+#ifdef __GLIBC__
+        .libc = "gnu",
+#elif defined(__MUSL__)
+        .libc = "musl",
+#else
+        .libc = "unknown",
+#endif
     };
 }
 
