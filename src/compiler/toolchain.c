@@ -8,6 +8,7 @@
 #include "ir/debug.h"
 #include "ir/ir.h"
 #include "ir/normalizer.h"
+#include "linker/linker.h"
 #include "passes.h"
 #include "lexer/lexer.h"
 #include "preprocessor/preprocessor.h"
@@ -40,43 +41,47 @@ static i32 construct_ast_passes(Context_T* context, Pass_T passes[])
 
 void compile(Context_T* context, char* input_file, char* output_file)
 {
+
+#define HANDLE_ERR(pass) do {                   \
+        error = (pass);                         \
+        if(error || context->emitted_errors)    \
+            panic(context);                     \
+    } while(0)
+
     context->flags.read_main_file_on_init = true;
 
     try(context->main_error_exception)
     {
-        ASTProg_T ast = {};
+        ASTProg_T ast = {0};
         context->paths.main_src_file = input_file,  
         context->paths.target = output_file;
-        // TODO: init ast
 
         Pass_T passes[__CSP_MAX_PASSES] = {0};
 
         // construct passes
         i32 num_passes = construct_ast_passes(context, passes);
+        i32 error;
 
         for(i32 i = 0; i < num_passes; i++)
-        {
-            //printf("pass `%s` (%d/%d)\n", passes[i].desc, i, num_passes);
-            i32 error = passes[i].func(context, &ast);
-            if(error || context->emitted_errors)
-                panic(context);
-        }
-        IR_T ir = {};
-        i32 error = normalization_pass(context, &ast, &ir);
-        if(error || context->emitted_errors)
-            panic(context);
+            HANDLE_ERR(passes[i].func(context, &ast));
+        
+        IR_T ir = {0}; 
+        HANDLE_ERR(normalization_pass(context, &ast, &ir));
 
-        dbg_print_ir(&ir, IR_PRINT_FUNC);
+        const char* object_filepath;
+        HANDLE_ERR(codegen_pass(context, &ir, output_file, &object_filepath));
 
-        error = codegen_pass(context, &ir);
-        if(error || context->emitted_errors)
-            panic(context);
+        if(context->flags.do_linking)
+            HANDLE_ERR(linker_pass(context, output_file, object_filepath));
 
         cleanup_pass(context, &ast);
     }
     catch {
         get_panic_handler()(context);
     }
+
+#undef HANDLE_ERR
+
 }
 
 i32 initialization_pass(Context_T* context, ASTProg_T* ast)

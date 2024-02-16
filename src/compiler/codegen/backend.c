@@ -7,7 +7,7 @@
 const Backend_T COMPILER_BACKENDS[] = {
     #undef HEADER_DEFS_ONLY
     #include "backends/handlers.h"
-    {NULL}
+    {0}
 };
 
 const Backend_T* find_backend(const char* name)

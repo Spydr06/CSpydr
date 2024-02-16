@@ -45,7 +45,7 @@ void codegen_write_u16(CodegenData_T* c, u16 val);
 void codegen_write_u32(CodegenData_T* c, u32 val);
 void codegen_write_u64(CodegenData_T* c, u64 val);
 
-i32 codegen_pass(Context_T* context, IR_T* ir);
+i32 codegen_pass(Context_T* context, IR_T* ir, const char* target, const char** object_path);
 
 #endif
 

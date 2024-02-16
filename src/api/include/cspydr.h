@@ -64,7 +64,7 @@ typedef struct CSPYDR_ALLOCATOR_STRUCT CSpydrAllocator_T;
 typedef union CSPYDR_FLAGS_STRUCT {
     struct {
         bool silent : 1;
-        bool print_code : 1;
+        bool verbose : 1;
         bool optimize : 1;
         bool embed_debug_info : 1;
         bool from_json : 1;

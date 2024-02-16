@@ -5,6 +5,7 @@
 #include "config.h"
 #include "context.h"
 #include "error/error.h"
+#include "ir/debug.h"
 #include "ir/ir.h"
 #include "list.h"
 #include "parser/typechecker.h"
@@ -82,7 +83,11 @@ int normalization_pass(Context_T* context, ASTProg_T* ast, IR_T* ir)
 
     ast_iterate(&iter, ast, &normalizer);
 
- //   free_list(ir->types);
+    if(context->flags.verbose)
+    {
+        LOG_INFO(COLOR_BOLD_MAGENTA ">> IR Normalization:\n" COLOR_RESET);
+        dbg_print_ir(ir, IR_PRINT_FUNC);
+    }
 
     return 0;
 }

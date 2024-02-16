@@ -18,15 +18,19 @@ extern const BackendCallbacks_T X86_64_GAS_CALLBACKS;
     "c99",
     ARCH_ANY,
     PLATFORM_ANY,
+    OUTPUT_FORMAT_TEXT,
     true,
     &C99_CALLBACKS,
+    ".c",
 },
 {
     "x86_64-gas",
     ARCH_X86_64,
     PLATFORM_LINUX,
+    OUTPUT_FORMAT_TEXT,
     true,
     &X86_64_GAS_CALLBACKS,
+    ".S",
 },
 
 #endif

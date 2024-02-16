@@ -113,7 +113,7 @@ const char help_text[] = "%s"
                        "  -o, --output [file]       | Sets the target output file\n"
                        "  -t, --target [target]     | Sets the target platform and architecture\n"
                        "  -b, --backend [backend]   | Instructs the compiler to use a certain backend\n"
-                       "      --print-code          | Prints the generated code\n"
+                       "      --verbose             | Verbose compiler output\n"
                        "      --silent              | Disables all command line output except error messages\n"
                        "      --cc [compiler]       | Sets the C compiler being used after transpiling (default: " DEFAULT_CC ")\n"
                        "      --cc-flags [flags]    | Adds flags passed to the C compiler when transpiling\n"
@@ -238,21 +238,24 @@ i32 main(i32 argc, char* argv[])
             }
             output_file = argv[i];
         }
-        else if(streq(arg, "--print-code"))
-            context.flags.print_code = true;
+        else if(streq(arg, "--verbose"))
+            context.flags.verbose = true;
         else if(streq(arg, "-b") || streq(arg, "--backend"))
         {
             if(!argv[++i])
             {
                 LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " Expect backend name after `--backend`.\n");
-                exit(1);
+                goto print_backends;
             }
             context.backend = find_backend(argv[i]);
             if(!context.backend)
             {
                 LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " Unknown backend `%s`, the following backends exist:\n", argv[i]);
+            
+            print_backends:;
+                const Backend_T* default_backend = target_default_backend(&context.target);
                 for(const Backend_T* backend = COMPILER_BACKENDS; backend->name; backend++)
-                    LOG_ERROR_F(COLOR_RED "    %s\n", backend->name);
+                    LOG_ERROR_F(COLOR_RED "    %s%s\n", backend->name, backend == default_backend ? " (default)" : "");
                 exit(1);
             }
         }

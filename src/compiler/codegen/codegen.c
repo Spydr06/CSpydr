@@ -1,8 +1,11 @@
 #include "codegen.h"
 #include "config.h"
+#include "error/error.h"
+#include "io/io.h"
 #include "io/log.h"
 #include "ir/ir.h"
 #include "backend.h"
+#include "timer/timer.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -63,18 +66,79 @@ CODEGEN_WRITE_FUNC(u16);
 CODEGEN_WRITE_FUNC(u32);
 CODEGEN_WRITE_FUNC(u64);
 
-i32 codegen_pass(Context_T* context, IR_T* ir)
+static void dump_generated_code(CodegenData_T* c)
 {
+    switch(c->context->backend->output_format)
+    {
+    case OUTPUT_FORMAT_TEXT:
+        fprintf(OUTPUT_STREAM, "%s", c->output.buf);
+        fflush(stdout);
+        break;
+    case OUTPUT_FORMAT_RAW:
+        // TODO: hexdump
+        break;
+    default:
+        unreachable();
+    }
+}
+
+i32 codegen_pass(Context_T* context, IR_T* ir, const char* target, const char** object_path)
+{
+    timer_start(context, "code generation");
+
     CodegenData_T c;
     init_codegen_data(&c, context, ir);
     c.b->begin_file(&c);    
-
     
-    c.b->finish_file(&c);
 
+    c.b->finish_file(&c); 
+    fclose(c.output.code_buffer);
+
+    if(context->flags.verbose)
+    {
+        LOG_INFO(COLOR_BOLD_MAGENTA ">> Code generation:\n" COLOR_RESET);
+        dump_generated_code(&c);
+    }
+
+    char* output_filepath = malloc(BUFSIZ * sizeof(char));
+    *output_filepath = '\0';
+    get_cached_file_path(output_filepath, target, context->backend->fileext);
+    
+    {
+        FILE* output_file = open_file(output_filepath);
+        fwrite(c.output.buf, c.output.buf_len, sizeof(u8), output_file);
+        fclose(output_file);
+    }
+
+    timer_stop(context);
+
+    char* object_filepath = NULL;
+    if(!context->flags.do_assembling)
+        goto finish;
+    
+    timer_start(context, "compiling");
+
+    object_filepath = output_filepath;
+    if(strcmp(context->backend->fileext, ".o") != 0)
+    {
+        if(!context->flags.silent)
+            LOG_INFO_F(COLOR_BOLD_BLUE "  Compiling " COLOR_RESET " %s\n", context->backend->name);
+
+        object_filepath = malloc(BUFSIZ * sizeof(char));
+        get_cached_file_path(object_filepath, target, ".o");
+
+        c.b->compile(&c, output_filepath, object_filepath);
+    }
+
+    timer_stop(context);
+
+finish:
+    if(object_filepath != output_filepath)
+        free(output_filepath);
+
+    *object_path = object_filepath;
+    
     free_codegen_data(&c);
-    printf("Codegen not implemented.\n");
-    exit(1);
     return 0;
 }
 

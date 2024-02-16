@@ -17,7 +17,7 @@ json_object* gen_ast_type(ASTType_T* type);
 
 i32 serializer_pass(Context_T* context, ASTProg_T* ast)
 {
-    ast_to_json(ast, context->paths.target, context->flags.print_code);
+    ast_to_json(ast, context->paths.target, context->flags.verbose);
     return 0;
 }
 
