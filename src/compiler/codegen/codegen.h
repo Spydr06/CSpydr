@@ -20,6 +20,7 @@ typedef struct CODEGEN_DATA_STRUCT {
 
     bool generate_debug_info;
     const BackendCallbacks_T* b;
+    struct BACKEND_DATA_STRUCT* b_data;
 } CodegenData_T;
 
 #ifdef __GNUC__

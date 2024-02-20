@@ -13,6 +13,9 @@ void ir_init(IR_T* ir, Context_T* context)
 
     ir->functions = init_list();
     CONTEXT_ALLOC_REGISTER(context, ir->functions);
+
+    ir->types = init_list();
+    CONTEXT_ALLOC_REGISTER(context, ir->types);
 }
 
 IRFunction_T* init_ir_function(Context_T* context, Token_T* tok, const char* mangled_id, bool is_extern, bool variadic, IRType_T* return_type)

@@ -33,16 +33,16 @@ static TypePair_T* new_type_pair(ASTType_T* ast_type, IRType_T* ir_type)
 static IRType_T* get_ir_type(Normalizer_T* n, ASTType_T* ast_type)
 {
     size_t i;
-    for(i = 0; i < n->types->size; i++)
+    for(i = 0; i < n->ir->types->size; i++)
     {
-        TypePair_T* pair = n->types->items[i];
+        TypePair_T* pair = n->ir->types->items[i];
         if(pair->ast_type == ast_type)
             return pair->ir_type;
     }
     
-    for(i = 0; i < n->types->size; i++)
+    for(i = 0; i < n->ir->types->size; i++)
     {
-        TypePair_T* pair = n->types->items[i];
+        TypePair_T* pair = n->ir->types->items[i];
         if(types_equal(n->context, pair->ast_type, ast_type))
             return pair->ir_type;
     }
@@ -145,6 +145,7 @@ static IRType_T* normalize_type(Normalizer_T* n, ASTType_T* type)
 
     ir_type = malloc(sizeof(struct IR_TYPE_STRUCT));
     list_push(n->types, new_type_pair(type, ir_type));
+    list_push(n->ir->types, ir_type);
 
     CONTEXT_ALLOC_REGISTER(n->context, (void*) ir_type);
 
@@ -185,6 +186,7 @@ static IRType_T* normalize_type(Normalizer_T* n, ASTType_T* type)
             field->id = member->id->callee;
             field->offset = member->offset;
             field->type = normalize_type(n, member->data_type);
+            list_push(ir_type->fields, field);
         }
         break;
     default:

@@ -236,9 +236,10 @@ void dbg_print_ir_function(IRFunction_T* func, IRDebugFilter_T filter)
         return;
     }
 
-    printf(" = do\n");
+    printf(" {\n");
     for(size_t i = 0; i < func->stmts->size; i++)
         dbg_print_ir_stmt(func->stmts->items[i]);
+    printf("}\n");
 }
 
 void dbg_print_ir_global(IRGlobal_T* global, IRDebugFilter_T filter)

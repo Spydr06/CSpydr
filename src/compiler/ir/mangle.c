@@ -20,7 +20,7 @@ size_t num_special_chars(const char* callee)
 
 char* mangle_identifier(Context_T* context, ASTIdentifier_T* ident)
 {
-    size_t mangled_len = 0;
+/*    size_t mangled_len = 0;
     for(ASTIdentifier_T* id = ident; id != NULL; id = id->outer)
         mangled_len += SPECIAL_CHAR_MANGLED_SIZE * 2 + strlen(id->callee) + num_special_chars(id->callee) * SPECIAL_CHAR_MANGLED_SIZE;
 
@@ -47,5 +47,6 @@ char* mangle_identifier(Context_T* context, ASTIdentifier_T* ident)
     
     CONTEXT_ALLOC_REGISTER(context, (void*) mangled);
 
-    return mangled;
+    return mangled;*/
+    return ident->callee;
 }

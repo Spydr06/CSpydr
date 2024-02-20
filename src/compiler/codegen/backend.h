@@ -5,12 +5,14 @@
 #include <stdbool.h>
 
 #define BACKEND_CALLBACK(backend, callback) backend##_##callback
-#define BACKEND_CALLBACKS_IMPL(backend)                                      \
+#define BACKEND_CALLBACKS_IMPL_EXT(backend)                                  \
     const BackendCallbacks_T backend##_CALLBACKS = ((BackendCallbacks_T) {   \
         .begin_file = backend##_begin_file,                                  \
         .finish_file = backend##_finish_file,                                \
-        .compile = backend##_compile,                                         \
+        .compile = backend##_compile,                                        \
     })
+
+#define BACKEND_CALLBACKS_IMPL(backend) BACKEND_CALLBACKS_IMPL_EXT(backend)
 
 typedef struct TARGET_STRUCT Target_T;
 typedef struct CODEGEN_DATA_STRUCT CodegenData_T;
