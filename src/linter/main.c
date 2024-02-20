@@ -178,10 +178,14 @@ i32 main(i32 argc, char* argv[])
     set_panic_handler(linter_panic_handler);
 
     if(is_live)
+    {
         live_session(&context, src_path, std_path, !default_yes);
+        summary(&context);
+    }
     else
     {
-        atexit(summary);
-        return lint(&context, src_path, std_path);
+        i32 exit_code = lint(&context, src_path, std_path);
+        summary(&context);
+        return exit_code;
     }
 }

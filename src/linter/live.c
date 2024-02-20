@@ -2,6 +2,7 @@
 #include "ast/ast.h"
 #include "config.h"
 #include "context.h"
+#include "error.h"
 #include "error/panic.h"
 
 #include <list.h>
@@ -12,10 +13,13 @@
 #include <memory.h>
 #include <stdlib.h>
 #include <time.h> 
+
 #ifdef CSPYDR_LINUX
     #include <sys/inotify.h>
     #include <sys/wait.h>
     #include <unistd.h>
+#else
+    #error "csp-lint does not support your current platform yet."
 #endif
 
 #define ERROR_MSG(str) COLOR_BOLD_RED "[Error] " COLOR_RESET COLOR_RED str COLOR_RESET
@@ -51,6 +55,7 @@ static void sigint_handler(int dummy /* unused */)
     if(prompt_on_quit && !question("\rDo you really want to quit?")) 
         return;
 
+    summary(__sighandler_context_ptr);
     cleanup(__sighandler_context_ptr);
     exit(0);
 }
