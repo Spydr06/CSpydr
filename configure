@@ -34,6 +34,7 @@ function show_help() {
     echo "      --prefix=PREFIX         install files in PREFIX [$PREFIX]"
     echo "      --exec-prefix=EPREFIX   install executables in PREFIX [$EXEC_PREFIX]"
     echo "      --build-prefix=BPREFIX  put build files in BPREFIX [$BUILD_PREFIX]"
+    echo "      --system-dynamic-linker use the system's dynamic linker [/usr/lib64/ld-linux-x86-64.so.2]"
     echo
 }
 
