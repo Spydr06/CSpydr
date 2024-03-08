@@ -32,6 +32,8 @@ static TypePair_T* new_type_pair(ASTType_T* ast_type, IRType_T* ir_type)
 
 static IRType_T* get_ir_type(Normalizer_T* n, ASTType_T* ast_type)
 {
+    assert(ast_type != NULL);
+
     size_t i;
     for(i = 0; i < n->ir->types->size; i++)
     {
@@ -518,6 +520,7 @@ static void normalize_function(ASTObj_T* func, va_list args)
     for(size_t i = 0; i < func->args->size; i++)
     {
         ASTObj_T* arg = func->args->items[i];
+        printf("%s: %d\n", arg->id->callee, arg->data_type->kind);
         IRParameter_T* ir_param = init_ir_parameter(n->context, n->locals_info.local_id++, normalize_type(n, arg->data_type));
         list_push(ir_func->params, ir_param);
     }

@@ -490,7 +490,12 @@ bool types_equal_strict(Context_T* context, ASTType_T* a, ASTType_T* b)
 
 bool types_equal(Context_T* context, ASTType_T* a, ASTType_T* b)
 {
-    if(!a || !b || a->kind != b->kind || a->is_constant != b->is_constant)
+    if(
+        !a ||
+        !b ||
+        a->kind != b->kind ||
+        a->is_constant != b->is_constant
+    )
         return false;
     
     switch(a->kind)

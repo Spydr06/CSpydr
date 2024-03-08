@@ -20,7 +20,7 @@ import "string.csp";
 import "fmt.csp";
 
 macro file(path) {
-    (::File::open((path), ::File::READ_WRITE))
+    (::std::File::open((path), ::std::File::READ_WRITE))
 }
 
 namespace std {
