@@ -15,8 +15,9 @@
 #include "timer/timer.h"
 #include "toolchain.h"
 #include "util.h"
+#include "generics.h"
 
-#include <asm-generic/errno-base.h>
+#include <errno.h>
 #include <assert.h>
 #include <ctype.h>
 #include <math.h>
@@ -144,7 +145,10 @@ i32 validator_pass(Context_T* context, ASTProg_T* ast)
     build_resolve_queue(&v, &queue);
     RETURN_IF_ERRORED(context);
     
-    // dbg_print_resolve_queue(&queue); 
+    dbg_print_resolve_queue(&queue); 
+    
+    resolve_generics(&v);
+    RETURN_IF_ERRORED(context);
 
     validate_semantics(&v, &queue);
     resolve_queue_free(&queue);
@@ -406,6 +410,20 @@ static void leave_function_scope(ASTObj_T* function, va_list args)
     end_scope(v);
 }
 
+static void enter_typedef_scope(ASTObj_T* tydef, va_list args)
+{
+    GET_VALIDATOR(args);
+    validator_push_obj(v, tydef);
+    begin_scope(v, tydef->generics);
+}
+
+static void leave_typedef_scope(ASTObj_T* tydef, va_list args)
+{
+    GET_VALIDATOR(args);
+    validator_pop_obj(v);
+    end_scope(v);
+}
+
 static void enter_type_scope(ASTType_T* type, va_list args)
 {
     GET_VALIDATOR(args);
@@ -596,15 +614,27 @@ static void validate_undef_type_ident(ASTType_T* type, va_list args)
     }
 
     ASTObj_T* found = result.obj;
-    if(found->kind != OBJ_TYPEDEF)
+    if(found->kind == OBJ_TYPEDEF)
+    {
+        type->base = found->data_type;
+        if(type->generic_params && type->generic_params->size != found->generics->size)
+            throw_error(v->context, ERR_TYPE_ERROR, type->tok, "typedef `%s` expects %zu generic arguments but got %zu.", type->id->callee, found->generics->size, type->generic_params->size);
+
+        if(found->generics->size == 0)
+            goto finish;
+
+        if(!type->generic_params)
+            throw_error(v->context, ERR_TYPE_ERROR, type->tok, "typedef `%s` expects %zu generic arguments but got none.", type->id->callee, found->generics->size);
+    }
+    else if(found->kind != OBJ_GENERIC)
     {
         throw_error(v->context, ERR_TYPE_ERROR_UNCR, type->tok, "%s `%s` is not a type", obj_kind_to_str(found->kind), type->id->callee);
         return;
     }
 
+finish:
     type->referenced_obj = found;
     type->id->outer = found->id->outer;
-    type->base = found->data_type;
 }
 
 static void validate_idents(Validator_T* v)
@@ -613,12 +643,14 @@ static void validate_idents(Validator_T* v)
         .obj_start_fns = {
             [OBJ_NAMESPACE] = enter_namespace_scope,
             [OBJ_FUNCTION] = enter_function_scope,
+            [OBJ_TYPEDEF] = enter_typedef_scope,
             [OBJ_GLOBAL] = push_global_var,
             [OBJ_LOCAL] = register_local_var,
         },
         .obj_end_fns = {
             [OBJ_NAMESPACE] = leave_namespace_scope,
             [OBJ_FUNCTION] = leave_function_scope,
+            [OBJ_TYPEDEF] = leave_typedef_scope,
             [OBJ_GLOBAL] = pop_global_var,
         },
         .node_start_fns = {
@@ -867,6 +899,9 @@ static void validate_obj_shallow(Validator_T* v, ASTObj_T* obj)
         break;
 
     case OBJ_TYPEDEF:
+        break;
+
+    case OBJ_GENERIC:
         break;
 
     default:
@@ -2089,6 +2124,7 @@ static void validate_obj_deep(Validator_T* v, ASTObj_T* obj)
             [TY_C_ARRAY] = iter_validate_c_array_type,
         },
         .type_end = iter_validate_type,
+        .ignore_generic_types = true,
     };
 
     ast_iterate_obj(&iter, obj, v);
@@ -2334,6 +2370,11 @@ static i32 get_type_size_impl(Validator_T* v, ASTType_T* type, List_T** struct_t
         case TY_TYPEOF:
             return get_type_size_impl(v, unpack(type->num_indices_node->data_type), struct_types);
         case TY_UNDEF:
+            if(type->referenced_obj->kind == OBJ_GENERIC)
+            {
+                unreachable();
+                return 0;
+            }
             return get_type_size_impl(v, unpack(type), struct_types);
         case TY_C_ARRAY:
             if(type->num_indices == 0)

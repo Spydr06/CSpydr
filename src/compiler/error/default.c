@@ -9,7 +9,7 @@
 #include <string.h>
 #include <stdio.h>
 
-static void print_current_fn(Context_T* context) {
+static void print_current_obj(Context_T* context) {
     static ASTObj_T* last_obj = NULL; // remember the last function to eliminate duplication in multiple errors of the same function
     if(context->current_obj && *context->current_obj && *context->current_obj != last_obj) 
     {
@@ -18,7 +18,7 @@ static void print_current_fn(Context_T* context) {
             ERR_OUTPUT_STREAM,
             COLOR_MAGENTA "In %s " COLOR_BOLD_MAGENTA "%s%s" COLOR_RESET COLOR_MAGENTA ":\n" COLOR_RESET,
             obj_kind_to_str((*context->current_obj)->kind),
-            ast_id_to_str(buf, (*context->current_obj)->id, LEN(buf)),
+            (*context->current_obj)->id ? ast_id_to_str(buf, (*context->current_obj)->id, LEN(buf)) : "definition",
             (*context->current_obj)->kind == OBJ_FUNCTION ? "()" : ""
         );
         last_obj = *context->current_obj;
@@ -38,7 +38,7 @@ void default_error_handler(Context_T* context, ErrorType_T ty, Token_T* tok, con
     }
 
     const char err_tmp1[] = COLOR_BOLD_WHITE "%s:%ld:%ld"    // file, line and character
-                            COLOR_RESET " => %s[%s]" // type of the error
+                            COLOR_RESET " => %s[%s]"         // type of the error
                             COLOR_RESET ": ";                // before the error message
     const char err_tmp2[] = COLOR_RESET "\n"                 // after the error message
                             " %*d | %s %s"                   // the line number and source code line
@@ -55,9 +55,9 @@ void default_error_handler(Context_T* context, ErrorType_T ty, Token_T* tok, con
     u32 character = tok->pos + 1;
 
     // print the error
-    print_current_fn(context);
+    print_current_obj(context);
 
-    fprintf(ERR_OUTPUT_STREAM, err_tmp1, source_file_path, (long) line, (long) character, is_error ? COLOR_BOLD_RED : COLOR_BOLD_YELLOW, error_str);
+    fprintf(ERR_OUTPUT_STREAM, err_tmp1, source_file_path, (long) line, (long) character, is_error ? COLOR_BOLD_RED : COLOR_BOLD_YELLOW, error_str );
     vfprintf(ERR_OUTPUT_STREAM, format, args);
     fprintf(ERR_OUTPUT_STREAM, err_tmp2, ERR_LINE_NUMBER_SPACES, line, src_line, src_line[strlen(src_line) - 1] == '\n' ? "" : "\n ", 
             ERR_LINE_NUMBER_SPACES, "", (int) (character - strlen(tok->value) - trim_offset), "");

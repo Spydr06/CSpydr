@@ -35,7 +35,7 @@ typedef struct VALIDATOR_STRUCT
 
     bool need_exact_type_infos;
     List_T* exact_type_info_stack;
-        
+
     ASTNode_T* current_pipe;
 
     u32 scope_depth;  // depth of the current scope

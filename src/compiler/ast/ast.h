@@ -197,6 +197,7 @@ struct AST_TYPE_STRUCT
         u8 flags;
     };
 
+    ASTObj_T* referenced_obj;
     union {
         // functions
         List_T* arg_types;  // list of ASTType_Ts
@@ -207,7 +208,9 @@ struct AST_TYPE_STRUCT
 
         // enums, structs
         List_T* members;    // list of ASTNode_Ts
-        ASTObj_T* referenced_obj;
+
+        // undef types
+        List_T* generic_params;
     };
 
     u64 num_indices;
@@ -246,6 +249,7 @@ struct AST_OBJ_STRUCT
     List_T* args;
     List_T* objs;
     List_T* deferred;
+    List_T* generics;
 
     // functions
     ASTType_T* return_type;

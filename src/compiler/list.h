@@ -27,5 +27,6 @@ void list_insert(List_T* list, void* item, size_t index);
 void* list_last(List_T* list);
 void list_clear(List_T* list);
 size_t list_contains(List_T* list, void* item);
+bool list_any(List_T* list, bool (*func)(void* item));
 
 #endif

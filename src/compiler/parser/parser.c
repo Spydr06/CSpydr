@@ -2,6 +2,7 @@
 
 #include "ast/ast.h"
 #include "c_parser/c_parser.h"
+#include "context.h"
 #include "hashmap.h"
 #include "io/file.h"
 #include "util.h"
@@ -841,6 +842,18 @@ static ASTType_T* parse_type(Parser_T* p)
             default:
                 type = init_ast_type(&p->context->raw_allocator, TY_UNDEF, p->tok);
                 type->id = parse_identifier(p);
+                if(is_operator(p->tok, "<"))
+                {
+                    type->generic_params = init_list();
+                    parser_advance(p);
+
+                    do {
+                        list_push(type->generic_params, parse_type(p));
+                        if(!is_operator(p->tok, ">"))
+                            parser_consume(p, TOKEN_COMMA, "expect `,` between generic parameters");
+                    } while(!is_operator(p->tok, ">"));
+                    parser_advance(p);
+                }
                 break;
         }
     }
@@ -888,11 +901,32 @@ parse_array_ty:
 
 static ASTObj_T* parse_global(Parser_T* p);
 
+static ASTObj_T* parse_generic(Parser_T* p)
+{
+    ASTObj_T* generic = init_ast_obj(&p->context->raw_allocator, OBJ_GENERIC, p->tok);
+    generic->id = parse_simple_identifier(p);
+    return generic;
+}
+
 static ASTObj_T* parse_typedef(Parser_T* p)
 {
     ASTObj_T* tydef = init_ast_obj(&p->context->raw_allocator, OBJ_TYPEDEF, p->tok);
     parser_consume(p, TOKEN_TYPE, "expect `type` keyword for typedef");
 
+    tydef->generics = init_list();
+    CONTEXT_ALLOC_REGISTER(p->context, tydef->generics);
+    if(is_operator(p->tok, "<"))
+    {
+        parser_advance(p);
+        do {
+            list_push(tydef->generics, parse_generic(p));
+            if(!is_operator(p->tok, ">"))
+                parser_consume(p, TOKEN_COMMA, "expect `,` between generic parameters");
+        }
+        while(!is_operator(p->tok, ">"));
+        parser_advance(p);
+    }
+ 
     ASTObj_T* last_obj = p->cur_obj;
     p->cur_obj = tydef;
 

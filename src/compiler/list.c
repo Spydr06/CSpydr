@@ -119,3 +119,11 @@ void list_foreach_s(List_T* list, void (*func)(size_t, void*))
     for(size_t i = 0; i < list->size; i++)
         func(i, list->items[i]);
 }
+
+bool list_any(List_T* list, bool (*func)(void* item))
+{
+    for(size_t i = 0; i < list->size; i++)
+        if(func(list->items[i]))
+            return true;
+    return false;
+}

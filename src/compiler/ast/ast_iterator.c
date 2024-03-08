@@ -67,7 +67,7 @@ static void ast_obj(const ASTIteratorList_T* list, ASTObj_T* obj, va_list custom
 {
     if(!obj)
         return;
-    
+
     list_fn(list->obj_start_fns[obj->kind], obj, custom_args);
     switch(obj->kind)
     {
@@ -98,6 +98,8 @@ static void ast_obj(const ASTIteratorList_T* list, ASTObj_T* obj, va_list custom
 
         case OBJ_TYPEDEF:
             ast_id(list, true, obj->id, custom_args);
+            if(list->ignore_generic_types && obj->generics && obj->generics->size > 0)
+                break;
             ast_type(list, obj->data_type, custom_args);
             break;
 
@@ -431,6 +433,10 @@ static void ast_type(const ASTIteratorList_T* list, ASTType_T* type, va_list cus
         case TY_CHAR:
         case TY_VOID:
         case TY_UNDEF:
+            if(type->generic_params)
+                for(size_t i = 0; i < type->generic_params->size; i++)
+                    ast_type(list, type->generic_params->items[i], custom_args);
+
             list_fn(list->type_fns[type->kind], type, custom_args);
             break;
         

@@ -3,6 +3,7 @@
 
 #include "codegen/codegen_utils.h"
 #include "config.h"
+#include "list.h"
 #include "memory/allocator.h"
 #include "optimizer/constexpr.h"
 #include "types.h"
@@ -93,6 +94,8 @@ const char* obj_kind_to_str(ASTObjKind_T kind)
             return "namespace";
         case OBJ_ENUM_MEMBER:
             return "enum member";
+        case OBJ_GENERIC:
+            return "generic";
         case OBJ_LAMBDA:
             return "lambda function";
         default:

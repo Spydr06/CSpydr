@@ -5,9 +5,9 @@ OBJECTS := $(patsubst %, $(BUILD_PREFIX)/compiler/%.o, $(SOURCES))
 
 VERSION_HEADER := version.h
 
-$(CSPC): $(OBJECTS)
+$(CSPC): $(LIBCSPC)
 	@$(MKDIR) -p $(@D)
-	$(LD) $^ -o $@ $(LDFLAGS)
+	$(LD) $^ $(filter %/main.c.o, $(OBJECTS)) -MMD -MP -MF "$(@:%.o=%.d)" -o $@ $(LDFLAGS)
 	
 $(LIBCSPC): $(OBJECTS)
 	@$(MKDIR) -p $(@D)
