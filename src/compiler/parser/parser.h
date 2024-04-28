@@ -16,6 +16,7 @@ Token_T* parser_peek(Parser_T* p, i32 level);
 bool tok_is(Parser_T* p, TokenType_T type);
 
 void parse_obj(Parser_T* p, List_T* obj_list);
+ASTObj_T* parse_extern_def(Parser_T *p, bool is_extern_c);
 
 CParser_T* parser_get_c_header_parser(Parser_T* p);
 ASTObj_T* parser_get_current_obj(Parser_T* p);

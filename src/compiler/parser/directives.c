@@ -205,7 +205,7 @@ DirectiveData_T* directive_data(const Directive_T* directive, Token_T* name_toke
 
 static DirectiveData_T* parse_directive(Parser_T* p);
 
-void parse_directives(Parser_T* p, List_T* objects)
+void parse_directives(Parser_T* p, List_T* objects, bool in_extern_block, bool is_extern_c)
 {
     parser_consume(p, TOKEN_LBRACKET, "expect `[` for compiler directive");
     List_T* directives = init_list();
@@ -229,7 +229,10 @@ void parse_directives(Parser_T* p, List_T* objects)
         goto eval;
 
     size_t old_obj_list_size = objects->size;
-    parse_obj(p, objects);
+    if(in_extern_block)
+        list_push(objects, parse_extern_def(p, is_extern_c));  
+    else
+        parse_obj(p, objects);
     if(objects->size == old_obj_list_size)
         throw_error(parser_context(p), ERR_UNDEFINED, parser_peek(p, 0), "directive `%s` requires an object [const, fn, type, namespace] after `]`");
 

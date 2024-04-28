@@ -4,6 +4,6 @@
 #include "list.h"
 #include "parser/parser.h"
 
-void parse_directives(Parser_T* parser, List_T* objects);
+void parse_directives(Parser_T* parser, List_T* objects, bool in_extern_block, bool is_extern_c);
 
 #endif

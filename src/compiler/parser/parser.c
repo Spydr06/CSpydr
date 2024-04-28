@@ -907,7 +907,7 @@ static ASTObj_T* parse_typedef(Parser_T* p)
     return tydef;
 }
 
-static ASTObj_T* parse_extern_def(Parser_T *p, bool is_extern_c)
+ASTObj_T* parse_extern_def(Parser_T *p, bool is_extern_c)
 {
     switch(p->tok->type)
     {
@@ -926,8 +926,7 @@ static ASTObj_T* parse_extern_def(Parser_T *p, bool is_extern_c)
         case TOKEN_FN:
         {
             ASTObj_T* ext_fn = parse_fn_def(p);
-            if(tok_is(p, TOKEN_SEMICOLON))
-                parser_advance(p);
+            parser_consume(p, TOKEN_SEMICOLON, "expect `;` after `extern fn` function declaration");
             ext_fn->is_extern = true;
             ext_fn->is_extern_c = is_extern_c;
 
@@ -936,7 +935,7 @@ static ASTObj_T* parse_extern_def(Parser_T *p, bool is_extern_c)
         case TOKEN_LBRACKET:
         {
             List_T* dummy = init_list();
-            parse_directives(p, dummy);
+            parse_directives(p, dummy, true, is_extern_c);
 
             if(dummy->size)
             {
@@ -1215,7 +1214,7 @@ void parse_obj(Parser_T* p, List_T* obj_list)
             parse_namespace(p, obj_list);
             break;
         case TOKEN_LBRACKET:
-            parse_directives(p, obj_list);
+            parse_directives(p, obj_list, false, false);
             break;
         default:
             throw_error(p->context, ERR_SYNTAX_ERROR, p->tok, "unexpected token `%s`, expect [import, type, let, const, fn]", p->tok->value);
