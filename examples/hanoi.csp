@@ -1,0 +1,66 @@
+import "std.csp";
+
+const num_discs: i32 = 6;
+
+type Disc: i32;
+type Peg: Disc[num_discs];
+
+fn main(): i32 {
+    let pegs = [
+        [6, 5, 4, 3, 2, 1],
+        [0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0]
+    ];
+
+    hanoi(num_discs, pegs, 0, 1, 2);
+    print_pegs(pegs);
+
+    <- 0;        
+}
+
+fn peg_len(peg: &Peg): i32 {
+    for let i = 0; i < len *peg; i++;
+        do ret i unless (*peg)[i];
+    <- len *peg;
+}
+
+namespace __static {
+    let moves: i32 = 0;
+}
+
+fn move(pegs: Peg[], from: i32, to: i32) {
+    print_pegs(pegs);
+    std::io::printf("move %i: from %c to %c\n", __static::moves += 1, from: char + 'A', to: char + 'A');
+
+    let i = peg_len(&pegs[from]) - 1;
+    let j = peg_len(&pegs[to]);
+    pegs[to][j] = pegs[from][i];
+    pegs[from][i] = 0;
+}
+
+fn hanoi(n: i32, pegs: Peg[], from: i32, to: i32, aux: i32) {
+    match n {
+        0 => noop;
+        1 => move(pegs, from, to);
+        _ => {
+            hanoi(n - 1, pegs, from, aux, to);
+            move(pegs, from, to);
+            hanoi(n - 1, pegs, aux, to, from);
+        }
+    }
+}
+
+fn print_pegs(pegs: Peg[]) {
+    using std::io;
+
+    for let i = 0; i < len pegs; i++; {
+        printf("%c: ", i: char + 'A');
+        for let j = 0; j < len pegs[i]; j++; {
+            do continue unless pegs[i][j];
+            printf("%i ", pegs[i][j]);
+        }
+        putc('\n'); 
+    }
+
+    putc('\n');
+}
