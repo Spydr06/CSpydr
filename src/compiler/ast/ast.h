@@ -7,6 +7,7 @@
 
 #include "list.h"
 #include "lexer/token.h"
+#include "util.h"
 
 #define __CSPYDR_INTERNAL_USE
 #include "../../api/include/cspydr.h"
@@ -27,6 +28,8 @@ typedef struct AST_NODE_STRUCT         ASTNode_T;
 typedef struct AST_IDENTIFIER_STRUCT   ASTIdentifier_T;
 typedef struct AST_TYPE_STRUCT         ASTType_T;
 typedef struct AST_OBJ_STRUCT          ASTObj_T;
+typedef struct AST_VTABLE_STRUCT       ASTVTable_T;
+typedef struct AST_IMPL_STRUCT         ASTImpl_T;
 
 typedef enum UNPACK_MODE {
     UMODE_NONE = 0b00,
@@ -210,6 +213,8 @@ struct AST_TYPE_STRUCT
         ASTObj_T* referenced_obj;
     };
 
+    List_T* vtables;
+
     u64 num_indices;
 } __attribute__((packed));
 
@@ -236,7 +241,8 @@ struct AST_OBJ_STRUCT
             bool after_main     : 1;
             bool before_main    : 1;
             bool constexpr      : 1;
-            u8 __unused__       : 4;
+            bool interface_func : 1;
+            u8 __unused__       : 3;
         };
         u16 flags;
     };
@@ -254,6 +260,7 @@ struct AST_OBJ_STRUCT
     ASTObj_T* alloca_bottom;
     ASTObj_T* va_area;
     ASTObj_T* return_ptr;
+    ASTType_T* dyn_base_type;
     const char* exported;
 } __attribute__((packed));
 
@@ -271,6 +278,8 @@ typedef struct AST_PROG_STRUCT
 
     List_T* files;
     List_T* tokens;
+
+    List_T* impls;
 
     List_T* tuple_structs;
     List_T* type_exit_fns;

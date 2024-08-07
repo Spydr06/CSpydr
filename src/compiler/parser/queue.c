@@ -162,7 +162,6 @@ static void resolve_obj_enqueue(Validator_T* v, ResolveQueue_T* queue, ASTObj_T*
         }
 
         iter.iterate_only_objs = false;
-
     }
     else
     {

@@ -45,6 +45,7 @@ EVAL_FN(env_ne);
 EVAL_FN(export);
 EVAL_FN(flag);
 EVAL_FN(immutable);
+EVAL_FN(impl);
 EVAL_FN(include_c);
 EVAL_FN(include_c_dir);
 EVAL_FN(link_dir);

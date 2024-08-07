@@ -1,5 +1,6 @@
 #include "validator.h"
 #include "ast/ast_iterator.h"
+#include "ast/vtable.h"
 #include "codegen/codegen_utils.h"
 #include "config.h"
 #include "context.h"
@@ -850,6 +851,31 @@ static void validate_data_type(Validator_T* v, ASTType_T* type)
         validate_return_type(v, unpack(type->base), type->tok);
 }
 
+static void validate_dyn_function(Validator_T* v, ASTObj_T* obj)
+{
+    ASTType_T* interface = obj->dyn_base_type;
+    if(unpack(interface)->kind != TY_INTERFACE) {
+        throw_error(v->context, ERR_TYPE_ERROR_UNCR, obj->tok, "`dyn()` parameter is not a type of kind `interface`");
+        return;
+    }
+
+    if(obj->args->size < 1) {
+        throw_error(v->context, ERR_TYPE_ERROR_UNCR, obj->tok, "`dyn()` function requires at least one argument");
+        return;
+    }
+
+    ASTObj_T* self_arg = obj->args->items[0];
+    ASTType_T* self_arg_type = unpack(self_arg->data_type);
+    if(self_arg_type->kind != TY_PTR) {
+        throw_error(v->context, ERR_TYPE_ERROR_UNCR, obj->tok, "`dyn()` function requires first argument to be a pointer to the dynamic implementation targeted type");
+        return;
+    }
+
+    ASTType_T* impl_base = self_arg_type->base;
+
+    vtable_register(v->context, v->ast, interface, impl_base, obj);
+}
+
 static void validate_obj_shallow(Validator_T* v, ASTObj_T* obj)
 {
     switch(obj->kind)
@@ -889,7 +915,7 @@ static void validate_function(Validator_T* v, ASTObj_T* fn)
         validate_main_fn(v, fn);
     }
 
-    if(v->context->ct == CT_ASM && fn->return_type->size > 16)
+    if(v->context->ct == CT_ASM && fn->return_type->size > 16 && fn->body)
     {
         fn->return_ptr = init_ast_obj(&v->context->raw_allocator, OBJ_LOCAL, fn->return_type->tok);
         fn->return_ptr->data_type = init_ast_type(&v->context->raw_allocator, TY_PTR, fn->return_type->tok);
@@ -898,13 +924,13 @@ static void validate_function(Validator_T* v, ASTObj_T* fn)
         fn->return_ptr->data_type->align = 8;
     }
 
-    if(unpack(fn->return_type)->kind != TY_VOID && !fn->is_extern && !stmt_returns_value(v, fn->body))
+    if(fn->body && unpack(fn->return_type)->kind != TY_VOID && !fn->is_extern && !stmt_returns_value(v, fn->body))
         throw_error(v->context, ERR_NORETURN, fn->tok, "function `%s` does not return a value", fn->id->callee);
 
     for(size_t i = 0; i < fn->args->size; i++)
     {
         ASTObj_T* arg = fn->args->items[i];
-        if(!arg->referenced && !fn->is_extern && !fn->ignore_unused && arg->id->callee[0] != '_')
+        if(!arg->referenced && !fn->is_extern && fn->body && !fn->ignore_unused && arg->id->callee[0] != '_')
             throw_error(v->context, ERR_UNUSED, arg->tok, "unused function argument `%s`, prefix with `_` to disable this warning", arg->id->callee);
     }
 
@@ -922,6 +948,12 @@ static void iter_leave_function(ASTObj_T* fn, va_list args)
 {
     GET_VALIDATOR(args);
     validate_function(v, fn);
+
+    if(fn->dyn_base_type) {
+        validate_dyn_function(v, fn);
+        fn->referenced = true;
+    }
+
     validator_pop_obj(v);
 
     typecheck_obj(&v->typechecker, fn);
@@ -1186,6 +1218,9 @@ static void iter_validate_call(ASTNode_T* call, va_list args)
         else
             call->data_type = (ASTType_T*) primitives[TY_VOID];
         call->called_obj = call->expr->referenced_obj;
+        if(call->expr->kind == ND_MEMBER && call->expr->body && call->expr->body->referenced_obj && call->expr->body->referenced_obj->interface_func) {
+            list_insert(call->args, call->expr->left, 0);
+        }
         break;
     default:
         {
@@ -1310,20 +1345,36 @@ static ASTNode_T* find_member_in_struct(Validator_T* v, ASTType_T* type, ASTNode
     }
 
     type = unpack(type);
-    if(type->kind != TY_STRUCT)
-    {
-        char* buf = malloc(BUFSIZ * sizeof(char));
-        *buf = '\0';
-        throw_error(v->context, ERR_TYPE_ERROR, id->tok, "cannot get member of type `%s`", ast_type_to_str(v->context, buf, type, BUFSIZ));
-        free(buf);
-        return NULL;
-    }
-
-    for(size_t i = 0; i < type->members->size; i++)
-    {
-        ASTNode_T* member = type->members->items[i];
-        if(strcmp(member->id->callee, id->id->callee) == 0)
-            return member;
+    switch(type->kind) {
+        case TY_INTERFACE:
+            for(size_t i = 0; i < type->func_decls->size; i++)
+            {
+                ASTObj_T* func_decl = type->func_decls->items[i];
+                if(strcmp(func_decl->id->callee, id->id->callee) == 0) {
+                    ASTNode_T* member = init_ast_node(&v->context->raw_allocator, ND_ID, id->tok);
+                    member->id = id->id;
+                    member->referenced_obj = func_decl;
+                    member->data_type = func_decl->data_type;
+                    return member;
+                }
+            }
+            break;
+        case TY_DYN:
+            return find_member_in_struct(v, type->base, id);
+        case TY_STRUCT:
+            for(size_t i = 0; i < type->members->size; i++)
+            {
+                ASTNode_T* member = type->members->items[i];
+                if(strcmp(member->id->callee, id->id->callee) == 0)
+                return member;
+            }
+            break;
+        default: {
+            char* buf = malloc(BUFSIZ * sizeof(char));
+            *buf = '\0';
+            throw_error(v->context, ERR_TYPE_ERROR, id->tok, "cannot get member of type `%s`", ast_type_to_str(v->context, buf, type, BUFSIZ));
+            free(buf);
+        } 
     }
 
     return NULL;
@@ -1352,7 +1403,7 @@ static void iter_validate_member(ASTNode_T* member, va_list args)
     member->data_type = found->data_type;
     member->body = found;
 
-    if(is_ptr(member->left->data_type))
+    if(found->kind == ND_STRUCT_MEMBER && is_ptr(member->left->data_type))
     {
         // convert x->y to (*x).y
         ASTNode_T* new_left = init_ast_node(&v->context->raw_allocator, ND_DEREF, member->left->tok);
@@ -1907,6 +1958,19 @@ static void iter_validate_char_lit(ASTNode_T* ch, va_list args)
     ch->int_val = c;
 }
 
+static void iter_validate_sizeof(ASTNode_T* expr, va_list args)
+{
+    GET_VALIDATOR(args);
+
+    ASTType_T* exp = unpack(expr->the_type);
+    if(is_prototype(exp)) {
+        char* buf = malloc(BUFSIZ * sizeof(char));
+        *buf = '\0';
+        CONTEXT_ALLOC_REGISTER(v->context, (void*) buf);
+        throw_error(v->context, ERR_TYPE_ERROR_UNCR, expr->tok, "cannot get size of proto-type `%s`", ast_type_to_str(v->context, buf, expr->the_type, BUFSIZ - 1));
+    }
+}
+
 static void iter_validate_type_expr(ASTNode_T* cmp, va_list args)
 {
      GET_VALIDATOR(args);
@@ -2000,10 +2064,11 @@ static void iter_validate_type_expr(ASTNode_T* cmp, va_list args)
 }
 
 static void iter_validate_struct_type(ASTType_T* struct_type, va_list args);
-static void iter_validate_enum_type(ASTType_T* struct_type, va_list args);
-static void iter_validate_typeof_type(ASTType_T* struct_type, va_list args);
-static void iter_validate_array_type(ASTType_T* struct_type, va_list args);
-static void iter_validate_c_array_type(ASTType_T* struct_type, va_list args);
+static void iter_validate_enum_type(ASTType_T* enum_type, va_list args);
+static void iter_validate_typeof_type(ASTType_T* typeof_type, va_list args);
+static void iter_validate_array_type(ASTType_T* arrray, va_list args);
+static void iter_validate_c_array_type(ASTType_T* c_array, va_list args);
+static void iter_validate_dyn_type(ASTType_T* dyn_type, va_list args);
 static void iter_validate_type(ASTType_T* type, va_list args);
 
 static void validate_obj_deep(Validator_T* v, ASTObj_T* obj)
@@ -2079,6 +2144,7 @@ static void validate_obj_deep(Validator_T* v, ASTObj_T* obj)
             [ND_LAMBDA] = iter_leave_lambda,
             [ND_STR] = iter_validate_string_lit,
             [ND_CHAR] = iter_validate_char_lit,
+            [ND_SIZEOF] = iter_validate_sizeof,
             [ND_TYPE_EXPR] = iter_validate_type_expr,
         },
         .type_fns = {
@@ -2087,6 +2153,7 @@ static void validate_obj_deep(Validator_T* v, ASTObj_T* obj)
             [TY_TYPEOF] = iter_validate_typeof_type,
             [TY_ARRAY] = iter_validate_array_type,
             [TY_C_ARRAY] = iter_validate_c_array_type,
+            [TY_DYN] = iter_validate_dyn_type,
         },
         .type_end = iter_validate_type,
     };
@@ -2230,6 +2297,11 @@ static void iter_validate_enum_type(ASTType_T* enum_type, va_list args)
     }
 }
 
+static void iter_validate_dyn_type(ASTType_T* dyn_type, va_list args)
+{
+//    GET_VALIDATOR(args);
+}
+
 static i32 align_type(ASTType_T* ty)
 {
     switch(ty->kind)
@@ -2247,8 +2319,10 @@ static void iter_validate_type(ASTType_T* type, va_list args)
     GET_VALIDATOR(args);
     ASTType_T* exp = unpack(type);
 
-    type->size = get_type_size(v, exp);
-    type->align = align_type(exp);
+    if(exp->kind != TY_INTERFACE) {
+        type->size = get_type_size(v, exp);
+        type->align = align_type(exp);
+    }
     exp->align = type->align;
 }
 
@@ -2348,6 +2422,11 @@ static i32 get_type_size_impl(Validator_T* v, ASTType_T* type, List_T** struct_t
                 return get_union_size(type);
             else
                 return get_struct_size(v, type, struct_types);
+        case TY_INTERFACE:
+            throw_error(v->context, ERR_TYPE_ERROR_UNCR, type->tok, "cannot get size of type interface");
+            return 0;
+        case TY_DYN:
+            return PTR_S * 2; // vtable ptr + data ptr
         default:
             return 0;
     }

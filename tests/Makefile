@@ -3,7 +3,7 @@ include ../config.mk
 COMPILER_TESTS := $(BUILD_PREFIX)/tests/bin/compiler_tests
 STD_TESTS := $(BUILD_PREFIX)/tests/bin/std_tests
 
-LIB_ACUTEST_INCLUDE := lib
+ACUTEST_INCLUDE := lib
 
 SOURCES := $(shell $(FIND) compiler -name "*.c")
 OBJECTS := $(patsubst %, $(BUILD_PREFIX)/tests/%.o, $(SOURCES))

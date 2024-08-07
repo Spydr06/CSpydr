@@ -159,3 +159,9 @@ bool is_unsigned_integer_type(ASTType_T* ty)
         ty->kind == TY_U64
     );
 }
+
+bool is_prototype(ASTType_T* ty) {
+    return ty && (
+        ty->kind == TY_INTERFACE
+    );
+}

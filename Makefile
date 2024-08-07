@@ -61,6 +61,7 @@ test: all
 .PHONY:
 clean:
 	$(RM) -rf $(BUILD_PREFIX)
+	$(RM) -rf vgcore.*
 	$(MAKE) -C $(SRC_DIR)/compiler clean
 
 .PHONY:

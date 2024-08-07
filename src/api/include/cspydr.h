@@ -164,7 +164,8 @@ enum CSPYDR_TOKEN_TYPE {
     CSPYDR_TOKEN(USING),        // using
     CSPYDR_TOKEN(WHILE),        // while
     CSPYDR_TOKEN(WITH),         // with
-    CSPYDR_TOKEN(OPERATOR_KW),   // operator keyword
+    CSPYDR_TOKEN(DYN),          // dyn
+    CSPYDR_TOKEN(OPERATOR_KW),  // operator keyword
 
     CSPYDR_TOKEN(CURRENT_FN),   // special token for the __func__! macro
 
@@ -250,6 +251,9 @@ enum CSPYDR_AST_NODE_KIND_ENUM {
     CSPYDR_ND(CALL),    // x(y, z)
     CSPYDR_ND(INDEX),   // x[y]
     CSPYDR_ND(CAST),    // x:i32
+    CSPYDR_ND(DYNCAST),   // &any: dyn any
+    CSPYDR_ND(DYNUNCAST), // dyn any: &any
+    CSPYDR_ND(INTERFACE_CAST), // x:interface
 
     CSPYDR_ND(SIZEOF),  // sizeof x
     CSPYDR_ND(ALIGNOF), // alignof x
@@ -345,6 +349,8 @@ enum CSPYDR_AST_TYPE_KIND_ENUM {
     CSPYDR_TY(TYPEOF),  // typeof x
     CSPYDR_TY(TEMPLATE), // template types temporarily used during parsing
     CSPYDR_TY(INTERFACE),   // interface
+    
+    CSPYDR_TY(DYN), // dyn interface
     
     CSPYDR_TY(KIND_LEN)
 };

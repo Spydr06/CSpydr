@@ -3,6 +3,7 @@
 
 #include "codegen/codegen_utils.h"
 #include "config.h"
+#include "list.h"
 #include "memory/allocator.h"
 #include "optimizer/constexpr.h"
 #include "types.h"
@@ -61,9 +62,11 @@ void init_ast_prog(Context_T* context, ASTProg_T* prog, const char* main_file_pa
 
     prog->objs = init_list();
     prog->tuple_structs = init_list();
+    prog->impls = init_list();
 
     CONTEXT_ALLOC_REGISTER(context, prog->objs);
     CONTEXT_ALLOC_REGISTER(context, prog->tuple_structs);
+    CONTEXT_ALLOC_REGISTER(context, prog->impls);
 }
 
 void merge_ast_progs(ASTProg_T* dest, ASTProg_T* src)
@@ -162,6 +165,8 @@ const char* type_kind_to_str(ASTTypeKind_T kind)
             return "fn";
         case TY_INTERFACE:
             return "interface";
+        case TY_DYN:
+            return "dyn interface";
         case TY_UNDEF:
             return "<undefined>";
         default:
@@ -241,6 +246,10 @@ char* ast_type_to_str(Context_T* context, char* dest, const ASTType_T* ty, size_
             break;
         case TY_INTERFACE:
             strcat(dest, "interface {}");
+            break;
+        case TY_DYN:
+            strcat(dest, "dyn ");
+            ast_type_to_str(context, dest, ty->base, size);
             break;
         case TY_ENUM:
             strcat(dest, "enum");

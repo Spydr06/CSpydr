@@ -1,0 +1,37 @@
+import "std.csp";
+
+type ToString: interface {
+    fn to_string(self: &ToString): &const char
+};
+
+type Foo: struct {
+};
+
+namespace foo {
+    dyn(ToString) fn to_string(self: &Foo): &const char {
+        <- "Foo::{}";
+    }
+}
+
+type Bar: struct {
+    a: i32
+};
+
+namespace bar {
+    dyn(ToString) fn to_string(self: &Bar): &const char {
+        <- "Bar::{}";
+    }
+}
+
+fn main(): i32 {
+    let foo = Foo::{};
+    let bar = Bar::{};
+
+    print(&foo);
+    print(&bar);
+    <- 0;
+}
+
+fn print(a: dyn ToString) {
+    std::io::puts(a.to_string());
+}

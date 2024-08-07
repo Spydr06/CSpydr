@@ -25,6 +25,7 @@ const struct {
     {"continue", TOKEN_CONTINUE},
     {"defer", TOKEN_DEFER},
     {"do", TOKEN_DO},
+    {"dyn", TOKEN_DYN},
     {"else", TOKEN_ELSE},
     {"embed", TOKEN_EMBED},
     {"enum", TOKEN_ENUM},

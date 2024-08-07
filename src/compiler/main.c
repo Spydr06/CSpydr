@@ -414,9 +414,10 @@ static void evaluate_info_flags(Context_T* context, char* argv)
 
 static CompileType_T backend_opt(const char* arg)
 {
-    char* uppercase = malloc(strlen(arg) * sizeof(char));
-    for(size_t i = 0; i < strlen(arg) + 1; i++)
+    char* uppercase = malloc(strlen(arg) * sizeof(char) + 1);
+    for(size_t i = 0; i < strlen(arg); i++)
         uppercase[i] = toupper(arg[i]);
+    uppercase[strlen(arg)] = '\0';
 
     CompileType_T ct;
     if(streq(uppercase, "ASSEMBLY"))

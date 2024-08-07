@@ -73,6 +73,10 @@ static void ast_obj(const ASTIteratorList_T* list, ASTObj_T* obj, va_list custom
     {
         case OBJ_FUNCTION:
             ast_id(list, true, obj->id, custom_args);
+
+            if(obj->dyn_base_type)
+                ast_type(list, obj->dyn_base_type, custom_args);
+
             ast_type(list, obj->return_type, custom_args);
 
             for(size_t i = 0; i < obj->args->size; i++)
@@ -249,6 +253,7 @@ static void ast_node(const ASTIteratorList_T* list, ASTNode_T* node, va_list cus
                 ast_type(list, node->data_type, custom_args);
             break;
 
+        case ND_INTERFACE_CAST:
         case ND_CAST:
             ast_node(list, node->left, custom_args);
             if(node->data_type) 
@@ -436,7 +441,11 @@ static void ast_type(const ASTIteratorList_T* list, ASTType_T* type, va_list cus
         
         case TY_PTR:
             ast_type(list, type->base, custom_args);
-            list_fn(list->type_fns[TY_PTR], type, custom_args);
+            list_fn(list->type_fns[TY_PTR], type, custom_args);        
+            break;
+        case TY_DYN:
+            ast_type(list, type->base, custom_args);
+            list_fn(list->type_fns[TY_DYN], type, custom_args);
             break;
 
         case TY_C_ARRAY:
@@ -484,6 +493,12 @@ static void ast_type(const ASTIteratorList_T* list, ASTType_T* type, va_list cus
             list_fn(list->type_fns[TY_TYPEOF], type, custom_args);
             break;
         
+        case TY_INTERFACE:
+            for(size_t i = 0; i < type->func_decls->size; i++)
+                ast_obj(list, type->func_decls->items[i], custom_args);
+            list_fn(list->type_fns[TY_INTERFACE], type, custom_args);
+            break;
+
         default:
             // ignore
             break;

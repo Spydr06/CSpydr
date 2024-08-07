@@ -22,6 +22,7 @@
 #define VOID_S 1
 #define PTR_S  8
 #define ENUM_S 4
+#define DYN_S (PTR_S * 2) // vtable ptr + data ptr
 
 // a struct for a single index in the String-to-Type Map
 struct StrTypeIdx { 
@@ -42,6 +43,8 @@ ASTTypeKind_T get_datatype_from_str(char* str);
 ASTType_T* get_primitive_type(Allocator_T* alloc, char* type);
 bool check_type_compatibility(ASTType_T* a, ASTType_T* b);
 ASTType_T* ptr_to(Allocator_T* alloc, Token_T* tok, ASTType_T* base);
+
+bool is_prototype(ASTType_T* ty);
 bool is_signed_integer_type(ASTType_T* ty);
 bool is_unsigned_integer_type(ASTType_T* ty);
 

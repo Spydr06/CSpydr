@@ -1,8 +1,14 @@
 
-[include_c("stdio.h")]
+[link("c")]
+namespace foo {
+    extern "C" {
+        [export("exit")]
+        fn CExit(status: i32);
+    }
+}
 
 fn main(): i32 {
-    printf("Hello\n");
-    <- 0;
+    foo::CExit(69);
+    <- 1;
 }
 

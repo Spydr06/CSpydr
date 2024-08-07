@@ -55,7 +55,7 @@ hi def link cspydrPrimitiveType Type
 syn keyword cspydrStructure enum interface struct union
 hi def link cspydrStructure Structure
 
-syn keyword cspydrTypeModifier const embed extern let
+syn keyword cspydrTypeModifier dyn const embed extern let
 hi def link cspydrTypeModifier Statement
 
 syn match cspydrTypedef "[A-Z][a-zA-Z0-9?'_]*"

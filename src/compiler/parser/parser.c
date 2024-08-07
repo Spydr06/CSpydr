@@ -138,6 +138,8 @@ static ASTNode_T* parse_current_fn_token(Parser_T* p);
 static ASTType_T* parse_type(Parser_T* p);
 static ASTObj_T* parse_fn_def(Parser_T* p);
 
+static ASTObj_T* parse_dyn_fn(Parser_T* p);
+
 typedef struct {
     const char* operator;
     const PrefixParseFn_T pfn; 
@@ -716,7 +718,9 @@ static ASTType_T* parse_interface_type(Parser_T* p)
 
     while(!tok_is(p, TOKEN_RBRACE) && !tok_is(p, TOKEN_EOF))
     {
-        list_push(interface->func_decls, parse_fn_def(p));
+        ASTObj_T* func_decl = parse_fn_def(p);
+        func_decl->interface_func = true;
+        list_push(interface->func_decls, func_decl);
 
         if(!tok_is(p, TOKEN_RBRACE))
             parser_consume(p, TOKEN_COMMA, "expect `,` between interface functions");
@@ -837,6 +841,11 @@ static ASTType_T* parse_type(Parser_T* p)
                 type = init_ast_type(&p->context->raw_allocator, TY_TYPEOF, p->tok);
                 parser_advance(p);
                 type->num_indices_node = parse_expr(p, PREC_X_OF, TOKEN_SEMICOLON);
+                break;
+            case TOKEN_DYN:
+                type = init_ast_type(&p->context->raw_allocator, TY_DYN, p->tok);
+                parser_advance(p);
+                type->base = parse_type(p);
                 break;
             default:
                 type = init_ast_type(&p->context->raw_allocator, TY_UNDEF, p->tok);
@@ -1111,6 +1120,21 @@ static ASTObj_T* parse_fn(Parser_T* p)
     return fn;
 }
 
+static ASTObj_T* parse_dyn_fn(Parser_T* p)
+{
+    parser_consume(p, TOKEN_DYN, "expect `dyn`");
+    parser_consume(p, TOKEN_LPAREN, "expect `(` after `dyn`");
+    
+    ASTType_T* base_type = parse_type(p);
+
+    parser_consume(p, TOKEN_RPAREN, "expect `)` after implementation type");
+
+    ASTObj_T* fn = parse_fn(p);
+    fn->dyn_base_type = base_type;
+
+    return fn;
+}
+
 static ASTObj_T* parse_global(Parser_T* p)
 {
     ASTObj_T* global = init_ast_obj(&p->context->raw_allocator, OBJ_GLOBAL, p->tok);
@@ -1206,6 +1230,9 @@ void parse_obj(Parser_T* p, List_T* obj_list)
         case TOKEN_FN:
         case TOKEN_OPERATOR_KW:
             list_push(obj_list, parse_fn(p));
+            break;
+        case TOKEN_DYN:
+            list_push(obj_list, parse_dyn_fn(p));
             break;
         case TOKEN_EXTERN:  
             parse_extern(p, obj_list);

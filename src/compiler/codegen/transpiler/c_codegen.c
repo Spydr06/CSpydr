@@ -7,6 +7,7 @@
 #include <stdarg.h>
 #include <inttypes.h>
 #include <libgen.h>
+#include <assert.h>
 
 #include "config.h"
 #include "context.h"
@@ -23,6 +24,7 @@
 #include "util.h"
 #include "debugger/register.h"
 #include "timer/timer.h"
+#include "ast/vtable.h"
 
 #define ID_PREFIX  "__csp_"
 #define MAIN_FN_ID ID_PREFIX "main"
@@ -35,6 +37,7 @@
 static void c_gen_entry_point(CCodegenData_T* cg);
 static void c_gen_typedefs(CCodegenData_T* cg, List_T* objs);
 static void c_gen_structs(CCodegenData_T* cg, List_T* objs);
+static void c_gen_vtables(CCodegenData_T* cg, List_T* impls);
 static void c_gen_globals(CCodegenData_T* cg, List_T* objs);
 static void c_gen_function_definitions(CCodegenData_T* cg, List_T* objs);
 static void c_gen_functions(CCodegenData_T* cg, List_T* objs);
@@ -106,6 +109,11 @@ static const char c_header_text[] =
     "struct _lambda {\n"
     "  void** __args;\n"
     "  void(*__fn)(void** arguments, ...);\n"
+    "};\n"
+    "\n"
+    "struct _dyn {\n"
+    "  void* __data;\n"
+    "  const void* const* __vtable;\n"
     "};\n"
     "\n"
     "static const _Bool _false = 0;\n"
@@ -331,9 +339,10 @@ void c_gen_code(CCodegenData_T* cg, const char* target)
     c_gen_typedefs(cg, cg->ast->objs);
     c_gen_array_types(cg);
     c_gen_structs(cg, cg->ast->objs);
+    c_gen_function_definitions(cg, cg->ast->objs);
+    c_gen_vtables(cg, cg->ast->impls);
     c_gen_globals(cg, cg->ast->objs);
     c_gen_pipe_buffers(cg);
-    c_gen_function_definitions(cg, cg->ast->objs);
     c_gen_lambdas(cg);
     c_gen_functions(cg, cg->ast->objs);
     c_gen_entry_point(cg);
@@ -647,6 +656,38 @@ static void c_gen_structs(CCodegenData_T* cg, List_T* objs)
     }
 }
 
+static void c_gen_vtable(CCodegenData_T* cg, ASTType_T* base_type, ASTVTable_T* vtable) {
+    c_println(cg, "static const void* __vtable_%zu[] = {", vtable->id);
+
+    ASTType_T* interface = vtable->interface;
+    assert(interface->kind == TY_INTERFACE);
+
+    for(size_t i = 0; i < interface->func_decls->size; i++) {
+        ASTObj_T* decl = interface->func_decls->items[i];
+
+        ASTObj_T* impl = vtable_entry(vtable, decl->id->callee);
+        
+        if(impl)
+            c_println(cg, "  (void*) %s,", c_gen_identifier(cg->context, impl->id));
+        else {
+            // TODO: warn about unimplemented functions
+            c_println(cg, "  NULL,");
+        }
+    }
+
+    c_println(cg, "};\n");
+}
+
+static void c_gen_vtables(CCodegenData_T* cg, List_T* impls) {
+    for(size_t i = 0; i < impls->size; i++) {
+        ASTImpl_T* impl = impls->items[i];
+
+        for(size_t j = 0; j < impl->vtables->size; j++) {
+            c_gen_vtable(cg, impl->base_type, impl->vtables->items[j]);
+        }
+    }
+}
+
 static void c_hash_array(CCodegenData_T* cg, char buffer[BUFSIZ], ASTType_T* type)
 {
     ast_type_to_str(cg->context, buffer, type, BUFSIZ);
@@ -783,6 +824,12 @@ static void c_gen_type(CCodegenData_T* cg, ASTType_T* type, bool c_arr_as_ptr)
     case TY_ENUM:
         c_print(cg, "int");
         break;
+    case TY_INTERFACE:
+        c_print(cg, "void");
+        break;
+    case TY_DYN:
+        c_print(cg, "struct _dyn");
+        break;
     default:
         LOG_ERROR_F("cannot generate type %d\n", type->kind);
         break;
@@ -885,8 +932,8 @@ static void c_gen_function_declaration(CCodegenData_T* cg, ASTObj_T* obj)
     if(obj->return_type->kind == TY_STRUCT)
         c_gen_anon_struct_typedef(cg, obj->return_type);
 
-    if(cg->context->flags.embed_debug_info && obj->tok)
-        c_println(cg, "#line %zu \"%s\"", obj->tok->line + 1, obj->tok->source->path);
+//    if(cg->context->flags.embed_debug_info && obj->tok)
+//        c_println(cg, "#line %zu \"%s\"", obj->tok->line + 1, obj->tok->source->path);
 
     c_print(cg, obj->is_extern || obj->exported ? "extern " : "static ");
     
@@ -1254,6 +1301,23 @@ static void c_gen_unpack_arg(CCodegenData_T* cg, ASTNode_T* arg)
     }
 }
 
+static ssize_t get_vtable_index(CCodegenData_T* cg, ASTType_T* interface, const char* ident, ASTObj_T** obj) {
+    interface = unpack(interface);
+
+    for(size_t i = 0; i < interface->func_decls->size; i++) {
+        ASTObj_T* func = interface->func_decls->items[i];
+        if(strcmp(func->id->callee, ident) == 0) {
+            if(obj)
+                *obj = func;
+            return i;
+        }
+    }
+
+    unreachable();
+    assert(false);
+    return -1;
+}
+
 static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node, bool with_casts)
 {
     bool cast_to_int = false;
@@ -1405,8 +1469,8 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node, bool with_casts)
             c_print(cg, "}}");
         } break;
         case ND_STRUCT:
-           // if(with_casts)
-           // {
+            // if(with_casts)
+            // {
                 if(node->data_type->kind == TY_UNDEF)
                     c_print(cg, "(%s)", c_gen_identifier(cg->context, node->data_type->id));
                 else  if(node->referenced_obj) {
@@ -1419,11 +1483,14 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node, bool with_casts)
                    // if(anon_struct_id)
                         c_print(cg, "(_anon_struct_%" PRIx64 ")", anon_struct_id);
                 }
-           // }
+            // }
 
             if(node->args->size == 0)
             {
-                c_print(cg, "{0}");
+                if(node->data_type->size == 0)
+                    c_print(cg, "{}");
+                else
+                    c_print(cg, "{0}");
                 break;
             }
 
@@ -1505,13 +1572,35 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node, bool with_casts)
         case ND_INDEX:
             c_gen_index(cg, node);
             break;
-        case ND_MEMBER:
-            c_print(cg, "((");
-            c_gen_expr(cg, node->left, true);
-            c_print(cg, ").");
-            c_gen_expr(cg, node->right, true);
-            c_putc(cg, ')');
-            break;
+        case ND_MEMBER: {
+            ASTType_T* dyn_type = unpack(node->left->data_type);
+            if(dyn_type->kind == TY_DYN) {
+                ASTObj_T* decl;
+                ssize_t vtable_idx = get_vtable_index(cg, dyn_type->base, node->right->id->callee, &decl);
+                assert(vtable_idx >= 0);
+
+                c_print(cg, "((");
+                c_gen_type(cg, decl->return_type, true);
+                c_print(cg, " (*)(void*");
+                
+                for(size_t i = 1; i < decl->args->size; i++) {
+                    c_print(cg, ", ");
+                    ASTObj_T* arg = decl->args->items[i];
+                    c_gen_type(cg, arg->data_type, true);
+                }
+
+                c_print(cg, ")) (");
+                c_gen_expr(cg, node->left, true);
+                c_print(cg, ").__vtable[%zd])", vtable_idx);
+            }
+            else {
+                c_print(cg, "((");
+                c_gen_expr(cg, node->left, true);
+                c_print(cg, ").");
+                c_gen_expr(cg, node->right, true);
+                c_putc(cg, ')');
+            }
+        } break;
         case ND_TERNARY:
             c_print(cg, "((");
             c_gen_expr(cg, node->condition, true);
@@ -1551,7 +1640,28 @@ static void c_gen_expr(CCodegenData_T* cg, ASTNode_T* node, bool with_casts)
             c_println(cg, "  (void(*)(void**, ...))" UNIQUE_ID_FMT, node->long_val);
             c_print(cg, "}");
         } break;
+        case ND_DYNCAST: {
+            c_println(cg, "(struct _dyn){.__data=(");
+            c_gen_expr(cg, node->left, true);
 
+            ASTType_T* dyn_type = unpack(node->data_type);
+            assert(dyn_type->kind == TY_DYN);
+            ASTType_T* interface_type = unpack(dyn_type->base);
+            assert(interface_type->kind == TY_INTERFACE);
+
+            ASTType_T* ptr_type = unpack(node->left->data_type);
+            assert(ptr_type->kind == TY_PTR);
+            ASTType_T* impl_type = ptr_type->base;
+
+            ASTVTable_T* vtable = vtable_get(cg->context, cg->ast, interface_type, impl_type, false);
+            assert(vtable);
+            c_print(cg, "),.__vtable=__vtable_%zu}", vtable->id);
+        } break;
+        case ND_DYNUNCAST: {
+            c_println(cg, "((");
+            c_gen_expr(cg, node->left, true);
+            c_println(cg, ").__data)");
+        } break;
         default:
             LOG_ERROR_F("expr gen for %d unimplemented.\n", node->kind);
             unreachable();
