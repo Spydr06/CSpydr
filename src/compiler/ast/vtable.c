@@ -3,6 +3,7 @@
 #include "ast/ast.h"
 #include "codegen/codegen_utils.h"
 #include "error/error.h"
+#include "hashmap.h"
 #include "list.h"
 #include "memory/allocator.h"
 #include "parser/typechecker.h"
@@ -17,7 +18,9 @@ ASTVTable_T* ast_vtable_init(Context_T* context, ASTType_T* interface) {
 
     ASTVTable_T* vtable = allocator_malloc(&context->raw_allocator, sizeof(struct AST_VTABLE_STRUCT));
     vtable->interface = interface;
-    vtable->functions = init_list();
+    vtable->functions = hashmap_init();
+    CONTEXT_ALLOC_REGISTER(context, vtable->functions);
+
     vtable->id = vtable_id_counter++;
 
     return vtable;
@@ -95,14 +98,7 @@ ASTVTable_T* vtable_get(Context_T* context, ASTProg_T* ast, ASTType_T* interface
 }
 
 ASTObj_T* vtable_entry(ASTVTable_T* vtable, const char* ident) {
-    for(size_t i = 0; i < vtable->functions->size; i++) {
-        ASTObj_T* func = vtable->functions->items[i];
-
-        if(strcmp(func->id->callee, ident) == 0)
-            return func;
-    }
-
-    return NULL;
+    return hashmap_get(vtable->functions, ident);
 }
 
 ASTObj_T* vtable_insert(ASTVTable_T* vtable, ASTObj_T* function) {
@@ -112,7 +108,7 @@ ASTObj_T* vtable_insert(ASTVTable_T* vtable, ASTObj_T* function) {
     if((existing = vtable_entry(vtable, function->id->callee)))
         return existing;
 
-    list_push(vtable->functions, function);
+    hashmap_put(vtable->functions, function->id->callee, function);
 
     return NULL;
 }

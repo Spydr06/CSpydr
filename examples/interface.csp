@@ -1,5 +1,9 @@
 import "std.csp";
 
+# TODO:
+# - asm backend support
+# - typechecking
+
 type ToString: interface {
     fn to_string(self: &ToString): &const char
 };

@@ -3,11 +3,12 @@
 
 #include "ast.h"
 #include "context.h"
+#include "hashmap.h"
 
 struct AST_VTABLE_STRUCT
 {
     ASTType_T* interface;
-    List_T* functions;
+    HashMap_T* functions;
     size_t id;
 };
 
