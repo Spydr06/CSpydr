@@ -1,4 +1,4 @@
-import "std.csp";
+# import "std.csp";
 
 # TODO:
 # - asm backend support
@@ -30,12 +30,17 @@ namespace bar {
 fn main(): i32 {
     let foo = Foo::{};
     let bar = Bar::{};
+    let int = 69;
 
     print(&foo);
     print(&bar);
+    print(&int: dyn ToString);
+
+    let dyn_var = &foo: dyn ToString;
+
     <- 0;
 }
 
 fn print(a: dyn ToString) {
-    std::io::puts(a.to_string());
+#    std::io::puts(a.to_string());
 }

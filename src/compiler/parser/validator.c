@@ -61,7 +61,7 @@ static void init_validator(Validator_T* v, Context_T* context, ASTProg_T* ast)
     v->ast = ast;
     v->obj_stack = init_list();
     v->exact_type_info_stack = init_list();
-    typechecker_init(&v->typechecker, context);
+    typechecker_init(&v->typechecker, context, ast);
     init_constexpr_resolver(&v->constexpr_resolver, context, ast);
 }
 
@@ -874,6 +874,7 @@ static void validate_dyn_function(Validator_T* v, ASTObj_T* obj)
     ASTType_T* impl_base = self_arg_type->base;
 
     vtable_register(v->context, v->ast, interface, impl_base, obj);
+    obj->referenced = true; // referenced by vtable
 }
 
 static void validate_obj_shallow(Validator_T* v, ASTObj_T* obj)
@@ -882,6 +883,8 @@ static void validate_obj_shallow(Validator_T* v, ASTObj_T* obj)
     {
     case OBJ_FUNCTION:
         validate_data_type(v, obj->data_type);
+        if(obj->dyn_base_type)
+            validate_dyn_function(v, obj);
         break;
 
     case OBJ_GLOBAL:
@@ -948,12 +951,6 @@ static void iter_leave_function(ASTObj_T* fn, va_list args)
 {
     GET_VALIDATOR(args);
     validate_function(v, fn);
-
-    if(fn->dyn_base_type) {
-        validate_dyn_function(v, fn);
-        fn->referenced = true;
-    }
-
     validator_pop_obj(v);
 
     typecheck_obj(&v->typechecker, fn);
@@ -2167,7 +2164,12 @@ static void validate_semantics(Validator_T* v, ResolveQueue_T* queue)
     while(node)
     {
         validate_obj_shallow(v, node->obj);
+        node = node->next;
+    }
 
+    node = queue->head;
+    while(node)
+    {
         if(node->method & RESOLVE_DEEP)
             validate_obj_deep(v, node->obj);
 

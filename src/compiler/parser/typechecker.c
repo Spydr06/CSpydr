@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "ast/ast.h"
+#include "ast/vtable.h"
 #include "config.h"
 #include "error/error.h"
 #include "lexer/token.h"
@@ -71,9 +72,10 @@ static const ASTIteratorList_T iterator = {
     }
 };
 
-void typechecker_init(TypeChecker_T* t, Context_T* context)
+void typechecker_init(TypeChecker_T* t, Context_T* context, ASTProg_T* ast)
 {
     t->context = context;
+    t->ast = ast;
     t->current_fn = NULL;
     t->return_type_stack = init_list();
 }
@@ -129,6 +131,11 @@ static bool is_const_len_array(ASTType_T* arr)
     return arr->kind == TY_ARRAY || arr->kind == TY_C_ARRAY;
 }
 
+static bool type_implements_interface(TypeChecker_T* t, ASTType_T* base_type, ASTType_T* interface)
+{
+    return vtable_get(t->context, t->ast, interface, base_type, false) != NULL;
+}
+
 static void typecheck_call(ASTNode_T* call, va_list args)
 {
     GET_TYPECHECKER(args);
@@ -175,7 +182,7 @@ static void typecheck_assignment(ASTNode_T* assignment, va_list args)
     if(types_equal(t->context, assignment->left->data_type, assignment->right->data_type))
         return;
 
-    ImplicitCastResult_T result = implicitly_castable(t->context, assignment->tok, assignment->right->data_type, assignment->left->data_type);
+    ImplicitCastResult_T result = implicitly_castable(t, assignment->tok, assignment->right->data_type, assignment->left->data_type);
     if(!(result & CAST_ERR))
     {
         assignment->right = implicit_cast(t->context, assignment->tok, assignment->right, assignment->left->data_type, result);
@@ -208,7 +215,7 @@ static ASTNode_T* typecheck_arg_pass(TypeChecker_T* t, ASTType_T* expected, ASTN
     if(types_equal(t->context, expected, received->data_type))
         return received;
     
-    ImplicitCastResult_T result = implicitly_castable(t->context, received->tok, received->data_type, expected);
+    ImplicitCastResult_T result = implicitly_castable(t, received->tok, received->data_type, expected);
     if(result & CAST_OK)
         return implicit_cast(t->context, received->tok, received, expected, result);
     
@@ -225,8 +232,6 @@ static void typecheck_explicit_cast(ASTNode_T* cast, va_list args)
 {
     GET_TYPECHECKER(args);
     // Buffer for warnings and errors
-    char buf1[BUFSIZ] = {'\0'};
-
     if(types_equal_strict(t->context, cast->left->data_type, cast->data_type) && !cast->data_type->no_warnings)
     {
         //if((cast->left->tok && cast->left->tok->in_macro_expansion) ||
@@ -235,8 +240,9 @@ static void typecheck_explicit_cast(ASTNode_T* cast, va_list args)
         if(cast->left->data_type == cast->data_type && cast->data_type->kind == TY_STRUCT)
             return; // skip pointer-identical anonymous structs
 
+        char* buf1 = alloca(BUFSIZ * sizeof(char));
         throw_error(t->context, ERR_TYPE_CAST_WARN, cast->tok, "unnecessary type cast: expression is already of type `%s`",
-            ast_type_to_str(t->context, buf1, cast->data_type, LEN(buf1))
+            ast_type_to_str(t->context, buf1, cast->data_type, BUFSIZ)
         );
         return;
     }
@@ -244,15 +250,55 @@ static void typecheck_explicit_cast(ASTNode_T* cast, va_list args)
     ASTType_T* from = unpack(cast->left->data_type);
     ASTType_T* to = unpack(cast->data_type);
 
-    if(from->kind == TY_VOID)
+    if(from->kind == TY_VOID) {
+        char* buf1 = alloca(BUFSIZ * sizeof(char));
         throw_error(t->context, ERR_TYPE_ERROR_UNCR, cast->tok, "cannot cast from `void` to `%s`", 
-            ast_type_to_str(t->context, buf1, cast->data_type, LEN(buf1))
+            ast_type_to_str(t->context, buf1, cast->data_type, BUFSIZ)
         );
+    }
     
-    if(to->kind == TY_VOID)
+    if(to->kind == TY_VOID) {
+        char* buf1 = alloca(BUFSIZ * sizeof(char));
         throw_error(t->context, ERR_TYPE_ERROR_UNCR, cast->tok, "cannot cast from `%s` to `void`", 
-            ast_type_to_str(t->context, buf1, cast->left->data_type, LEN(buf1))
+            ast_type_to_str(t->context, buf1, cast->left->data_type, BUFSIZ)
         );
+    }
+
+    if(from->kind == TY_DYN) {
+        cast->kind = ND_DYNUNCAST;
+        if(to->kind == TY_PTR && types_equal(t->context, from->base, to->base)) {
+            return;
+        }
+
+        char* buf1 = alloca(BUFSIZ * sizeof(char));
+        throw_error(t->context, ERR_TYPE_ERROR_UNCR, cast->tok, "cannot cast from dynamic type to `%s`",
+            ast_type_to_str(t->context, buf1, cast->data_type, BUFSIZ)
+        );
+    }
+
+    if(to->kind == TY_DYN) {
+        cast->kind = ND_DYNCAST;
+        if(from->kind != TY_PTR) {
+            char* buf1 = alloca(BUFSIZ * sizeof(char));
+            throw_error(t->context, ERR_TYPE_ERROR_UNCR, cast->tok, "can only cast from `%s` to dynamic types",
+                ast_type_to_str(t->context, buf1, cast->left->data_type, BUFSIZ)
+            );
+            return;
+        }
+
+        if(!type_implements_interface(t, from->base, to->base)) {
+            char* buf1 = alloca(BUFSIZ * sizeof(char));
+            *buf1 = '\0';
+            char* buf2 = alloca(BUFSIZ * sizeof(char));
+            *buf2 = '\0';
+            throw_error(t->context, ERR_TYPE_ERROR_UNCR, cast->tok, "type `%s` does not implement interface `%s`",
+                ast_type_to_str(t->context, buf1, from->base, BUFSIZ),
+                ast_type_to_str(t->context, buf2, to->base, BUFSIZ)
+            );
+        }
+
+        return;
+    }
 }
 
 static void typecheck_array_lit(ASTNode_T* a_lit, va_list args)
@@ -281,7 +327,7 @@ static void typecheck_array_lit(ASTNode_T* a_lit, va_list args)
         if(types_equal(t->context, arg_type, base_ty))
             continue;
 
-        ImplicitCastResult_T result = implicitly_castable(t->context, arg->tok, arg_type, base_ty);
+        ImplicitCastResult_T result = implicitly_castable(t, arg->tok, arg_type, base_ty);
         if(result & CAST_OK)
             a_lit->args->items[i] = implicit_cast(t->context, arg->tok, arg, base_ty, result);
         else {
@@ -318,7 +364,7 @@ static void typecheck_struct_lit(ASTNode_T* s_lit, va_list args)
         if(types_equal(t->context, arg->data_type, expected_ty))
             continue;
 
-        ImplicitCastResult_T result = implicitly_castable(t->context, arg->tok, arg->data_type, expected_ty);
+        ImplicitCastResult_T result = implicitly_castable(t, arg->tok, arg->data_type, expected_ty);
         if(result & CAST_OK)
             s_lit->args->items[i] = implicit_cast(t->context, arg->tok, arg, expected_ty, result);
         else {
@@ -383,7 +429,7 @@ static void typecheck_return(ASTNode_T* ret, va_list args)
     if(types_equal(t->context, expected, ret->return_val->data_type))
         goto patch_anon_struct;
     
-    ImplicitCastResult_T result = implicitly_castable(t->context,ret_tok, ret->return_val->data_type, expected);
+    ImplicitCastResult_T result = implicitly_castable(t,ret_tok, ret->return_val->data_type, expected);
     if(result & CAST_OK)
     {
         ret->return_val = implicit_cast(t->context, ret_tok, ret->return_val, expected, result);
@@ -442,7 +488,7 @@ static void typecheck_binop(ASTNode_T* op, va_list args)
             break;
     }
 
-    ImplicitCastResult_T result = implicitly_castable(t->context, op->tok, from, to);
+    ImplicitCastResult_T result = implicitly_castable(t, op->tok, from, to);
     if(result & CAST_OK)
     {
         ASTNode_T* cast = implicit_cast(t->context, op->tok, from_node, to, result);
@@ -518,6 +564,7 @@ bool types_equal(Context_T* context, ASTType_T* a, ASTType_T* b)
     switch(a->kind)
     {
         case TY_C_ARRAY:
+        case TY_DYN:
         case TY_PTR:
             return types_equal(context, a->base, b->base);
         
@@ -556,12 +603,24 @@ bool types_equal(Context_T* context, ASTType_T* a, ASTType_T* b)
                     return false;
             return true;
 
+        case TY_INTERFACE:
+            if(a->func_decls->size != b->func_decls->size)
+                return false;
+            for(size_t i = 0; i < a->func_decls->size; i++) {
+                ASTObj_T* af = a->func_decls->items[i];
+                ASTObj_T* bf = b->func_decls->items[i];
+
+                if(!types_equal(context, af->data_type, bf->data_type) || !identifiers_equal(af->id, bf->id))
+                    return false;
+            }
+            return true;
+
         default:
             return true;
     }
 }
 
-ImplicitCastResult_T implicitly_castable(Context_T* context, Token_T* tok, ASTType_T* from, ASTType_T* to)
+ImplicitCastResult_T implicitly_castable(TypeChecker_T* t, Token_T* tok, ASTType_T* from, ASTType_T* to)
 {
     from = unpack(from);
     to = unpack(to);
@@ -591,14 +650,14 @@ ImplicitCastResult_T implicitly_castable(Context_T* context, Token_T* tok, ASTTy
         return CAST_OK;
     if(is_flonum(from) && is_integer(to))
     {
-        throw_error(context, ERR_TYPE_CAST_WARN, tok, "implicitly casting from `%s` to `%s`",
-            ast_type_to_str(context, buf1, from, LEN(buf1)),
-            ast_type_to_str(context, buf2, to, LEN(buf2))
+        throw_error(t->context, ERR_TYPE_CAST_WARN, tok, "implicitly casting from `%s` to `%s`",
+            ast_type_to_str(t->context, buf1, from, LEN(buf1)),
+            ast_type_to_str(t->context, buf2, to, LEN(buf2))
         );
         return CAST_OK;
     }
     if(from->kind == TY_PTR && to->kind == TY_DYN) // TODO: check if ptr base implements interface
-        return CAST_DYN | CAST_OK;
+        return (type_implements_interface(t, from->base, to->base) ? CAST_OK : CAST_ERR) | CAST_DYN;
     if(from->kind == TY_DYN && to->kind == TY_PTR) // TODO: check if ptr base implements iterface
         return CAST_UNDYN | CAST_OK;
     if((from->kind == TY_PTR || from->kind == TY_C_ARRAY) && to->kind == TY_PTR)
@@ -606,9 +665,9 @@ ImplicitCastResult_T implicitly_castable(Context_T* context, Token_T* tok, ASTTy
     if(from->kind == TY_ARRAY && to->kind == TY_VLA)
         return CAST_OK;
     if(from->kind == TY_PTR && unpack(from->base)->kind == TY_ARRAY && to->kind == TY_VLA)
-        return types_equal(context, unpack(from->base)->base, to->base) ? CAST_OK : CAST_ERR;
+        return types_equal(t->context, unpack(from->base)->base, to->base) ? CAST_OK : CAST_ERR;
     if(from->kind == TY_STRUCT && to->kind == TY_STRUCT)
-        return types_equal(context, from, to) ? CAST_OK : CAST_ERR;
+        return types_equal(t->context, from, to) ? CAST_OK : CAST_ERR;
     return CAST_ERR;
 }
 
