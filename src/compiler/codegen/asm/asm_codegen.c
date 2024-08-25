@@ -8,6 +8,7 @@
 #include "error/error.h"
 #include "ast/types.h"
 #include "ast/ast.h"
+#include "ast/vtable.h"
 #include "config.h"
 #include "list.h"
 #include "relocation.h"
@@ -157,6 +158,7 @@ static const char *cast_table[LAST][LAST] = {
 static void asm_gen_file_descriptors(ASMCodegenData_T* cg);
 static void asm_gen_entry_point(ASMCodegenData_T* cg);
 static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs);
+static void asm_gen_vtables(ASMCodegenData_T* cg);
 static void asm_gen_text(ASMCodegenData_T* cg, List_T* objs);
 static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node);
 static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs);
@@ -269,6 +271,7 @@ void asm_gen_code(ASMCodegenData_T* cg, const char* target)
         asm_gen_file_descriptors(cg);
     asm_assign_lvar_offsets(cg, cg->ast->objs);
     asm_gen_data(cg, cg->ast->objs);
+    asm_gen_vtables(cg);
     asm_gen_entry_point(cg);
     asm_gen_text(cg, cg->ast->objs);
     asm_gen_string_literals(cg);
@@ -428,6 +431,7 @@ static void asm_assign_lvar_offsets(ASMCodegenData_T* cg, List_T* objs)
                 ASTType_T* ty = unpack(var->data_type);
                 switch(ty->kind)
                 {
+                case TY_DYN:
                 case TY_STRUCT:
                     if(ty->size <= 16)
                     {
@@ -611,6 +615,39 @@ static void asm_gen_data(ASMCodegenData_T* cg, List_T* objs)
     }
 }
 
+static void asm_gen_vtable(ASMCodegenData_T* cg, ASTType_T* base_type, ASTVTable_T* vtable) {
+    asm_println(cg, "  .section .rodata");
+    asm_println(cg, "  .align 8");
+    asm_println(cg, ".vtable.%zu:", vtable->id);
+    
+    ASTType_T* interface = vtable->interface;
+    assert(interface->kind == TY_INTERFACE);
+    
+    for(size_t i = 0; i < interface->func_decls->size; i++) {
+        ASTObj_T* decl = interface->func_decls->items[i];
+
+        ASTObj_T* impl = vtable_entry(vtable, decl->id->callee);
+
+        if(impl)
+            asm_println(cg, "  .quad %s", asm_gen_identifier(cg->context, impl->id));
+        else {
+            // TODO: warn about unimplemented functions
+            asm_println(cg, "  .quad 0");
+        }
+    }
+}
+
+static void asm_gen_vtables(ASMCodegenData_T* cg)
+{
+    for(size_t i = 0; i < cg->ast->impls->size; i++) {
+        ASTImpl_T* impl = cg->ast->impls->items[i];
+
+        for(size_t j = 0; j < impl->vtables->size; j++) {
+            asm_gen_vtable(cg, impl->base_type, impl->vtables->items[j]);
+        }
+    }
+}
+
 static void asm_gen_defer(ASMCodegenData_T* cg, List_T* deferred) 
 {
     if(!deferred || deferred->size == 0)
@@ -708,6 +745,7 @@ static void asm_gen_function(ASMCodegenData_T* cg, ASTObj_T* obj)
 
         switch(ty->kind)
         {
+            case TY_DYN:
             case TY_STRUCT:
                 assert(ty->size <= 16);
                 if(asm_has_flonum(ty, 0, 8, 0))
@@ -1230,6 +1268,7 @@ static void asm_load(ASMCodegenData_T* cg, ASTType_T *ty) {
     switch (ty->kind) {
         case TY_C_ARRAY:
         case TY_STRUCT:
+        case TY_DYN:
         case TY_ARRAY:
         case TY_VLA:
         case TY_FN:
@@ -1366,6 +1405,7 @@ static void asm_push_args2(ASMCodegenData_T* cg, List_T* args, bool first_pass)
 
         switch(unpack(arg->data_type)->kind)
         {
+            case TY_DYN:
             case TY_STRUCT:
                 asm_push_struct(cg, arg->data_type);
                 break;
@@ -1965,6 +2005,40 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_cast(cg, node->left->data_type, node->data_type);
             return;
         
+        case ND_DYNCAST: {
+            assert(node->buffer);
+            
+            ASTType_T* dyn_type = unpack(node->data_type);
+            assert(dyn_type->kind == TY_DYN);
+            ASTType_T* interface_type = unpack(dyn_type->base);
+            assert(interface_type->kind == TY_INTERFACE);
+
+            ASTType_T* ptr_type = unpack(node->left->data_type);
+            assert(ptr_type->kind == TY_PTR);
+            ASTType_T* impl_type = ptr_type->base;
+
+            ASTVTable_T* vtable = vtable_get(cg->context, cg->ast, interface_type, impl_type, false);
+            assert(vtable);
+            
+            asm_gen_expr(cg, node->left);
+
+            printf("%d\n", node->buffer->offset);
+// asm_println(cg, "  movq %%rax, %d(%%rbp)", node->buffer->offset);
+            
+            // store data pointer
+
+            // store vtable pointer
+//            asm_println(cg, "  movq .vtable.%zu, %%rax", vtable->id); 
+//            asm_println(cg, "  mov %%rax, -8(%%rdi)");
+
+            asm_println(cg, "  lea %d(%%rbp), %%rax", node->buffer->offset);
+        } return;
+
+        case ND_DYNUNCAST:
+            asm_gen_addr(cg, node->left);
+            asm_load(cg, node->data_type);
+            return;
+
         case ND_NOT:
             asm_gen_expr(cg, node->right);
             asm_cmp_zero(cg, node->right->data_type);
@@ -2658,7 +2732,7 @@ static void asm_gen_stmt(ASMCodegenData_T* cg, ASTNode_T* node)
                 asm_gen_expr(cg, node->return_val);
                 ASTType_T* ty = unpack(node->return_val->data_type);
 
-                if(ty->kind == TY_STRUCT)
+                if(ty->kind == TY_STRUCT || ty->kind == TY_DYN)
                 {
                     if(ty->size <= 16)
                         asm_copy_struct_reg(cg);
@@ -2777,6 +2851,7 @@ static void asm_gen_lambda(ASMCodegenData_T* cg, ASTObj_T* lambda_obj)
 
         switch(ty->kind)
         {
+            case TY_DYN:
             case TY_STRUCT:
                 assert(ty->size <= 16);
                 if(asm_has_flonum(ty, 0, 8, 0))

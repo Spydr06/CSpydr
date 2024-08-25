@@ -29,6 +29,6 @@ void typecheck_obj(TypeChecker_T* t, ASTObj_T* obj);
 bool types_equal(Context_T* context, ASTType_T* a, ASTType_T* b);
 
 ImplicitCastResult_T implicitly_castable(TypeChecker_T* t, Token_T* tok, ASTType_T* from, ASTType_T* to);
-ASTNode_T* implicit_cast(Context_T* context, Token_T* tok, ASTNode_T* expr, ASTType_T* to, ImplicitCastResult_T result);
+ASTNode_T* implicit_cast(TypeChecker_T* t, Token_T* tok, ASTNode_T* expr, ASTType_T* to, ImplicitCastResult_T result);
 
 #endif

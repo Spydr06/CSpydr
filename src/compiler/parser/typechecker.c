@@ -12,6 +12,7 @@
 #include "lexer/token.h"
 #include "list.h"
 #include "optimizer/constexpr.h"
+#include "toolchain.h"
 #include "utils.h"
 #include "codegen/codegen_utils.h"
 #include "ast/ast_iterator.h"
@@ -161,8 +162,8 @@ static void typecheck_call(ASTNode_T* call, va_list args)
 static void typecheck_for_range(ASTNode_T* loop, va_list args)
 {
     GET_TYPECHECKER(args);
-    loop->left = implicit_cast(t->context, loop->left->tok, loop->left, (ASTType_T*) primitives[TY_I64], CAST_OK);
-    loop->right = implicit_cast(t->context, loop->right->tok, loop->right, (ASTType_T*) primitives[TY_I64], CAST_OK);
+    loop->left = implicit_cast(t, loop->left->tok, loop->left, (ASTType_T*) primitives[TY_I64], CAST_OK);
+    loop->right = implicit_cast(t, loop->right->tok, loop->right, (ASTType_T*) primitives[TY_I64], CAST_OK);
 }
 
 static void typecheck_assignment(ASTNode_T* assignment, va_list args)
@@ -185,7 +186,7 @@ static void typecheck_assignment(ASTNode_T* assignment, va_list args)
     ImplicitCastResult_T result = implicitly_castable(t, assignment->tok, assignment->right->data_type, assignment->left->data_type);
     if(!(result & CAST_ERR))
     {
-        assignment->right = implicit_cast(t->context, assignment->tok, assignment->right, assignment->left->data_type, result);
+        assignment->right = implicit_cast(t, assignment->tok, assignment->right, assignment->left->data_type, result);
         return;
     }
 
@@ -217,7 +218,7 @@ static ASTNode_T* typecheck_arg_pass(TypeChecker_T* t, ASTType_T* expected, ASTN
     
     ImplicitCastResult_T result = implicitly_castable(t, received->tok, received->data_type, expected);
     if(result & CAST_OK)
-        return implicit_cast(t->context, received->tok, received, expected, result);
+        return implicit_cast(t, received->tok, received, expected, result);
     
     char buf2[BUFSIZ] = {'\0'};
     throw_error(t->context, ERR_TYPE_ERROR_UNCR, received->tok, "cannot implicitly cast from `%s` to `%s`", 
@@ -226,6 +227,19 @@ static ASTNode_T* typecheck_arg_pass(TypeChecker_T* t, ASTType_T* expected, ASTN
     );
 
     return received;
+}
+
+// TODO: move somewhere else
+static void dyncast_alloc(TypeChecker_T* t, ASTNode_T* dyncast)
+{
+    if(t->context->ct != CT_ASM || !t->current_fn)
+        return;
+
+
+    dyncast->buffer = init_ast_obj(&t->context->raw_allocator, OBJ_LOCAL, dyncast->tok);
+    dyncast->buffer->data_type = dyncast->data_type;
+
+    list_push(t->current_fn->objs, dyncast->buffer);
 }
 
 static void typecheck_explicit_cast(ASTNode_T* cast, va_list args)
@@ -297,6 +311,8 @@ static void typecheck_explicit_cast(ASTNode_T* cast, va_list args)
             );
         }
 
+        dyncast_alloc(t, cast);
+
         return;
     }
 }
@@ -329,7 +345,7 @@ static void typecheck_array_lit(ASTNode_T* a_lit, va_list args)
 
         ImplicitCastResult_T result = implicitly_castable(t, arg->tok, arg_type, base_ty);
         if(result & CAST_OK)
-            a_lit->args->items[i] = implicit_cast(t->context, arg->tok, arg, base_ty, result);
+            a_lit->args->items[i] = implicit_cast(t, arg->tok, arg, base_ty, result);
         else {
             memset(buf1, 0, LEN(buf1));
             memset(buf2, 0, LEN(buf2));
@@ -366,7 +382,7 @@ static void typecheck_struct_lit(ASTNode_T* s_lit, va_list args)
 
         ImplicitCastResult_T result = implicitly_castable(t, arg->tok, arg->data_type, expected_ty);
         if(result & CAST_OK)
-            s_lit->args->items[i] = implicit_cast(t->context, arg->tok, arg, expected_ty, result);
+            s_lit->args->items[i] = implicit_cast(t, arg->tok, arg, expected_ty, result);
         else {
             memset(buf1, 0, LEN(buf1));
             memset(buf2, 0, LEN(buf2));
@@ -432,7 +448,7 @@ static void typecheck_return(ASTNode_T* ret, va_list args)
     ImplicitCastResult_T result = implicitly_castable(t,ret_tok, ret->return_val->data_type, expected);
     if(result & CAST_OK)
     {
-        ret->return_val = implicit_cast(t->context, ret_tok, ret->return_val, expected, result);
+        ret->return_val = implicit_cast(t, ret_tok, ret->return_val, expected, result);
         goto patch_anon_struct;
     }
 
@@ -491,7 +507,7 @@ static void typecheck_binop(ASTNode_T* op, va_list args)
     ImplicitCastResult_T result = implicitly_castable(t, op->tok, from, to);
     if(result & CAST_OK)
     {
-        ASTNode_T* cast = implicit_cast(t->context, op->tok, from_node, to, result);
+        ASTNode_T* cast = implicit_cast(t, op->tok, from_node, to, result);
         if(from_node == op->left)
             op->left = cast;
         else if(from_node == op->right)
@@ -671,17 +687,18 @@ ImplicitCastResult_T implicitly_castable(TypeChecker_T* t, Token_T* tok, ASTType
     return CAST_ERR;
 }
 
-ASTNode_T* implicit_cast(Context_T* context, Token_T* tok, ASTNode_T* expr, ASTType_T* to, ImplicitCastResult_T result)
+ASTNode_T* implicit_cast(TypeChecker_T* t, Token_T* tok, ASTNode_T* expr, ASTType_T* to, ImplicitCastResult_T result)
 {
     if(result & CAST_DYN) {
-        ASTNode_T* cast = init_ast_node(&context->raw_allocator, ND_DYNCAST, tok);
+        ASTNode_T* cast = init_ast_node(&t->context->raw_allocator, ND_DYNCAST, tok);
         cast->data_type = to;
         cast->left = expr;
+        dyncast_alloc(t, cast);
         return cast;
     }
     
     if(result & CAST_UNDYN) {
-        ASTNode_T* cast = init_ast_node(&context->raw_allocator, ND_DYNUNCAST, tok);
+        ASTNode_T* cast = init_ast_node(&t->context->raw_allocator, ND_DYNUNCAST, tok);
         cast->data_type = to;
         cast->left = expr;
         return cast;
@@ -689,13 +706,13 @@ ASTNode_T* implicit_cast(Context_T* context, Token_T* tok, ASTNode_T* expr, ASTT
 
     if(unpack(expr->data_type)->kind == TY_ARRAY && to->kind == TY_VLA)
     {
-        ASTNode_T* ref = init_ast_node(&context->raw_allocator, ND_REF, tok);
+        ASTNode_T* ref = init_ast_node(&t->context->raw_allocator, ND_REF, tok);
         ref->data_type = to;
         ref->right = expr;
         return ref;
     }
 
-    ASTNode_T* cast = init_ast_node(&context->raw_allocator, ND_CAST, tok);
+    ASTNode_T* cast = init_ast_node(&t->context->raw_allocator, ND_CAST, tok);
     cast->data_type = to;
     cast->left = expr;
     return cast;

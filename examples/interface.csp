@@ -1,4 +1,4 @@
-# import "std.csp";
+import "std.csp";
 
 # TODO:
 # - asm backend support
@@ -28,19 +28,31 @@ namespace bar {
 }
 
 fn main(): i32 {
-    let foo = Foo::{};
-    let bar = Bar::{};
-    let int = 69;
+#    let foo = Foo::{};
+    let bar = Bar::{69};
+    std::io::printf("%p\n", &bar);
 
-    print(&foo);
+#    print(&foo);
     print(&bar);
-    print(&int: dyn ToString);
-
-    let dyn_var = &foo: dyn ToString;
 
     <- 0;
 }
 
 fn print(a: dyn ToString) {
 #    std::io::puts(a.to_string());
+#    a.to_string();
+    
+    let x: union {
+        a: dyn ToString,
+        b: struct {
+            data: &Bar,
+            vtable: &void
+        }
+    };
+    x.a = a;
+
+#    let b = a: &ToString;
+#    let c = b: &Bar;
+
+    std::io::printf("%p\n", x.b.data);
 }

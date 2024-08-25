@@ -92,7 +92,10 @@ namespace std {
         fn get_time_of_day(): TimeVal {
             let ts = TimeSpec::{};
             get_time(REALTIME, &ts);
-            <- TimeVal::{ts.tv_sec, ts.tv_nsec / 1000};
+            let tv: TimeVal;
+            tv.tv_sec = ts.tv_sec;
+            tv.tv_usec = ts.tv_nsec / 1000;
+            <- tv;
         }
 
         # get the current time of day
