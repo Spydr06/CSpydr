@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include <stdbool.h>
+#include <assert.h>
 
 ASTNode_T* constant_literals[TOKEN_EOF] = { // sets value literals, who are always the same to save memory
     [TOKEN_TRUE]  = &(ASTNode_T){.kind = ND_BOOL, .bool_val = true,  .is_constant = true},
@@ -116,7 +117,9 @@ ASTTypeKind_T get_datatype_from_str(char* str)
 
 ASTType_T* get_primitive_type(Allocator_T* allocator, char* type)
 {
-    const ASTType_T* prim = primitives[get_datatype_from_str(type)];
+    ASTTypeKind_T kind = get_datatype_from_str(type);
+
+    const ASTType_T* prim = primitives[kind];
 
     if(prim) 
     {

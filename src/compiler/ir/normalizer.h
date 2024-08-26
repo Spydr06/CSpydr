@@ -13,18 +13,19 @@ typedef struct LOOP_CONTEXT_STRUCT {
     u32 continue_label;
 } LoopContext_T;
 
-typedef struct LOCALS_INFO_STRUCT {
-    u32 local_id; 
-} LocalsInfo_T;
+
+typedef struct FUNC_CONTEXT_STRUCT {
+    u32 register_id;
+} FunctionContext_T;
 
 typedef struct NORMALIZER_STRUCT {
     Context_T* context;
     IR_T* ir;
-    List_T* types;
+    List_T* type_pairs;
 
-    u64 label_id;
-    LocalsInfo_T locals_info;
+    uint64_t label_id;
     LoopContext_T loop_context;
+    FunctionContext_T func_context;
 } Normalizer_T;
 
 int normalization_pass(Context_T* context, ASTProg_T* ast, IR_T* ir);

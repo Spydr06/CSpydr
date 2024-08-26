@@ -8,51 +8,61 @@
 
 #define IR_LOCAL_ID(id) ((IRIdentifier_T){.kind = IR_ID_LOCAL, .local_id = (u32)(id)})
 
-typedef struct IR_EXPR_STRUCT IRExpr_T;
+typedef struct IR_REGISTER_STRUCT IRRegister_T;
+typedef struct IR_LITERAL_STRUCT IRLiteral_T;
+typedef struct IR_LVALUE_STRUCT IRLValue_T;
 typedef struct IR_STMT_STRUCT IRStmt_T;
 typedef struct IR_TYPE_STRUCT IRType_T;
 
 typedef struct IR_FUNCTION_STRUCT IRFunction_T;
 typedef struct IR_GLOBAL_STRUCT IRGlobal_T;
-typedef struct IR_LOCAL_STRUCT IRLocal_T;
 typedef struct IR_PARAMETER_STRUCT IRParameter_T;
 
-typedef enum IR_EXPR_KIND_ENUM : u8 {
-    IR_EXPR_I8_LIT,
-    IR_EXPR_U8_LIT,
-    IR_EXPR_I32_LIT,
-    IR_EXPR_I64_LIT,
-    IR_EXPR_U64_LIT,
-    
-    IR_EXPR_F32_LIT,
-    IR_EXPR_F64_LIT,
+struct IR_REGISTER_STRUCT {
+    uint32_t id;
+};
 
-    IR_EXPR_ARRAY_LIT,
+typedef enum IR_LVALUE_KIND_ENUM : u8 {
+    IR_LVALUE_ALLOCA,
+    IR_LVALUE_POP,
+    IR_LVALUE_PARAMETER,
+    IR_LVALUE_GLOBAL,
+    IR_LVALUE_GLOBAL_PTR,
+    IR_LVALUE_FUNC_PTR
+} IRLValueKind_T;
 
-    IR_EXPR_CAST,
-    IR_EXPR_ID,
+struct IR_LVALUE_STRUCT {
+    IRLValueKind_T kind;
 
-    IR_EXPR_CMP,
-} IRExprKind_T;
+    IRType_T* type;
 
-typedef struct IR_IDENTIFIER_STRUCT {
-    enum : u8 {
-        IR_ID_GLOBAL,
-        IR_ID_LOCAL,
-        IR_ID_PARAMETER,
-        IR_ID_FUNCTION,
-    } kind;
     union {
-        u32 local_id;
-        u32 parameter_id;
-        const char* mangled_id;
+        IRLiteral_T* push_from;
+        u32 parameter_num;
+        const char* global_id;
+        const char* function_id;
     };
-} IRIdentifier_T;
+};
 
-struct IR_EXPR_STRUCT {
-    IRExprKind_T kind;
+typedef enum IR_LITERAL_KIND_ENUM : u8 {
+    IR_LITERAL_VOID, // nothing
 
-    IRType_T* idx;
+    IR_LITERAL_I8,
+    IR_LITERAL_U8,
+    IR_LITERAL_I32,
+    IR_LITERAL_I64,
+    IR_LITERAL_U64,
+    
+    IR_LITERAL_F32,
+    IR_LITERAL_F64,
+
+    IR_LITERAL_REG
+} IRLiteralKind_T;
+
+void init_ir_literal(IRLiteral_T* dst, IRLiteralKind_T kind, IRType_T* type);
+
+struct IR_LITERAL_STRUCT {
+    IRLiteralKind_T kind;
 
     IRType_T* type;
     
@@ -66,30 +76,16 @@ struct IR_EXPR_STRUCT {
         f32 f32_lit;
         f64 f64_lit;
 
-        List_T* args;
-        struct {
-            IRExpr_T* expr;
-        } unary;
-        struct {
-            IRExpr_T* left;
-            IRExpr_T* right;
-        } binary;
-        
-        IRIdentifier_T ident;
+        IRRegister_T reg;
     };
 };
-
-IRExpr_T* init_ir_expr(Context_T* context, IRExprKind_T kind, IRType_T* type);
 
 typedef enum IR_STMT_KIND_ENUM : u8 {
     IR_STMT_RETURN,
     IR_STMT_LABEL,
     IR_STMT_GOTO,
     IR_STMT_GOTO_IF,
-    IR_STMT_ASM,
-    IR_STMT_PUSH_LOCAL,
-    IR_STMT_POP_LOCAL,
-    IR_STMT_ASSIGN,
+    IR_STMT_DECL,
 } IRStmtKind_T;
 
 struct IR_STMT_STRUCT {
@@ -104,43 +100,27 @@ struct IR_STMT_STRUCT {
         } _goto;
         struct {
             u32 label_id;
-            IRExpr_T* condition;
             bool negated;
+            IRLiteral_T condition;
         } goto_if;
         struct {
-            IRExpr_T* value;
+            IRLiteral_T lit;
         } _return;
         struct {
-            List_T* args; 
-        } _asm;
-        struct {
-            IRLocal_T* local;
-        } push_l;
-        struct {
-        } pop_l;
-        struct {
-            IRExpr_T* dest;
-            IRExpr_T* value;
-        } assign;
+            IRRegister_T reg;
+            IRLValue_T value;
+        } decl;
     };
 };
 
 IRStmt_T* init_ir_stmt(Context_T* context, IRStmtKind_T kind);
 
-struct IR_LOCAL_STRUCT {
-    u32 id;
-    bool temporary;
-    IRType_T* type;
-};
-
-IRLocal_T* init_ir_local(Context_T* context, u32 id, IRType_T* type);
-
 struct IR_PARAMETER_STRUCT {
-    u32 id;
+    Token_T* tok;
     IRType_T* type;
 };
 
-IRParameter_T* init_ir_parameter(Context_T* context, u32 id, IRType_T* type);
+IRParameter_T* init_ir_parameter(Context_T* context, Token_T* tok, IRType_T* type);
 
 struct IR_FUNCTION_STRUCT {
     Token_T* tok;
@@ -168,6 +148,9 @@ struct IR_GLOBAL_STRUCT {
     Token_T* tok;
     const char* mangled_id;
 
+    IRType_T* type;
+    IRLiteral_T value;
+
     union {
         struct {
             bool is_extern : 1;
@@ -175,12 +158,9 @@ struct IR_GLOBAL_STRUCT {
         };
         u8 __flags__;
     };
-
-    IRType_T* type;
-    IRExpr_T* value;
 };
 
-IRGlobal_T* init_ir_global(Context_T* context, Token_T* tok, const char* mangled_id, bool is_extern, bool is_const, IRType_T* type, IRExpr_T* value);
+IRGlobal_T* init_ir_global(Context_T* context, Token_T* tok, const char* mangled_id, bool is_extern, bool is_const, IRType_T* type, IRLiteral_T value);
 
 typedef enum IR_TYPE_KIND_ENUM : u8 {
     IR_TYPE_I8,

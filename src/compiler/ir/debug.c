@@ -22,45 +22,26 @@ void dbg_print_ir(IR_T* ir, IRDebugFilter_T filter)
     }
 }
 
-void dbg_print_ir_identifier(IRIdentifier_T* ident)
-{
-    switch(ident->kind)
-    {
-    case IR_ID_LOCAL:
-        printf("_%u", ident->local_id);
-        break;
-    case IR_ID_PARAMETER:
-        printf("_%u", ident->parameter_id);
-        break;
-    case IR_ID_GLOBAL:
-    case IR_ID_FUNCTION:
-        printf("%s", ident->mangled_id);
-        break;
-    default:
-        unreachable();
-    }
-}
-
 void dbg_print_ir_type(IRType_T* type)
 {
-#define PRIMITIVE(ty) case IR_TYPE_##ty:    \
-        printf("%s", #ty);                  \
+#define PRIMITIVE(ty, id) case IR_TYPE_##ty: \
+        printf("%s", #id);                  \
         break
 
     switch(type->kind)
     {
-        PRIMITIVE(I8);
-        PRIMITIVE(I16);
-        PRIMITIVE(I32);
-        PRIMITIVE(I64);
-        PRIMITIVE(U8);
-        PRIMITIVE(U16);
-        PRIMITIVE(U32);
-        PRIMITIVE(U64);
-        PRIMITIVE(F32);
-        PRIMITIVE(F64);
-        PRIMITIVE(F80);
-        PRIMITIVE(VOID);
+        PRIMITIVE(I8, i8);
+        PRIMITIVE(I16, i16);
+        PRIMITIVE(I32, i32);
+        PRIMITIVE(I64, i64);
+        PRIMITIVE(U8,  u8);
+        PRIMITIVE(U16, u16);
+        PRIMITIVE(U32, u32);
+        PRIMITIVE(U64, u64);
+        PRIMITIVE(F32, f32);
+        PRIMITIVE(F64, f64);
+        PRIMITIVE(F80, f80);
+        PRIMITIVE(VOID, void);
         
     case IR_TYPE_C_ARRAY:
         dbg_print_ir_type(type->base);
@@ -85,7 +66,9 @@ void dbg_print_ir_type(IRType_T* type)
             IRTypeField_T* field = type->fields->items[i];
             printf(" %s: ", field->id);
             dbg_print_ir_type(field->type);
-            printf(", ");
+
+            if(i + 1 < type->fields->size)
+                printf(", ");
         }
         printf(" }");
         break;
@@ -97,7 +80,9 @@ void dbg_print_ir_type(IRType_T* type)
         {
             IRType_T* arg_type = type->fn.arguments->items[i];
             dbg_print_ir_type(arg_type);
-            printf(", ");
+
+            if(i + 1 < type->fn.arguments->size)
+                printf(", ");
         }
         if(type->fn.variadic)
             printf("...)");
@@ -110,47 +95,56 @@ void dbg_print_ir_type(IRType_T* type)
 #undef PRIMITIVE
 }
 
-void dbg_print_ir_expr(IRExpr_T* expr)
+void dbg_print_ir_lvalue(IRLValue_T* lvalue) {
+    switch(lvalue->kind) {
+        case IR_LVALUE_ALLOCA:
+            printf("alloca 0x%x; align 0x%x", lvalue->type->size, lvalue->type->align);
+            break;
+        case IR_LVALUE_POP:
+            printf("pop");
+            break;
+        case IR_LVALUE_PARAMETER:
+            printf("parameter %u; ", lvalue->parameter_num);
+            dbg_print_ir_type(lvalue->type);
+            break;
+        case IR_LVALUE_GLOBAL:
+            printf("global %s; ", lvalue->global_id);
+            dbg_print_ir_type(lvalue->type);
+        case IR_LVALUE_GLOBAL_PTR:
+            printf("ptrof (global %s)", lvalue->global_id);
+            break;
+        case IR_LVALUE_FUNC_PTR:
+            printf("ptrof (function %s)", lvalue->function_id);
+    }
+}
+
+void dbg_print_ir_literal(IRLiteral_T* lit)
 {
-    switch(expr->kind)
+    switch(lit->kind)
     {
-    case IR_EXPR_I8_LIT:
-        printf("%di8", (int) expr->i8_lit);
+    case IR_LITERAL_VOID:
+        printf("void");
         break;
-    case IR_EXPR_U8_LIT:
-        printf("%du8", (int) expr->u8_lit);
+    case IR_LITERAL_I8:
+        printf("%hhdi8", lit->i8_lit);
         break;
-    case IR_EXPR_I32_LIT:
-        printf("%di32", expr->i32_lit);
+    case IR_LITERAL_U8:
+        printf("%hhuu8", lit->u8_lit);
         break;
-    case IR_EXPR_I64_LIT:
-        printf("%ldi64", expr->i64_lit);
+    case IR_LITERAL_I32:
+        printf("%di32", lit->i32_lit);
         break;
-    case IR_EXPR_U64_LIT:
-        printf("%luu64", expr->u64_lit);
+    case IR_LITERAL_I64:
+        printf("%ldi64", lit->i64_lit);
         break;
-    case IR_EXPR_F32_LIT:
-        printf("%ff32", expr->f32_lit);
+    case IR_LITERAL_U64:
+        printf("%luu64", lit->u64_lit);
         break;
-    case IR_EXPR_F64_LIT:
-        printf("%ff64", expr->f64_lit);
+    case IR_LITERAL_F32:
+        printf("%ff32", lit->f32_lit);
         break;
-    case IR_EXPR_ARRAY_LIT:
-        printf("[");
-        for(size_t i = 0; i < expr->args->size; i++)
-        {
-            dbg_print_ir_expr(expr->args->items[i]);
-            printf(", ");
-        }
-        printf("]");
-        break;
-    case IR_EXPR_CAST:
-        dbg_print_ir_expr(expr->unary.expr);
-        printf(": ");
-        dbg_print_ir_type(expr->type);
-        break;
-    case IR_EXPR_ID:
-        dbg_print_ir_identifier(&expr->ident);
+    case IR_LITERAL_F64:
+        printf("%ff64", lit->f64_lit);
         break;
     default:
         unreachable();
@@ -162,13 +156,8 @@ void dbg_print_ir_stmt(IRStmt_T* stmt)
     switch(stmt->kind) 
     {
     case IR_STMT_RETURN:
-        if(stmt->_return.value)
-        {    
-            printf("  ret ");
-            dbg_print_ir_expr(stmt->_return.value);
-        }
-        else
-            printf("  ret");
+        printf("  ret ");
+        dbg_print_ir_literal(&stmt->_return.lit);
         printf(";\n");
         break;
     case IR_STMT_LABEL:
@@ -181,32 +170,16 @@ void dbg_print_ir_stmt(IRStmt_T* stmt)
         printf("  goto ~%u if ", stmt->goto_if.label_id);
         if(stmt->goto_if.negated)
             printf("!");
-        dbg_print_ir_expr(stmt->goto_if.condition);
+        dbg_print_ir_literal(&stmt->goto_if.condition);
         printf(";\n");
         break;
-    case IR_STMT_ASM:
-        printf("  asm ");
-        for(size_t i = 0; i < stmt->_asm.args->size; i++)
-        {
-            dbg_print_ir_expr(stmt->_asm.args->items[i]);
-            printf(" ");
-        }
-        printf(";\n");
-        break;
-    case IR_STMT_PUSH_LOCAL:
-        printf("  push _%u;\n", stmt->push_l.local->id);
-        break;
-    case IR_STMT_POP_LOCAL:
-        printf("  pop;\n");
-        break;
-    case IR_STMT_ASSIGN:
-        printf("  ");
-        dbg_print_ir_expr(stmt->assign.dest);
-        printf(" = ");
-        dbg_print_ir_expr(stmt->assign.value);
+    case IR_STMT_DECL:
+        printf("  %%%u := ", stmt->decl.reg.id);
+        dbg_print_ir_lvalue(&stmt->decl.value);
         printf(";\n");
         break;
     default:
+        printf("<unknown stmt %d>\n", stmt->kind);
         unreachable();
     }
 }
@@ -216,17 +189,19 @@ void dbg_print_ir_function(IRFunction_T* func, IRDebugFilter_T filter)
     if(func->is_extern && !(filter & IR_PRINT_EXTERN_FUNC))
         return;
 
-    printf("%sfn %s(", func->is_extern ? "extern " : "", func->mangled_id);
+    printf("%sfunction %s(", func->is_extern ? "extern " : "", func->mangled_id);
     for(size_t i = 0; i < func->params->size; i++)
     {
-        IRLocal_T* arg = func->params->items[i];
-        printf("_%u ", arg->id);
+        IRParameter_T* arg = func->params->items[i];
+        printf("_%zu: ", i);
         dbg_print_ir_type(arg->type);
-        printf(", ");
+
+        if(i + 1 < func->params->size)
+            printf(", ");
     }
 
     if(func->variadic)
-        printf("...");
+        printf(", ...");
     printf("): ");
     dbg_print_ir_type(func->return_type);
 
@@ -255,11 +230,7 @@ void dbg_print_ir_global(IRGlobal_T* global, IRDebugFilter_T filter)
         printf("global %s: ", global->mangled_id);
         dbg_print_ir_type(global->type);
         printf(" = ");
-    fflush(stdout);
-        if(global->value)
-            dbg_print_ir_expr(global->value);
-        else
-            printf("undefined");
+        dbg_print_ir_literal(&global->value);
         printf(";\n");
     }
 }

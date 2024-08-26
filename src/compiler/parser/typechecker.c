@@ -493,7 +493,8 @@ bool types_equal(Context_T* context, ASTType_T* a, ASTType_T* b)
     if(
         !a ||
         !b ||
-        a->kind != b->kind ||
+        a->kind 
+        != b->kind ||
         a->is_constant != b->is_constant
     )
         return false;
