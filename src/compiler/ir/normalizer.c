@@ -208,8 +208,24 @@ static IRType_T* normalize_type(Normalizer_T* n, ASTType_T* type)
     return ir_type;
 }
 
-static IRRegister_T register_alloca(Normalizer_T* n, IRType_T* type, IRFunction_T* ir_func) {
+static IRRegister_T next_register(Normalizer_T* n, ASTObj_T* backing) {
+    list_push(n->func_context.register_backings, backing);
+    return (IRRegister_T){
+        n->func_context.register_id++
+    };
+}
+
+static IRRegister_T normalize_local(Normalizer_T* n, ASTObj_T* local, IRFunction_T* ir_func) {
+    assert(local->kind == OBJ_LOCAL);
+
     IRStmt_T* decl = init_ir_stmt(n->context, IR_STMT_DECL);
+
+    decl->decl.reg = next_register(n, local);
+    init_ir_lvalue(&decl->decl.value, IR_LVALUE_ALLOCA, normalize_type(n, local->data_type));
+
+    list_push(ir_func->stmts, decl);
+
+    return decl->decl.reg;
 }
 
 static IRLiteral_T* void_literal(Normalizer_T* n, IRLiteral_T* lit) {
@@ -290,12 +306,42 @@ static void make_goto(Normalizer_T* n, IRFunction_T* ir_func, u64 label_id, IRLi
     list_push(ir_func->stmts, _goto);
 }
 
+static IRRegister_T get_register(Normalizer_T* n, ASTObj_T* backing) {
+    for(size_t i = 0; i < n->func_context.register_backings->size; i++) {
+        ASTObj_T* cur = n->func_context.register_backings->items[i];
+        if(cur == backing)
+            return (IRRegister_T){(u32) i};
+    }
+
+    assert(false);
+    return (IRRegister_T){UINT32_MAX};
+}
+
+static IRLiteral_T* normalize_ident(Normalizer_T* n, IRLiteral_T* lit, ASTNode_T* ident, IRFunction_T* ir_func)
+{
+    assert(ident->referenced_obj);
+
+    switch(ident->referenced_obj->kind) {
+        case OBJ_LOCAL:
+        case OBJ_FN_ARG:
+            lit->kind = IR_LITERAL_REG;
+            lit->reg = get_register(n, ident->referenced_obj);
+            break;
+        default:
+            throw_error(n->context, ERR_INTERNAL, ident->tok, "cannot generate IR for ident referencing object of type `%d` yet.", ident->referenced_obj->kind);
+    }
+
+    return lit;
+}
+
 static IRLiteral_T* normalize_expr(Normalizer_T* n, IRLiteral_T* lit, ASTNode_T* expr, IRFunction_T* ir_func)
 {
     switch(expr->kind)
     {
-    default:
-        return normalize_literal(n, lit, expr);
+        case ND_ID:
+            return normalize_ident(n, lit, expr, ir_func);
+        default:
+            return normalize_literal(n, lit, expr);
     }
 }
 
@@ -498,12 +544,14 @@ static void normalize_function(ASTObj_T* func, va_list args)
 
     n->func_context = (FunctionContext_T){
         .register_id = 0,
+        .register_backings = init_list()
     };
 
     for(size_t i = 0; i < func->args->size; i++)
     {
         ASTObj_T* arg = func->args->items[i];
         IRParameter_T* ir_param = init_ir_parameter(n->context, arg->tok, normalize_type(n, arg->data_type));
+        ir_param->reg = next_register(n, arg);
         list_push(ir_func->params, ir_param);
     }
 
@@ -512,19 +560,19 @@ static void normalize_function(ASTObj_T* func, va_list args)
     if(ir_func->is_extern)
         return; 
 
-/*    for(size_t i = 0; i < func->objs->size; i++)
+    for(size_t i = 0; i < func->objs->size; i++)
     {
         ASTObj_T* local = func->objs->items[i];
-        
-        IRLocal_T* ir_local = init_ir_local(n->context, n->locals_info.local_id++, normalize_type(n, local->data_type));
-        list_push(ir_func->locals, ir_local);
-    }*/
+        normalize_local(n, local, ir_func);
+    }
 
     n->label_id = 0;
     normalize_stmt(n, func->body, ir_func); 
 
     if(ir_func->return_type->kind == IR_TYPE_VOID)
         list_push(ir_func->stmts, init_ir_stmt(n->context, IR_STMT_RETURN));
+
+    free_list(n->func_context.register_backings);
 }
 
 static void normalize_global(ASTObj_T* global, va_list args)

@@ -25,7 +25,6 @@ struct IR_REGISTER_STRUCT {
 typedef enum IR_LVALUE_KIND_ENUM : u8 {
     IR_LVALUE_ALLOCA,
     IR_LVALUE_POP,
-    IR_LVALUE_PARAMETER,
     IR_LVALUE_GLOBAL,
     IR_LVALUE_GLOBAL_PTR,
     IR_LVALUE_FUNC_PTR
@@ -43,6 +42,8 @@ struct IR_LVALUE_STRUCT {
         const char* function_id;
     };
 };
+
+void init_ir_lvalue(IRLValue_T* dst, IRLValueKind_T kind, IRType_T* type);
 
 typedef enum IR_LITERAL_KIND_ENUM : u8 {
     IR_LITERAL_VOID, // nothing
@@ -118,6 +119,8 @@ IRStmt_T* init_ir_stmt(Context_T* context, IRStmtKind_T kind);
 struct IR_PARAMETER_STRUCT {
     Token_T* tok;
     IRType_T* type;
+
+    IRRegister_T reg;
 };
 
 IRParameter_T* init_ir_parameter(Context_T* context, Token_T* tok, IRType_T* type);

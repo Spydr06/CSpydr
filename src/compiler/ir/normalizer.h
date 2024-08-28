@@ -16,6 +16,7 @@ typedef struct LOOP_CONTEXT_STRUCT {
 
 typedef struct FUNC_CONTEXT_STRUCT {
     u32 register_id;
+    List_T* register_backings;
 } FunctionContext_T;
 
 typedef struct NORMALIZER_STRUCT {

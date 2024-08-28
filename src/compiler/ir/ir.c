@@ -20,8 +20,15 @@ void ir_init(IR_T* ir, Context_T* context)
     CONTEXT_ALLOC_REGISTER(context, ir->types);
 }
 
+void init_ir_lvalue(IRLValue_T* dst, IRLValueKind_T kind, IRType_T* type) {
+    memset(dst, 0, sizeof(struct IR_LVALUE_STRUCT));
+
+    dst->kind = kind;
+    dst->type = type;
+}
+
 void init_ir_literal(IRLiteral_T* dst, IRLiteralKind_T kind, IRType_T* type) {
-    memset(dst, 0, sizeof(IRLiteral_T));
+    memset(dst, 0, sizeof(struct IR_LITERAL_STRUCT));
 
     dst->kind = kind;
     dst->type = type;

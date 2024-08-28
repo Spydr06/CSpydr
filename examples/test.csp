@@ -1,6 +1,7 @@
+const FOO: i32 = 0;
 
-fn main(): i32 {
+fn main(argc: i32, argv: &&char): i32 {
     let x: i32;
-    <- 69;
+    <- x;
 }
 

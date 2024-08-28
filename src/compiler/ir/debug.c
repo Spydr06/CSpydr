@@ -98,14 +98,11 @@ void dbg_print_ir_type(IRType_T* type)
 void dbg_print_ir_lvalue(IRLValue_T* lvalue) {
     switch(lvalue->kind) {
         case IR_LVALUE_ALLOCA:
-            printf("alloca 0x%x; align 0x%x", lvalue->type->size, lvalue->type->align);
+            printf("alloca ");
+            dbg_print_ir_type(lvalue->type);
             break;
         case IR_LVALUE_POP:
             printf("pop");
-            break;
-        case IR_LVALUE_PARAMETER:
-            printf("parameter %u; ", lvalue->parameter_num);
-            dbg_print_ir_type(lvalue->type);
             break;
         case IR_LVALUE_GLOBAL:
             printf("global %s; ", lvalue->global_id);
@@ -145,6 +142,9 @@ void dbg_print_ir_literal(IRLiteral_T* lit)
         break;
     case IR_LITERAL_F64:
         printf("%ff64", lit->f64_lit);
+        break;
+    case IR_LITERAL_REG:
+        printf("%%%u", lit->reg.id);
         break;
     default:
         unreachable();
@@ -193,7 +193,8 @@ void dbg_print_ir_function(IRFunction_T* func, IRDebugFilter_T filter)
     for(size_t i = 0; i < func->params->size; i++)
     {
         IRParameter_T* arg = func->params->items[i];
-        printf("_%zu: ", i);
+
+        printf("%%%u: ", arg->reg.id);
         dbg_print_ir_type(arg->type);
 
         if(i + 1 < func->params->size)
