@@ -107,6 +107,7 @@ void dbg_print_ir_lvalue(IRLValue_T* lvalue) {
         case IR_LVALUE_GLOBAL:
             printf("global %s; ", lvalue->global_id);
             dbg_print_ir_type(lvalue->type);
+            break;
         case IR_LVALUE_GLOBAL_PTR:
             printf("ptrof (global %s)", lvalue->global_id);
             break;
@@ -146,6 +147,9 @@ void dbg_print_ir_literal(IRLiteral_T* lit)
     case IR_LITERAL_REG:
         printf("%%%u", lit->reg.id);
         break;
+    case IR_LITERAL_DEREF:
+        printf("%d(%%%u)", lit->deref.offset, lit->deref.reg.id);
+        break;
     default:
         unreachable();
     }
@@ -176,6 +180,11 @@ void dbg_print_ir_stmt(IRStmt_T* stmt)
     case IR_STMT_DECL:
         printf("  %%%u := ", stmt->decl.reg.id);
         dbg_print_ir_lvalue(&stmt->decl.value);
+        printf(";\n");
+        break;
+    case IR_STMT_STORE_DEREF:
+        printf("  store %d(%%%u), ", stmt->store_deref.offset, stmt->store_deref.location.id);
+        dbg_print_ir_literal(&stmt->store_deref.value);
         printf(";\n");
         break;
     default:

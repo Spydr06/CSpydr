@@ -122,7 +122,7 @@ i32 codegen_pass(Context_T* context, IR_T* ir, const char* target, const char** 
     if(strcmp(context->backend->fileext, ".o") != 0)
     {
         if(!context->flags.silent)
-            LOG_INFO_F(COLOR_BOLD_BLUE "  Compiling " COLOR_RESET " %s\n", context->backend->name);
+            LOG_INFO_F(COLOR_BOLD_BLUE "  Compiling " COLOR_BOLD_WHITE " %s\n" COLOR_RESET, context->backend->name);
 
         object_filepath = malloc(BUFSIZ * sizeof(char));
         get_cached_file_path(object_filepath, target, ".o");

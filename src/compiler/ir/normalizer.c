@@ -292,7 +292,7 @@ static u64 make_label(Normalizer_T* n, IRFunction_T* ir_func)
 
 static void make_goto(Normalizer_T* n, IRFunction_T* ir_func, u64 label_id, IRLiteral_T cond, bool negate)
 {
-    IRStmt_T* _goto = init_ir_stmt(n->context, cond.type == IR_LITERAL_VOID ? IR_STMT_GOTO : IR_STMT_GOTO_IF);
+    IRStmt_T* _goto = init_ir_stmt(n->context, cond.kind == IR_LITERAL_VOID ? IR_STMT_GOTO : IR_STMT_GOTO_IF);
 
     if(cond.type != IR_LITERAL_VOID)
     {
@@ -324,8 +324,10 @@ static IRLiteral_T* normalize_ident(Normalizer_T* n, IRLiteral_T* lit, ASTNode_T
     switch(ident->referenced_obj->kind) {
         case OBJ_LOCAL:
         case OBJ_FN_ARG:
-            lit->kind = IR_LITERAL_REG;
-            lit->reg = get_register(n, ident->referenced_obj);
+            lit->kind = IR_LITERAL_DEREF;
+            lit->type = normalize_type(n, ident->data_type);
+            lit->deref.reg = get_register(n, ident->referenced_obj);
+            lit->deref.offset = 0;
             break;
         default:
             throw_error(n->context, ERR_INTERNAL, ident->tok, "cannot generate IR for ident referencing object of type `%d` yet.", ident->referenced_obj->kind);
@@ -334,10 +336,38 @@ static IRLiteral_T* normalize_ident(Normalizer_T* n, IRLiteral_T* lit, ASTNode_T
     return lit;
 }
 
+static IRLiteral_T* normalize_expr(Normalizer_T* n, IRLiteral_T* lit, ASTNode_T* expr, IRFunction_T* ir_func);
+
+static IRLiteral_T* normalize_assignment(Normalizer_T* n, IRLiteral_T* lit, ASTNode_T* expr, IRFunction_T* ir_func)
+{
+    switch(expr->left->kind) {
+        case ND_ID:
+            normalize_ident(n, lit, expr->left, ir_func);
+            break;
+        default:
+            throw_error(n->context, ERR_INTERNAL, expr->tok, "could not generate IR for assignment lvalue of kind %d.", expr->left->kind);
+            unreachable();
+    }
+
+    assert(lit->kind == IR_LITERAL_DEREF);
+
+    IRStmt_T* ir_stmt = init_ir_stmt(n->context, IR_STMT_STORE_DEREF);
+    ir_stmt->store_deref.location = lit->deref.reg;
+    ir_stmt->store_deref.offset = lit->deref.offset;
+
+    normalize_expr(n, &ir_stmt->store_deref.value, expr->right, ir_func);
+
+    list_push(ir_func->stmts, ir_stmt);
+
+    return lit;
+}
+
 static IRLiteral_T* normalize_expr(Normalizer_T* n, IRLiteral_T* lit, ASTNode_T* expr, IRFunction_T* ir_func)
 {
     switch(expr->kind)
     {
+        case ND_ASSIGN:
+            return normalize_assignment(n, lit, expr, ir_func);
         case ND_ID:
             return normalize_ident(n, lit, expr, ir_func);
         default:

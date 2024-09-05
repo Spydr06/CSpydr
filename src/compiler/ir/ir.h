@@ -27,7 +27,7 @@ typedef enum IR_LVALUE_KIND_ENUM : u8 {
     IR_LVALUE_POP,
     IR_LVALUE_GLOBAL,
     IR_LVALUE_GLOBAL_PTR,
-    IR_LVALUE_FUNC_PTR
+    IR_LVALUE_FUNC_PTR,
 } IRLValueKind_T;
 
 struct IR_LVALUE_STRUCT {
@@ -36,7 +36,6 @@ struct IR_LVALUE_STRUCT {
     IRType_T* type;
 
     union {
-        IRLiteral_T* push_from;
         u32 parameter_num;
         const char* global_id;
         const char* function_id;
@@ -57,7 +56,8 @@ typedef enum IR_LITERAL_KIND_ENUM : u8 {
     IR_LITERAL_F32,
     IR_LITERAL_F64,
 
-    IR_LITERAL_REG
+    IR_LITERAL_REG,
+    IR_LITERAL_DEREF
 } IRLiteralKind_T;
 
 void init_ir_literal(IRLiteral_T* dst, IRLiteralKind_T kind, IRType_T* type);
@@ -78,6 +78,11 @@ struct IR_LITERAL_STRUCT {
         f64 f64_lit;
 
         IRRegister_T reg;
+
+        struct {
+            IRRegister_T reg;
+            i32 offset;
+        } deref;
     };
 };
 
@@ -87,6 +92,7 @@ typedef enum IR_STMT_KIND_ENUM : u8 {
     IR_STMT_GOTO,
     IR_STMT_GOTO_IF,
     IR_STMT_DECL,
+    IR_STMT_STORE_DEREF,
 } IRStmtKind_T;
 
 struct IR_STMT_STRUCT {
@@ -111,6 +117,11 @@ struct IR_STMT_STRUCT {
             IRRegister_T reg;
             IRLValue_T value;
         } decl;
+        struct {
+            IRLiteral_T value;
+            IRRegister_T location;
+            i32 offset;
+        } store_deref;
     };
 };
 
