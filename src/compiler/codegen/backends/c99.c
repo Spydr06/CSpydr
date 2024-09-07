@@ -9,6 +9,7 @@
 
 #include <stdint.h>
 
+#define _(x) x
 #define P(...) codegen_printf(c, __VA_ARGS__)
 #define P_ln(...) codegen_println(c, __VA_ARGS__)
 
@@ -139,13 +140,195 @@ static void C99_define_type(CodegenData_T* c, IRType_T* type, size_t i)
     list_push(c->b_data->generated_types, type);
 }
 
+static void C99_generate_literal(CodegenData_T* c, IRLiteral_T* lit)
+{
+    switch(lit->kind) {
+        case IR_LITERAL_VOID:
+            break;
+        case IR_LITERAL_I8:
+            P("((int8_t) %hhd)", lit->i8_lit);
+            break;
+        case IR_LITERAL_U8:
+            P("((uint8_t) %hhu)", lit->u8_lit);
+            break;
+        case IR_LITERAL_I32:
+            P("((int32_t) %d)", lit->i32_lit);
+            break;
+        case IR_LITERAL_I64:
+            P("((int64_t) %ld)", lit->i64_lit);
+            break;
+        case IR_LITERAL_U64:
+            P("((uint64_t) %lu)", lit->u64_lit);
+            break;
+        case IR_LITERAL_F32:
+            P("%f", (double) lit->f32_lit);
+            break;
+        case IR_LITERAL_F64:
+            P("%f", lit->f64_lit);
+            break;
+        case IR_LITERAL_REG:
+            P("(&_%d)", lit->reg.id);
+            break;
+        case IR_LITERAL_DEREF:
+            if(lit->deref.offset) 
+            {
+                P("(*(");
+                C99_generate_type(c, lit->type);
+                P("*) (((void*) &_%d) + %d))", lit->deref.reg.id, lit->deref.offset);
+            }
+            else
+                P("_%d", lit->deref.reg.id);
+            break;
+        default:
+            unreachable();
+    }
+}
+
+static void C99_generate_lvalue(CodegenData_T* c, IRLValue_T* lvalue)
+{
+    switch(lvalue->kind) {
+        default:
+            break;
+    }
+}
+
+static void C99_generate_local_decl(CodegenData_T* c, IRStmt_T* decl)
+{
+    P("  ");
+    C99_generate_type(c, decl->decl.value.type);
+    P(" _%d", decl->decl.reg.id);
+    C99_generate_lvalue(c, &decl->decl.value);
+    P_ln(";");
+}
+
+static void C99_generate_stmt(CodegenData_T* c, IRStmt_T* stmt)
+{
+    switch(stmt->kind)
+    {
+        case IR_STMT_RETURN:
+            P("  return ");
+            C99_generate_literal(c, &stmt->_return.lit);
+            P_ln(";");
+            break;
+        case IR_STMT_DECL:
+            C99_generate_local_decl(c, stmt);
+            break;
+        case IR_STMT_STORE_DEREF:
+            if(stmt->store_deref.offset) 
+            {
+                P("  (*(");
+                C99_generate_type(c, stmt->store_deref.value.type);
+                P("*) (((void*) &_%d) + %d))", stmt->store_deref.location.id, stmt->store_deref.offset);
+            }
+            else
+                P("  _%d", stmt->store_deref.location.id);
+            P(" = ");
+            C99_generate_literal(c, &stmt->store_deref.value);
+            P_ln(";");
+            break;
+        case IR_STMT_LABEL:
+            P("_L%u:", stmt->label.id);
+            break;
+        default:
+    }
+}
+
+static void C99_generate_global_decl(CodegenData_T* c, IRGlobal_T* global)
+{
+    P("extern ");
+    C99_generate_type(c, global->type);
+    P_ln(" %s;", global->mangled_id);
+}
+
+static void C99_generate_global_definition(CodegenData_T* c, IRGlobal_T* global)
+{
+    if(global->is_extern)
+        return;
+
+    C99_generate_type(c, global->type);
+    P(" %s = ", global->mangled_id);
+    C99_generate_literal(c, &global->value);
+    P_ln(";");
+}
+
+static void C99_generate_parameter(CodegenData_T* c, IRParameter_T* param)
+{
+    C99_generate_type(c, param->type);
+    P(" _%d", param->reg.id);
+}
+
+static void C99_generate_function_signature(CodegenData_T* c, IRFunction_T* func)
+{
+    if(func->is_extern)
+        P("extern ");
+
+    C99_generate_type(c, func->return_type); 
+    P(" %s(", func->mangled_id);
+
+    if(func->params->size == 0)
+        P("void");
+
+    for(size_t i = 0; i < func->params->size; i++)
+    {
+        C99_generate_parameter(c, func->params->items[i]);
+        if(i + 1 < func->params->size)
+            P(", ");
+    }
+
+    if(func->variadic)
+        P(", ...");
+
+    P(")");
+}
+
+static void C99_generate_function_decl(CodegenData_T* c, IRFunction_T* func)
+{
+    C99_generate_function_signature(c, func);
+    P_ln(";");
+}
+
+static void C99_generate_function_definition(CodegenData_T* c, IRFunction_T* func)
+{
+    if(func->is_extern)
+        return;
+
+    C99_generate_function_signature(c, func);
+    P_ln(" {");
+
+    for(size_t i = 0; i < func->stmts->size; i++)
+        C99_generate_stmt(c, func->stmts->items[i]);
+
+    P_ln("}");
+}
+
+static void C99_generate_ir(CodegenData_T* c, IR_T* ir)
+{
+    for(size_t i = 0; i < ir->globals->size; i++)
+        C99_generate_global_decl(c, ir->globals->items[i]);
+
+    for(size_t i = 0; i < ir->functions->size; i++)
+        C99_generate_function_decl(c, ir->functions->items[i]);
+    
+    P_ln("");
+
+    for(size_t i = 0; i < ir->globals->size; i++)
+        C99_generate_global_definition(c, ir->globals->items[i]);
+
+    for(size_t i = 0; i < ir->functions->size; i++)
+        C99_generate_function_definition(c, ir->functions->items[i]);
+
+    P_ln("");
+}
+
 static void C99_begin_file(CodegenData_T* c)
 {
     c->b_data = calloc(1, sizeof(struct BACKEND_DATA_STRUCT));
     c->b_data->generated_types = init_list();
 
-    P_ln("// generated by cspc");
-    P_ln("#include <stdint.h>");
+    P_ln(_(
+"// generated by cspc\n\
+#include <stdint.h>\n\
+\n"));
 
     for(size_t i = 0; i < c->ir->types->size; i++)
         C99_define_type(c, c->ir->types->items[i], i); 
@@ -153,7 +336,11 @@ static void C99_begin_file(CodegenData_T* c)
 
 static void C99_finish_file(CodegenData_T* c)
 {
-    P_ln("int main() { return 0; }");
+    P_ln(_(
+"int main(int argc, char** argv)\n\
+{\n\
+    return __csp_main((int32_t) argc, (int8_t**) argv);\n\
+}"));
 
     free_list(c->b_data->generated_types);
     free(c->b_data);
@@ -186,7 +373,7 @@ static void C99_compile(CodegenData_T* c, const char* input_file, const char* ou
 
     if(exit_code != 0)
     {
-        LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED "C compiler terminated with non-zero exit code %d.\n" COLOR_RESET, exit_code);
+        LOG_ERROR_F(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " C compiler terminated with non-zero exit code %d.\n" COLOR_RESET, exit_code);
         throw(c->context->main_error_exception);
     }
 }

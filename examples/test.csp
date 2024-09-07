@@ -2,6 +2,9 @@ const FOO: i32 = 0;
 
 fn main(argc: i32, argv: &&char): i32 {
     let x = 0;
-    <- x + 2;
+    <- x;
 }
 
+namespace foo {
+    fn test() {}
+}

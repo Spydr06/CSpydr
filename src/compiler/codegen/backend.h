@@ -2,6 +2,7 @@
 #define CSPYDR_CODEGEN_BACKEND_H
 
 #include "context.h"
+#include "ir/ir.h"
 #include <stdbool.h>
 
 #define BACKEND_CALLBACK(backend, callback) backend##_##callback
@@ -9,6 +10,7 @@
     const BackendCallbacks_T backend##_CALLBACKS = ((BackendCallbacks_T) {   \
         .begin_file = backend##_begin_file,                                  \
         .finish_file = backend##_finish_file,                                \
+        .generate_ir = backend##_generate_ir,                                \
         .compile = backend##_compile,                                        \
     })
 
@@ -20,6 +22,7 @@ typedef struct CODEGEN_DATA_STRUCT CodegenData_T;
 typedef struct BACKEND_CALLBACKS_STRUCT {
     void (*const begin_file)(CodegenData_T* c);
     void (*const finish_file)(CodegenData_T* c);
+    void (*const generate_ir)(CodegenData_T* c, IR_T*);
     void (*const compile)(CodegenData_T* c, const char* input_path, const char* output_path);
 } BackendCallbacks_T;
 

@@ -90,6 +90,7 @@ i32 codegen_pass(Context_T* context, IR_T* ir, const char* target, const char** 
     init_codegen_data(&c, context, ir);
     c.b->begin_file(&c);    
     
+    c.b->generate_ir(&c, ir);
 
     c.b->finish_file(&c); 
     fclose(c.output.code_buffer);

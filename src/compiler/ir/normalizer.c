@@ -556,6 +556,20 @@ static void normalize_stmt(Normalizer_T* n, ASTNode_T* stmt, IRFunction_T* ir_fu
         list_push(ir_func->stmts, ir_stmt);
 }
 
+static const char* mangle_ident(ASTIdentifier_T* id) {
+    char* buf = malloc(BUFSIZ);
+    *buf = '\0';
+
+    strcat(buf, "__csp");
+    
+    do {
+        strcat(buf, "_");
+        strcat(buf, id->callee);
+    } while((id = id->outer));
+
+    return buf;
+}
+
 static void normalize_function(ASTObj_T* func, va_list args)
 {
     GET_NORMALIZER(args);
@@ -563,7 +577,7 @@ static void normalize_function(ASTObj_T* func, va_list args)
     IRFunction_T* ir_func = init_ir_function(
         n->context,
         func->tok,
-        func->id->callee /* TODO */,
+        mangle_ident(func->id),
         func->is_extern || func->is_extern_c,
         func->data_type->is_variadic,
         normalize_type(n, func->return_type)
@@ -599,8 +613,11 @@ static void normalize_function(ASTObj_T* func, va_list args)
     n->label_id = 0;
     normalize_stmt(n, func->body, ir_func); 
 
-    if(ir_func->return_type->kind == IR_TYPE_VOID)
-        list_push(ir_func->stmts, init_ir_stmt(n->context, IR_STMT_RETURN));
+    if(ir_func->return_type->kind == IR_TYPE_VOID) {
+        IRStmt_T* ret_stmt = init_ir_stmt(n->context, IR_STMT_RETURN);
+        void_literal(n, &ret_stmt->_return.lit);
+        list_push(ir_func->stmts, ret_stmt);
+    }
 
     free_list(n->func_context.register_backings);
 }
@@ -613,7 +630,7 @@ static void normalize_global(ASTObj_T* global, va_list args)
     list_push(n->ir->globals, init_ir_global(
         n->context,
         global->tok,
-        global->id->callee /* TODO */,
+        mangle_ident(global->id),
         global->is_extern || global->is_extern_c,
         global->is_constant,
         normalize_type(n, global->data_type),

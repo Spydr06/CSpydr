@@ -2,7 +2,10 @@
 
 #include "codegen/codegen.h"
 #include "io/log.h"
+#include "ir/ir.h"
 #include "platform/linux/linux_platform.h"
+
+#include <assert.h>
 
 #define P_ln(...) codegen_println(c, __VA_ARGS__)
 
@@ -21,6 +24,11 @@ static void X86_64_GAS_finish_file(CodegenData_T* c)
 
     P_ln(".section .note.GNU-stack");
     P_ln(".byte 0");
+}
+
+static void X86_64_GAS_generate_ir(CodegenData_T* c, IR_T* ir)
+{
+    assert(false && "unimplemented");
 }
 
 static void X86_64_GAS_compile(CodegenData_T* c, const char* input_file, const char* output_file)
