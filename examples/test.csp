@@ -1,4 +1,4 @@
-[export("fOo")]
+[export("+-+-")]
 const FOO: i32 = 0;
 
 

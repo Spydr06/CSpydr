@@ -12,6 +12,7 @@
 #include "context.h"
 #include "io/log.h"
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -576,6 +577,17 @@ EVAL_FN(export)
 {
     obj->exported = data->arguments->items[0];
     obj->referenced = true;
+
+    size_t export_len = strlen(obj->exported);
+    for(size_t i = 0; i < export_len; i++) {
+        char c = obj->exported[i];
+        if(!isalnum(c) && c != '_')
+        {
+            throw_error(context, ERR_SYNTAX_ERROR_UNCR, data->name_token, "exporting identifiers cannot contain `%c`; expect alphanumeric or `_` character", c);
+            break;
+        }
+    }
+
     return false;
 }
 
