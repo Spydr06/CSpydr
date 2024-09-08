@@ -62,7 +62,7 @@ while [[ $# -gt 0 ]]; do
             exit
             ;;
         *=*)
-            export $1
+            export "$1"
             ;;
         *)
             error "unknown option -- '$1'"

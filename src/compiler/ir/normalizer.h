@@ -13,7 +13,6 @@ typedef struct LOOP_CONTEXT_STRUCT {
     u32 continue_label;
 } LoopContext_T;
 
-
 typedef struct FUNC_CONTEXT_STRUCT {
     u32 register_id;
     List_T* register_backings;
@@ -23,6 +22,7 @@ typedef struct NORMALIZER_STRUCT {
     Context_T* context;
     IR_T* ir;
     List_T* type_pairs;
+    List_T* mangled_idents;
 
     uint64_t label_id;
     LoopContext_T loop_context;
