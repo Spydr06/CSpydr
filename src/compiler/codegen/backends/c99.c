@@ -185,7 +185,7 @@ static void C99_generate_literal(CodegenData_T* c, IRLiteral_T* lit)
     }
 }
 
-static void C99_generate_lvalue(CodegenData_T* c, IRLValue_T* lvalue)
+static void C99_generate_initializer(CodegenData_T* c, IRInitializer_T* lvalue)
 {
     switch(lvalue->kind) {
         default:
@@ -198,7 +198,7 @@ static void C99_generate_local_decl(CodegenData_T* c, IRStmt_T* decl)
     P("  ");
     C99_generate_type(c, decl->decl.value.type);
     P(" _%d", decl->decl.reg.id);
-    C99_generate_lvalue(c, &decl->decl.value);
+    C99_generate_initializer(c, &decl->decl.value);
     P_ln(";");
 }
 

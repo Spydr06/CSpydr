@@ -17,7 +17,7 @@ typedef enum : u8 {
 void dbg_print_ir(IR_T* ir, IRDebugFilter_T filter);
 void dbg_print_ir_type(IRType_T* type);
 
-void dbg_print_ir_lvalue(IRLValue_T* lvalue);
+void dbg_print_ir_initializer(IRInitializer_T* lvalue);
 void dbg_print_ir_literal(IRLiteral_T* expr);
 void dbg_print_ir_stmt(IRStmt_T* stmt);
 

@@ -224,7 +224,7 @@ static IRRegister_T normalize_local(Normalizer_T* n, ASTObj_T* local, IRFunction
     IRStmt_T* decl = init_ir_stmt(n->context, IR_STMT_DECL);
 
     decl->decl.reg = next_register(n, local);
-    init_ir_lvalue(&decl->decl.value, IR_LVALUE_ALLOCA, normalize_type(n, local->data_type));
+    init_ir_initializer(&decl->decl.value, IR_INITIALIZER_ALLOCA, normalize_type(n, local->data_type));
 
     list_push(ir_func->stmts, decl);
 

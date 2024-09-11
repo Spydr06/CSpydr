@@ -95,23 +95,23 @@ void dbg_print_ir_type(IRType_T* type)
 #undef PRIMITIVE
 }
 
-void dbg_print_ir_lvalue(IRLValue_T* lvalue) {
+void dbg_print_ir_initializer(IRInitializer_T* lvalue) {
     switch(lvalue->kind) {
-        case IR_LVALUE_ALLOCA:
+        case IR_INITIALIZER_ALLOCA:
             printf("alloca ");
             dbg_print_ir_type(lvalue->type);
             break;
-        case IR_LVALUE_POP:
+        case IR_INITIALIZER_POP:
             printf("pop");
             break;
-        case IR_LVALUE_GLOBAL:
+        case IR_INITIALIZER_GLOBAL:
             printf("global %s; ", lvalue->global_id);
             dbg_print_ir_type(lvalue->type);
             break;
-        case IR_LVALUE_GLOBAL_PTR:
+        case IR_INITIALIZER_GLOBAL_PTR:
             printf("ptrof (global %s)", lvalue->global_id);
             break;
-        case IR_LVALUE_FUNC_PTR:
+        case IR_INITIALIZER_FUNC_PTR:
             printf("ptrof (function %s)", lvalue->function_id);
     }
 }
@@ -179,7 +179,7 @@ void dbg_print_ir_stmt(IRStmt_T* stmt)
         break;
     case IR_STMT_DECL:
         printf("  %%%u := ", stmt->decl.reg.id);
-        dbg_print_ir_lvalue(&stmt->decl.value);
+        dbg_print_ir_initializer(&stmt->decl.value);
         printf(";\n");
         break;
     case IR_STMT_STORE_DEREF:

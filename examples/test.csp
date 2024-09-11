@@ -1,12 +1,5 @@
-[export("+-+-")]
-const FOO: i32 = 0;
-
-
 fn main(argc: i32, argv: &&char): i32 {
     let x = 0;
-    if x {
-
-    }
     <- x;
 }
 

@@ -10,7 +10,7 @@
 
 typedef struct IR_REGISTER_STRUCT IRRegister_T;
 typedef struct IR_LITERAL_STRUCT IRLiteral_T;
-typedef struct IR_LVALUE_STRUCT IRLValue_T;
+typedef struct IR_INITIALIZER_STRUCT IRInitializer_T;
 typedef struct IR_STMT_STRUCT IRStmt_T;
 typedef struct IR_TYPE_STRUCT IRType_T;
 
@@ -22,16 +22,16 @@ struct IR_REGISTER_STRUCT {
     uint32_t id;
 };
 
-typedef enum IR_LVALUE_KIND_ENUM : u8 {
-    IR_LVALUE_ALLOCA,
-    IR_LVALUE_POP,
-    IR_LVALUE_GLOBAL,
-    IR_LVALUE_GLOBAL_PTR,
-    IR_LVALUE_FUNC_PTR,
-} IRLValueKind_T;
+typedef enum IR_INITIALIZER_KIND_ENUM : u8 {
+    IR_INITIALIZER_ALLOCA,
+    IR_INITIALIZER_POP,
+    IR_INITIALIZER_GLOBAL,
+    IR_INITIALIZER_GLOBAL_PTR,
+    IR_INITIALIZER_FUNC_PTR,
+} IRInitializerKind_T;
 
-struct IR_LVALUE_STRUCT {
-    IRLValueKind_T kind;
+struct IR_INITIALIZER_STRUCT {
+    IRInitializerKind_T kind;
 
     IRType_T* type;
 
@@ -42,7 +42,7 @@ struct IR_LVALUE_STRUCT {
     };
 };
 
-void init_ir_lvalue(IRLValue_T* dst, IRLValueKind_T kind, IRType_T* type);
+void init_ir_initializer(IRInitializer_T* dst, IRInitializerKind_T kind, IRType_T* type);
 
 typedef enum IR_LITERAL_KIND_ENUM : u8 {
     IR_LITERAL_VOID, // nothing
@@ -115,7 +115,7 @@ struct IR_STMT_STRUCT {
         } _return;
         struct {
             IRRegister_T reg;
-            IRLValue_T value;
+            IRInitializer_T value;
         } decl;
         struct {
             IRLiteral_T value;
