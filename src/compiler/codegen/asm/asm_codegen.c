@@ -20,6 +20,7 @@
 #include <assert.h>
 #include <string.h>
 #include <libgen.h>
+#include <sys/types.h>
 
 #define CSPC_ASM_EXTERN_FN_POSTFIX "@GOTPCREL"
 
@@ -249,6 +250,7 @@ i32 asm_codegen_pass(Context_T* context, ASTProg_T* ast)
     cg.silent = context->flags.silent;
     cg.print = context->flags.print_code;
     cg.link_exec = ast->entry_point != NULL;
+    context->current_obj = &cg.current_fn;
 
     asm_gen_code(&cg, context->paths.target);
     free_asm_cg(&cg);
@@ -917,6 +919,40 @@ static void asm_gen_index(ASMCodegenData_T* cg, ASTNode_T* index, bool gen_addre
         asm_load(cg, index->data_type);
 }
 
+static ssize_t get_vtable_index(ASMCodegenData_T* cg, ASTType_T* interface, const char* ident) {
+    interface = unpack(interface);
+
+    for(size_t i = 0; i < interface->func_decls->size; i++) {
+        ASTObj_T* func = interface->func_decls->items[i];
+        if(strcmp(func->id->callee, ident) == 0)
+            return i;
+    }
+
+    unreachable();
+    assert(false);
+    return -1;
+}
+
+static void asm_gen_vtable_member_addr(ASMCodegenData_T* cg, ASTNode_T* node, ASTType_T* dyn_type) {
+    assert(node->kind == ND_MEMBER);
+    assert(dyn_type->kind == TY_DYN);
+
+    ssize_t vtable_idx = get_vtable_index(cg, dyn_type->base, node->right->id->callee);
+    assert(vtable_idx >= 0);
+
+    asm_gen_addr(cg, node->left);
+    asm_println(cg, "  mov %d(%%rax), %%rax", PTR_S);
+
+    if(vtable_idx)
+        asm_println(cg, "  add $%zd, %%rax", vtable_idx * PTR_S);
+//    asm_println(cg, "  mov (%%rax), %%rdi");
+
+//    asm_println(cg, "  lea (%%rip), %%rax");
+//    asm_println(cg, "  add %%rdi, %%rax");
+
+//    asm_println(cg, "  add $%d, %%rax", vtable_idx * PTR_S);
+}
+
 static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
 {
     switch(node->kind)
@@ -984,12 +1020,19 @@ static void asm_gen_addr(ASMCodegenData_T* cg, ASTNode_T* node)
         case ND_DEREF:
             asm_gen_expr(cg, node->right);
             return;
-        case ND_MEMBER:
+        case ND_MEMBER: {
+            ASTType_T* dyn_type = unpack(node->left->data_type);
+            if(dyn_type->kind == TY_DYN) {
+                asm_gen_vtable_member_addr(cg, node, dyn_type);
+                asm_println(cg, "  mov (%%rax), %%rax");
+                return;
+            }
+
             asm_gen_addr(cg, node->left);
             asm_println(cg, "  add $%ld, %%rax", node->body->offset);
             if(unpack(node->data_type)->kind == TY_FN)
                 asm_println(cg, "  mov (%%rax), %%rax");
-            return;
+        } return;
         case ND_INDEX:
             asm_gen_index(cg, node, true);
             return;
@@ -1031,6 +1074,8 @@ static bool asm_has_flonum(ASTType_T* ty, i32 lo, i32 hi, i32 offset)
         }
         return true;
     }
+    else if(ty->kind == TY_DYN)
+        return false;
     else if(ty->kind == TY_C_ARRAY || ty->kind == TY_ARRAY)
     {
         for(size_t i = 0; i < (size_t)(ty->size / ty->base->size); i++)
@@ -1513,6 +1558,7 @@ static i32 asm_pop_args(ASMCodegenData_T* cg, ASTNode_T* node)
         switch(ty->kind)
         {
             case TY_STRUCT:
+            case TY_DYN:
                 if(ty->size > 16)
                     continue;
                 
@@ -1865,14 +1911,21 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
                     asm_println(cg, "  mov (%%rax), %%rax");
             return;
 
-        case ND_MEMBER:
+        case ND_MEMBER: {
+            ASTType_T* dyn_type = unpack(node->left->data_type);
+            if(dyn_type->kind == TY_DYN) {
+                asm_gen_vtable_member_addr(cg, node, dyn_type);
+                asm_println(cg, "  mov (%%rax), %%rax");
+                return;
+            }
+
             asm_gen_addr(cg, node);
             asm_load(cg, node->data_type);
 
             if(unpack(node->data_type)->kind == TY_FN)
                 asm_println(cg, "  mov (%%rax), %%rax");
 
-            return;
+        } return;
         
         case ND_ARRAY:
         {
@@ -2023,20 +2076,21 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             asm_gen_expr(cg, node->left);
 
             printf("%d\n", node->buffer->offset);
-// asm_println(cg, "  movq %%rax, %d(%%rbp)", node->buffer->offset);
             
             // store data pointer
+            asm_println(cg, "  movq %%rax, %d(%%rbp)", node->buffer->offset); 
 
             // store vtable pointer
-//            asm_println(cg, "  movq .vtable.%zu, %%rax", vtable->id); 
-//            asm_println(cg, "  mov %%rax, -8(%%rdi)");
+            asm_println(cg, "  lea .vtable.%zu(%%rip), %%rax", vtable->id); 
+            asm_println(cg, "  movq %%rax, %d(%%rbp)", node->buffer->offset + PTR_S);
 
             asm_println(cg, "  lea %d(%%rbp), %%rax", node->buffer->offset);
         } return;
 
         case ND_DYNUNCAST:
+            printf("here\n");
             asm_gen_addr(cg, node->left);
-            asm_load(cg, node->data_type);
+            //asm_println(cg, "  add $%ld, %%rax", PTR_S);
             return;
 
         case ND_NOT:

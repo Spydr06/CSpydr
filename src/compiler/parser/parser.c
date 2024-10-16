@@ -1032,6 +1032,7 @@ static ASTObj_T* parse_fn_def(Parser_T* p)
 {
     ASTObj_T* fn = init_ast_obj(&p->context->raw_allocator, OBJ_FUNCTION, p->tok);
     bool is_operator_define = false;
+    fn->tok = p->tok;
 
     if(tok_is(p, TOKEN_OPERATOR_KW))
     {  
@@ -1981,26 +1982,23 @@ static ASTNode_T* parse_float_lit(Parser_T* p)
 }
 
 static ASTNode_T* parse_bool_lit(Parser_T* p)
-{
-    ASTNode_T* bool_lit = constant_literals[p->tok->type];
-
+{ 
+    ASTNode_T* bool_lit = init_ast_node(&p->context->raw_allocator, ND_BOOL, p->tok);
     bool_lit->bool_val = p->tok->type == TOKEN_TRUE;
+    bool_lit->data_type = (ASTType_T*) primitives[TY_BOOL];
 
     parser_advance(p);
-
-    if(!bool_lit->data_type)
-        bool_lit->data_type = (ASTType_T*) primitives[TY_BOOL];
 
     return bool_lit;
 }
 
 static ASTNode_T* parse_nil_lit(Parser_T* p)
 {
-    ASTNode_T* nil_lit = constant_literals[p->tok->type];
-    parser_advance(p);
+    ASTNode_T* nil_lit = init_ast_node(&p->context->raw_allocator, ND_NIL, p->tok);
+    nil_lit->data_type = (ASTType_T*) void_ptr_type;
+    nil_lit->int_val = 0;
 
-    if(!nil_lit->data_type)
-        nil_lit->data_type = (ASTType_T*) void_ptr_type;
+    parser_advance(p);
 
     return nil_lit;
 }

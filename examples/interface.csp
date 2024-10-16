@@ -5,54 +5,25 @@ import "std.csp";
 # - typechecking
 
 type ToString: interface {
-    fn to_string(self: &ToString): &const char
+    fn to_string(self: &ToString): &const char,
+    fn test(self: &ToString)
 };
 
-type Foo: struct {
-};
-
-namespace foo {
-    dyn(ToString) fn to_string(self: &Foo): &const char {
-        <- "Foo::{}";
-    }
-}
-
-type Bar: struct {
-    a: i32
-};
-
-namespace bar {
-    dyn(ToString) fn to_string(self: &Bar): &const char {
-        <- "Bar::{}";
-    }
+namespace __i32_impl {
+    dyn(ToString) fn to_string(x: &i32): &const char = if *x == 0 => "zero" else "non-zero";
 }
 
 fn main(): i32 {
-#    let foo = Foo::{};
-    let bar = Bar::{69};
-    std::io::printf("%p\n", &bar);
+    let x = 69;
 
-#    print(&foo);
-    print(&bar);
-
+    print(&x);
     <- 0;
 }
 
-fn print(a: dyn ToString) {
-#    std::io::puts(a.to_string());
-#    a.to_string();
-    
-    let x: union {
-        a: dyn ToString,
-        b: struct {
-            data: &Bar,
-            vtable: &void
-        }
-    };
-    x.a = a;
+fn print(a: dyn ToString) {   
+    std::io::printf("%s\n", a.to_string());
 
-#    let b = a: &ToString;
-#    let c = b: &Bar;
-
-    std::io::printf("%p\n", x.b.data);
+    let f = a.to_string;
+    let i = 0;
+    std::io::printf("%s\n", f(&i));
 }

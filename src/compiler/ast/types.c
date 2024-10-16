@@ -5,12 +5,6 @@
 #include <string.h>
 #include <stdbool.h>
 
-ASTNode_T* constant_literals[TOKEN_EOF] = { // sets value literals, who are always the same to save memory
-    [TOKEN_TRUE]  = &(ASTNode_T){.kind = ND_BOOL, .bool_val = true,  .is_constant = true},
-    [TOKEN_FALSE] = &(ASTNode_T){.kind = ND_BOOL, .bool_val = false, .is_constant = true},
-    [TOKEN_NIL]   = &(ASTNode_T){.kind = ND_NIL, .int_val = 0,       .is_constant = true},
-};
-
 const ASTType_T* primitives[NUM_TYPES] = {    // sets the primitive data types, who are always the same to save memory
     [TY_I8]  = &(ASTType_T){.kind = TY_I8,    .is_primitive = true, .size = I8_S},
     [TY_I16] = &(ASTType_T){.kind = TY_I16,   .is_primitive = true, .size = I16_S},

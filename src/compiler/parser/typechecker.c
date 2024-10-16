@@ -204,11 +204,12 @@ static void typecheck_assignment(ASTNode_T* assignment, va_list args)
 
 static ASTNode_T* typecheck_arg_pass(TypeChecker_T* t, ASTType_T* expected, ASTNode_T* received)
 {
-    char buf1[BUFSIZ] = {'\0'};
     if(received->unpack_mode)
     {
+        char* buf = alloca(BUFSIZ);
+        *buf = '\0';
         if(!is_const_len_array(received->data_type))
-            throw_error(t->context, ERR_TYPE_ERROR_UNCR, received->tok, "unpacking with `...` is not supported for type `%s`\n", ast_type_to_str(t->context, buf1, received->data_type, LEN(buf1)));
+            throw_error(t->context, ERR_TYPE_ERROR_UNCR, received->tok, "unpacking with `...` is not supported for type `%s`\n", ast_type_to_str(t->context, buf, received->data_type, BUFSIZ));
         throw_error(t->context, ERR_TYPE_ERROR_UNCR, received->tok, "unpacking with `...` is only available for variable-length argument lists");
         return received;
     }
@@ -220,10 +221,13 @@ static ASTNode_T* typecheck_arg_pass(TypeChecker_T* t, ASTType_T* expected, ASTN
     if(result & CAST_OK)
         return implicit_cast(t, received->tok, received, expected, result);
     
-    char buf2[BUFSIZ] = {'\0'};
+    char* buf1 = alloca(BUFSIZ);
+    char* buf2 = alloca(BUFSIZ);
+    *buf1 = '\0';
+    *buf2 = '\0';
     throw_error(t->context, ERR_TYPE_ERROR_UNCR, received->tok, "cannot implicitly cast from `%s` to `%s`", 
-        ast_type_to_str(t->context, buf1, received->data_type, LEN(buf1)),
-        ast_type_to_str(t->context, buf2, expected, LEN(buf2))    
+        ast_type_to_str(t->context, buf1, received->data_type, BUFSIZ),
+        ast_type_to_str(t->context, buf2, expected, BUFSIZ)    
     );
 
     return received;
