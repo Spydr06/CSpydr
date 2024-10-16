@@ -2075,8 +2075,6 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
             
             asm_gen_expr(cg, node->left);
 
-            printf("%d\n", node->buffer->offset);
-            
             // store data pointer
             asm_println(cg, "  movq %%rax, %d(%%rbp)", node->buffer->offset); 
 
@@ -2088,7 +2086,6 @@ static void asm_gen_expr(ASMCodegenData_T* cg, ASTNode_T* node)
         } return;
 
         case ND_DYNUNCAST:
-            printf("here\n");
             asm_gen_addr(cg, node->left);
             //asm_println(cg, "  add $%ld, %%rax", PTR_S);
             return;

@@ -6,7 +6,6 @@ import "std.csp";
 
 type ToString: interface {
     fn to_string(self: &ToString): &const char,
-    fn test(self: &ToString)
 };
 
 namespace __i32_impl {

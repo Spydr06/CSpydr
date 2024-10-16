@@ -52,6 +52,7 @@ static i32 get_type_align(Validator_T* v, ASTType_T* type);
 
 static void validate_drop_functions(Validator_T* v);
 static void validate_semantics(Validator_T* v, ResolveQueue_T* queue);
+static void validate_vtables(Validator_T* v);
 
 // validator struct functions
 static void init_validator(Validator_T* v, Context_T* context, ASTProg_T* ast)
@@ -153,9 +154,7 @@ i32 validator_pass(Context_T* context, ASTProg_T* ast)
     end_scope(&v);
     assert(v.scope_depth == 0);
 
-    // end the validator
-    v.global_scope = NULL;
-    v.current_obj = NULL;
+    validate_vtables(&v);
 
     // check for the main function
     validate_drop_functions(&v);
@@ -164,6 +163,10 @@ i32 validator_pass(Context_T* context, ASTProg_T* ast)
         LOG_ERROR(COLOR_BOLD_RED "[Error]" COLOR_RESET COLOR_RED " missing entrypoint; no `main` function declared.\n");
        context->emitted_errors++;
     }
+
+    // end the validator
+    v.global_scope = NULL;
+    v.current_obj = NULL;
 
 finish:
     free_validator(&v);
@@ -2458,3 +2461,49 @@ static i32 get_type_align(Validator_T* v, ASTType_T* type)
     }
 }
 
+static void validate_vtable(Validator_T* v, ASTType_T* base_type, ASTVTable_T* vtable) {
+    ASTType_T* interface = vtable->interface;
+
+    Token_T* any_impl = NULL;
+    for(size_t i = 0; i < interface->func_decls->size; i++) {
+        ASTObj_T* decl = interface->func_decls->items[i];
+        
+        ASTObj_T* impl = vtable_entry(vtable, decl->id->callee);
+        if(impl && impl->tok) {
+            any_impl = impl->tok;
+            break;
+        }
+    }
+    assert(any_impl);
+
+    for(size_t i = 0; i < interface->func_decls->size; i++) {
+        ASTObj_T* decl = interface->func_decls->items[i];
+
+        ASTObj_T* impl = vtable_entry(vtable, decl->id->callee);
+        if(!impl) {
+            char* buf = alloca(BUFSIZ);
+            *buf = '\0';
+            throw_error(
+                v->context,
+                ERR_TYPE_ERROR_UNCR,
+                EITHER(base_type->tok, any_impl),
+                "type `%s` does not fully implement interface defined in " COLOR_BOLD_WHITE "`%s`" COLOR_RESET " line " COLOR_BOLD_WHITE "`%ld`" COLOR_RESET ":\n"
+                "Missing implementation for interface function `%s`.", 
+                ast_type_to_str(v->context, buf, base_type, BUFSIZ),
+                EITHER(interface->tok->source->short_path, interface->tok->source->path),
+                interface->tok->line + 1,
+                decl->id->callee
+            );
+        }
+    }
+}
+
+static void validate_vtables(Validator_T* v) {
+    for(size_t i = 0; i < v->ast->impls->size; i++) {
+        ASTImpl_T* impl = v->ast->impls->items[i];
+
+        for(size_t j = 0; j < impl->vtables->size; j++) {
+            validate_vtable(v, impl->base_type, impl->vtables->items[j]);
+        }
+    }
+}

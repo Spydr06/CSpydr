@@ -9,7 +9,6 @@
 #include "preprocessor/preprocessor.h"
 #include "parser/parser.h"
 #include "parser/validator.h"
-#include "parser/typechecker.h"
 #include "optimizer/optimizer.h"
 #include "codegen/transpiler/c_codegen.h"
 #include "interpreter/interpreter.h"
