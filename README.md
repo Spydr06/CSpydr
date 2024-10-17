@@ -107,6 +107,8 @@
 - [x] lambda expressions
 - [ ] templates in fuctions and structs
 - [x] va lists
+- [x] interfaces, vtables and dynamic-dispatch for functions
+- [ ] dynamic-dispatch for constants
 - [ ] functions as struct members
 
 ##### CSpydr Standard library features
