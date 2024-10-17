@@ -331,10 +331,12 @@ static ASTObj_T* scope_contains(Scope_T* scope, const char* id)
 
 static IdentResolveResult_T scope_resolve_ident(Validator_T* v, Scope_T* scope, ASTIdentifier_T* ident)
 {
-    if(ident->global_scope)
-        scope = v->global_scope;
+
     if(!scope || !ident)
         return IDENT_MISSING(ident);
+
+    if(ident->global_scope)
+        scope = v->global_scope;
 
     if(ident->outer)
     {

@@ -2337,6 +2337,7 @@ static ASTNode_T* parse_custom_prefix_operator(Parser_T* p)
     ASTNode_T* call = init_ast_node(&p->context->raw_allocator, ND_CALL, p->tok);
     call->expr = init_ast_node(&p->context->raw_allocator, ND_ID, p->tok);
     call->expr->id = init_ast_identifier(&p->context->raw_allocator, p->tok, p->tok->value);
+    call->expr->id->global_scope = false;
 
     parser_consume(p, TOKEN_OPERATOR, "expect operator");
 
