@@ -402,14 +402,14 @@ namespace std {
             <- res;
         }
 
-        fn mmap(addr: &void, length: usize, prot: i32, flags: i32, fd: i32, off: Offset): &void
+        fn mmap(addr: &void, length: usize, prot: i64, flags: i32, fd: i32, off: Offset): &void
         {
             let res: &void;
             syscall_r!(res, Syscall::MMAP, addr, length, prot, flags, fd, off);
             <- res;
         }
 
-        fn mprotect(addr: &void, length: usize, prot: i32): i32
+        fn mprotect(addr: &void, length: usize, prot: i64): i32
         {
             let res: i64;
             syscall_r!(res, Syscall::MPROTECT, addr, length, prot);

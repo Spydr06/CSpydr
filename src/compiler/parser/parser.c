@@ -1285,7 +1285,7 @@ static ASTNode_T* parse_return(Parser_T* p, bool needs_semicolon)
 
     parser_consume(p, TOKEN_RETURN, "expect `ret` or `<-` to return from function");
 
-    if(!tok_is(p, TOKEN_SEMICOLON))
+    if(!tok_is(p, TOKEN_SEMICOLON) && !tok_is(p, TOKEN_UNLESS) && !tok_is(p, TOKEN_WHILE))
     {
         if((p->cur_obj && p->cur_obj->return_type->kind == TY_VOID))
             throw_error(p->context, ERR_TYPE_ERROR_UNCR, ret->tok, "cannot return value from function with type `void`, expect `;`");
