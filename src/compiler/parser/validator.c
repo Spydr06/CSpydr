@@ -2458,6 +2458,8 @@ static i32 get_type_align(Validator_T* v, ASTType_T* type)
         case TY_C_ARRAY:
         case TY_PTR:
             return MAX(pow(2, floor(log(type->base->size)/log(2))), 8);
+        case TY_ARRAY:
+            return PTR_S;
         default:
             return MAX(pow(2, floor(log(type->size)/log(2))), 1);
     }

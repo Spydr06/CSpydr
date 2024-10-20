@@ -6,6 +6,7 @@
 #include "optimizer/constexpr.h"
 #include "error/error.h"
 
+#include <assert.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -87,17 +88,11 @@ size_t gen_relocation(ASMCodegenData_T* cg, ASTNode_T* node, size_t target_size)
             break;
 
         case ND_STR:
-            {
-                size_t size = MIN(strlen(node->str_val), target_size - 1);
-                for(size_t i = 0; i < size; i++)
-                {
-                    u8 value = node->str_val[i] == '\\' ? (i++, escape_sequence(node->str_val[i], &node->str_val[i], &i)) : node->str_val[i];
-                    asm_println(cg, "  .byte %u", value);
-                }
-                asm_println(cg, "  .byte 0");
-                if(size_generated < target_size)
-                    asm_println(cg, "  .zero %zu", target_size - size_generated);
-            } break;
+            assert(target_size == PTR_S);
+            size_generated = PTR_S;
+            asm_println(cg, "  .%dbyte .L.string.%lu", PTR_S, cg->string_literals->size);
+            list_push(cg->string_literals, node->str_val);
+            break;
 
         case ND_CHAR:
             size_generated = asm_gen_const_data(cg, target_size);

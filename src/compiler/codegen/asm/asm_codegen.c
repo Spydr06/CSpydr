@@ -2954,5 +2954,6 @@ static void asm_gen_string_literals(ASMCodegenData_T* cg)
         
         for(size_t i = 0; i < size; i++)
             asm_println(cg, "  .byte %u", str[i] == '\\' ? (i++, escape_sequence(str[i], &str[i], &i)) : str[i]);
+
     }
 }
