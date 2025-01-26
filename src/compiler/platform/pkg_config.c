@@ -24,7 +24,7 @@ typedef struct PKG_ERROR_HANDLER_DATA_STRUCT {
     Token_T* token;
 } PkgErrorHandlerData_T;
 
-static bool pkg_error_handler(const char* msg, const pkgconf_client_t* client, const void *raw_data) {
+static bool pkg_error_handler(const char* msg, const pkgconf_client_t* client, void *raw_data) {
     if(!raw_data)
         return false;
     PkgErrorHandlerData_T* data = (PkgErrorHandlerData_T*) raw_data;
