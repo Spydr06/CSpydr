@@ -2,7 +2,8 @@ include config.mk
 
 override MAKEFLAGS := -rR
 
-CSPC := $(BIN_PREFIX)/cspc-bootstrap
+CSPC := $(BIN_PREFIX)/cspc
+CSPC_BOOTSTRAP := $(BIN_PREFIX)/cspc-bootstrap
 CSP_LINT := $(BIN_PREFIX)/csp-lint
 LIBCSPC := $(BIN_PREFIX)/libcspc.o
 LIBCSPYDR := $(BIN_PREFIX)/libcspydr.so
@@ -16,13 +17,17 @@ TEST_DIR := tests
 .PHONY:
 all: cspc csp-lint libcspydr std
 
-.PHONY:
-libcspc:
-	$(MAKE) -C $(SRC_DIR)/bootstrap LIBCSPC=$(LIBCSPC) CSPC=$(CSPC) $(LIBCSPC)
+.PHONY: cspc
+cspc: cspc-bootstrap std
+	$(CSPC_BOOTSTRAP) build src/compiler/main.csp -b C -o $(CSPC) --cc-flags "-Wno-int-conversion $(CFLAGS)" -p $(SRC_DIR)/std
 
 .PHONY:
-cspc: libcspc
-	$(MAKE) -C $(SRC_DIR)/bootstrap LIBCSPC=$(LIBCSPC) CSPC=$(CSPC) $(CSPC)
+libcspc:
+	$(MAKE) -C $(SRC_DIR)/bootstrap LIBCSPC=$(LIBCSPC) CSPC=$(CSPC_BOOTSTRAP) $(LIBCSPC)
+
+.PHONY:
+cspc-bootstrap: libcspc
+	$(MAKE) -C $(SRC_DIR)/bootstrap LIBCSPC=$(LIBCSPC) CSPC=$(CSPC_BOOTSTRAP) $(CSPC_BOOTSTRAP)
 
 .PHONY:
 csp-lint: libcspc
@@ -41,7 +46,7 @@ install: all
 	$(INSTALL) -v -D -m 644 $(LIBCSPYDR) $(PREFIX)/lib
 	$(INSTALL) -v -D -m 644 $(CSPYDR_PC) $(PKG_CONFIG_DIR)
 	$(INSTALL) -v -D -m 644 $(LIBCSPYDR_PUBLIC_HEADERS) $(PREFIX)/include
-	$(INSTALL) -v -D -m 755 $(CSPC) $(EXEC_PREFIX)/bin/cspc
+	$(INSTALL) -v -D -m 755 $(CSPC_BOOTSTRAP) $(EXEC_PREFIX)/bin/cspc
 	$(INSTALL) -v -D -m 755 $(CSP_LINT) $(EXEC_PREFIX)/bin/csp-lint
 	$(MAKE) -C $(SRC_DIR)/std install
 
@@ -56,7 +61,7 @@ uninstall:
 
 .PHONY:
 test: all
-	$(MAKE) -C $(TEST_DIR) LIBCSPC=$(LIBCSPC) CSPC=$(CSPC) run
+	$(MAKE) -C $(TEST_DIR) LIBCSPC=$(LIBCSPC) CSPC=$(CSPC_BOOTSTRAP) run
 
 .PHONY:
 clean:
