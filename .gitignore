@@ -100,4 +100,6 @@ config.mk
 compile_commands.json
 
 # version files
-src/compiler/version.h
+src/bootstrap/version.h
+src/compiler/version.csp
+

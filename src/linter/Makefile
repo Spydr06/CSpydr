@@ -9,5 +9,5 @@ $(CSP_LINT): $(OBJECTS)
 
 $(BUILD_PREFIX)/linter/%.c.o: %.c
 	@$(MKDIR) -p $(@D)
-	$(CC) -I. -I../compiler $(CFLAGS) -MMD -MP -MF "$(@:%.c.o=%.c.d)" -c $< -o $@
+	$(CC) -I. -I../bootstrap $(CFLAGS) -MMD -MP -MF "$(@:%.c.o=%.c.d)" -c $< -o $@
 

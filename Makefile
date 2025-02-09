@@ -2,7 +2,7 @@ include config.mk
 
 override MAKEFLAGS := -rR
 
-CSPC := $(BIN_PREFIX)/cspc
+CSPC := $(BIN_PREFIX)/cspc-bootstrap
 CSP_LINT := $(BIN_PREFIX)/csp-lint
 LIBCSPC := $(BIN_PREFIX)/libcspc.o
 LIBCSPYDR := $(BIN_PREFIX)/libcspydr.so
@@ -18,11 +18,11 @@ all: cspc csp-lint libcspydr std
 
 .PHONY:
 libcspc:
-	$(MAKE) -C $(SRC_DIR)/compiler LIBCSPC=$(LIBCSPC) CSPC=$(CSPC) $(LIBCSPC)
+	$(MAKE) -C $(SRC_DIR)/bootstrap LIBCSPC=$(LIBCSPC) CSPC=$(CSPC) $(LIBCSPC)
 
 .PHONY:
 cspc: libcspc
-	$(MAKE) -C $(SRC_DIR)/compiler LIBCSPC=$(LIBCSPC) CSPC=$(CSPC) $(CSPC)
+	$(MAKE) -C $(SRC_DIR)/bootstrap LIBCSPC=$(LIBCSPC) CSPC=$(CSPC) $(CSPC)
 
 .PHONY:
 csp-lint: libcspc
@@ -62,7 +62,7 @@ test: all
 clean:
 	$(RM) -rf $(BUILD_PREFIX)
 	$(RM) -rf vgcore.*
-	$(MAKE) -C $(SRC_DIR)/compiler clean
+	$(MAKE) -C $(SRC_DIR)/bootstrap clean
 
 .PHONY:
 compile_commands.json: clean

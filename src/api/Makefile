@@ -10,7 +10,7 @@ $(LIBCSPYDR): $(OBJECTS) | $(PC_FILE)
 
 $(BUILD_PREFIX)/api/%.c.o: %.c
 	@$(MKDIR) -p $(@D)
-	$(CC) -I. -I../compiler $(CFLAGS) -MMD -MP -MF "$(@:%.c.o=%.c.d)" -c $< -o $@
+	$(CC) -I. -I../bootstrap $(CFLAGS) -MMD -MP -MF "$(@:%.c.o=%.c.d)" -c $< -o $@
 
 $(PC_FILE): cspydr.pc.in
 	$(SED) -e 's|@prefix@|$(PREFIX)|g' \
